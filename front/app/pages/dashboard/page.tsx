@@ -1,9 +1,4 @@
-import Dashboard from '../../components/dashboard/Dashboard';
-
-export default function LoginPage() {
-  return (
-    <>
-      <Dashboard />
-    </>
-  );
-}
+"use client";
+import Dashboard from "../../components/dashboard/Dashboard";
+import withAuth from "../../hooks/withAuth";
+export default withAuth(Dashboard);

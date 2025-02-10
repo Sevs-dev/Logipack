@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { login } from '../../services/authservices';
 import { useRouter } from 'next/navigation';
+import nookies from 'nookies';
 
 function Login() {
   const router = useRouter();
@@ -17,7 +18,20 @@ function Login() {
 
     const response = await login(email, password);
     if (response.success) {
-      // console.log('Login exitoso:', response.data); 
+      // Establece la cookie para que dure 30 minutos (1800 segundos)
+      nookies.set(null, 'token', response.data.autorización.token, {
+        maxAge: 30 * 60, // 30 minutos en segundos
+        path: '/',
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict',
+      });
+      nookies.set(null, 'email', response.data.usuario.email, {
+        maxAge: 30 * 60,
+        path: '/',
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict',
+      });
+
       router.push('/pages/dashboard');
     } else {
       setErrorMessage(response.message);

@@ -1,15 +1,17 @@
 'use client';
 import React, { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import nookies from 'nookies';
 
 function Dashboard() {
   const router = useRouter();
 
   useEffect(() => {
-    // Verifica si existe el token en el localStorage
-    const token = localStorage.getItem('token');
+    // Obtiene todas las cookies en el cliente
+    const cookies = nookies.get(null);
+    console.log('Cookies leídas:', cookies);
+    const token = cookies.token; 
     if (!token) {
-      // Si no hay token, redirige a la ruta /pages/home
       router.push('/');
     }
   }, [router]);

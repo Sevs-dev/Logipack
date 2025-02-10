@@ -1,0 +1,168 @@
+.loader-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(98, 108, 139, 0.514);
+    backdrop-filter: blur(8px); /* Efecto cristal */
+    display: flex;
+    flex-direction: column; /* Apilar loader y texto verticalmente */
+    justify-content: center;
+    align-items: center;
+    z-index: 9999; /* Asegura que esté sobre todo el contenido */
+}
+
+/* Loader animation */
+.three-body {
+    --uib-size: 70px;
+    --uib-speed: 0.8s;
+    --uib-color: #ffffff;
+    position: relative;
+    display: inline-block;
+    height: var(--uib-size);
+    width: var(--uib-size);
+    animation: spin78236 calc(var(--uib-speed) * 2.5) infinite linear;
+}
+
+.three-body__dot {
+    position: absolute;
+    height: 100%;
+    width: 30%;
+}
+
+.three-body__dot:after {
+    content: '';
+    position: absolute;
+    height: 0%;
+    width: 100%;
+    padding-bottom: 100%;
+    background-color: var(--uib-color);
+    border-radius: 50%;
+}
+
+.three-body__dot:nth-child(1) {
+    bottom: 5%;
+    left: 0;
+    transform: rotate(60deg);
+    transform-origin: 50% 85%;
+}
+
+.three-body__dot:nth-child(1)::after {
+    bottom: 0;
+    left: 0;
+    animation: wobble1 var(--uib-speed) infinite ease-in-out;
+    animation-delay: calc(var(--uib-speed) * -0.3);
+}
+
+.three-body__dot:nth-child(2) {
+    bottom: 5%;
+    right: 0;
+    transform: rotate(-60deg);
+    transform-origin: 50% 85%;
+}
+
+.three-body__dot:nth-child(2)::after {
+    bottom: 0;
+    left: 0;
+    animation: wobble1 var(--uib-speed) infinite calc(var(--uib-speed) * -0.15) ease-in-out;
+}
+
+.three-body__dot:nth-child(3) {
+    bottom: -5%;
+    left: 0;
+    transform: translateX(116.666%);
+}
+
+.three-body__dot:nth-child(3)::after {
+    top: 0;
+    left: 0;
+    animation: wobble2 var(--uib-speed) infinite ease-in-out;
+}
+
+@keyframes spin78236 {
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+@keyframes wobble1 {
+
+    0%,
+    100% {
+        transform: translateY(0%) scale(1);
+        opacity: 1;
+    }
+
+    50% {
+        transform: translateY(-66%) scale(0.65);
+        opacity: 0.8;
+    }
+}
+
+@keyframes wobble2 {
+
+    0%,
+    100% {
+        transform: translateY(0%) scale(1);
+        opacity: 1;
+    }
+
+    50% {
+        transform: translateY(66%) scale(0.65);
+        opacity: 0.8;
+    }
+}
+
+/* Estilos para el texto */
+.loading-text {
+    font-size: 1.3rem; /* Tamaño del texto */
+    font-weight: bold; /* Resaltar el texto */
+    text-align: center; /* Centrar texto */
+    margin-top: 20px;
+    color: #ffffff; /* Color del texto */
+    animation: fadeInOut 2.5s ease-in-out infinite; /* Animación de aparición y desaparición */
+}
+
+/* Animación de aparición y desaparición del texto */
+@keyframes fadeInOut {
+    0%, 100% {
+        opacity: 0; /* Texto completamente transparente */
+    }
+    50% {
+        opacity: 1; /* Texto completamente visible */
+    }
+}
+
+/* Estilos para los puntos */
+.dot {
+    animation: fadeInOut 1.5s ease-in-out infinite; /* Animación de aparición y desaparición */
+    opacity: 0; /* Puntos inicialmente transparentes */
+}
+
+/* Animación escalonada para cada punto */
+.dot:nth-child(1) {
+    animation-delay: 0s; /* Sin retraso para el primer punto */
+}
+
+.dot:nth-child(2) {
+    animation-delay: 0.3s; /* Retraso para el segundo punto */
+}
+
+.dot:nth-child(3) {
+    animation-delay: 0.6s; /* Retraso para el tercer punto */
+}
+
+/* Animación de aparición y desaparición */
+@keyframes fadeInOut {
+    0%, 100% {
+        opacity: 0; /* Transparente */
+    }
+    50% {
+        opacity: 1; /* Visible */
+    }
+}
