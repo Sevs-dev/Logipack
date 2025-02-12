@@ -12,11 +12,11 @@ class UserSeeder extends Seeder
      */
     public function run(): void
     {
-        // Opción 1: Crear un usuario manualmente
         User::create([
             'name'     => 'Admin Logismart',
             'email'    => 'admin@logismart.com',
             'password' => bcrypt('Logismart123*'),
-        ]); 
+            'role'     => 'admin'
+        ]);
     }
 }

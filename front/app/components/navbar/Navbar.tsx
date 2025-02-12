@@ -9,12 +9,13 @@ function Navbar() {
 
   const [mounted, setMounted] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  // Validación del token (esto se mantiene en tu código actual)
+  // Validación del token
   useEffect(() => {
     if (!mounted) return;
 
@@ -38,67 +39,161 @@ function Navbar() {
     }
   }, [mounted, router, pathname]);
 
-  // Aquí renovamos la cookie en cada cambio de ruta
+  // Renovación de la cookie en cada cambio de ruta
   useEffect(() => {
     const cookies = nookies.get(null);
     if (cookies.token) {
-      // Reescribe la cookie "token" con un maxAge de 30 minutos (30 * 60 segundos)
       nookies.set(null, 'token', cookies.token, {
-        maxAge: 30 * 60,
+        maxAge: 30 * 60, // 30 minutos
         path: '/',
       });
     }
   }, [pathname]);
 
   // Funciones de navegación
-  const handleHome = () => router.push('/');
-  const handleLogin = () => router.push('/pages/login');
-  const handleRegister = () => router.push('/pages/register');
-  const handleDashBoard = () => router.push('/pages/dashboard');
-  const handleLogout = () => {
-    nookies.destroy(null, 'token');
-    nookies.destroy(null, 'userName');
-    nookies.destroy(null, 'userData');
+  const handleHome = () => {
+    setMenuOpen(false);
+    router.push('/');
+  };
+  const handleLogin = () => {
+    setMenuOpen(false);
     router.push('/pages/login');
   };
-  const handlePerfil = () => router.push('/pages/perfil');
+  const handleRegister = () => {
+    setMenuOpen(false);
+    router.push('/pages/register');
+  };
+  const handleDashBoard = () => {
+    setMenuOpen(false);
+    router.push('/pages/dashboard');
+  };
+  const handleLogout = () => {
+    setMenuOpen(false);
+    nookies.destroy(null, 'token', { path: '/' });
+    nookies.destroy(null, 'userName', { path: '/' });
+    nookies.destroy(null, 'userData', { path: '/' });
+    router.push('/');
+  };
+  
+  const handlePerfil = () => {
+    setMenuOpen(false);
+    router.push('/pages/perfil');
+  };
 
   if (!mounted) {
     return null;
   }
 
-  return (
-    <nav className="flex justify-around items-center p-4 bg-gray-800">
-      <button onClick={handleHome} className="text-white hover:text-gray-300">
+  // Renderizado de enlaces del navbar
+  const renderNavLinks = () => (
+    <>
+      {/* <button
+        onClick={handleHome}
+        className="px-4 py-2 rounded-md text-gray-300 font-medium hover:bg-gray-700 hover:text-white transition duration-300"
+      >
         Home
-      </button>
+      </button> */}
       {!isAuthenticated ? (
         <>
-          <button onClick={handleLogin} className="text-white hover:text-gray-300">
+          <button
+            onClick={handleLogin}
+            className="px-4 py-2 rounded-md text-gray-300 font-medium hover:bg-gray-700 hover:text-white transition duration-300"
+          >
             Login
           </button>
-          <button onClick={handleRegister} className="text-white hover:text-gray-300">
+          <button
+            onClick={handleRegister}
+            className="px-4 py-2 rounded-md text-gray-300 font-medium hover:bg-gray-700 hover:text-white transition duration-300"
+          >
             Registro
           </button>
         </>
       ) : (
         <>
-          <button onClick={handleDashBoard} className="text-white hover:text-gray-300">
+          <button
+            onClick={handleDashBoard}
+            className="px-4 py-2 rounded-md text-gray-300 font-medium hover:bg-gray-700 hover:text-white transition duration-300"
+          >
             Dashboard
           </button>
-          <button onClick={handlePerfil} className="text-white hover:text-gray-300">
+          <button
+            onClick={handlePerfil}
+            className="px-4 py-2 rounded-md text-gray-300 font-medium hover:bg-gray-700 hover:text-white transition duration-300"
+          >
             Perfil
           </button>
-          <button onClick={handleLogout} className="text-white hover:text-gray-300">
+          <button
+            onClick={handleLogout}
+            className="px-4 py-2 rounded-md text-gray-300 font-medium hover:bg-gray-700 hover:text-white transition duration-300"
+          >
             Cerrar Sesión
           </button>
         </>
+      )}
+    </>
+  );
+
+  return (
+    <nav className="bg-gradient-to-r from-gray-800 to-gray-900 shadow-lg sticky top-0 z-50">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex justify-between items-center h-16">
+          {/* Logo / Branding */}
+          <div className="flex-shrink-0 flex items-center">
+            <div
+              onClick={handleHome}
+              className="cursor-pointer transition-transform duration-300 hover:scale-105"
+            >
+              <img src="/logipack_2.png" alt="Logipack" className="h-10 w-auto" />
+            </div>
+          </div>
+          {/* Enlaces en pantallas medianas y grandes */}
+          <div className="hidden md:flex space-x-4">
+            {renderNavLinks()}
+          </div>
+          {/* Botón para menú móvil */}
+          <div className="md:hidden">
+            <button
+              onClick={() => setMenuOpen(!menuOpen)}
+              className="text-gray-300 hover:text-white focus:outline-none transition duration-300"
+            >
+              {menuOpen ? (
+                <svg
+                  className="w-7 h-7"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              ) : (
+                <svg
+                  className="w-7 h-7"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                </svg>
+              )}
+            </button>
+          </div>
+        </div>
+      </div>
+      {/* Menú desplegable para móviles con animación */}
+      {menuOpen && (
+        <div className="md:hidden transition-all duration-300 ease-out transform origin-top">
+          <div className="px-2 pt-2 pb-3 space-y-1">
+            {renderNavLinks()}
+          </div>
+        </div>
       )}
     </nav>
   );
 }
 
-// Función para decodificar el payload de un JWT sin usar librerías adicionales
+// Función para decodificar el payload de un JWT sin librerías adicionales
 function parseJwt(token: string): any {
   try {
     const base64Url = token.split('.')[1];
@@ -106,7 +201,7 @@ function parseJwt(token: string): any {
     const jsonPayload = decodeURIComponent(
       atob(base64)
         .split('')
-        .map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+        .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
         .join('')
     );
     return JSON.parse(jsonPayload);

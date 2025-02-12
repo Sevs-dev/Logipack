@@ -17,9 +17,24 @@ return new class extends Migration
             $table->string('email')->unique();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
+            $table->boolean('active')->default(false);
+            $table->string('image')->nullable();
+            $table->string('phone')->nullable();
+            $table->string('cargo')->nullable();
+            // Nuevos campos
+            $table->string('role')->default('user');
+            $table->timestamp('last_login_at')->nullable();
+            $table->text('bio')->nullable();
+            $table->date('dob')->nullable();
+            $table->string('address')->nullable();
+            $table->boolean('two_factor_enabled')->default(false);
+            $table->string('two_factor_secret')->nullable();
+            $table->string('api_token')->nullable();
+            $table->softDeletes();
             $table->rememberToken();
             $table->timestamps();
         });
+        
 
         Schema::create('password_reset_tokens', function (Blueprint $table) {
             $table->string('email')->primary();

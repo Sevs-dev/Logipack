@@ -95,4 +95,49 @@ class AuthController extends Controller
             ]
         ]);
     }
+
+    public function getUserByEmail($email)
+    {
+        $usuario = User::where('email', $email)->first();
+
+        if (!$usuario) {
+            return response()->json([
+                'estado'  => 'error',
+                'mensaje' => 'Correo electrónico no encontrado',
+            ], 404);
+        }
+        return response()->json([
+            'estado'  => 'éxito',
+            'usuario' => $usuario,
+        ]);
+    }
+
+    public function uploadImage(Request $request, $email)
+    {
+        // Verificar si el usuario existe
+        $user = User::where('email', $email)->first();
+        if (!$user) {
+            return response()->json(['message' => 'Usuario no encontrado'], 404);
+        }
+        // Validar solo la imagen
+        $request->validate([
+            'image' => 'required|image|mimes:jpg,png,jpeg,gif|max:2048'
+        ]);
+        // Eliminar imagen anterior si existe
+        if ($user->image) {
+            $oldImagePath = public_path('storage/' . $user->image);
+            if (file_exists($oldImagePath)) {
+                unlink($oldImagePath);
+            }
+        }
+        // Guardar la nueva imagen en storage/app/public/images
+        $imagePath = $request->file('image')->store('images', 'public');
+        // Guardar la ruta en la base de datos
+        $user->image = $imagePath;
+        $user->save();
+        return response()->json([
+            'message' => 'Imagen subida y actualizada exitosamente',
+            'image' => asset('storage/' . $imagePath)
+        ]);
+    }
 }

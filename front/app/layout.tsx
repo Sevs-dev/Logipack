@@ -1,16 +1,13 @@
-import type { Metadata } from "next";
-import Navbar from "./components/navbar/Navbar";
-import "./globals.css";
-export const metadata: Metadata = {
-  title: "Logipack",
-  description: "",
-};
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+// app/layout.tsx
+import "./globals.css"; // Asegúrate de importar tus estilos globales
+import { ReactNode } from "react";
+import ClientLayout from "./ClientLayout";
+
+export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="en">
-      <body className="antialiased">
-      <Navbar />
-        {children}
+    <html lang="en"> 
+      <body>
+        <ClientLayout>{children}</ClientLayout>
       </body>
     </html>
   );

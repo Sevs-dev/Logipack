@@ -12,17 +12,14 @@ function withAuth<P extends {}>(
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-      const cookies = nookies.get(null);
-      console.log("Cookies leídas con nookies:", cookies);
+      const cookies = nookies.get(null); 
       
-      const token = cookies.token;
-      console.log("Valor de token:", token);
+      const token = cookies.token; 
       
       if (!token || token.trim() === "") {
         console.warn("No se encontró un token válido. Redirigiendo...");
         router.push("/");
-      } else {
-        console.log("Token válido encontrado. Permitiendo acceso.");
+      } else { 
         setLoading(false);
       }
     }, [router]);

@@ -49,3 +49,38 @@ export const register = async (name: string, email: string, password: string) =>
     }
   }
 };
+
+export const getUserByEmail = async (decodedEmail: string) => {
+  try {
+    const response = await apiClient.get(`/user/${decodedEmail}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error en getUserByEmail:', error);
+    throw error;
+  }
+};
+
+export const postUserImage = async (decodedEmail: string, imageFile: File) => {
+  try {
+    const formData = new FormData();
+    formData.append('image', imageFile);
+
+    const response = await apiClient.post(`/upload-image/${decodedEmail}`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data', 
+      }
+    });
+
+    return { success: true, data: response.data };
+  } catch (error: any) {
+    console.error('Error en postUserImage:', error);
+    if (error.response) {
+      return {
+        success: false,
+        message: error.response.data.message || error.response.statusText,
+      };
+    } else {
+      return { success: false, message: error.message };
+    }
+  }
+};
