@@ -1,23 +1,37 @@
 'use client';
-import React, { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import nookies from 'nookies';
+import React, { useState, useEffect } from "react";  
+import { useAuth } from '../../hooks/useAuth'
+import { getUserByEmail } from '../../services/authservices';
+import nookies from "nookies";
 
-const Dashboard = () => {
-  const router = useRouter();
+const Dashboard = () => { 
 
+  //UseEffect para actualizacion del token
+  const { isAuthenticated } = useAuth();
+  const [userName, setUserName] = useState("");
   useEffect(() => {
-    // Obtener cookies del cliente
-    const cookies = nookies.get(null); 
-    const token = cookies.token;
-    if (!token) {
-      router.push('/');
-    }
-  }, [router]);
+    const fetchUserData = async () => {
+      try {
+        const cookies = nookies.get(null);
+        const email = cookies.email;
+        if (email) {
+          const decodedEmail = decodeURIComponent(email);
+          const user = await getUserByEmail(decodedEmail);
+          if (user.usuario) {
+            setUserName(user.usuario.name);
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching user:", error);
+      }
+    };
+    if (isAuthenticated) fetchUserData();
+  }, [isAuthenticated]);
+  // Fin useEffect
 
   return (
     <div className="flex min-h-screen bg-gray-100">
-      
+
       {/* Área principal del contenido */}
       <main className="flex-1 p-8 ">
         <header className="mb-8">
