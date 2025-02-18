@@ -15,6 +15,8 @@ return new class extends Migration
             $table->id();
             $table->json('data'); // Un solo campo para almacenar todos los datos en formato JSON
             $table->timestamps(); // Campos created_at y updated_at
+            $table->boolean('status')->default(true);
+
         });
     }
 

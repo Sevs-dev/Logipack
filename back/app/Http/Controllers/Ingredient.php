@@ -1,26 +1,25 @@
 <?php
 
 namespace App\Http\Controllers;
+
 use App\Models\Ingredients;
-use App\Models\IngredientData;
 use Illuminate\Http\Request;
 
 class Ingredient extends Controller
-{
-    // Mostrar todos los ingredientes
+{ // Obtener todos los ingredientes activos
     public function index()
     {
-        $ingredients = Ingredients::all();
+        $ingredients = Ingredients::where('status', true)->get(); // Ahora usa la columna status
         return response()->json($ingredients);
     }
 
-    // Mostrar un ingrediente específico por ID
+    // Obtener un ingrediente por ID
     public function show($id)
     {
         $ingredient = Ingredients::find($id);
 
-        if (!$ingredient) {
-            return response()->json(['error' => 'Ingrediente no encontrado'], 404);
+        if (!$ingredient || !$ingredient->isActive()) {
+            return response()->json(['error' => 'Ingrediente no encontrado o desactivado'], 404);
         }
 
         return response()->json($ingredient);
@@ -29,26 +28,24 @@ class Ingredient extends Controller
     // Crear un nuevo ingrediente
     public function store(Request $request)
     {
-        // Validar los datos de la solicitud
         $request->validate([
             'nombre' => 'required|string',
             'proveedor' => 'required|string',
             'serial' => 'required|string',
-            // Otros campos necesarios
+            // Otros campos según necesidad
         ]);
 
-        // Crear un nuevo objeto IngredientData
-        $data = new IngredientData($request->all());
+        $data = $request->all();
 
-        // Crear el ingrediente en la base de datos
-        $ingredient = new Ingredients();
-        $ingredient->data = $data;
-        $ingredient->save();
+        $ingredient = Ingredients::create([
+            'data' => $data,
+            'status' => true, // Activado por defecto
+        ]);
 
         return response()->json($ingredient, 201);
     }
 
-    // Actualizar un ingrediente existente
+    // Actualizar un ingrediente
     public function update(Request $request, $id)
     {
         $ingredient = Ingredients::find($id);
@@ -57,24 +54,21 @@ class Ingredient extends Controller
             return response()->json(['error' => 'Ingrediente no encontrado'], 404);
         }
 
-        // Validar los datos de la solicitud
         $request->validate([
-            'nombre' => 'required|string',
-            'proveedor' => 'required|string',
-            'serial' => 'required|string',
-            // Otros campos necesarios
+            'nombre' => 'string',
+            'proveedor' => 'string',
+            'serial' => 'string',
+            // Otros campos según necesidad
         ]);
 
-        // Actualizar los datos
-        $data = new IngredientData($request->all());
-        $ingredient->data = $data;
-        $ingredient->save();
+        $data = array_merge($ingredient->data, $request->all());
+        $ingredient->update(['data' => $data]);
 
         return response()->json($ingredient);
     }
 
-    // Eliminar un ingrediente
-    public function destroy($id)
+    // Desactivar un ingrediente
+    public function deactivate($id)
     {
         $ingredient = Ingredients::find($id);
 
@@ -82,8 +76,8 @@ class Ingredient extends Controller
             return response()->json(['error' => 'Ingrediente no encontrado'], 404);
         }
 
-        $ingredient->delete();
-        return response()->json(['message' => 'Ingrediente eliminado']);
+        $ingredient->update(['status' => false]); // Ahora se actualiza la columna status
+
+        return response()->json(['message' => 'Ingrediente desactivado']);
     }
 }
-
