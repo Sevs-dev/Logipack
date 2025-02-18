@@ -2,6 +2,7 @@ import axios from 'axios';
 
 const API_URL = 'http://localhost:8000/api';
 
+// Se crea una instancia de axios con la configuración base de la API.
 const authUser = axios.create({
   baseURL: API_URL,
   headers: {
@@ -9,7 +10,7 @@ const authUser = axios.create({
   },
 });
 
-// Servicio para Login
+// Servicio para iniciar sesión
 export const login = async (email: string, password: string) => {
   try {
     const response = await authUser.post('/login', {
@@ -29,7 +30,7 @@ export const login = async (email: string, password: string) => {
   }
 };
 
-// Servicio para Registro
+// Servicio para registrar un nuevo usuario
 export const register = async (name: string, email: string, password: string) => {
   try {
     const response = await authUser.post('/register', {
@@ -50,6 +51,7 @@ export const register = async (name: string, email: string, password: string) =>
   }
 };
 
+// Servicio para obtener un usuario por su correo electrónico
 export const getUserByEmail = async (decodedEmail: string) => {
   try {
     const response = await authUser.get(`/user/${decodedEmail}`);
@@ -60,6 +62,7 @@ export const getUserByEmail = async (decodedEmail: string) => {
   }
 };
 
+// Servicio para subir una imagen de perfil de usuario
 export const postUserImage = async (decodedEmail: string, imageFile: File) => {
   try {
     const formData = new FormData();
@@ -85,6 +88,7 @@ export const postUserImage = async (decodedEmail: string, imageFile: File) => {
   }
 };
 
+// Servicio para crear un nuevo usuario en la base de datos
 export const post = async (datosUsuario: any) => {
   try {
     const response = await authUser.post('/users', datosUsuario);
@@ -95,14 +99,57 @@ export const post = async (datosUsuario: any) => {
   }
 };
 
-
+// Servicio para obtener los roles de usuario
 export const getRole = async () => {
   try {
     const response = await authUser.get(`/role/`);
     return response.data;
   } catch (error) {
-    console.error('Error en get:', error);
+    console.error('Error en getRole:', error);
     throw error;
   }
 };
 
+// Servicio para obtener la lista de todos los usuarios
+export const getUsers = async () => {
+  try {
+    const response = await authUser.get(`/usersAll/`);
+    return response.data;
+  } catch (error) {
+    console.error('Error en getUsers:', error);
+    throw error;
+  }
+};
+
+// Servicio para eliminar un usuario por su ID
+export const deleteUser = async (id: number) => {
+  try {
+    const response = await authUser.delete(`/delete/${id}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error en deleteUser:', error);
+    throw error;
+  }
+}
+
+// Servicio para obtener la fecha de registro de un usuario por su ID
+export const getDate = async (id: number) => {
+  try {
+    const response = await authUser.get(`/date/${id}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error en getDate:', error);
+    throw error;
+  }
+}
+
+// Servicio para actualizar la información de un usuario por su ID
+export const updateUser = async (id: number, data: any) => {
+  try {
+    const response = await authUser.put(`/update/${id}`, data);
+    return response.data;
+  } catch (error) {
+    console.error('Error en updateUser:', error);
+    throw error;
+  }
+}

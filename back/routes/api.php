@@ -13,4 +13,8 @@ Route::controller(AuthController::class)->group(function () {
     Route::post('/upload-image/{email}','uploadImage');
     Route::post('/users', 'create');
     Route::get('/role', 'role');
+    Route::get('/usersAll', 'getUsers');
+    Route::delete('/delete/{id}', 'getUserDelete');
+    Route::put('/update/{id}', 'getUserUpdate');
+    Route::get('/date/{id}', 'getuserById');
 });

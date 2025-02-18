@@ -57,7 +57,7 @@ export function useAuth() {
       nookies.destroy(null, "token");
       nookies.destroy(null, "email");
       setIsAuthenticated(false);
-      router.push("/login");
+      router.push("/");
     };
 
     checkAuth();
