@@ -14,7 +14,6 @@ import { usePathname, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { getUserByEmail } from '../../services/authservices';
 
-
 interface SidebarProps {
   sidebarOpen: boolean;
   setSidebarOpen: React.Dispatch<React.SetStateAction<boolean>>;
@@ -23,7 +22,7 @@ interface SidebarProps {
 interface MenuItem {
   label: string;
   icon: React.ReactNode;
-  link?: string; // Hacemos 'link' opcional para los que solo tienen 'children'
+  link?: string;
   children?: MenuItem[];
 }
 
@@ -59,7 +58,6 @@ const menuItems: MenuItem[] = [
   },
 ];
 
-// Función para decodificar el JWT
 function parseJwt(token: string) {
   try {
     const base64Url = token.split(".")[1];
@@ -86,7 +84,6 @@ const Sidebar: React.FC<SidebarProps> = ({ sidebarOpen, setSidebarOpen }) => {
   const pathname = usePathname();
   const router = useRouter();
 
-  // Detección de viewport móvil
   useEffect(() => {
     const handleResize = () => {
       setIsMobile(window.innerWidth < 768);
@@ -100,7 +97,6 @@ const Sidebar: React.FC<SidebarProps> = ({ sidebarOpen, setSidebarOpen }) => {
     setMounted(true);
   }, []);
 
-  // Validación y renovación del token
   useEffect(() => {
     if (!mounted) return;
     const cookies = nookies.get(null);
@@ -123,18 +119,17 @@ const Sidebar: React.FC<SidebarProps> = ({ sidebarOpen, setSidebarOpen }) => {
     }
   }, [mounted, pathname]);
 
-  // Renovación del token al cambiar de ruta
   useEffect(() => {
     const cookies = nookies.get(null);
     if (cookies.token) {
       nookies.set(null, "token", cookies.token, {
-        maxAge: 30 * 60, // 30 minutos
+        maxAge: 30 * 60,
         path: "/",
       });
     }
     if (cookies.email) {
       nookies.set(null, "email", cookies.email, {
-        maxAge: 30 * 60, // 30 minutos
+        maxAge: 30 * 60,
         path: "/",
       });
     }
@@ -160,7 +155,6 @@ const Sidebar: React.FC<SidebarProps> = ({ sidebarOpen, setSidebarOpen }) => {
     fetchUserData();
   }, []);
 
-  // Función para cerrar sesión
   const handleLogout = () => {
     if (isMobile) setSidebarOpen(false);
     nookies.destroy(null, "token", { path: "/" });
@@ -170,16 +164,17 @@ const Sidebar: React.FC<SidebarProps> = ({ sidebarOpen, setSidebarOpen }) => {
   };
 
   return (
-    <aside
-      className={`transition-all duration-500 ease-in-out h-screen relative bg-[#000] ${sidebarOpen ? "w-64" : "w-16"
-        }`}
+ <aside
+      className={`transition-all duration-500 ease-in-out h-screen sticky top-0 bg-[#000] ${
+        sidebarOpen ? "w-64" : "w-16"
+      }`}
     >
-      {/* Contenedor "glass" */}
-      <div className="h-full w-full bg-white/10 backdrop-blur-lg border border-white/20 rounded-xl overflow-hidden shadow-lg">
-        {/* Header del Sidebar */}
+      <div className="h-full w-full bg-white/10 backdrop-blur-lg border border-white/20 rounded-xl shadow-lg flex flex-col">
+        {/* Header */}
         <div
-          className={`flex items-center ${sidebarOpen ? "justify-between" : "justify-center"
-            } p-4`}
+          className={`flex items-center ${
+            sidebarOpen ? "justify-between" : "justify-center"
+          } p-4`}
         >
           {sidebarOpen && (
             <img src="/logipack_2.png" alt="Logipack" className="h-10 w-auto" />
@@ -193,11 +188,10 @@ const Sidebar: React.FC<SidebarProps> = ({ sidebarOpen, setSidebarOpen }) => {
           </button>
         </div>
 
-        {/* Menú principal */}
-        <nav className="mt-4">
+        {/* Navigation con flex-1 para que ocupe el espacio disponible */}
+        <nav className="flex-1 overflow-y-auto mt-4">
           {menuItems.map((item, index) =>
             item.children ? (
-              // 🟢 Elementos con submenú
               <div
                 key={index}
                 onMouseEnter={() =>
@@ -220,8 +214,9 @@ const Sidebar: React.FC<SidebarProps> = ({ sidebarOpen, setSidebarOpen }) => {
                       }));
                     }
                   }}
-                  className={`cursor-pointer p-2 hover:bg-white/20 rounded transition-colors ${sidebarOpen ? "flex items-center" : "flex justify-center"
-                    }`}
+                  className={`cursor-pointer p-2 hover:bg-white/20 rounded transition-colors ${
+                    sidebarOpen ? "flex items-center" : "flex justify-center"
+                  }`}
                 >
                   <span className="text-lg text-white">{item.icon}</span>
                   {sidebarOpen && (
@@ -235,7 +230,6 @@ const Sidebar: React.FC<SidebarProps> = ({ sidebarOpen, setSidebarOpen }) => {
                     </>
                   )}
                 </div>
-                {/* Submenú con animación suave usando Framer Motion */}
                 <AnimatePresence initial={false}>
                   {openSubMenus[index] && sidebarOpen && (
                     <motion.div
@@ -251,7 +245,9 @@ const Sidebar: React.FC<SidebarProps> = ({ sidebarOpen, setSidebarOpen }) => {
                           className="flex items-center cursor-pointer p-2 hover:bg-white/20 rounded transition-colors"
                           onClick={() => subItem.link && router.push(subItem.link)}
                         >
-                          <span className="text-lg text-white">{subItem.icon}</span>
+                          <span className="text-lg text-white">
+                            {subItem.icon}
+                          </span>
                           <span className="ml-4 text-white">{subItem.label}</span>
                         </div>
                       ))}
@@ -260,12 +256,12 @@ const Sidebar: React.FC<SidebarProps> = ({ sidebarOpen, setSidebarOpen }) => {
                 </AnimatePresence>
               </div>
             ) : (
-              // 🟢 Elementos sin submenú
               <div key={index}>
                 <div
                   onClick={() => item.link && router.push(item.link)}
-                  className={`cursor-pointer p-2 hover:bg-white/20 rounded transition-colors ${sidebarOpen ? "flex items-center" : "flex justify-center"
-                    }`}
+                  className={`cursor-pointer p-2 hover:bg-white/20 rounded transition-colors ${
+                    sidebarOpen ? "flex items-center" : "flex justify-center"
+                  }`}
                 >
                   <span className="text-lg text-white">{item.icon}</span>
                   {sidebarOpen && (
@@ -277,27 +273,30 @@ const Sidebar: React.FC<SidebarProps> = ({ sidebarOpen, setSidebarOpen }) => {
           )}
         </nav>
 
-        {/* Sección de información del usuario */}
-        <div className="absolute bottom-20 w-full px-3 flex items-center">
-          <img
-            src="/user.jpg"
-            alt={userName}
-            className="h-10 w-10 rounded-full object-cover cursor-pointer"
-            onClick={() => router.push("/pages/perfil")}
-          />
-          {sidebarOpen && (
-            <span className="ml-2 text-white font-medium">{userName}</span>
-          )}
-        </div>
+        {/* Footer section */}
+        <div className="mt-auto p-3 border-t border-white/10">
+          {/* User profile */}
+          <div className="flex items-center mb-4">
+            <img
+              src="/user.jpg"
+              alt={userName}
+              className="h-10 w-10 rounded-full object-cover cursor-pointer"
+              onClick={() => router.push("/pages/perfil")}
+            />
+            {sidebarOpen && (
+              <span className="ml-2 text-white font-medium">{userName}</span>
+            )}
+          </div>
 
-        {/* Botón de cierre de sesión */}
-        <div className="absolute bottom-6 w-full px-3">
+          {/* Logout button */}
           <button
             onClick={handleLogout}
             className="w-full bg-red-600 hover:bg-red-500 text-white rounded-md transition-colors flex items-center justify-center p-2"
           >
             <FaSignOutAlt className="text-xl" />
-            <span className={`${!sidebarOpen ? "hidden" : "inline"} text-sm ml-2`}>
+            <span
+              className={`${!sidebarOpen ? "hidden" : "inline"} text-sm ml-2`}
+            >
               Cerrar Sesión
             </span>
           </button>

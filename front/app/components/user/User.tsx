@@ -31,6 +31,7 @@ function User() {
     image: "", // Nueva propiedad para la imagen
   });
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
+  
   const [loading, setLoading] = useState(false);
 
   const router = useRouter();
