@@ -2,7 +2,7 @@ import axios from 'axios';
 
 const API_URL = 'http://localhost:8000/api';
 
-const apiClient = axios.create({
+const authUser = axios.create({
   baseURL: API_URL,
   headers: {
     'Content-Type': 'application/json',
@@ -12,7 +12,7 @@ const apiClient = axios.create({
 // Servicio para Login
 export const login = async (email: string, password: string) => {
   try {
-    const response = await apiClient.post('/login', {
+    const response = await authUser.post('/login', {
       email,
       password,
     });
@@ -32,7 +32,7 @@ export const login = async (email: string, password: string) => {
 // Servicio para Registro
 export const register = async (name: string, email: string, password: string) => {
   try {
-    const response = await apiClient.post('/register', {
+    const response = await authUser.post('/register', {
       name,
       email,
       password,
@@ -52,7 +52,7 @@ export const register = async (name: string, email: string, password: string) =>
 
 export const getUserByEmail = async (decodedEmail: string) => {
   try {
-    const response = await apiClient.get(`/user/${decodedEmail}`);
+    const response = await authUser.get(`/user/${decodedEmail}`);
     return response.data;
   } catch (error) {
     console.error('Error en getUserByEmail:', error);
@@ -65,9 +65,9 @@ export const postUserImage = async (decodedEmail: string, imageFile: File) => {
     const formData = new FormData();
     formData.append('image', imageFile);
 
-    const response = await apiClient.post(`/upload-image/${decodedEmail}`, formData, {
+    const response = await authUser.post(`/upload-image/${decodedEmail}`, formData, {
       headers: {
-        'Content-Type': 'multipart/form-data', 
+        'Content-Type': 'multipart/form-data',
       }
     });
 
@@ -84,3 +84,25 @@ export const postUserImage = async (decodedEmail: string, imageFile: File) => {
     }
   }
 };
+
+export const post = async (datosUsuario: any) => {
+  try {
+    const response = await authUser.post('/users', datosUsuario);
+    return response.data;
+  } catch (error) {
+    console.error('Error en post:', error);
+    throw error;
+  }
+};
+
+
+export const getRole = async () => {
+  try {
+    const response = await authUser.get(`/role/`);
+    return response.data;
+  } catch (error) {
+    console.error('Error en get:', error);
+    throw error;
+  }
+};
+

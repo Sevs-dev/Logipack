@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Role;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -47,7 +48,6 @@ class AuthController extends Controller
             ]
         ]);
     }
-
 
     public function register(Request $request)
     {
@@ -139,5 +139,47 @@ class AuthController extends Controller
             'message' => 'Imagen subida y actualizada exitosamente',
             'image' => asset('storage/' . $imagePath)
         ]);
+    }
+
+    public function create(Request $request)
+    {
+        // Validación de los datos de entrada
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|string|email|max:255',
+            'password' => 'required|string|min:6',
+            'role' => 'required',
+        ]);
+
+        // Verificar si el correo ya existe
+        $existingUser = User::where('email', $request->email)->first();
+        if ($existingUser) {
+            return response()->json([
+                'estado' => 'error',
+                'mensaje' => 'El correo electrónico ya está registrado.',
+            ], 400);
+        }
+
+        // Crear el nuevo usuario
+        $usuario = User::create([
+            'name' => $request->name,
+            'email' => $request->email,
+            'password' => Hash::make($request->password),
+            'role' => $request->role,
+        ]);
+
+        // Respuesta exitosa
+        return response()->json([
+            'estado' => 'éxito',
+            'mensaje' => 'Usuario creado con éxito',
+            'usuario' => $usuario,
+        ]);
+    }
+
+
+    public function role()
+    {
+        $roles = Role::all();
+        return response()->json($roles);
     }
 }

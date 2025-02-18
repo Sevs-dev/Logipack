@@ -11,4 +11,6 @@ Route::controller(AuthController::class)->group(function () {
     Route::post('refresh', 'refresh');
     Route::get('/user/{email}','getUserByEmail');
     Route::post('/upload-image/{email}','uploadImage');
+    Route::post('/users', 'create');
+    Route::get('/role', 'role');
 });

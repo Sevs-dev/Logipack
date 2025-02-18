@@ -13,6 +13,7 @@ import nookies from "nookies";
 import { usePathname, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { getUserByEmail } from '../../services/authservices';
+import { useAuth } from "../../hooks/useAuth";
 
 
 interface SidebarProps {
@@ -59,86 +60,15 @@ const menuItems: MenuItem[] = [
   },
 ];
 
-// Función para decodificar el JWT
-function parseJwt(token: string) {
-  try {
-    const base64Url = token.split(".")[1];
-    const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
-    const jsonPayload = decodeURIComponent(
-      atob(base64)
-        .split("")
-        .map((c) => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2))
-        .join("")
-    );
-    return JSON.parse(jsonPayload);
-  } catch (error) {
-    console.error("Error al decodificar el token:", error);
-    return {};
-  }
-}
+
 
 const Sidebar: React.FC<SidebarProps> = ({ sidebarOpen, setSidebarOpen }) => {
   const [openSubMenus, setOpenSubMenus] = useState<{ [key: number]: boolean }>({});
   const [isMobile, setIsMobile] = useState(false);
-  const [mounted, setMounted] = useState(false);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [userName, setUserName] = useState("");
-  const pathname = usePathname();
   const router = useRouter();
+  const { isAuthenticated } = useAuth();
 
-  // Detección de viewport móvil
-  useEffect(() => {
-    const handleResize = () => {
-      setIsMobile(window.innerWidth < 768);
-    };
-    handleResize();
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, []);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  // Validación y renovación del token
-  useEffect(() => {
-    if (!mounted) return;
-    const cookies = nookies.get(null);
-    const token = cookies.token;
-    if (token) {
-      try {
-        const decoded = parseJwt(token);
-        if (decoded.exp > Date.now() / 1000) {
-          setIsAuthenticated(true);
-        } else {
-          nookies.destroy(null, "token");
-          setIsAuthenticated(false);
-        }
-      } catch (error) {
-        console.error("Error al decodificar el token:", error);
-        setIsAuthenticated(false);
-      }
-    } else {
-      setIsAuthenticated(false);
-    }
-  }, [mounted, pathname]);
-
-  // Renovación del token al cambiar de ruta
-  useEffect(() => {
-    const cookies = nookies.get(null);
-    if (cookies.token) {
-      nookies.set(null, "token", cookies.token, {
-        maxAge: 30 * 60, // 30 minutos
-        path: "/",
-      });
-    }
-    if (cookies.email) {
-      nookies.set(null, "email", cookies.email, {
-        maxAge: 30 * 60, // 30 minutos
-        path: "/",
-      });
-    }
-  }, [pathname]);
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -157,8 +87,9 @@ const Sidebar: React.FC<SidebarProps> = ({ sidebarOpen, setSidebarOpen }) => {
       }
     };
 
-    fetchUserData();
-  }, []);
+
+    if (isAuthenticated) fetchUserData();
+  }, [isAuthenticated]);
 
   // Función para cerrar sesión
   const handleLogout = () => {
