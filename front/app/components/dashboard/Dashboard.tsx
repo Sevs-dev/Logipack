@@ -17,8 +17,9 @@ const Dashboard = () => {
 
   return (
     <div className="flex min-h-screen bg-gray-100">
+      
       {/* Área principal del contenido */}
-      <main className="flex-1 p-8">
+      <main className="flex-1 p-8 ">
         <header className="mb-8">
           <h1 className="text-3xl font-bold text-gray-800">Panel de Control</h1>
           <p className="text-gray-600">Bienvenido a tu dashboard.</p>

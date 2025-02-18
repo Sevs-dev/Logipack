@@ -19,7 +19,6 @@ function Login() {
 
     const response = await login(email, password);
     if (response.success) {
-      // Establece la cookie para que dure 30 minutos (1800 segundos)
       nookies.set(null, 'token', response.data.autorización.token, {
         maxAge: 30 * 60,
         path: '/',
@@ -40,93 +39,61 @@ function Login() {
     setLoading(false);
   };
 
-  // Variantes para animaciones
-  const formVariant = {
-    hidden: { x: -50, opacity: 0 },
-    visible: { x: 0, opacity: 1, transition: { duration: 1 } },
-  };
-
-  const imageVariant = {
-    hidden: { x: 50, opacity: 0 },
-    visible: { x: 0, opacity: 1, transition: { duration: 1 } },
-  };
-
+  // Animaciones
   const fadeIn = {
     hidden: { opacity: 0, y: 20 },
-    visible: { opacity: 1, y: 0, transition: { duration: 0.8 } },
-  };
-
-  const staggerContainer = {
-    hidden: {},
-    visible: {
-      transition: {
-        staggerChildren: 0.2,
-      },
-    },
+    visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: 'easeOut' } },
   };
 
   return (
-    <div className="min-h-screen flex">
+    <div className="min-h-screen flex bg-gradient-to-br from-blue-500 to-purple-600">
       {/* Lado Izquierdo: Formulario de Login */}
       <motion.div
-        className="w-full md:w-1/2 flex flex-col items-center justify-center bg-gray-100 p-8"
+        className="w-full md:w-1/2 flex flex-col items-center justify-center p-8"
         initial="hidden"
         animate="visible"
-        variants={formVariant}
+        variants={fadeIn}
       >
-        <motion.div className="max-w-md w-full" variants={staggerContainer}>
-          <motion.h1 className="text-3xl font-bold mb-6 text-gray-800" variants={fadeIn}>
-            Inicia sesión en tu cuenta
-          </motion.h1>
-          <motion.p className="mb-8 text-gray-600" variants={fadeIn}>
-            Ingresa tus credenciales para acceder al panel de control.
-          </motion.p>
-          <motion.form
-            onSubmit={handleSubmit}
-            className="bg-white p-6 rounded shadow-md"
-            variants={staggerContainer}
-          >
-            <motion.div className="mb-4" variants={fadeIn}>
-              <label htmlFor="email" className="block text-gray-700 font-medium">
+        <div className="max-w-md w-full bg-white p-8 rounded-2xl shadow-2xl">
+          <h1 className="text-4xl font-bold mb-6 text-gray-800">Inicia sesión</h1>
+          <p className="mb-8 text-gray-600">Ingresa tus credenciales para acceder al panel de control.</p>
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div className="space-y-2">
+              <label htmlFor="email" className="block text-sm font-medium text-gray-700">
                 Email
               </label>
               <input
                 type="email"
                 id="email"
-                className="mt-1 block w-full border border-gray-300 p-2 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
               />
-            </motion.div>
-            <motion.div className="mb-4" variants={fadeIn}>
-              <label htmlFor="password" className="block text-gray-700 font-medium">
+            </div>
+            <div className="space-y-2">
+              <label htmlFor="password" className="block text-sm font-medium text-gray-700">
                 Contraseña
               </label>
               <input
                 type="password"
                 id="password"
-                className="mt-1 block w-full border border-gray-300 p-2 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
               />
-            </motion.div>
-            {errorMessage && (
-              <motion.div className="mb-4 text-red-500 text-sm" variants={fadeIn}>
-                {errorMessage}
-              </motion.div>
-            )}
-            <motion.button
+            </div>
+            {errorMessage && <div className="text-red-500 text-sm">{errorMessage}</div>}
+            <button
               type="submit"
               disabled={loading}
-              className="bg-blue-500 text-white p-2 rounded w-full hover:bg-blue-600 transition-colors"
-              variants={fadeIn}
+              className="w-full bg-blue-500 text-white py-3 rounded-lg font-semibold hover:bg-blue-600 transition-all"
             >
               {loading ? 'Cargando...' : 'Iniciar Sesión'}
-            </motion.button>
-          </motion.form>
-        </motion.div>
+            </button>
+          </form>
+        </div>
       </motion.div>
 
       {/* Lado Derecho: Imagen de fondo con overlay de texto */}
@@ -135,17 +102,13 @@ function Login() {
         style={{ backgroundImage: "url('/images/login-background.jpg')" }}
         initial="hidden"
         animate="visible"
-        variants={imageVariant}
+        variants={fadeIn}
       >
-        <div className="absolute inset-0 bg-blue-900 opacity-50"></div>
-        <motion.div className="relative z-10 text-center p-8" variants={staggerContainer}>
-          <motion.h2 className="text-4xl text-white font-bold mb-4" variants={fadeIn}>
-            Bienvenido a Logismart
-          </motion.h2>
-          <motion.p className="text-white text-lg" variants={fadeIn}>
-            Optimiza y supervisa tus procesos de forma segura y eficiente.
-          </motion.p>
-        </motion.div>
+        <div className="absolute inset-0 bg-black/30"></div>
+        <div className="relative z-10 text-center p-8">
+          <h2 className="text-5xl text-white font-bold mb-4">Bienvenido a Logismart</h2>
+          <p className="text-white text-xl">Optimiza y supervisa tus procesos de forma segura y eficiente.</p>
+        </div>
       </motion.div>
     </div>
   );

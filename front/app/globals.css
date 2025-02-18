@@ -6,3 +6,37 @@
   fill: white !important;
   color: white !important;
 }
+/* button-global */
+.button-global {
+  padding: 0.5rem 1rem; /* px-4 py-1.5 */
+  border: 1px solid #2563eb; /* border border-blue-600 */
+  color: #2563eb; /* text-blue-600 */
+  border-radius: 9999px; /* rounded-full */
+  font-size: 0.875rem; /* text-sm */
+  font-weight: 500; /* font-medium */
+  transition: all 0.3s ease-out; /* transition-all duration-300 ease-out */
+}
+/* button-global:hover */
+.button-global:hover {
+  transform: translateY(1px); /* hover:translate-y-1 */
+  box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.2), 0 2px 4px -1px rgba(59, 130, 246, 0.06); /* hover:shadow-lg hover:shadow-blue-200 */
+  background-color: #2563eb; /* hover:bg-blue-600 */
+  color: white; /* hover:text-white */
+}
+
+/* carrusel clientes */
+@keyframes marquee {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.animate-marquee {
+  display: flex;
+  animation: marquee 20s linear infinite;
+  min-width: max-content;  /* Asegura que el contenido tenga el ancho mínimo necesario para moverse */
+}
+
