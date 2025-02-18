@@ -176,10 +176,70 @@ class AuthController extends Controller
         ]);
     }
 
-
     public function role()
     {
         $roles = Role::all();
         return response()->json($roles);
+    }
+
+    public function getUsers()
+    {
+        $users = User::all();
+        return response()->json($users);
+    }
+
+    public function getUserDelete($id)
+    {
+        $user = User::find($id);
+        if (!$user) {
+            return response()->json([
+                'estado' => 'error',
+                'mensaje' => 'Usuario no encontrado',
+            ], 404);
+        }
+        $user->delete();
+        return response()->json([
+            'estado' => 'éxito',
+            'mensaje' => 'Usuario eliminado con éxito',
+        ]);
+    }
+    public function getuserById($id)
+    {
+        $user = User::find($id);
+        if (!$user) {
+            return response()->json([
+                'estado' => 'error',
+                'mensaje' => 'Usuario no encontrado',
+            ], 404);
+        }
+        return response()->json([
+            'estado' => 'éxito',
+            'usuario' => $user,
+        ]);
+    } 
+
+    public function getUserUpdate(Request $request, $id)
+    {
+        $user = User::find($id);
+        if (!$user) {
+            return response()->json([
+                'estado' => 'error',
+                'mensaje' => 'Usuario no encontrado',
+            ], 404);
+        }
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|string|email|max:255',
+            'role' => 'required',
+        ]);
+        $user->name = $request->name;
+        $user->email = $request->email;
+        $user->role = $request->role;
+        $user->save();
+        return response()->json([
+            'estado' => 'éxito',
+            'mensaje' => 'Usuario actualizado con éxito',
+            'usuario' => $user,
+        ]);
     }
 }
