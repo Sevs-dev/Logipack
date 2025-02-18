@@ -14,8 +14,11 @@ Route::controller(AuthController::class)->group(function () {
     Route::post('/upload-image/{email}','uploadImage');
     Route::post('/users', 'create');
     Route::get('/role', 'role');
+    Route::get('/usersAll', 'getUsers');
+    Route::delete('/delete/{id}', 'getUserDelete');
+    Route::put('/update/{id}', 'getUserUpdate');
+    Route::get('/date/{id}', 'getuserById');
 });
-
 //Rutas Ingredients
 Route::controller(Ingredient::class)->group(function () {
     Route::get('ingredients/list', 'index');
@@ -23,8 +26,4 @@ Route::controller(Ingredient::class)->group(function () {
     Route::post('ingredients/create', 'store');
     Route::put('ingredients/{id}/update', 'update');
     Route::put('ingredients/{id}/deactivate', 'deactivate'); // Ruta para desactivar
-    Route::get('/usersAll', 'getUsers');
-    Route::delete('/delete/{id}', 'getUserDelete');
-    Route::put('/update/{id}', 'getUserUpdate');
-    Route::get('/date/{id}', 'getuserById');
 });
