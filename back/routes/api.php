@@ -19,6 +19,7 @@ Route::controller(AuthController::class)->group(function () {
     Route::put('/update/{id}', 'getUserUpdate');
     Route::get('/date/{id}', 'getuserById');
 });
+
 //Rutas Ingredients
 Route::controller(Ingredient::class)->group(function () {
     Route::get('ingredients/list', 'index');

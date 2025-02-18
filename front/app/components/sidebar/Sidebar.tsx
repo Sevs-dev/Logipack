@@ -42,7 +42,7 @@ const menuItems: MenuItem[] = [
       {
         label: "Ingredientes",
         icon: <FaVials />,
-        link: "/"
+        link: "/pages/ingredients"
       },
       
     ],
