@@ -13,7 +13,8 @@ return new class extends Migration
     {
         Schema::create('ingredients', function (Blueprint $table) {
             $table->id();
-            $table->timestamps();
+            $table->json('data'); // Un solo campo para almacenar todos los datos en formato JSON
+            $table->timestamps(); // Campos created_at y updated_at
         });
     }
 

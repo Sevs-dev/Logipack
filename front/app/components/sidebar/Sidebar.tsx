@@ -3,11 +3,13 @@ import React, { useState, useEffect } from "react";
 import {
   FaHome,
   FaUserAlt,
+  FaVials,
   FaCog,
+  FaCapsules,
   FaAngleDown,
   FaSignOutAlt,
   FaArrowLeft,
-  FaBars,
+  FaBars
 } from "react-icons/fa";
 import nookies from "nookies";
 import { usePathname, useRouter } from "next/navigation";
@@ -33,19 +35,15 @@ const menuItems: MenuItem[] = [
     icon: <FaHome />,
   },
   {
-    label: "Perfil",
-    icon: <FaUserAlt />,
+    label: "Maestras",
+    icon: <FaCapsules  />,
     children: [
       {
-        label: "Ver Perfil",
-        icon: <FaUserAlt />,
-        link: "/perfil"
+        label: "Ingredientes",
+        icon: <FaVials />,
+        link: "/"
       },
-      {
-        label: "Editar Perfil",
-        icon: <FaUserAlt />,
-        link: "/perfil/editar"
-      },
+      
     ],
   },
   {
