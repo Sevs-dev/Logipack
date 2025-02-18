@@ -24,13 +24,6 @@ return new class extends Migration
             // Nuevos campos
             $table->string('role')->default('user');
             $table->timestamp('last_login_at')->nullable();
-            $table->text('bio')->nullable();
-            $table->date('dob')->nullable();
-            $table->string('address')->nullable();
-            $table->boolean('two_factor_enabled')->default(false);
-            $table->string('two_factor_secret')->nullable();
-            $table->string('api_token')->nullable();
-            $table->softDeletes();
             $table->rememberToken();
             $table->timestamps();
         });
