@@ -153,3 +153,4 @@ export const updateUser = async (id: number, data: any) => {
     throw error;
   }
 }
+

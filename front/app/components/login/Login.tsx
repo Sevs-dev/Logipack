@@ -31,6 +31,12 @@ function Login() {
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'strict',
       });
+      nookies.set(null, 'role', response.data.usuario.role, {
+        maxAge: 30 * 60,
+        path: '/',
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict',
+      });
 
       router.push('/pages/dashboard');
     } else {
