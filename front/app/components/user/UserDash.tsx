@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from "react";
 import CreateUser from "./CreateUser";
 import DataUsers from "./DataUsers";
+import WindowManager from "../windowManager/WindowManager";
+import Roles from "../roles/Roles";
 import { useAuth } from "../../hooks/useAuth";
 import { getUserByEmail } from "../../services/authservices";
 import nookies from "nookies";
@@ -32,24 +34,28 @@ function User() {
   }, [isAuthenticated]);
 
   return (
-    <div className="container mx-auto p-6">
-      {/* Título */}
-      <h1 className="text-3xl font-bold text-gray-800 text-center">Panel de Administración</h1>
-      {userName && <h2 className="text-lg text-gray-600 text-center mt-2">Bienvenido, <span className="font-semibold">{userName}</span></h2>}
-      {error && <p className="text-red-500 text-center mt-2">{error}</p>}
+    <div>
+      {/* Administrador de ventanas */}
+      <WindowManager
+        windowsData={[
+          {
+            id: 1, title: "Panel de Administración", component:
+              <div>
+                {/* Botón arriba y tabla abajo */}
+                <div className="flex flex-col md:flex-row justify-between items-center mb-4">
+                  <CreateUser />
+                </div>
 
-      {/* Sección principal */}
-      <div className="bg-white shadow-lg rounded-lg p-6 mt-6">
-        {/* Botón arriba y tabla abajo */}
-        <div className="flex flex-col md:flex-row justify-between items-center mb-4">
-          <CreateUser />
-        </div>
-
-        {/* Tabla de usuarios */}
-        <div className="overflow-x-auto">
-          <DataUsers />
-        </div>
-      </div>
+                {/* Tabla de usuarios */}
+                <div className="overflow-x-auto">
+                  <DataUsers />
+                </div>
+              </div>
+            , isProtected: true
+          },
+          { id: 2, title: "Roles", component: <Roles />, isProtected: true },
+        ]}
+      />
     </div>
   );
 }

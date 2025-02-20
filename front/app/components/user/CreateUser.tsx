@@ -1,7 +1,8 @@
-"use client";
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "../../hooks/useAuth";
 import { post, getRole } from "../../services/authservices";
+import { FiEye, FiEyeOff } from "react-icons/fi";
+import { BiLock } from "react-icons/bi";
 
 function CreateUser() {
   const { isAuthenticated } = useAuth();
@@ -11,19 +12,19 @@ function CreateUser() {
   const [role, setRole] = useState("");
   const [loading, setLoading] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+
   interface Role {
     id: number;
     name: string;
   }
   const [roles, setRoles] = useState<Role[]>([]);
 
-  // Obtener los roles desde el backend cuando el componente se monta
-  // Actualiza tu `useEffect` para usar el servicio getRole con Axios
   useEffect(() => {
     const fetchRoles = async () => {
       try {
-        const data = await getRole();  // Usamos el servicio getRole
-        setRoles(data); // Suponiendo que la respuesta tiene la forma [{ id, name }, ...]
+        const data = await getRole(); 
+        setRoles(data);
       } catch (error) {
         console.error("Error fetching roles:", error);
       }
@@ -32,15 +33,20 @@ function CreateUser() {
     fetchRoles();
   }, []);
 
+  const generatePassword = () => {
+    const length = 12;
+    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()";
+    let newPassword = "";
+    for (let i = 0; i < length; i++) {
+      newPassword += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    setPassword(newPassword);
+  };
+
   const handleCreateUser = async () => {
     setLoading(true);
     try {
-      await post({
-        name,
-        email,
-        password,
-        role,
-      });
+      await post({ name, email, password, role });
       alert("Usuario creado exitosamente");
       setIsModalOpen(false);
     } catch (error) {
@@ -51,68 +57,89 @@ function CreateUser() {
   };
 
   return (
-    <div>
+    <div className="flex justify-center">
       <button
         onClick={() => setIsModalOpen(true)}
-        className="bg-green-500 text-white p-2 rounded"
+        className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded transition"
       >
         Crear Usuario
       </button>
 
       {isModalOpen && (
-        <div className="fixed inset-0 bg-gray-800 bg-opacity-50 flex justify-center items-center z-50">
-          <div className="bg-white p-6 rounded shadow-lg w-96">
-            <h1 className="text-2xl font-bold mb-4">Crear Usuario</h1>
-            <form>
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm z-50">
+          <div className="bg-white p-6 rounded-lg shadow-lg w-96 animate-fadeIn z-50">
+            <h1 className="text-2xl font-semibold mb-4 text-center">Crear Usuario</h1>
+            <form className="space-y-3">
               <input
                 type="text"
                 placeholder="Nombre"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="border p-2 mb-2 w-full"
+                className="w-full text-black border border-gray-300 rounded p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
               <input
                 type="email"
                 placeholder="Correo electrónico"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="border p-2 mb-2 w-full"
+                className="w-full text-black border border-gray-300 rounded p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
-              <input
-                type="password"
-                placeholder="Contraseña"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="border p-2 mb-2 w-full"
-              />
+
+              <div className="relative w-full">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  placeholder="Contraseña"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full text-black border border-gray-300 rounded p-2 pr-12 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-10 top-2.5 text-gray-500"
+                >
+                  {showPassword ? <FiEyeOff size={20} /> : <FiEye size={20} />}
+                </button>
+                <button
+                  type="button"
+                  onClick={generatePassword}
+                  className="absolute right-2 top-2.5 bg-yellow-500 text-white p-1 rounded"
+                >
+                  <BiLock size={16} />
+                </button>
+              </div>
+
               <select
                 value={role}
                 onChange={(e) => setRole(e.target.value)}
-                className="border p-2 mb-2 w-full"
+                className="border p-2 mb-2 w-full text-black"
               >
                 <option value="">Seleccionar rol</option>
                 {roles.map((role) => (
-                  <option key={role.id} value={role.name}>
+                  <option key={role.id} value={role.name} className="text-black">
                     {role.name.charAt(0).toUpperCase() + role.name.slice(1)}
                   </option>
                 ))}
               </select>
 
-              <button
-                type="button"
-                onClick={handleCreateUser}
-                disabled={loading}
-                className="bg-blue-500 text-white p-2 rounded w-full"
-              >
-                {loading ? "Creando..." : "Crear Usuario"}
-              </button>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setIsModalOpen(false)}
+                  className="w-1/2 bg-red-600 hover:bg-red-500 text-white font-bold py-2 px-4 rounded transition"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  onClick={handleCreateUser}
+                  disabled={loading}
+                  className="w-1/2 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded transition"
+                >
+                  {loading ? "Creando..." : "Crear Usuario"}
+                </button>
+              </div>
             </form>
-            <button
-              onClick={() => setIsModalOpen(false)}
-              className="mt-4 text-red-500"
-            >
-              Cancelar
-            </button>
           </div>
         </div>
       )}
