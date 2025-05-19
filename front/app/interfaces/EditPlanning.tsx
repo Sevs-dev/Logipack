@@ -24,4 +24,5 @@ export interface Plan {
     icon?: string;
     start_date?: string;
     end_date?: string;
+    duration?: number;
 }

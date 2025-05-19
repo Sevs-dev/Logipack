@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { API_URL } from '../../config/api'
+import { API_URL } from '../../config/api' 
 
 // Se crea una instancia de axios con la configuración base de la API.
 const Adaptations = axios.create({
@@ -11,17 +11,28 @@ const Adaptations = axios.create({
 
 export const newAdaptation = async (data: FormData) => {
     try {
+        const name = document.cookie
+            .split('; ')
+            .find(row => row.startsWith('name='))
+            ?.split('=')[1];
+
+        if (name) {
+            data.append('user', decodeURIComponent(name));
+        }
         const response = await Adaptations.post('/newAdaptation', data, {
             headers: {
                 "Content-Type": "multipart/form-data"
             }
         });
+
+        console.log("Creando adaptación:", response.data);
         return response.data;
     } catch (error: any) {
         console.error("Error en newAdaptation:", error);
-        throw error; // Lanza otros errores para depuración
+        throw error;
     }
 };
+
 
 export const getAdaptations = async () => {
     try {
@@ -29,7 +40,7 @@ export const getAdaptations = async () => {
         return response.data;
     } catch (error: any) {
         console.error("Error en getAdaptations:", error);
-        throw error; // Lanza otros errores para depuración
+        throw error; 
     }
 }
 
@@ -49,7 +60,7 @@ export const updateAdaptation = async (id: number, data: FormData) => {
         const response = await Adaptations.post(`/updateAdaptation/${id}`, data, {
             headers: {
                 "Content-Type": "multipart/form-data"
-            }               
+            }
         });
         console.log("Editando adaptación:", response.data);
         return response.data;

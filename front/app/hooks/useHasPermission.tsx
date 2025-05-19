@@ -1,4 +1,3 @@
-// hooks/useHasPermission.ts
 "use client";
 import { useEffect, useState } from "react";
 import { useAuth } from "../context/AuthContext";
@@ -8,24 +7,48 @@ interface PermissionRoleResponse {
     permissions: string[];
 }
 
+// 🧠 Simple caché en memoria
+const permissionCache: Record<string, string[]> = {};
+
 export const useHasPermission = (requiredPermission: string) => {
     const { role, loading } = useAuth();
     const [hasPermission, setHasPermission] = useState(false);
     const [fetched, setFetched] = useState(false);
 
     useEffect(() => {
-        if (!loading && role) {
-            getPermissionRole(role)
-                .then((data: PermissionRoleResponse) => {
-                    setHasPermission(data.permissions.includes(requiredPermission));
-                })
-                .catch((error) => {
-                    console.error("Error en getPermissionRole:", error);
-                })
-                .finally(() => {
+        let isMounted = true;
+
+        const fetchPermissions = async () => {
+            if (!role || loading) return;
+
+            try {
+                let permissions: string[];
+
+                if (permissionCache[role]) {
+                    permissions = permissionCache[role];
+                } else {
+                    const data: PermissionRoleResponse = await getPermissionRole(role);
+                    permissionCache[role] = data.permissions;
+                    permissions = data.permissions;
+                }
+
+                if (isMounted) {
+                    setHasPermission(permissions.includes(requiredPermission));
+                }
+            } catch (error) {
+                console.error("Error en getPermissionRole:", error);
+            } finally {
+                if (isMounted) {
                     setFetched(true);
-                });
-        }
+                }
+            }
+        };
+
+        fetchPermissions();
+
+        return () => {
+            isMounted = false;
+        };
     }, [loading, role, requiredPermission]);
 
     return { hasPermission, loading: loading || !fetched };

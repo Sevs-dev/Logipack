@@ -15,14 +15,16 @@ return new class extends Migration
             $table->id();
             $table->unsignedBigInteger('client_id');
             $table->unsignedBigInteger('factory_id');
+            $table->unsignedBigInteger('master');
+            $table->unsignedBigInteger('bom');
             $table->json('article_code');
             $table->string('attachment')->nullable();
-            $table->string('number_order')->nullable();
-            $table->json('master')->nullable();
-            $table->json('bom')->nullable();
+            $table->string('number_order')->nullable();  
             $table->json('ingredients')->nullable();
             $table->foreign('client_id')->references('id')->on('clients')->onDelete('cascade');
             $table->foreign('factory_id')->references('id')->on('factories')->onDelete('cascade');
+            $table->foreign('master')->references('id')->on('maestras')->onDelete('cascade');
+            $table->foreign('bom')->references('id')->on('boms')->onDelete('cascade');
             $table->timestamps();
         });
         

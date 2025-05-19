@@ -13,10 +13,14 @@ use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Http\UploadedFile as LaravelUploadedFile;
 use Symfony\Component\HttpFoundation\File\UploadedFile as SymfonyUploadedFile;
+use App\Models\Consecutive;
+use App\Models\Consecutive_date;
+use Carbon\Carbon;
 
 
 class AdaptationController extends Controller
 {
+
     public function newAdaptation(Request $request)
     {
         try {
@@ -24,24 +28,41 @@ class AdaptationController extends Controller
                 'client_id'    => 'required|exists:clients,id',
                 'article_code' => 'required|json',
                 'attachment'   => 'nullable|file',
-                'master'       => 'nullable|json',
-                'bom'          => 'nullable|json',
+                'master' => 'nullable|exists:maestras,id',
+                'bom'    => 'nullable|exists:boms,id',
                 'ingredients'  => 'nullable|json',
                 'number_order' => 'required|string',
-                'factory_id' => 'required|exists:factories,id',
+                'factory_id'   => 'required|exists:factories,id',
             ]);
+            $now = Carbon::now();
+            $prefix = Str::before($validatedData['number_order'], '-');
+            $currentYear = $now->year;
+            $currentMonth = $now->format('m');
+            $consecutive = Consecutive::firstOrNew(['prefix' => $prefix]);
+            if ($consecutive->year != $currentYear || $consecutive->month != $currentMonth) {
+                $consecutive->year = $currentYear;
+                $consecutive->month = $currentMonth;
+                $consecutive->consecutive = '0000001';
+            } else {
+                $consecutive->consecutive = str_pad((int)$consecutive->consecutive + 1, 7, '0', STR_PAD_LEFT); // 🟢 Incremento con ceros
+            }
 
+            $consecutive->save();
+            $newNumberOrder = sprintf(
+                '%s-%04d-%02d-%07d',
+                $prefix,
+                $consecutive->year,
+                $consecutive->month,
+                $consecutive->consecutive
+            );
+            $validatedData['number_order'] = $newNumberOrder;
             $articleAttachments = [];
-
-            // 🧩 Archivo plano general
             if ($request->hasFile('attachment')) {
                 $file = $request->file('attachment');
                 $filename = 'general_' . now()->format('Ymd_His') . '.' . $file->getClientOriginalExtension();
                 $path = $file->storeAs('attachments', $filename, 'public');
                 $articleAttachments['general'] = $path;
             }
-
-            // 🔥 Archivos por artículo
             foreach ($request->files as $key => $file) {
                 if (Str::startsWith($key, 'attachment_')) {
                     $codart = Str::after($key, 'attachment_');
@@ -56,34 +77,25 @@ class AdaptationController extends Controller
                     $articleAttachments[$codart] = $path;
                 }
             }
-
             if (!empty($articleAttachments)) {
                 $validatedData['attachment'] = json_encode($articleAttachments);
             }
-
-            // 💾 Crear Adaptation
             $adaptation = Adaptation::create($validatedData);
-
-            // 🧠 Obtener duración desde master (si aplica)
             $masterDuration = null;
             if (!empty($validatedData['master'])) {
-                $masterData = json_decode($validatedData['master'], true);
-                if (isset($masterData['id'])) {
-                    $master = Maestra::find($masterData['id']);
-                    if ($master) {
-                        $masterDuration = $master->duration;
-                    }
+                $master = Maestra::find($validatedData['master']);
+                if ($master) {
+                    $masterDuration = $master->duration_user;
                 }
             }
 
-            // 🔁 Guardar en adaptation_dates
             $articleCodes = json_decode($validatedData['article_code'], true);
             foreach ($articleCodes as $article) {
                 AdaptationDate::create([
                     'client_id'           => $validatedData['client_id'],
                     'factory_id'          => $validatedData['factory_id'],
                     'codart'              => $article['codart'],
-                    'number_order'        => $article['number_order'],
+                    'number_order'        => $validatedData['number_order'],
                     'orderNumber'         => $article['orderNumber'],
                     'deliveryDate'        => $article['deliveryDate'],
                     'quantityToProduce'   => $article['quantityToProduce'],
@@ -97,8 +109,20 @@ class AdaptationController extends Controller
                 ]);
             }
 
+            Consecutive_date::create([
+                'prefix'         => $prefix,
+                'year'           => $currentYear,
+                'month'          => $currentMonth,
+                'consecutive'    => $consecutive->consecutive,
+                'date'           => now()->toDateString(),
+                'user'           => $request->input('user', 'sistema'),
+                'adaptation_id'  => $adaptation->id,
+                'status'         => true,
+            ]);
+
             return response()->json([
                 'message'       => 'Adaptation saved successfully',
+                'number_order'  => $newNumberOrder,
                 'adaptation'    => $adaptation,
                 'article_files' => $articleAttachments,
             ], 201);
@@ -114,6 +138,8 @@ class AdaptationController extends Controller
             ], 500);
         }
     }
+
+
 
     public function getAdaptation(Request $request)
     {

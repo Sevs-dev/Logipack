@@ -29,11 +29,12 @@ export default function Login() {
 
       if (response.success) {
         const { token } = response.data.autorización;
-        const { email, role } = response.data.usuario;
+        const { email, role, name } = response.data.usuario;
 
         nookies.set(null, 'token', token, cookieOptions);
         nookies.set(null, 'email', email, cookieOptions);
         nookies.set(null, 'role', role, cookieOptions);
+        nookies.set(null, 'name', name, cookieOptions);
 
         router.push('/pages/dashboard');
       } else {

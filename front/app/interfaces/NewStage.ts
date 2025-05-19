@@ -2,7 +2,7 @@ export interface Stage {
     id: number;
     code: number;
     description: string;
-    phase_type: "Planeacion" | "Conciliación" | "Actividades";
+    phase_type: "Planeacion" | "Conciliación" | "Control" | "Actividades";
     repeat: boolean;
     repeat_minutes?: number;
     alert: boolean;
@@ -13,7 +13,7 @@ export interface Stage {
 
 export interface Data {
     description: string;
-    phase_type: "Planeacion" | "Conciliación" | "Actividades";
+    phase_type: "Planeacion" | "Conciliación" | "Control" | "Actividades";
     repeat: boolean;
     repeat_minutes?: number;
     alert: boolean;

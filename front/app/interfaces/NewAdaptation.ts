@@ -69,4 +69,5 @@ export interface Articles {
 export interface Plant {
   id: number;
   name: string;
+  prefix: string;
 }

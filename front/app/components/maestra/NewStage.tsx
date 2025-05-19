@@ -7,7 +7,7 @@ import { showError, showSuccess, showConfirm } from "../toastr/Toaster";
 import Table from "../table/Table";
 import Button from "../buttons/buttons";
 import { Stage, Data } from "../../interfaces/NewStage";
-const phases = ["Planeacion", "Conciliación", "Actividades"];
+const phases = ["Planeacion", "Conciliación", "Control", "Actividades"];
 import Text from "../text/Text";
 import { Search, Clock } from "lucide-react";
 
@@ -19,7 +19,7 @@ function NewStage() {
     const [description, setDescription] = useState("");
     const [duration, setDuration] = useState("");
     const [durationUser, setDurationUser] = useState("");
-    const [phaseType, setPhaseType] = useState<"Planeacion" | "Conciliación" | "Actividades">("Planeacion");
+    const [phaseType, setPhaseType] = useState<"Planeacion" | "Conciliación" | "Control" | "Actividades">("Planeacion");
     const [repeat, setRepeat] = useState(false);
     const [repeatMinutes, setRepeatMinutes] = useState("");
     const [alert, setAlert] = useState(false);
@@ -287,7 +287,7 @@ function NewStage() {
                                 <select
                                     value={phaseType}
                                     onChange={(e) =>
-                                        setPhaseType(e.target.value as "Planeacion" | "Conciliación" | "Actividades")
+                                        setPhaseType(e.target.value as "Planeacion" | "Conciliación" | "Control" |"Actividades")   
                                     }
                                     className="mt-1 w-full text-center p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 text-black"
                                 >

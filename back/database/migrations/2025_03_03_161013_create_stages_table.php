@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->integer('code')->unique(); // Código autoincrementado manualmente
             $table->string('description'); // Descripción de la fase
-            $table->enum('phase_type', ['Planeacion', 'Conciliación', 'Actividades']); // Tipo de fase
+            $table->enum('phase_type', ['Planeacion', 'Conciliación', 'Control', 'Actividades']); // Tipo de fase
             $table->json('activities')->nullable();
             $table->boolean('repeat')->default(false); // Indica si se repite
             $table->integer('repeat_minutes')->nullable(); // Minutos entre repeticiones

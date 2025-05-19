@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { motion } from "framer-motion";
+import { ClipboardCopy } from 'lucide-react';
 // 🔹 Servicios
 import { getClients, getClientsId } from "@/app/services/userDash/clientServices";
 import { getFactory, getFactoryId } from "@/app/services/userDash/factoryServices";
+import { getPrefix } from "@/app/services/consecutive/consecutiveServices";
 import { getArticleByCode, getArticleByClient } from "@/app/services/bom/articleServices";
 import { newAdaptation, getAdaptations, deleteAdaptation, updateAdaptation, getAdaptationsId } from "@/app/services/adaptation/adaptationServices";
 import { getMaestra } from "../../services/maestras/maestraServices";
@@ -24,6 +26,7 @@ function NewAdaptation() {
     const [selectedClient, setSelectedClient] = useState<string>("");
     const [plantas, setPlantas] = useState<Plant[]>([]);
     const [planta, setPlanta] = useState<string>('');
+    const [consecutivo, setConsecutivo] = useState<any>(null);
     const [client_order, setClientOrder] = useState<string>("");
     const [orderNumber, setOrderNumber] = useState<string>("");
     const [deliveryDate, setDeliveryDate] = useState<string>("");
@@ -47,171 +50,257 @@ function NewAdaptation() {
     const [isLoading, setIsLoading] = useState(false);
     const [articleFields, setArticleFields] = useState<Record<string, ArticleFormData>>({});
 
-    // Cargar clientes
+    // Cargar clientes al montar el componente
     useEffect(() => {
+        // Función asincrónica para obtener los clientes
         const fetchClients = async () => {
             try {
+                // Inicia el estado de carga
                 setIsLoading(true);
+                // Obtiene los datos de los clientes
                 const clientsData = await getClients();
-                setClients(clientsData);
+                setClients(clientsData); // Almacena los clientes en el estado
             } catch (error) {
+                // Muestra un error si algo falla al cargar los clientes
                 showError("Error al cargar los clientes.");
-                console.error(error);
+                console.error(error); // Muestra el error en consola para depuración
             } finally {
+                // Finaliza el estado de carga independientemente de si hubo error o no
                 setIsLoading(false);
             }
         };
+        // Llama a la función para cargar los clientes
         fetchClients();
-    }, []);
+    }, []); // Este efecto solo se ejecuta una vez cuando el componente se monta
 
+    // Cargar plantas (factories) al montar el componente
     useEffect(() => {
+        // Función asincrónica para obtener las plantas
         const fetchFactories = async () => {
             try {
+                // Inicia el estado de carga
                 setIsLoading(true);
-                const factoriesData: Plant[] = await getFactory(); // Asegurate de tipar esto
-                setPlantas(factoriesData);
+                // Obtiene los datos de las plantas
+                const factoriesData: Plant[] = await getFactory(); // Asegúrate de tipar correctamente la respuesta
+                setPlantas(factoriesData); // Almacena las plantas en el estado
             } catch (error) {
+                // Muestra un error si algo falla al cargar las plantas
                 showError("Error al cargar las plantas.");
-                console.error(error);
+                console.error(error); // Muestra el error en consola para depuración
             } finally {
+                // Finaliza el estado de carga independientemente de si hubo error o no
                 setIsLoading(false);
             }
         };
+        // Llama a la función para cargar las plantas
         fetchFactories();
-    }, []);
+    }, []); // Este efecto solo se ejecuta una vez cuando el componente se monta
 
+    // Maneja el cambio de planta seleccionada
+    const handlePlantaChange = async (value: string) => {
+        // Actualiza el estado de la planta seleccionada
+        setPlanta(value);
+        // Busca la planta seleccionada a partir de la lista de plantas
+        const selectedPlant = plantas.find(p => p.id.toString() === value);
+        // Si se encuentra la planta y tiene un prefijo, obtiene el consecutivo
+        if (selectedPlant && selectedPlant.prefix) {
+            try {
+                // Llama a la API para obtener el consecutivo con el prefijo de la planta
+                const response = await getPrefix(selectedPlant.prefix);
+                // Si la respuesta es válida y tiene consecutivos, establece el consecutivo
+                if (response && response.consecutives?.length > 0) {
+                    const cons = response.consecutives[0]; // Tomamos el primer consecutivo
+                    setConsecutivo(cons); // Establece el consecutivo
 
-    // Cargar Maestras
+                    // Arma el string del orden con el formato adecuado
+                    const formattedOrder = `${cons.prefix}-${cons.year}-${cons.month}-${cons.consecutive}`;
+                    setClientOrder(formattedOrder); // Establece el número de orden
+                }
+            } catch (error) {
+                // Muestra el error si algo falla al obtener el consecutivo
+                console.error("Error al obtener el consecutivo:", error);
+            }
+        }
+    };
+
+    // Copiar el número de orden al portapapeles
+    const copyToClipboard = () => {
+        // Si hay un número de orden, lo copia al portapapeles
+        if (client_order) {
+            navigator.clipboard.writeText(client_order); // Copia al portapapeles
+            showSuccess('Orden copiada al portapapeles'); // Muestra mensaje de éxito
+        }
+    };
+
+    // Cargar Maestras al montar el componente
     useEffect(() => {
+        // Función asincrónica para obtener las maestras
         const fetchMaestras = async () => {
             try {
+                // Inicia el estado de carga
                 setIsLoading(true);
+                // Obtiene los datos de las maestras
                 const maestrasData = await getMaestra();
-                setMaestra(maestrasData);
+                setMaestra(maestrasData); // Almacena las maestras en el estado
             } catch (error) {
+                // Muestra un error si algo falla al cargar las maestras
                 showError("Error al cargar las maestras.");
-                console.error(error);
+                console.error(error); // Muestra el error en consola para depuración
             } finally {
+                // Finaliza el estado de carga independientemente de si hubo error o no
                 setIsLoading(false);
             }
         };
-        fetchMaestras();
-    }, []);
 
-    // Cargar artículos disponibles basado en el cliente seleccionado
+        // Llama a la función para cargar las maestras
+        fetchMaestras();
+    }, []); // Este efecto solo se ejecuta una vez cuando el componente se monta
+
+    // Cargar artículos disponibles basados en el cliente seleccionado
     useEffect(() => {
+        // Si no se ha seleccionado un cliente, no hacer nada
         if (!selectedClient) return;
 
+        // Función asincrónica para obtener los artículos basados en el cliente
         const fetchArticles = async () => {
             try {
+                // Inicia el estado de carga
                 setIsLoading(true);
-                // 1. Obtener cliente por ID
+
+                // 1. Obtener datos del cliente por su ID
                 const clientData = await getClientsId(Number(selectedClient));
                 if (!clientData || !clientData.code) {
                     showError("Código de cliente no disponible.");
                     console.error("Error: clientData o clientData.code es inválido", clientData);
                     return;
                 }
+
                 // 2. Obtener artículos usando el código del cliente
                 const articlesData = await getArticleByCode(clientData.code);
-                setArticles(articlesData.data);
+                setArticles(articlesData.data); // Almacena los artículos en el estado
             } catch (error) {
+                // Muestra un error si algo falla al cargar los artículos
                 showError("Error al cargar los artículos.");
-                console.error("Error en fetchArticles:", error);
+                console.error("Error en fetchArticles:", error); // Muestra el error en consola para depuración
             } finally {
+                // Finaliza el estado de carga independientemente de si hubo error o no
                 setIsLoading(false);
             }
         };
-
+        // Llama a la función para cargar los artículos
         fetchArticles();
-    }, [selectedClient]);
+    }, [selectedClient]); // Este efecto depende de `selectedClient`, se ejecuta cada vez que cambia
 
     // Nuevo useEffect para asignar los artículos seleccionados cuando `articles` esté listo
     useEffect(() => {
+        // Si hay artículos disponibles y artículos seleccionados
         if (articles.length > 0 && selectedArticles.length > 0) {
+            // Filtra los artículos seleccionados de la lista de artículos disponibles
             const selectedArticlesFormatted = articles.filter(article =>
                 selectedArticles.some(selected => selected.codart === article.codart)
             );
+            // Solo actualiza los artículos seleccionados si hay cambios
             setSelectedArticles(prev =>
                 JSON.stringify(prev) !== JSON.stringify(selectedArticlesFormatted)
                     ? selectedArticlesFormatted
                     : prev
             );
         }
-    }, [articles]); // 👈 Elimina `selectedArticles` de las dependencias
+    }, [articles]); // 👈 Este efecto solo depende de `articles`, elimina `selectedArticles` de las dependencias
 
-    //Cargar Bom
+    // Cargar BOM (Bill of Materials) si el cliente y las maestras son válidas
     useEffect(() => {
+        // Si no hay cliente seleccionado o no hay maestras, no hacer nada
+        if (!selectedClient || selectedMaestras.length === 0) return;
+        // Busca la maestra seleccionada
+        const selectedMaestraObj = maestra.find(
+            (m) => m.id.toString() === selectedMaestras[0]
+        );
+        // Si la maestra no requiere BOM, limpia las listas de BOM e ingredientes
+        if (!selectedMaestraObj?.requiere_bom) {
+            setBoms([]); // Limpia los BOMs
+            setIngredients([]); // Limpia los ingredientes
+            return;
+        }
+        // Función asincrónica para obtener los BOM e ingredientes
         const fetchBom = async () => {
-            if (!selectedClient || selectedMaestras.length === 0) return;
-
-            const selectedMaestraObj = maestra.find(
-                (m) => m.id.toString() === selectedMaestras[0]
-            );
-
-            if (!selectedMaestraObj?.requiere_bom) {
-                setBoms([]);
-                setIngredients([]);
-                return;
-            }
-
             try {
+                // Obtiene los datos del cliente por su ID
                 const clientData = await getClientsId(Number(selectedClient));
+                // Obtiene los datos del BOM usando el ID del cliente
                 const bomData = await getArticleByClient(clientData.id);
-
+                // Si hay BOMs disponibles, los almacena en el estado
                 if (bomData?.boms?.length > 0) {
                     setBoms(bomData.boms);
-
+                    // Procesa los ingredientes del primer BOM
                     const ingredientsJSON = bomData.boms[0].ingredients;
                     const parsedIngredients: Ingredient[] = JSON.parse(ingredientsJSON);
 
-                    setIngredients(parsedIngredients); // sin teorica aún
+                    setIngredients(parsedIngredients); // Almacena los ingredientes en el estado
                 } else {
-                    setBoms([]);
-                    setIngredients([]);
+                    setBoms([]); // Limpia los BOMs si no hay datos
+                    setIngredients([]); // Limpia los ingredientes si no hay datos
                 }
             } catch (error) {
+                // Muestra un error si algo falla al obtener los BOMs o ingredientes
                 console.error("Error al obtener los BOMs", error);
-                setBoms([]);
-                setIngredients([]);
+                setBoms([]); // Limpia los BOMs en caso de error
+                setIngredients([]); // Limpia los ingredientes en caso de error
             }
         };
-
+        // Llama a la función para cargar los BOMs y los ingredientes
         fetchBom();
-    }, [selectedClient, selectedMaestras, maestra]);
+    }, [selectedClient, selectedMaestras, maestra]); // Este efecto depende de `selectedClient`, `selectedMaestras`, y `maestra`
 
+    // Efecto que recalcula la cantidad teórica de ingredientes cada vez que cambia `quantityToProduce`
     useEffect(() => {
+        // Si no hay cantidad a producir o si los ingredientes están vacíos, salimos del efecto
         if (quantityToProduce != "") {
+            // Convierte la cantidad a producir a un número
             const quantityToProduceNumber = Number(quantityToProduce);
-            if (!ingredients.length || isNaN(quantityToProduceNumber)) return;
 
+            // Si no hay ingredientes o la cantidad no es un número válido, no se hace nada
+            if (!ingredients.length || isNaN(quantityToProduceNumber)) return;
+            // Recalcular la cantidad teórica de cada ingrediente
             const recalculated = ingredients.map((ing) => {
-                const merma = parseFloat(ing.merma);
+                const merma = parseFloat(ing.merma); // Convierte la merma a un número decimal
+                // Calcula la cantidad teórica por unidad, considerando la merma
                 const teoricaPorUnidad = quantityToProduceNumber + quantityToProduceNumber * merma;
+                // Redondea a 4 decimales
                 const teoricaCalculada = (teoricaPorUnidad).toFixed(4);
+                // Devuelve el ingrediente con la cantidad teórica recalculada
                 return {
                     ...ing,
                     teorica: teoricaCalculada,
                 };
             });
-
+            // Actualiza el estado de los ingredientes con los valores recalculados
             setIngredients(recalculated);
         }
-    }, [quantityToProduce]);
+    }, [quantityToProduce]); // Este efecto se ejecuta cada vez que cambia `quantityToProduce`
 
+    // UseMemo para obtener la maestra seleccionada, solo se recalcula si cambian `selectedMaestras` o `maestra`
     const maestraSeleccionada = useMemo(() => {
+        // Busca la maestra cuyo ID coincida con el seleccionado
         return maestra.find(m => m.id.toString() === selectedMaestras[0]);
     }, [selectedMaestras, maestra]);
 
-    const maestraRequiereBOM = maestraSeleccionada?.requiere_bom ?? false;
+    // Verifica si la maestra seleccionada requiere BOM (Bill of Materials)
+    const maestraRequiereBOM = maestraSeleccionada?.requiere_bom ?? false; // Default a `false` si no está definida
 
+    // Función para manejar los cambios en los campos de los ingredientes
     const handleChange = (index: number, field: keyof Ingredient, value: string): void => {
+        // Crea una copia del array de ingredientes
         const updated: Ingredient[] = [...ingredients];
+        // Actualiza el campo específico del ingrediente en la posición indicada
         updated[index][field] = value;
+        // Establece los ingredientes actualizados en el estado
         setIngredients(updated);
     };
 
+    // Función para manejar los cambios en los campos de los artículos (utilizado por cada `codart`)
     const handleFieldChange = (codart: string, field: keyof ArticleFormData, value: any) => {
+        // Actualiza el estado de los campos del artículo según el `codart` y el campo específico
         setArticleFields(prev => ({
             ...prev,
             [codart]: {
@@ -224,19 +313,25 @@ function NewAdaptation() {
     // Función para cargar adaptaciones
     const fetchAdaptations = async () => {
         try {
+            // Obtenemos las adaptaciones del backend
             const { adaptations }: { adaptations: Adaptation[] } = await getAdaptations();
+
+            // Procesamos cada adaptación para obtener más detalles (como el nombre del cliente)
             const adapData: Adaptation[] = await Promise.all(
                 adaptations.map(async (adaptation) => {
-                    const clientData = await getClientsId(adaptation.client_id);
+                    const clientData = await getClientsId(adaptation.client_id); // Obtenemos los datos del cliente
                     return {
                         ...adaptation,
-                        client_name: clientData.name,
-                        numberOrder: clientData.number_order,
+                        client_name: clientData.name, // Agregamos el nombre del cliente
+                        numberOrder: clientData.number_order, // Agregamos el número de orden del cliente
                     };
                 })
             );
+
+            // Guardamos las adaptaciones procesadas en el estado
             setAdaptation(adapData);
         } catch (error) {
+            // Si ocurre un error, mostramos un mensaje de error
             showError("Error al cargar adaptaciones.");
             console.error(error);
         }
@@ -244,10 +339,12 @@ function NewAdaptation() {
 
     // Ejecutar al montar el componente
     useEffect(() => {
-        fetchAdaptations();
+        fetchAdaptations(); // Llamamos a la función para cargar las adaptaciones
     }, []);
 
+    // Manejo del envío del formulario
     const handleSubmit = async () => {
+        // Validaciones para asegurarse de que todos los campos estén completos
         if (!selectedClient) {
             showError("Por favor, selecciona un Cliente.");
             return;
@@ -256,12 +353,28 @@ function NewAdaptation() {
             showError("Por favor, selecciona una Planta.");
             return;
         }
+        if (!selectedArticles.length) {
+            showError("Por favor, selecciona al menos un artículo.");
+            return;
+        }
+        if (!selectedMaestras.length) {
+            showError("Por favor, selecciona al menos una Maestra.");
+            return;
+        }
+
+        // Inicializamos el objeto que contendrá los datos de los artículos
         let articlesData;
         if (maestraRequiereBOM) {
+            // Si la maestra requiere BOM, validamos los campos específicos
             if (!orderNumber) {
                 showError("Por favor, ingresa el número de orden.");
                 return;
             }
+            if (!deliveryDate || !quantityToProduce || !lot || !healthRegistration) {
+                showError("Por favor, completa todos los campos del artículo.");
+                return;
+            }
+            // Creamos los datos del artículo con la información obtenida
             articlesData = [
                 {
                     codart: selectedArticles[0]?.codart || "",
@@ -274,43 +387,52 @@ function NewAdaptation() {
                 },
             ];
         } else {
-            articlesData = selectedArticles
-                .map((article) => {
-                    const fields = articleFields[article.codart] || {};
-                    if (!fields.orderNumber) {
-                        showError("Por favor, ingresa el número de orden.");
-                        return;
-                    }
-                    return {
-                        codart: article.codart,
-                        number_order: fields.numberOrder || "",
-                        orderNumber: fields.orderNumber || "",
-                        deliveryDate: fields.deliveryDate || "",
-                        quantityToProduce: fields.quantityToProduce || 0,
-                        lot: fields.lot || "",
-                        healthRegistration: fields.healthRegistration || "",
-                    };
-                })
-                .filter(Boolean);
+            // Si no requiere BOM, verificamos que todos los artículos tengan los campos completos
+            const hasErrors = selectedArticles.some((article) => {
+                const fields = articleFields[article.codart] || {};
+                if (
+                    !fields.orderNumber ||
+                    !fields.numberOrder ||
+                    !fields.deliveryDate ||
+                    !fields.quantityToProduce ||
+                    !fields.lot ||
+                    !fields.healthRegistration
+                ) {
+                    showError(`Faltan datos en el artículo ${article.codart}.`);
+                    return true;
+                }
+                return false;
+            });
+            if (hasErrors) return;
+            // Creamos los datos de los artículos
+            articlesData = selectedArticles.map((article) => {
+                const fields = articleFields[article.codart];
+                return {
+                    codart: article.codart,
+                    number_order: fields.numberOrder,
+                    orderNumber: fields.orderNumber,
+                    deliveryDate: fields.deliveryDate,
+                    quantityToProduce: fields.quantityToProduce,
+                    lot: fields.lot,
+                    healthRegistration: fields.healthRegistration,
+                };
+            });
         }
-
+        // Preparamos el FormData para enviar al backend
         const formData = new FormData();
         formData.append("client_id", selectedClient.toString());
-        formData.append("plant_id", planta);
+        formData.append("factory_id", planta.toString());
         formData.append("article_code", JSON.stringify(articlesData));
         formData.append("number_order", client_order);
-        formData.append("master", JSON.stringify(selectedMaestras));
-        formData.append("bom", JSON.stringify(selectedBom) || "");
+        formData.append("master", selectedMaestras.toString());
+        formData.append("bom", selectedBom.toString() || "");
         formData.append("ingredients", JSON.stringify(ingredients));
-
-        // ✅ Archivos adjuntos
+        // Adjuntamos los archivos si es necesario
         if (maestraRequiereBOM) {
             if (attachment) {
-                // Solo uno, va plano
                 formData.append("attachment", attachment);
             }
         } else {
-            // Varios artículos => varios adjuntos
             selectedArticles.forEach((article) => {
                 const file = articleFields[article.codart]?.attachment;
                 if (file) {
@@ -318,89 +440,87 @@ function NewAdaptation() {
                 }
             });
         }
+        // Mostramos los datos que se van a enviar (solo para depuración)
+        // console.log("🧾 Datos a guardar:", {
+        //     client_id: selectedClient,
+        //     plant_id: planta,
+        //     article_code: articlesData,
+        //     number_order: client_order,
+        //     master: selectedMaestras,
+        //     bom: selectedBom,
+        //     ingredients,
+        // });
+        // Intentamos guardar los datos en el backend
         try {
-            setIsLoading(true);
+            setIsLoading(true); // Indicamos que la carga está en progreso
             if (isEditMode) {
+                // Si estamos en modo edición, actualizamos la adaptación
                 await updateAdaptation(editAdaptationId!, formData);
-
-                console.log("Adaptation:", formData);
                 showSuccess("Acondicionamiento actualizado.");
             } else {
+                // Si estamos creando una nueva adaptación, la guardamos
                 await newAdaptation(formData);
                 showSuccess("Acondicionamiento creado.");
             }
-            resetForm();
-            setIsOpen(false);
+            resetForm(); // Reiniciamos el formulario
+            setIsOpen(false); // Cerramos el modal
             const { adaptations } = await getAdaptations();
-            setAdaptation(adaptations);
-            fetchAdaptations();
+            setAdaptation(adaptations); // Refrescamos la lista de adaptaciones
+            fetchAdaptations(); // Llamamos de nuevo a fetchAdaptations para asegurar que esté actualizada
         } catch (error: any) {
+            // Si ocurre un error al guardar, mostramos un mensaje de error
             showError("Error al guardar.");
             console.error("🔥 Error completo:", error);
             if (error?.response) {
+                // Mostramos detalles específicos del error
                 console.error("🧠 Respuesta del servidor:", error.response.data);
+                const details = error.response.data?.details;
+                if (details && typeof details === 'object') {
+                    Object.entries(details).forEach(([key, value]) => {
+                        console.error(`❌ Error en "${key}":`, value);
+                    });
+                }
             } else {
                 console.error("💥 Error sin respuesta del servidor:", error.message);
             }
-        }
-        finally {
+        } finally {
+            // Independientemente del resultado, apagamos el indicador de carga
             setIsLoading(false);
         }
     };
 
-    // 👉 Al principio de tu componente, antes de handleEdit:
+    // Función para formatear las fechas a formato YYYY-MM-DD
     const formatDate = (dateString: string): string => {
         const dt = new Date(dateString);
-        if (isNaN(dt.getTime())) return "";
-        return dt.toISOString().slice(0, 10); // YYYY‑MM‑DD
+        if (isNaN(dt.getTime())) return ""; // Si la fecha es inválida, devolvemos una cadena vacía
+        return dt.toISOString().slice(0, 10); // Devolvemos la fecha en formato YYYY-MM-DD
     };
 
+    // Función para cargar los datos de una adaptación para editarla
     const handleEdit = async (id: number) => {
         try {
+            // Obtenemos los datos de la adaptación a editar
             const response = await getAdaptationsId(id);
             const adaptation = response.adaptation;
             if (!adaptation) {
                 showError("La adaptación no existe");
                 return;
             }
-
+            // Configuramos el formulario en modo edición
             setIsEditMode(true);
             setEditAdaptationId(id);
-
-            // — Cliente
             setSelectedClient(adaptation.client_id.toString());
-            setPlanta(adaptation.plant_id.toString());
-
-            // — Master(s)
-            const masterParsed = typeof adaptation.master === "string"
-                ? JSON.parse(adaptation.master)
-                : adaptation.master;
-            setSelectedMaestras(Array.isArray(masterParsed)
-                ? masterParsed.map((m) => m.toString())
-                : []
-            );
-
-            // — BOM
-            let bomParsed: string | number = "";
-            if (typeof adaptation.bom === "string") {
-                try {
-                    bomParsed = JSON.parse(adaptation.bom);
-                } catch {
-                    bomParsed = adaptation.bom;
-                }
-            } else {
-                bomParsed = adaptation.bom;
-            }
-            setSelectedBom(bomParsed === "" ? "" : Number(bomParsed));
-
-            // — Artículos parseados
+            setPlanta(adaptation.factory_id?.toString() ?? ""); 
+            setSelectedMaestras(adaptation.master.toString()); 
+            setSelectedBom(adaptation.bom.toString());
+            // Procesamos los artículos
             const parsedArticles = adaptation.article_code
                 ? JSON.parse(adaptation.article_code)
                 : [];
             setSelectedArticles(parsedArticles.map((a: any) => ({ codart: a.codart })));
+            // Procesamos los campos específicos del artículo si es necesario
             setClientOrder(adaptation.number_order || "");
-            if (bomParsed !== "") {
-                // 🚀 Rama “requiere BOM”: un solo artículo “general”
+            if (adaptation.bom.toString() !== "") {
                 const general = parsedArticles[0] || {};
                 setOrderNumber(general.orderNumber ?? "");
                 setClientOrder(general.client_order ?? adaptation.number_order ?? "");
@@ -412,9 +532,8 @@ function NewAdaptation() {
                 setAttachmentUrl(
                     general.attachment ? `/storage/${general.attachment}` : null
                 );
-                setArticleFields({}); // limpio campos por artículo
+                setArticleFields({});
             } else {
-                // 📝 Rama “sin BOM”: campos por cada codart
                 const fieldsMap: Record<string, ArticleFormData> = {};
                 parsedArticles.forEach((a: any) => {
                     fieldsMap[a.codart] = {
@@ -429,8 +548,7 @@ function NewAdaptation() {
                 });
                 setArticleFields(fieldsMap);
             }
-
-            // — Ingredientes
+            // Procesamos los ingredientes si existen
             if (adaptation.ingredients) {
                 try {
                     const parsedIng = JSON.parse(adaptation.ingredients).map((ing: any) => ({
@@ -443,55 +561,55 @@ function NewAdaptation() {
                     setIngredients(parsedIng);
                 } catch (e) {
                     console.error("Error al parsear ingredientes:", e);
-                    setIngredients([]);
+                    setIngredients([]); // Si ocurre un error al parsear los ingredientes, los dejamos vacíos
                 }
             } else {
-                setIngredients([]);
+                setIngredients([]); // Si no hay ingredientes, lo dejamos vacío
             }
-
-            // ✨ Abro modal y refresco tabla
-            setIsOpen(true);
-            fetchAdaptations();
+            setIsOpen(true); // Abrimos el modal para edición
         } catch (error) {
-            showError("Error al cargar los datos");
+            // Si hay algún error en el proceso de edición, lo mostramos
+            showError("Error al cargar la adaptación.");
             console.error(error);
         }
     };
 
-    //Handle de eliminacion
+    // Manejo de la eliminación de una adaptación
     const handleDelete = async (id: number) => {
-        showConfirm("¿Estás seguro de eliminar este Acondicionamiento?", async () => {
+        const confirmDelete = window.confirm("¿Estás seguro de que deseas eliminar esta adaptación?");
+        if (confirmDelete) {
             try {
-                await deleteAdaptation(id);
-                setMaestra((prevMachine) => prevMachine.filter((machine) => machine.id !== id));
-                showSuccess("Acondicionamiento eliminado exitosamente");
-                fetchAdaptations(); // Refrescar la lista
+                await deleteAdaptation(id); // Llamamos a la función para eliminar la adaptación
+                setAdaptation(adaptation.filter((item) => item.id !== id)); // Actualizamos el estado para reflejar la eliminación
             } catch (error) {
-                console.error("Error al eliminar Acondicionamiento:", error);
-                showError("Error al eliminar Acondicionamiento");
+                // Si ocurre un error al eliminar, mostramos un mensaje de error
+                showError("Error al eliminar la adaptación.");
+                console.error(error);
             }
-        });
-    }
+        }
+    };
 
     // Resetear el formulario
-    const resetForm = useCallback(() => {
+    const resetForm = () => {
         setSelectedClient("");
         setPlanta("");
-        setOrderNumber("");
         setClientOrder("");
+        setSelectedArticles([]);
+        setSelectedMaestras([]);
+        setSelectedBom("");
+        setOrderNumber("");
         setDeliveryDate("");
+        setQuantityToProduce("");
         setLot("");
         setHealthRegistration("");
-        setQuantityToProduce("");
-        setSelectedMaestras([]);
-        setSelectedArticles([]);
-        setBomData(null);
-        setSelectedBom("");
         setAttachment(null);
         setIngredients([]);
-        setIsEditMode(false);
-        setEditAdaptationId(null);
-    }, []);
+    };
+
+    const visualOrder = client_order.replace(/(\d{7})$/, (match) =>
+        String(parseInt(match) + 1).padStart(7, '0')
+    );
+
 
     return (
         <div>
@@ -537,7 +655,7 @@ function NewAdaptation() {
                                         <select
                                             className="w-full border p-3 rounded-lg text-gray-800 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500 text-center"
                                             value={planta}
-                                            onChange={e => setPlanta(e.target.value)}
+                                            onChange={e => handlePlantaChange(e.target.value)}
                                         >
                                             <option value="">Seleccione...</option>
                                             {plantas.map((plant) => (
@@ -546,7 +664,6 @@ function NewAdaptation() {
                                                 </option>
                                             ))}
                                         </select>
-
                                     </div>
 
                                     <div className="w-1/2">
@@ -567,21 +684,54 @@ function NewAdaptation() {
                                             ))}
                                         </select>
                                     </div>
-                                    <div className="w-1/2">
-                                        <Text type="subtitle">Orden:</Text>
-                                        <input
-                                            type="text"
-                                            className="w-full border p-3 rounded-lg text-gray-800 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500 text-center"
-                                            value={client_order}
-                                            onChange={e => setClientOrder(e.target.value)}
-                                        />
+                                    <div className="w-1/2 relative group">
+                                        {/* Label con mejor espaciado */}
+                                        <Text type="subtitle">
+                                            Orden:
+                                        </Text>
+
+                                        {/* Contenedor para input y botón */}
+                                        <div className="relative">
+                                            {/* Input mejorado */}
+                                            <input
+                                                type="text"
+                                                value={visualOrder}
+                                                readOnly
+                                                className="w-full border border-gray-300 rounded-lg shadow-sm py-3 px-4 text-gray-800 bg-gray-50 
+                                                mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 
+                                                text-center pr-12 transition-all duration-200 ease-in-out
+                                                cursor-not-allowed"
+                                                onCopy={e => e.preventDefault()}
+                                                onPaste={e => e.preventDefault()}
+                                                onCut={e => e.preventDefault()}
+                                                aria-readonly="true"
+                                            />
+
+                                            {/* Botón con tooltip y mejor posicionamiento */}
+                                            <button
+                                                type="button"
+                                                onClick={copyToClipboard}
+                                                className="absolute top-1/2 right-3 transform -translate-y-1/2 
+                                                text-gray-400 hover:text-blue-600 transition-colors duration-200 
+                                                focus:outline-none focus:ring-2 focus:ring-blue-500 rounded-full p-1"
+                                                title="Copiar al portapapeles"
+                                            >
+                                                <ClipboardCopy size={20} />
+                                                {/* Tooltip opcional */}
+                                                <span className="absolute hidden group-hover:block -top-8 right-0 
+                                                    bg-gray-800 text-white text-xs rounded py-1 px-2 whitespace-nowrap">
+                                                    Copiar
+                                                </span>
+                                            </button>
+                                        </div>
                                     </div>
+
                                 </div>
                             </div>
 
                             {/* Maestras y BOM*/}
                             <div
-                                className={`col-span-full grid grid-cols-1 ${maestraRequiereBOM ? "sm:grid-cols-2" : "lg:grid-cols-1"
+                                className={`col-span-full grid grid-cols-1 ${maestraRequiereBOM ? "sm:grid-cols-3" : "lg:grid-cols-1"
                                     } gap-4`}
                             >
                                 {/* Select de Maestras */}
@@ -610,8 +760,26 @@ function NewAdaptation() {
                                     <div>
                                         <Text type="subtitle">BOM:</Text>
                                         <select
-                                            className="w-full border p-3 rounded-lg text-gray-800 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500   text-center"
-                                            onChange={(e) => setSelectedBom(Number(e.target.value))}
+                                            className="w-full border p-3 rounded-lg text-gray-800 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500 text-center"
+                                            onChange={(e) => {
+                                                const selectedBomId = Number(e.target.value);
+                                                setSelectedBom(selectedBomId);
+
+                                                const bom = boms.find((b) => b.id === selectedBomId);
+                                                const codart = JSON.parse(bom?.code_details || "{}")?.codart;
+
+                                                if (codart) {
+                                                    const matchingArticle = articles.find((a) => a.codart === codart);
+                                                    if (matchingArticle) {
+                                                        setSelectedArticles([matchingArticle]);
+                                                    } else {
+                                                        showError("No se encontró un artículo que coincida con el BOM.");
+                                                        setSelectedArticles([]);
+                                                    }
+                                                } else {
+                                                    setSelectedArticles([]);
+                                                }
+                                            }}
                                             value={selectedBom || ""}
                                         >
                                             <option value="">Seleccione un BOM...</option>
@@ -627,36 +795,76 @@ function NewAdaptation() {
                                         </select>
                                     </div>
                                 )}
-                            </div>
+                                {/* MultiSelect Articulos*/}
+                                <div>
+                                    <Text type="subtitle">Artículos:</Text>
+                                    {maestraRequiereBOM ? (
+                                        <select
+                                            className="w-full border p-3 rounded-lg text-gray-800 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500 text-center"
+                                            onChange={(e) => {
+                                                const selectedBomId = Number(e.target.value);
+                                                setSelectedBom(selectedBomId);
+                                                const bom = boms.find(b => b.id === selectedBomId);
+                                                let codart = "";
+                                                try {
+                                                    if (bom?.code_details) {
+                                                        const parsed = JSON.parse(bom.code_details);
+                                                        codart = parsed?.codart || "";
+                                                        console.log("🧩 code_details parseado:", parsed);
+                                                    } else {
+                                                        console.warn("⚠️ BOM sin code_details o está vacío:", bom);
+                                                    }
+                                                } catch (error) {
+                                                    console.error("❌ Error al parsear code_details:", bom?.code_details, error);
+                                                }
 
-                            {/* MultiSelect Articulos*/}
-                            <div className="col-span-full">
-                                <Text type="subtitle">Artículos:</Text>
-                                {maestraRequiereBOM ? (
-                                    <select
-                                        className="w-full rounded-md border px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-black text-center"
-                                        value={selectedArticles[0]?.codart ?? ""}
-                                        onChange={(e) => {
-                                            const selected = articles.find(article => article.codart === e.target.value);
-                                            if (selected) setSelectedArticles([selected]);
-                                        }}
-                                    >
-                                        <option value="" disabled>Selecciona un artículo</option>
-                                        {articles.map((article) => (
-                                            <option key={article.codart} value={article.codart}>
-                                                {article.codart}
-                                            </option>
-                                        ))}
-                                    </select>
-                                ) : (
-                                    <MultiSelect
-                                        options={articles}
-                                        selected={selectedArticles}
-                                        onChange={setSelectedArticles}
-                                        getLabel={(article) => article.codart}
-                                        getValue={(article) => article.codart}
-                                    />
-                                )}
+                                                if (codart) {
+                                                    const matchingArticle = articles.find(a => a.codart === codart);
+                                                    if (matchingArticle) {
+                                                        console.log("✅ Artículo asociado al BOM:", matchingArticle);
+                                                        setSelectedArticles([matchingArticle]);
+                                                    } else {
+                                                        console.warn("❗ codart no coincide con ningún artículo:", codart);
+                                                    }
+                                                } else {
+                                                    console.warn("❌ codart vacío tras parsear el BOM");
+                                                }
+                                            }}
+                                            value={selectedBom || ""}
+                                        >
+                                            <option value="">Seleccione un BOM...</option>
+                                            {Array.isArray(boms) && boms.length > 0 ? (
+                                                boms.map((bom) => {
+                                                    let label = "Sin código";
+                                                    try {
+                                                        const parsed = JSON.parse(bom.code_details || "{}");
+                                                        label = parsed?.codart || "Sin código";
+                                                    } catch {
+                                                        console.warn("❌ BOM con code_details inválido:", bom.code_details);
+                                                    }
+
+                                                    return (
+                                                        <option key={bom.id} value={bom.id}>
+                                                            {label}
+                                                        </option>
+                                                    );
+                                                })
+                                            ) : (
+                                                <option disabled>No hay BOMs disponibles</option>
+                                            )}
+                                        </select>
+
+
+                                    ) : (
+                                        <MultiSelect
+                                            options={articles}
+                                            selected={selectedArticles}
+                                            onChange={setSelectedArticles}
+                                            getLabel={(article) => article.codart}
+                                            getValue={(article) => article.codart}
+                                        />
+                                    )}
+                                </div>
                             </div>
 
                             {/* Campos en grid responsivo */}
@@ -814,13 +1022,13 @@ function NewAdaptation() {
                                                         <td className="border border-black p-2 text-center">{ing.codart}</td>
                                                         <td className="border border-black p-2 text-center">{ing.desart}</td>
                                                         <td className="border border-black p-2 text-center">
-                                                            {(Number(ing.merma) * 100).toFixed(2)}%
+                                                            {(Number(ing.merma) * 100).toFixed(0)}%
                                                         </td>
                                                         <td className="border border-black p-2 text-center">
                                                             <input
                                                                 type="number"
                                                                 className="text-black p-1 border border-gray-300 rounded text-center"
-                                                                value={ing.teorica}
+                                                                value={Number(ing.teorica).toFixed(2)}
                                                                 onChange={(e) => handleChange(index, "teorica", e.target.value)}
                                                             />
                                                         </td>

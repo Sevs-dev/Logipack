@@ -15,6 +15,8 @@ return new class extends Migration
             $table->id();
             $table->foreignId('client_id')->constrained('clients');
             $table->foreignId('factory_id')->constrained('factories'); 
+            $table->foreignId('master')->constrained('factories'); 
+            $table->foreignId('bom')->constrained('factories'); 
 
             // Los campos que vienen dentro de cada article_code
             $table->string('number_order')->nullable();
@@ -25,11 +27,9 @@ return new class extends Migration
             $table->string('lot');
             $table->string('healthRegistration');
 
-            // Lo demás
-            $table->json('master');
-            $table->json('bom')->nullable();
+            // Lo demás 
             $table->json('ingredients')->nullable();
-            $table->foreignId('adaptation_id')->nullable()->constrained('adaptations');
+            $table->foreignId('adaptation_id')->nullable()->constrained('adaptations'); 
             $table->string('status_dates')->default("En Creación");
             $table->string('factory')->nullable();
             $table->string('line')->nullable();
@@ -40,6 +40,10 @@ return new class extends Migration
             $table->string('duration')->nullable();
             $table->dateTime('start_date')->nullable();
             $table->dateTime('end_date')->nullable();
+            $table->boolean('clock')->default(true);
+            $table->boolean('pause')->default(true);
+            $table->boolean('finish_notificade')->default(true);
+            $table->boolean('out')->default(true);
             $table->timestamps();
         });
     }

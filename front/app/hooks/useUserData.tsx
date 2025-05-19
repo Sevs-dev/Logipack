@@ -1,8 +1,15 @@
-import { useState, useEffect } from "react";
-import { useAuth } from '../hooks/useAuth';
-import { getUserByEmail } from '../services/userDash/authservices';
+"use client";
+import { useState, useEffect, useCallback } from "react";
+import { useAuth } from "../hooks/useAuth";
+import { getUserByEmail } from "../services/userDash/authservices";
 import nookies from "nookies";
 import { useRouter } from "next/navigation";
+
+type User = {
+    id: number;
+    name: string;
+    // agrega más campos si los necesitas
+};
 
 const useUserData = () => {
     const { isAuthenticated } = useAuth();
@@ -10,27 +17,32 @@ const useUserData = () => {
     const [loading, setLoading] = useState(true);
     const router = useRouter();
 
+    const redirectToNoneUser = useCallback(() => {
+        router.push("/pages/noneUser");
+    }, [router]);
+
     useEffect(() => {
         const fetchUserData = async () => {
-            setLoading(true);
             try {
                 const cookies = nookies.get(null);
                 const email = cookies.email;
 
-                if (email) {
-                    const decodedEmail = decodeURIComponent(email);
-                    const user = await getUserByEmail(decodedEmail);
-                    if (user?.usuario) {
-                        setUserName(user.usuario.name);
-                    } else {
-                        router.push("/pages/noneUser");
-                    }
+                if (!email) {
+                    redirectToNoneUser();
+                    return;
+                }
+
+                const userResponse = await getUserByEmail(email);
+                const name = userResponse?.usuario?.name;
+
+                if (name) {
+                    setUserName(name);
                 } else {
-                    router.push("/pages/noneUser");
+                    redirectToNoneUser();
                 }
             } catch (error) {
                 console.error("Error fetching user:", error);
-                router.push("/pages/noneUser");
+                redirectToNoneUser();
             } finally {
                 setLoading(false);
             }
@@ -38,8 +50,10 @@ const useUserData = () => {
 
         if (isAuthenticated) {
             fetchUserData();
+        } else {
+            setLoading(false); // importante evitar loading infinito si no está autenticado
         }
-    }, [isAuthenticated, router]);
+    }, [isAuthenticated, redirectToNoneUser]);
 
     return { userName, loading };
 };

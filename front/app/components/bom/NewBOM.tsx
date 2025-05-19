@@ -1,6 +1,6 @@
 // React y librerías externas
 import React, { useState, useEffect, useMemo } from "react";
-import { motion } from "framer-motion"; 
+import { motion } from "framer-motion";
 // Componentes locales
 import Button from "../buttons/buttons";
 import Text from "../text/Text";
@@ -36,34 +36,33 @@ function BOMManager() {
                 article.codart.toLowerCase().includes(searchTerm.toLowerCase())
         );
     }, [articles, searchTerm]);
- 
-    // Cargar clientes 
+
+    // Cargar clientes al montar el componente
     useEffect(() => {
         const fetchClients = async () => {
             try {
-                const clientsData = await getClients();
-                setClients(clientsData);
+                const clientsData = await getClients(); // Obtener todos los clientes desde el servicio
+                setClients(clientsData); // Guardar en el estado
             } catch (error) {
-                showError("Error al cargar los clientes.");
+                showError("Error al cargar los clientes."); // Mostrar error si falla
                 console.error(error);
             }
         };
-        fetchClients();
+        fetchClients(); // Ejecutar función al montar
     }, []);
- 
-    // Cargar BOMs y asociar cliente/artículo 
+
+    // Cargar BOMs y asociar nombre del cliente y datos del artículo
     const fetchBOMs = async () => {
         try {
-            const data = await getBoms();
+            const data = await getBoms(); // Obtener todos los BOMs
             const bomsData: Bom[] = data.boms;
-
+            // Enriquecer cada BOM con datos del cliente y artículo
             const bomsWithExtra: BomView[] = await Promise.all(
                 bomsData.map(async (bom) => {
-                    const clientData = await getClientsId(bom.client_id);
-
+                    const clientData = await getClientsId(bom.client_id); // Obtener cliente asociado
                     let article_codart = "";
                     let article_desart = "";
-
+                    // Parsear detalles del artículo si existen
                     if (bom.details) {
                         try {
                             const detailsObj = JSON.parse(bom.details);
@@ -72,10 +71,9 @@ function BOMManager() {
                                 article_desart = detailsObj.article.desart || "";
                             }
                         } catch (error) {
-                            console.error("Error parseando details:", error);
+                            console.error("Error parseando details:", error); // Error de parseo
                         }
                     }
-
                     return {
                         ...bom,
                         client_name: clientData.name,
@@ -84,8 +82,7 @@ function BOMManager() {
                     };
                 })
             );
-
-            setBoms(bomsWithExtra);
+            setBoms(bomsWithExtra); // Guardar los BOMs enriquecidos
         } catch (error) {
             showError("Error al cargar los BOMs.");
             console.error(error);
@@ -93,28 +90,26 @@ function BOMManager() {
     };
 
     useEffect(() => {
-        fetchBOMs();
+        fetchBOMs(); // Ejecutar al montar
     }, []);
- 
-    // Cargar datos para edición 
+
+    // Cargar datos para edición si se abre el modal y hay un BOM seleccionado
     useEffect(() => {
         if (currentBomId && isModalOpen) {
             (async () => {
                 try {
-                    const data = await getArticlesId(currentBomId);
+                    const data = await getArticlesId(currentBomId); // Obtener BOM específico
                     const bom = data.bom;
                     const clientData = await getClientsId(bom.client_id);
-
+                    // Llenar formulario con datos existentes
                     setSelectedClient(clientData.id.toString());
                     setBaseQuantity(Number(bom.base_quantity));
                     setBomStatus(bom.status);
-
                     const articleData =
                         bom.details && bom.details !== "undefined" && bom.details !== null
                             ? JSON.parse(bom.details).article
                             : null;
                     setSelectedArticle(articleData);
-
                     const ingr =
                         bom.ingredients && bom.ingredients !== "undefined" && bom.ingredients !== null
                             ? JSON.parse(bom.ingredients)
@@ -127,26 +122,23 @@ function BOMManager() {
             })();
         }
     }, [currentBomId, isModalOpen]);
- 
-    // Cargar artículos por cliente 
+
+    // Cargar artículos según el cliente seleccionado
     useEffect(() => {
         if (!selectedClient) return;
         const client = clients.find(c => c.id.toString() === selectedClient);
         if (!client) return;
-
         const loadData = async () => {
             setLoadingArticles(true);
             try {
-                const articlesData = await getArticleByCode(client.code);
+                const articlesData = await getArticleByCode(client.code); // Obtener artículos por código cliente
                 let fetchedArticles: Article[] = articlesData?.data || [];
-
-                setAllArticles(fetchedArticles);
-
+                setAllArticles(fetchedArticles); // Guardar todos para futuras búsquedas
+                // Filtrar el artículo principal para no repetirlo
                 if (selectedArticle) {
                     fetchedArticles = fetchedArticles.filter(a => a.codart !== selectedArticle.codart);
                 }
-
-                setArticles(fetchedArticles);
+                setArticles(fetchedArticles); // Guardar para mostrar en lista
             } catch (error) {
                 showError("Error al cargar artículos.");
                 console.error(error);
@@ -157,8 +149,8 @@ function BOMManager() {
 
         loadData();
     }, [selectedClient, clients, selectedArticle]);
- 
-    // Reiniciar formulario si cambia cliente (modo creación) 
+
+    // Reiniciar formulario si cambia cliente y no se está editando un BOM
     useEffect(() => {
         if (!currentBomId) {
             setSelectedArticle(null);
@@ -166,40 +158,46 @@ function BOMManager() {
             setBomStatus(false);
         }
     }, [selectedClient, currentBomId]);
- 
-    // Handlers: Artículo principal 
+
+    // Seleccionar artículo principal
     const handleSelectArticle = (article: Article) => {
         if (selectedArticle) {
             showError("Ya has seleccionado un artículo. Elimina el actual para seleccionar otro.");
             return;
         }
         setSelectedArticle(article);
-        setArticles(prev => prev.filter(a => a.codart !== article.codart));
+        setArticles(prev => prev.filter(a => a.codart !== article.codart)); // Eliminar de la lista para evitar duplicado
     };
 
+    // Deseleccionar artículo principal
     const handleDeselectArticle = () => {
         if (selectedArticle) {
-            setArticles(prev => [...prev, selectedArticle]);
+            setArticles(prev => [...prev, selectedArticle]); // Volver a agregarlo a la lista
             setSelectedArticle(null);
         }
     };
- 
-    // Handlers: Ingredientes 
+
+    // Cambiar campo de ingrediente
     const handleIngredientChange = (index: number, field: keyof Ingredient, value: string) => {
         const newIngredients = [...ingredients];
         newIngredients[index] = { ...newIngredients[index], [field]: value };
         setIngredients(newIngredients);
     };
 
+    // Agregar fila de ingrediente
     const addIngredientRow = () => {
-        setIngredients(prev => [...prev, { codart: "", desart: "", quantity: "", merma: "" }]);
+        setIngredients(prev => [
+            ...prev,
+            { codart: "", desart: "", quantity: "", merma: "", teorica: "" }
+        ]);
     };
 
+    // Quitar fila de ingrediente
     const removeIngredientRow = (index: number) => {
         setIngredients(prev => prev.filter((_, i) => i !== index));
     };
- 
-    // Guardar/Actualizar BOM 
+
+    // Guardar o actualizar BOM
     const handleSaveBOM = async () => {
         if (!selectedClient || !selectedArticle) {
             showError("Debes seleccionar un cliente y un artículo.");
@@ -209,7 +207,7 @@ function BOMManager() {
         setIsSaving(true);
 
         try {
-            const code_details = JSON.stringify({ codart: selectedArticle.codart });
+            const code_details = JSON.stringify({ codart: selectedArticle.codart }); // Código rápido para búsqueda
             const code_ingredients = JSON.stringify(
                 ingredients.map((ing) => ({ codart: ing.codart }))
             );
@@ -224,6 +222,7 @@ function BOMManager() {
                 status: bomStatus,
             };
 
+            // Si se está editando, actualizar; si no, crear nuevo
             if (currentBomId) {
                 await updateArticle(currentBomId, bomData);
                 showSuccess("BOM actualizado con éxito");
@@ -233,17 +232,17 @@ function BOMManager() {
             }
 
             resetForm();
-            fetchBOMs();
+            fetchBOMs(); // Recargar lista de BOMs
         } catch (error) {
             showError("Error al guardar el BOM.");
             console.error("Error en handleSaveBOM:", error);
         } finally {
             setIsSaving(false);
-            setIsModalOpen(false);
+            setIsModalOpen(false); // Cerrar modal
         }
     };
 
-    //Retear Formulario
+    // Reiniciar todos los campos del formulario
     const resetForm = () => {
         setSelectedClient("");
         setSelectedArticle(null);
@@ -252,14 +251,15 @@ function BOMManager() {
         setBomStatus(false);
         setCurrentBomId(null);
     };
- 
-    // Handlers: Editar / Eliminar BOM 
+
+    // Editar BOM existente
     const handleEdit = async (id: number) => {
         try {
             const data = await getArticlesId(id);
             const bom = data.bom;
             const clientData = await getClientsId(bom.client_id);
 
+            // Cargar todos los campos en el formulario
             setSelectedClient(clientData.id.toString());
             setCurrentBomId(bom.id);
             setBaseQuantity(Number(bom.base_quantity));
@@ -283,13 +283,13 @@ function BOMManager() {
         }
     };
 
-    // Handlers: Eliminar BOM 
+    // Eliminar BOM con confirmación
     const handleDelete = async (id: number) => {
         showConfirm("¿Estás seguro de eliminar este BOM?", async () => {
             try {
                 await deleteArticle(id);
                 showSuccess("BOM eliminado exitosamente");
-                fetchBOMs();
+                fetchBOMs(); // Recargar lista
             } catch (error) {
                 console.error("Error al eliminar BOM:", error);
                 showError("Error al eliminar BOM");
@@ -297,7 +297,7 @@ function BOMManager() {
         });
     };
 
-
+    // Seleccionar ingrediente desde lista de artículos
     const handleIngredientSelect = (index: number, selectedCodart: string) => {
         const selectedArticleForIngredient = allArticles.find(article => article.codart === selectedCodart);
         if (selectedArticleForIngredient) {

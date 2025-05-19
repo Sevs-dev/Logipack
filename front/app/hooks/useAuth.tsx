@@ -25,10 +25,26 @@ export function useAuth() {
   const router = useRouter();
 
   useEffect(() => {
-    const checkAuth = () => {
-      const cookies = nookies.get(null);
-      const token = cookies.token;
+    const cookies = nookies.get(null);
+    const token = cookies.token;
 
+    const logout = () => {
+      nookies.destroy(null, "token");
+      nookies.destroy(null, "email");
+      setIsAuthenticated(false);
+      router.push("/");
+    };
+
+    const refreshToken = () => {
+      if (token) {
+        nookies.set(null, "token", token, {
+          maxAge: 1800,
+          path: "/",
+        });
+      }
+    };
+
+    const checkAuth = () => {
       if (!token) {
         logout();
         return;
@@ -40,24 +56,7 @@ export function useAuth() {
       } else {
         setIsAuthenticated(true);
         refreshToken();
-      } 
-    };
-
-    const refreshToken = () => {
-      const cookies = nookies.get(null);
-      if (cookies.token) {
-        nookies.set(null, "token", cookies.token, {
-          maxAge: 1800, // 30 minutos (1800 segundos)
-          path: "/",
-        });
       }
-    };
-
-    const logout = () => {
-      nookies.destroy(null, "token");
-      nookies.destroy(null, "email");
-      setIsAuthenticated(false);
-      router.push("/");
     };
 
     checkAuth();
@@ -70,7 +69,7 @@ export function useAuth() {
       window.removeEventListener("mousemove", handleUserActivity);
       window.removeEventListener("keydown", handleUserActivity);
     };
-  }, [router]);
+  }, []);
 
   return { isAuthenticated };
 }

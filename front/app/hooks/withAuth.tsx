@@ -9,21 +9,21 @@ function withAuth<P extends {}>(
 ): React.FC<P> {
   const AuthComponent: React.FC<P> = (props: P) => {
     const router = useRouter();
-    const [loading, setLoading] = useState(true);
+    const [isAllowed, setIsAllowed] = useState(false);
 
     useEffect(() => {
       const cookies = nookies.get(null);
       const token = cookies.token;
 
-      if (!token || token.trim() === "") {
-        console.warn("Token no encontrado. Redirigiendo a la vaca... 🐄");
-        router.push("/pages/noneUser");
+      if (!token) {
+        console.warn("🔐 Acceso denegado. Redirigiendo a la vaca 🐄");
+        router.replace("/pages/noneUser");
       } else {
-        setLoading(false);
+        setIsAllowed(true);
       }
     }, [router]);
 
-    if (loading) {
+    if (!isAllowed) {
       return <Loader />;
     }
 

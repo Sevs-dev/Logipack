@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { motion, number } from "framer-motion";
+import { COLORS } from "@/app/constants/colors";
 // 🔹 Componentes
 import Button from "../buttons/buttons";
 import { showSuccess, showError } from "../toastr/Toaster";
@@ -27,7 +28,8 @@ function EditPlanning() {
     useEffect(() => {
         const fetchPlanning = async () => {
             try {
-                const response = await getPlanning(); 
+                const response = await getPlanning();
+                console.log("Response from getPlanning:", response);
                 const updatedPlanning: Plan[] = await Promise.all(
                     response.map(async (plan: Plan) => {
                         const clientData = await getClientsId(plan.client_id);
@@ -39,7 +41,7 @@ function EditPlanning() {
                             client_name: clientData.name,
                             factoryName: factoryData.name,
                             lineName: manuData.name,
-                            machineName: machineData.name, 
+                            machineName: machineData.name,
                         };
                     })
                 );
@@ -95,14 +97,55 @@ function EditPlanning() {
         fetchMachine();
     }, []);
 
+    // 🔧 Función para calcular la fecha final respetando el rango laboral
+    function calculateEndDateRespectingWorkHours(start: string, durationMinutes: number): string {
+        const WORK_START_HOUR = 6;
+        const WORK_END_HOUR = 18;
+        const WORK_MINUTES_PER_DAY = (WORK_END_HOUR - WORK_START_HOUR) * 60;
+
+        let remainingMinutes = durationMinutes;
+        const current = new Date(start);
+
+        while (remainingMinutes > 0) {
+            const currentHour = current.getHours();
+            const currentMinute = current.getMinutes();
+            const currentTotalMinutes = currentHour * 60 + currentMinute;
+
+            const workStartMinutes = WORK_START_HOUR * 60;
+            const workEndMinutes = WORK_END_HOUR * 60;
+
+            if (currentTotalMinutes < workStartMinutes) {
+                current.setHours(WORK_START_HOUR, 0, 0, 0);
+            } else if (currentTotalMinutes >= workEndMinutes) {
+                current.setDate(current.getDate() + 1);
+                current.setHours(WORK_START_HOUR, 0, 0, 0);
+            }
+
+            const nowMinutes = current.getHours() * 60 + current.getMinutes();
+            const minutesLeftToday = workEndMinutes - nowMinutes;
+            const minutesToAdd = Math.min(remainingMinutes, minutesLeftToday);
+
+            current.setMinutes(current.getMinutes() + minutesToAdd);
+            remainingMinutes -= minutesToAdd;
+
+            if (remainingMinutes > 0) {
+                current.setDate(current.getDate() + 1);
+                current.setHours(WORK_START_HOUR, 0, 0, 0);
+            }
+        }
+
+        // 🕓 Convertimos a formato compatible con <input type="datetime-local"> en zona local
+        const pad = (n: number) => n.toString().padStart(2, "0");
+        return `${current.getFullYear()}-${pad(current.getMonth() + 1)}-${pad(current.getDate())}T${pad(current.getHours())}:${pad(current.getMinutes())}`;
+    }
+
     const handleSave = async (updatedPlan: Plan) => {
         if (!updatedPlan) {
             showError("No hay datos para guardar.");
             return;
         }
         try {
-            const masterIds = JSON.parse(updatedPlan.master);
-            const master = await getMaestraId(masterIds[0]);
+            const master = await getMaestraId(Number(updatedPlan.master));
             const updatedWithDuration = {
                 ...updatedPlan,
                 duration: master.duration,
@@ -120,7 +163,6 @@ function EditPlanning() {
             showError("Error al guardar la planificación");
         }
     };
-
 
     const handleEdit = useCallback((id: number) => {
         const selectedPlan = planning.find(plan => plan.id === id);
@@ -357,15 +399,34 @@ function EditPlanning() {
                             {/* Color */}
                             <div>
                                 <Text type="subtitle">Color</Text>
-                                <input
-                                    type="color"
-                                    className="w-full border p-3 rounded-lg mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                    value={currentPlan.color}
-                                    onChange={(e) =>
-                                        setCurrentPlan({ ...currentPlan, color: e.target.value })
-                                    }
-                                    style={{ backgroundColor: currentPlan.color }} // Muestra el color como fondo
-                                />
+                                <div className="flex flex-wrap gap-2 mt-2">
+                                    {COLORS.map((color, index) => {
+                                        const isSelected = currentPlan.color === color;
+                                        return (
+                                            <button
+                                                key={`${color}-${index}`}
+                                                type="button"
+                                                className={`w-6 h-6 rounded-full relative flex items-center justify-center transition-shadow duration-200 ${isSelected ? "ring-2 ring-white ring-offset-2" : ""
+                                                    }`}
+                                                style={{ backgroundColor: color }}
+                                                onClick={() => setCurrentPlan({ ...currentPlan, color })}
+                                                aria-label={`Seleccionar color ${color}`}
+                                            >
+                                                {isSelected && (
+                                                    <svg
+                                                        className="w-3 h-3 text-white"
+                                                        fill="none"
+                                                        stroke="currentColor"
+                                                        strokeWidth="3"
+                                                        viewBox="0 0 24 24"
+                                                    >
+                                                        <path d="M5 13l4 4L19 7" />
+                                                    </svg>
+                                                )}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
                             </div>
                             {/* Icono */}
                             <div>
@@ -386,12 +447,28 @@ function EditPlanning() {
                                     className="w-full border p-3 rounded-lg text-gray-800 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500 text-center"
                                     value={currentPlan.start_date || ""}
                                     type="datetime-local"
-                                    onChange={(e) =>
-                                        setCurrentPlan({ ...currentPlan, start_date: e.target.value })
-                                    }
+                                    onChange={(e) => {
+                                        const start = e.target.value;
+                                        let end = "";
+
+                                        if (currentPlan?.duration) {
+                                            end = calculateEndDateRespectingWorkHours(start, Number(currentPlan.duration));
+                                        } else {
+                                            const fallback = new Date(start);
+                                            fallback.setHours(18, 0, 0, 0);
+                                            const pad = (n: number) => n.toString().padStart(2, "0");
+                                            end = `${fallback.getFullYear()}-${pad(fallback.getMonth() + 1)}-${pad(fallback.getDate())}T${pad(fallback.getHours())}:${pad(fallback.getMinutes())}`;
+                                        }
+
+                                        setCurrentPlan({
+                                            ...currentPlan,
+                                            start_date: start,
+                                            end_date: end,
+                                        });
+                                    }}
                                 />
                             </div>
-                            {/* 🔹 Fecha de Inicio */}
+
                             <div>
                                 <Text type="subtitle">Fecha y Hora de Final</Text>
                                 <input
@@ -414,7 +491,7 @@ function EditPlanning() {
             )}
 
             <Table
-                columns={["client_name", "codart", "deliveryDate", "status_dates", "factoryName", "lineName", "machineName" ]}
+                columns={["client_name", "codart", "deliveryDate", "status_dates", "factoryName", "lineName", "machineName"]}
                 rows={planning}
                 columnLabels={{
                     client_name: "Cliente",
@@ -423,7 +500,7 @@ function EditPlanning() {
                     status_dates: "Estado",
                     factoryName: "Planta",
                     lineName: "Lineas",
-                    machineName: "Maquinaria", 
+                    machineName: "Maquinaria",
                 }}
                 onDelete={handleDelete}
                 showDeleteButton={false}

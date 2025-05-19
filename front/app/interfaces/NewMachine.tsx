@@ -2,7 +2,7 @@
 export interface MachineryForm {
   factory_id: number;
   name: string;
-  category: String;
+  category: string;
   type?: string;
   power?: number;
   capacity?: number;
