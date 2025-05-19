@@ -5,7 +5,7 @@ import { getFactory } from "../../services/userDash/factoryServices";
 import Table from "../table/Table";
 import { showError, showSuccess, showConfirm } from "../toastr/Toaster";
 import Button from "../buttons/buttons";
-import CreateUser from "./CreateUser";  
+import CreateUser from "./CreateUser";
 
 interface Role {
     id: number;
@@ -18,7 +18,7 @@ interface User {
     name: string;
     email: string;
     role: Role[];
-    factory?: number;
+    factory?: number[] | number;
 }
 
 interface Factory {
@@ -28,15 +28,19 @@ interface Factory {
 
 function DataUsers() {
     const [editingUser, setEditingUser] = useState<User | null>(null);
+
+    // Formulario: role como string para el id del rol seleccionado
     const [editForm, setEditForm] = useState({
         name: "",
         email: "",
-        role: "",
+        role: "", // guardamos el id del rol como string
         factory: [] as number[],
     });
-    const [users, setUsers] = useState<{ [key: string]: any }[]>([]);
+
+    const [users, setUsers] = useState<User[]>([]);
     const [factories, setFactories] = useState<Factory[]>([]);
     const [roles, setRoles] = useState<Role[]>([]);
+
     const columns = ["name", "email", "role"];
     const columnLabels: { [key: string]: string } = {
         name: "Nombre",
@@ -44,22 +48,19 @@ function DataUsers() {
         role: "Rol",
     };
 
-    // Función para obtener la lista de usuarios
+    // Traer usuarios sin modificar tipo
     const fetchUsers = async () => {
         try {
             const data: User[] = await getUsers();
-            setUsers(data.map(user => ({
-                ...user,
-                role: user.role ? user.role : "Sin rol",
-                factory: user.factory || "Sin fábrica"
-            })));
+            setUsers(data);
         } catch (error) {
             console.error("Error fetching users:", error);
         }
     };
 
     useEffect(() => {
-        fetchUsers(); // Llama a fetchUsers al montar el componente
+        fetchUsers();
+
         const fetchFactories = async () => {
             try {
                 const data = await getFactory();
@@ -99,25 +100,32 @@ function DataUsers() {
     const handleEdit = async (id: number) => {
         try {
             const response = await getDate(id);
-            const userData = response.usuario;
-            let factories = [];
+            const userData: User = response.usuario;
+
+            // Parsear fábricas para que siempre sea number[]
+            let factoriesParsed: number[] = [];
             try {
-                factories = typeof userData.factory === "string"
-                    ? JSON.parse(userData.factory.replace(/\\/g, ""))
-                    : Array.isArray(userData.factory)
-                        ? userData.factory
-                        : userData.factory
-                            ? [userData.factory]
-                            : [];
+                if (typeof userData.factory === "string") {
+                    // Si es string, parseamos JSON directamente sin replace
+                    factoriesParsed = JSON.parse(userData.factory);
+                } else if (Array.isArray(userData.factory)) {
+                    factoriesParsed = userData.factory;
+                } else if (typeof userData.factory === "number") {
+                    factoriesParsed = [userData.factory];
+                } else {
+                    factoriesParsed = [];
+                }
             } catch (parseError) {
                 console.error("Error al parsear fábricas:", parseError);
             }
+
             setEditingUser(userData);
             setEditForm({
                 name: userData.name || "",
                 email: userData.email || "",
-                role: userData.role || "",
-                factory: factories,
+                // Si hay roles, toma el id del primero como string, si no ""
+                role: userData.role && userData.role.length > 0 ? userData.role[0].id.toString() : "",
+                factory: factoriesParsed,
             });
         } catch (error) {
             console.error("Error obteniendo datos del usuario:", error);
@@ -131,12 +139,20 @@ function DataUsers() {
 
     const handleSubmit = async (id: number) => {
         try {
+            // Convertir factories a string para backend
             const updatedData = {
                 ...editForm,
                 factory: JSON.stringify(editForm.factory),
+                // role viene como id string, aquí deberías enviarlo según cómo espera backend (ajustar si es diferente)
+                role: editForm.role,
             };
             await updateUser(id, updatedData);
-            setUsers(users.map(user => (user.id === id ? { ...user, ...editForm } : user)));
+            // Actualiza users localmente, para el role reemplazamos con el objeto completo basado en el id
+            const roleObj = roles.find(r => r.id.toString() === editForm.role);
+            setUsers(users.map(user => (user.id === id
+                ? { ...user, ...editForm, role: roleObj ? [roleObj] : [] }
+                : user
+            )));
             setEditingUser(null);
             showSuccess("Usuario actualizado correctamente");
         } catch (error) {
@@ -150,10 +166,12 @@ function DataUsers() {
             {/* Pasa fetchUsers como prop a CreateUser */}
             <CreateUser onUserCreated={fetchUsers} />
             <Table columns={columns} rows={users} columnLabels={columnLabels} onDelete={handleDelete} onEdit={handleEdit} />
+
             {editingUser && (
                 <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
                     <div className="bg-white p-6 rounded-2xl shadow-xl w-96 animate-fade-in">
                         <h2 className="text-2xl font-bold text-black mb-4 text-center">Editar Usuario</h2>
+
                         <input
                             type="text"
                             name="name"
@@ -162,6 +180,7 @@ function DataUsers() {
                             placeholder="Nombre"
                             className="w-full px-4 py-2 mb-3 border border-gray-300 rounded-lg text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
                         />
+
                         <input
                             type="email"
                             name="email"
@@ -170,6 +189,7 @@ function DataUsers() {
                             placeholder="Email"
                             className="w-full px-4 py-2 mb-3 border border-gray-300 rounded-lg text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
                         />
+
                         <select
                             name="role"
                             value={editForm.role}
@@ -178,9 +198,12 @@ function DataUsers() {
                         >
                             <option value="">Seleccionar rol</option>
                             {roles.map((role) => (
-                                <option key={role.id} value={role.name}>{role.name}</option>
+                                <option key={role.id} value={role.id.toString()}>
+                                    {role.name}
+                                </option>
                             ))}
                         </select>
+
                         <div className="mb-3">
                             <h3 className="text-black font-bold mb-2">Seleccionar Fábricas</h3>
                             {factories.map((factory) => (
@@ -204,8 +227,9 @@ function DataUsers() {
                                 </label>
                             ))}
                         </div>
+
                         <div className="flex justify-center gap-2">
-                            <Button onClick={() => handleSubmit(editingUser?.id ?? 0)} variant="save" />
+                            <Button onClick={() => handleSubmit(editingUser.id)} variant="save" />
                             <Button onClick={() => setEditingUser(null)} variant="cancel" />
                         </div>
                     </div>

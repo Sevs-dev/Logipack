@@ -11,6 +11,7 @@ interface TableProps {
     onEdit: (id: any) => void;
     onDelete: (id: any) => void;
     showDeleteButton?: boolean;
+    showEditButton?: boolean;
 }
 
 interface HeaderProps {
@@ -43,7 +44,7 @@ const Header: React.FC<HeaderProps> = ({ column, label, onSort, sortOrder, sortC
     );
 };
 
-export const Table: React.FC<TableProps> = ({ rows, columns, columnLabels = {}, onEdit, onDelete, showDeleteButton = true }) => {
+export const Table: React.FC<TableProps> = ({ rows, columns, columnLabels = {}, onEdit, onDelete, showDeleteButton = true, showEditButton = true }) => {
     const [sortColumn, setSortColumn] = useState<string>(columns[0]);
     const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
     const [searchTerm, setSearchTerm] = useState<string>("");
@@ -163,10 +164,12 @@ export const Table: React.FC<TableProps> = ({ rows, columns, columnLabels = {}, 
                                         })}
 
                                         <td className="px-6 py-3 flex justify-center gap-3">
-                                            <Button
-                                                onClick={() => { onEdit(row.id) }}
-                                                variant="edit"
-                                            />
+                                            {showEditButton && (
+                                                <Button
+                                                    onClick={() => { onEdit(row.id) }}
+                                                    variant="edit"
+                                                />
+                                            )}
                                             {showDeleteButton && (
                                                 <Button
                                                     onClick={() => { onDelete(row.id) }}

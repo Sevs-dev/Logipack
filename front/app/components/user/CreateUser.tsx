@@ -1,3 +1,4 @@
+"use client";
 import { useState, useEffect } from "react"; 
 import { post, getRole } from "../../services/userDash/authservices";
 import { getFactory } from "../../services/userDash/factoryServices";

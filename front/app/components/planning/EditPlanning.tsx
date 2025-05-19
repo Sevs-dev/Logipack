@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { motion, number } from "framer-motion";
+import { motion } from "framer-motion";
 import { COLORS } from "@/app/constants/colors";
 // 🔹 Componentes
 import Button from "../buttons/buttons";

@@ -1,10 +1,16 @@
-import React, { useEffect, useState, cloneElement, ReactElement } from "react";
+import React, {
+  useEffect,
+  useState,
+  cloneElement,
+  ReactElement,
+  isValidElement,
+} from "react";
 import { useAuth } from "../../context/AuthContext";
 import { getPermissionRole } from "../../services/userDash/roleServices";
 import Loader from "../loader/Loader";
 
 type PermissionCheckProps = {
-  children: ReactElement;
+  children: ReactElement<{ readOnly?: boolean; disabled?: boolean }>;
   requiredPermission: string;
 };
 
@@ -13,7 +19,7 @@ interface PermissionRoleResponse {
 }
 
 // Cache simple para permisos
-const permissionCache: { [role: string]: string[] } = {};
+const permissionCache: Record<string, string[]> = {};
 
 const PermissionInputs = ({ children, requiredPermission }: PermissionCheckProps) => {
   const { role, loading } = useAuth();
@@ -23,11 +29,9 @@ const PermissionInputs = ({ children, requiredPermission }: PermissionCheckProps
   useEffect(() => {
     if (!loading && role) {
       if (permissionCache[role]) {
-        // Si ya está en cache, usa la información almacenada
         setHasPermission(permissionCache[role].includes(requiredPermission));
         setFetched(true);
       } else {
-        // Si no, realiza la llamada y guarda en cache
         getPermissionRole(role)
           .then((data: PermissionRoleResponse) => {
             permissionCache[role] = data.permissions;
@@ -45,9 +49,18 @@ const PermissionInputs = ({ children, requiredPermission }: PermissionCheckProps
 
   if (loading || !fetched) return <Loader />;
 
+  // Si tiene permiso, renderizamos el componente como está
   if (hasPermission) return children;
 
-  return cloneElement(children as ReactElement<any>, { readOnly: true, disabled: true });
+  // Si no tiene permiso, clonamos el elemento agregando los props
+  if (isValidElement(children)) {
+    return cloneElement(children, {
+      readOnly: true,
+      disabled: true,
+    });
+  }
+
+  return null;
 };
 
 export default PermissionInputs;

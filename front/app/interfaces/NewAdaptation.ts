@@ -1,4 +1,4 @@
-import { number } from 'framer-motion';
+import { number } from "framer-motion";
 export interface Data {
   id: number;
   clientId: number;
@@ -44,7 +44,7 @@ export interface ArticleFormData {
   quantityToProduce: number;
   lot: string;
   healthRegistration: string;
-  attachment?: File;
+  attachment?: File | null;
   duration?: string;
   start_date?: string;
   end_date?: string;

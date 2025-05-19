@@ -17,10 +17,10 @@ export interface Data {
 
 // Función para crear un nuevo Role.
 // Envía una solicitud POST a la ruta '/newRole' con los datos proporcionados.
-export const createRole = async (data: { name: string }) => { 
+export const createRole = async (data: { name: string }) => {
     const response = await apiRoles.post('/newRole', data);
     return response.data;
-  };
+};
 
 // Función para obtener todos los Roles.
 // Realiza una solicitud GET a la ruta '/getRole' y retorna los datos recibidos.
@@ -36,7 +36,7 @@ export const getRole = async () => {
 
 // Función para eliminar un Role en específico por su ID.
 // Realiza una solicitud DELETE a la ruta `/deleteRole/${id}`.
-export const deleteRole = async (id: number) => { 
+export const deleteRole = async (id: number) => {
     try {
         const response = await apiRoles.delete(`/deleteRole/${id}`);
         return response.data;

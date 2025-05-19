@@ -1,3 +1,4 @@
+"use client";
 import React from "react";
 import DataUsers from "./DataUsers";
 import WindowManager from "../windowManager/WindowManager";
@@ -13,7 +14,7 @@ import useUserData from '../../hooks/useUserData';
 
 function User() {
   const { userName } = useUserData();
-
+  if (!userName) return <p>No estás logueado. Por favor, inicia sesión.</p>;
   return (
     <div>
       {/* Administrador de ventanas */}

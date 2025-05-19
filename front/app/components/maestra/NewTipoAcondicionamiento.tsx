@@ -1,25 +1,20 @@
 "use client"
-
 // importaciones de react y framer motion
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-
 // importaciones de componentes
 import Table from "../table/Table";
 import Button from "../buttons/buttons";
 import Text from "../text/Text";
-
 // importaciones de interfaces
 import {
     TipoAcondicionamiento, DataTipoAcondicionamiento,
     LineaTipoAcondicionamiento, DataLineaTipoAcondicionamiento
 } from "@/app/interfaces/NewTipoAcondicionamiento";
-
 // importaciones de interfaces
 import {
     Stage
 } from "@/app/interfaces/NewStage";
-
 // importaciones de servicios
 import {
     createStage as createTipoAcom,
@@ -27,7 +22,6 @@ import {
     deleteStage as deleteTipoAcom,
     updateTipoAcondicionamiento as updateTipoAcom
 } from "@/app/services/maestras/TipoAcondicionamientoService";
-
 import {
     createStage as createLineaTipoAcom,
     getStage as listLineaTipoAcondicionamiento,
@@ -38,10 +32,8 @@ import {
     getSelectStagesControls as getSelectStagesControls
 } from "@/app/services/maestras/LineaTipoAcondicionamientoService";
 
-
 // función principal del componente
 export default function NewTipoAcondicionamiento() {
-
     // variables de estado
     const [isOpen, setIsOpen] = useState(false);
     const [isOpenEdit, setIsOpenEdit] = useState(false);

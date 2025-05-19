@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React from "react";
 import WindowManager from "../windowManager/WindowManager";
 import NewMaestra from "./NewMaestra";
 import NewStage from "./NewStage";
@@ -7,6 +7,7 @@ import useUserData from '../../hooks/useUserData';
 import NewTipos from "./NewTipoAcondicionamiento";
 function Maestras() {
     const { userName } = useUserData();
+    if (!userName) return <p>No estás logueado. Por favor, inicia sesión.</p>;
     return (
         <div >
             <WindowManager

@@ -13,10 +13,7 @@ import Text from "../text/Text";
 import Table from "../table/Table";
 import PermissionCheck from "..//permissionCheck/PermissionCheck";
 // ------------------------- 5. Tipos de datos e interfaces -------------------------
-import { Stage, Data } from "../../interfaces/NewMaestra";
-// ------------------------- 6. Definición de constantes -------------------------
-const estados = ["Seleccione un estado", "En creación", "Revisión", "Aprobada", "Obsoleta"];
-
+import { Stage, Data } from "../../interfaces/NewMaestra"; 
 
 const Maestra = () => {
     // Estados del componente

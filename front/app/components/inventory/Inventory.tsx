@@ -15,8 +15,7 @@ import {
   Legend,
   LineChart,
   Line,
-} from "recharts";
-import { motion } from "framer-motion";
+} from "recharts"; 
 
 // Tipos para los datos
 interface DataItem {

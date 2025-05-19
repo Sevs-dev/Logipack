@@ -12,4 +12,9 @@ export interface MachineryForm {
   description?: string;
 }
 
+export interface Machine {
+  id: number;
+  name: string;
+  status: boolean;
+}
   

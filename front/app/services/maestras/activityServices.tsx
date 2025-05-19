@@ -30,8 +30,7 @@ export const createActivitie = async (data: Data): Promise<{ status: number; mes
         let errorMessage = "Error desconocido";
 
         if (typeof error === "object" && error !== null && "response" in error) {
-            const axiosError = error as { response?: { data: any } };
-            errorMessage = axiosError.response?.data?.message || "Error desconocido";
+            const axiosError = error as { response?: { data: unknown } }; 
             console.error("Detalles del error del backend:", axiosError.response?.data);
         } else if (error instanceof Error) {
             errorMessage = error.message;

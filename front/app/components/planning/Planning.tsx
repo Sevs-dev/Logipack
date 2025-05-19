@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from "react";
+import React from "react";
 import WindowManager from "../windowManager/WindowManager";
 import EditPlanning from "./EditPlanning";
 import useUserData from "../../hooks/useUserData";
 
 function Planificacion() {
   const { userName } = useUserData();
+  if (!userName) return <p>No estás logueado. Por favor, inicia sesión.</p>;
   return (
     <WindowManager
       windowsData={[

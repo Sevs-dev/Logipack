@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { API_URL } from '../../config/api';
+import { MachineryForm } from '../../interfaces/NewMachine';
 
 const Machinary = axios.create({
     baseURL: API_URL,
@@ -8,16 +9,12 @@ const Machinary = axios.create({
     },
 });
 
-export const newMachin = async (data: FormData) => {
+export const newMachin = async (data: MachineryForm) => {
     try {
         const response = await Machinary.post('/newMachin', data);
         return response.data;
-    } catch (error: any) {
-        if (error.response) {
-            console.error("Error al crear la Maquinaria:", error.response.data);
-        } else {
-            console.error("Error al crear la Maquinaria:", error);
-        }
+    } catch (error: unknown) {
+        console.error("Error en newMachin:", error);
         throw error;
     }
 };
@@ -26,7 +23,7 @@ export const getMachin = async () => {
     try {
         const response = await Machinary.get('/getMachin');
         return response.data;
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error("Error en getMachin:", error);
         throw error; // Lanza otros errores para depuración
     }
@@ -36,13 +33,13 @@ export const getMachinById = async (id: number) => {
     try {
         const response = await Machinary.get(`/MachinId/${id}`);
         return response.data;
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error("Error en MachinId:", error);
         throw error;
     }
 }
 
-export const updateMachin = async (id: number, data: FormData) => {
+export const updateMachin = async (id: number, data: MachineryForm) => {
     try {
         const response = await Machinary.put(`/updateMachin/${id}`, data);
         return response.data; 
@@ -56,7 +53,7 @@ export const deleteMachin = async (id: number) => {
     try {
         const response = await Machinary.delete(`/deleteMachin/${id}`);
         return response.data;
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error("Error en deleteMachin:", error);
         throw error; // Lanza otros errores para depuración
     }

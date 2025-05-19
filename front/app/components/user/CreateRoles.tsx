@@ -1,11 +1,11 @@
 "use client";
 import { useState, useEffect } from "react";
 import { getPermissions, updateRolePermissions, createPermission, deletePermission, getPermissionId, updatePermission } from "../../services/userDash/roleServices";
-import { getRole, getRoleId, createRole, updateRole, deleteRole } from "../../services/userDash/rolesServices"; 
+import { getRole, getRoleId, createRole, updateRole, deleteRole } from "../../services/userDash/rolesServices";
 import { motion } from "framer-motion";
 import { showSuccess, showError, showConfirm } from "../toastr/Toaster";
-import PermissionCheck from "..//permissionCheck/PermissionCheck"; 
-import Button from "../buttons/buttons" 
+import PermissionCheck from "..//permissionCheck/PermissionCheck";
+import Button from "../buttons/buttons"
 
 // 🛠️ Definición de Interfaces
 interface Permission {
@@ -69,7 +69,7 @@ const Roles = () => {
       setPermissions([]);
     }
   };
- 
+
   const fetcRole = async () => {
     try {
       const role = await getRole();
@@ -197,12 +197,14 @@ const Roles = () => {
       await createRole({ name: roleName });
       showSuccess("Rol creado correctamente");
       await fetchData();
-    } catch (error: any) {
-      console.error("Error al crear rol:", error.response ? error.response.data : error.message);
+    } catch (error: unknown) {
+      console.error("Error al crear rol:", error);
+      // Si el error tiene una propiedad response, puedes acceder a los datos del error
       showError("Error al crear rol");
+    } finally {
+      resetRoleModal();
+      setIsRoleModalOpen(false);
     }
-    resetRoleModal();
-    setIsRoleModalOpen(false);
   };
 
   // Actualiza un rol existente

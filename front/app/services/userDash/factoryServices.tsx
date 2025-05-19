@@ -25,11 +25,11 @@ export const createFactory = async (dataFactory: FactoryData): Promise<void> => 
     try {
         const response = await apiFactory.post('/newFactory', dataFactory);
         return response.data;
-    } catch (error: any) {
-        if (error.response) {
-            console.error("Error al crear la fábrica:", error.response.data);
-        } else {
-            console.error("Error al crear la fábrica:", error);
+    } catch (error: unknown) {
+        let errorMessage = "Error desconocido";
+        if (typeof error === "object" && error !== null && "response" in error) {
+            const axiosError = error as { response?: { data: unknown } };
+            console.error("Detalles del error del backend:", axiosError.response?.data);
         }
         throw error;
     }

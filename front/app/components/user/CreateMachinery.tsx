@@ -1,3 +1,4 @@
+"use client";
 import React, { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
 // 🔹 Servicios
@@ -9,13 +10,13 @@ import { showSuccess, showError, showConfirm } from "../toastr/Toaster";
 import Table from "../table/Table";
 import Text from "../text/Text";
 // 🔹 Tipos de datos
-import { Factory } from "../../interfaces/NewFactory";
-import { MachineryForm } from "../../interfaces/NewMachine";
+import { Factory } from "../../interfaces/NewFactory"; 
+import { MachineryForm, Machine } from "../../interfaces/NewMachine";
 
 function CreateMachinery() {
   const [isOpen, setIsOpen] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
-  const [machine, setMachine] = useState<any[]>([]);
+  const [machine, setMachine] = useState<Machine[]>([]);
   const [factory, setFactory] = useState<Factory[]>([]);
 
   const [name, setName] = useState("");
@@ -72,19 +73,18 @@ function CreateMachinery() {
 
   const handleSubmit = async () => {
     try {
-      const data = {
+      const data: MachineryForm = {
         factory_id: Number(factory_id),
         name,
         category,
         type,
-        power: power,
-        capacity: capacity,
+        power: Number(power),
+        capacity: Number(capacity),
         dimensions,
-        weight: weight,
+        weight: Number(weight),
         is_mobile,
         description,
-      };
-      console.log("Data to submit:", data);
+      }; 
 
       if (isEditMode) {
         await machineryService.updateMachin(editMachineryId!, data);

@@ -1,9 +1,9 @@
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { motion } from "framer-motion";
 import { ClipboardCopy } from 'lucide-react';
 // 🔹 Servicios
 import { getClients, getClientsId } from "@/app/services/userDash/clientServices";
-import { getFactory, getFactoryId } from "@/app/services/userDash/factoryServices";
+import { getFactory } from "@/app/services/userDash/factoryServices";
 import { getPrefix } from "@/app/services/consecutive/consecutiveServices";
 import { getArticleByCode, getArticleByClient } from "@/app/services/bom/articleServices";
 import { newAdaptation, getAdaptations, deleteAdaptation, updateAdaptation, getAdaptationsId } from "@/app/services/adaptation/adaptationServices";
@@ -15,18 +15,18 @@ import MultiSelect from "../dinamicSelect/MultiSelect";
 import Table from "../table/Table";
 import Text from "../text/Text";
 // 🔹 Toastr
-import { showSuccess, showError, showConfirm } from "../toastr/Toaster";
+import { showSuccess, showError } from "../toastr/Toaster";
 // 🔹 Interfaces
 import { Client, Article, Ingredient } from "@/app/interfaces/BOM";
 import { Data } from "@/app/interfaces/NewMaestra";
-import { BOMResponse, BOM, Adaptation, ArticleFormData, ArticleFieldsMap, Articles, Plant } from "@/app/interfaces/NewAdaptation";
+import { BOM, Adaptation, ArticleFormData, Plant } from "@/app/interfaces/NewAdaptation";
 
 function NewAdaptation() {
     const [isOpen, setIsOpen] = useState(false);
     const [selectedClient, setSelectedClient] = useState<string>("");
     const [plantas, setPlantas] = useState<Plant[]>([]);
     const [planta, setPlanta] = useState<string>('');
-    const [consecutivo, setConsecutivo] = useState<any>(null);
+    const [, setConsecutivo] = useState<string | null>(null);
     const [client_order, setClientOrder] = useState<string>("");
     const [orderNumber, setOrderNumber] = useState<string>("");
     const [deliveryDate, setDeliveryDate] = useState<string>("");
@@ -35,11 +35,10 @@ function NewAdaptation() {
     const [healthRegistration, setHealthRegistration] = useState<string>("");
     const [quantityToProduce, setQuantityToProduce] = useState("");
     const [attachment, setAttachment] = useState<File | null>(null);
-    const [attachmentUrl, setAttachmentUrl] = useState<string | null>(null);
+    const [, setAttachmentUrl] = useState<string | null>(null);
     const [clients, setClients] = useState<Client[]>([]);
     const [maestra, setMaestra] = useState<Data[]>([]);
-    const [articles, setArticles] = useState<Article[]>([]);
-    const [bomData, setBomData] = useState<BOMResponse | null>(null);
+    const [articles, setArticles] = useState<Article[]>([]); 
     const [adaptation, setAdaptation] = useState<Adaptation[]>([]);
     const [ingredients, setIngredients] = useState<Ingredient[]>([]);
     const [isEditMode, setIsEditMode] = useState(false);
@@ -48,9 +47,8 @@ function NewAdaptation() {
     const [boms, setBoms] = useState<BOM[]>([]);
     const [selectedBom, setSelectedBom] = useState<number | "">("");
     const [isLoading, setIsLoading] = useState(false);
-    const [articleFields, setArticleFields] = useState<Record<string, ArticleFormData>>({});
+    const [articleFields, setArticleFields] = useState<Record<string, ArticleFormData>>({});  
 
-    // Cargar clientes al montar el componente
     useEffect(() => {
         // Función asincrónica para obtener los clientes
         const fetchClients = async () => {
@@ -254,6 +252,7 @@ function NewAdaptation() {
 
     // Efecto que recalcula la cantidad teórica de ingredientes cada vez que cambia `quantityToProduce`
     useEffect(() => {
+
         // Si no hay cantidad a producir o si los ingredientes están vacíos, salimos del efecto
         if (quantityToProduce != "") {
             // Convierte la cantidad a producir a un número
@@ -298,9 +297,11 @@ function NewAdaptation() {
         setIngredients(updated);
     };
 
-    // Función para manejar los cambios en los campos de los artículos (utilizado por cada `codart`)
-    const handleFieldChange = (codart: string, field: keyof ArticleFormData, value: any) => {
-        // Actualiza el estado de los campos del artículo según el `codart` y el campo específico
+    const handleFieldChange = <K extends keyof ArticleFormData>(
+        codart: string,
+        field: K,
+        value: ArticleFormData[K]
+    ) => {
         setArticleFields(prev => ({
             ...prev,
             [codart]: {
@@ -510,8 +511,8 @@ function NewAdaptation() {
             setIsEditMode(true);
             setEditAdaptationId(id);
             setSelectedClient(adaptation.client_id.toString());
-            setPlanta(adaptation.factory_id?.toString() ?? ""); 
-            setSelectedMaestras(adaptation.master.toString()); 
+            setPlanta(adaptation.factory_id?.toString() ?? "");
+            setSelectedMaestras(adaptation.master.toString());
             setSelectedBom(adaptation.bom.toString());
             // Procesamos los artículos
             const parsedArticles = adaptation.article_code
@@ -609,7 +610,6 @@ function NewAdaptation() {
     const visualOrder = client_order.replace(/(\d{7})$/, (match) =>
         String(parseInt(match) + 1).padStart(7, '0')
     );
-
 
     return (
         <div>

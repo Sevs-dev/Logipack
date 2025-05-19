@@ -43,8 +43,8 @@ export const createPermission = async (name: string, description: string, status
     try {
         const response = await apiRole.post('/newPermission', { name, description, status });
         return response.data;
-    } catch (error: any) {
-        console.error('Error en createPermission:', error.response?.data || error.message);
+    } catch (error: unknown) {
+        console.error('Error en createPermission:', error);
         throw error;
     }
 }
