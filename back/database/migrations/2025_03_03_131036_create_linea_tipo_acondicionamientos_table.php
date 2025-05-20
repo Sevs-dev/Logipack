@@ -14,11 +14,13 @@ return new class extends Migration
         Schema::create('linea_tipo_acondicionamientos', function (Blueprint $table) {
             $table->id();
             $table->foreignId('tipo_acondicionamiento_id')
-                  ->constrained('tipo_acondicionamientos')
-                  ->onDelete('cascade');
+                ->constrained('tipo_acondicionamientos')
+                ->onDelete('cascade');
             $table->integer('orden');
             $table->text('descripcion');
-            $table->string('fase');
+            $table->foreignId('fase')
+                ->constrained('stages')
+                ->onDelete('cascade');
             $table->boolean('editable')->default(false);
             $table->boolean('control')->default(false);
             $table->string('fase_control')->nullable();
@@ -33,4 +35,4 @@ return new class extends Migration
     {
         Schema::dropIfExists('linea_tipo_acondicionamientos');
     }
-}; 
+};

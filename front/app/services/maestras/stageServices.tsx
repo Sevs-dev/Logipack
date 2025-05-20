@@ -11,7 +11,7 @@ const Stage = axios.create({
 
 export interface Data {
     description: string;
-    phase_type: "Planeacion" | "Conciliación" | "Actividades";
+    phase_type: string;
     repeat: boolean;
     repeat_minutes?: number;
     alert: boolean;

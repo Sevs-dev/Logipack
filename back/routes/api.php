@@ -175,6 +175,7 @@ Route::controller(ConsecutiveController::class)->group(function () {
 //Rutas Tipo de Acondicionamiento
 Route::controller(TipoAcondicionamientoController::class)->group(function () {
     Route::get('/getTipoAcondicionamiento', 'getAll'); // Obtener todas las lineas   
+    Route::get('/getTipoAcondicionamientoId/{id}', 'getTipoAcondicionamiento'); // Obtener una lineas específica
     Route::post('/newTipoAcondicionamiento', 'newTipoAcondicionamiento'); // Crear una nueva lineas 
     Route::put('/updateTipoAcondicionamiento/{id}', 'updateTipoAcondicionamiento'); // Actualizar una lineas
     Route::delete('/deleteTipoAcondicionamiento/{id}', 'deleteTipoAcondicionamiento'); // Eliminar una lineas

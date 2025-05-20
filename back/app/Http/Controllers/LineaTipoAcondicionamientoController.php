@@ -39,7 +39,7 @@ class LineaTipoAcondicionamientoController extends Controller
             'tipo_acondicionamiento_id' => 'required|exists:tipo_acondicionamientos,id',
             'orden' => 'required|integer',
             'descripcion' => 'required|string',
-            'fase' => 'required|string',
+            'fase' => 'required|exists:stages,id',
             'editable' => 'boolean',
             'control' => 'boolean',
             'fase_control' => 'nullable|string'
@@ -64,7 +64,7 @@ class LineaTipoAcondicionamientoController extends Controller
     public function show($id): JsonResponse
     {
         $lineaTipo = LineaTipoAcondicionamiento::find($id);
-        
+
         if (!$lineaTipo) {
             return response()->json([
                 'message' => 'Línea de tipo de acondicionamiento no encontrada'
@@ -77,7 +77,7 @@ class LineaTipoAcondicionamientoController extends Controller
     public function update(Request $request, $id): JsonResponse
     {
         $lineaTipo = LineaTipoAcondicionamiento::find($id);
-        
+
         if (!$lineaTipo) {
             return response()->json([
                 'message' => 'Línea de tipo de acondicionamiento no encontrada'
@@ -88,7 +88,7 @@ class LineaTipoAcondicionamientoController extends Controller
             'tipo_acondicionamiento_id' => 'exists:tipo_acondicionamientos,id',
             'orden' => 'integer',
             'descripcion' => 'string',
-            'fase' => 'string',
+            'fase' => 'exists:stages,id',
             'editable' => 'boolean',
             'control' => 'boolean',
             'fase_control' => 'nullable|string'
@@ -105,7 +105,7 @@ class LineaTipoAcondicionamientoController extends Controller
     public function destroy($id): JsonResponse
     {
         $lineaTipo = LineaTipoAcondicionamiento::find($id);
-        
+
         if (!$lineaTipo) {
             return response()->json([
                 'message' => 'Línea de tipo de acondicionamiento no encontrada'
@@ -121,31 +121,57 @@ class LineaTipoAcondicionamientoController extends Controller
 
     public function getByTipoAcondicionamiento($tipoAcondicionamientoId): JsonResponse
     {
-        $lineas = DB::table('linea_tipo_acondicionamientos as lta')
-            ->where('lta.tipo_acondicionamiento_id', $tipoAcondicionamientoId)
-            ->select(
-                'lta.id',
-                'lta.tipo_acondicionamiento_id',
-                'lta.orden',
-                'lta.descripcion',
-                'lta.fase',
-                'lta.editable',
-                'lta.control',
-                'lta.fase_control',
-                'lta.created_at',
-                'lta.updated_at'
-            )
-            ->orderBy('lta.orden', 'asc')
-            ->get();
+        $lineas  = DB::table('linea_tipo_acondicionamientos as lta')
+        ->leftJoin('stages as std', 'std.id', '=', 'lta.fase')
+        ->leftJoin('tipo_acondicionamientos as ta', 'ta.id', '=', 'lta.tipo_acondicionamiento_id')
+        ->select([
+            'lta.id',
+            'lta.orden',
+            'lta.descripcion',
+            'lta.tipo_acondicionamiento_id',
+            'ta.descripcion as descripcion_tipo',
+            'lta.fase',
+            'std.description as descripcion_fase',
+            'std.status',
+            'lta.editable',
+            'lta.control',
+            'lta.fase_control',
+            'lta.created_at',
+            'lta.updated_at'
+        ])
+        ->where('lta.tipo_acondicionamiento_id', $tipoAcondicionamientoId)
+        ->get();
 
         return response()->json($lineas);
     }
 
     // funcion que obtenga las dos listas tipo de acondicionamiento y linea tipo de acondicionamiento
+     // funcion que obtenga las dos listas tipo de acondicionamiento y linea tipo de acondicionamiento
     public function getListTipoyLineas($id): JsonResponse
     {
         $tipos = TipoAcondicionamiento::find($id);
-        $lineas = LineaTipoAcondicionamiento::where('tipo_acondicionamiento_id', $id)->get();
+        // $lineas = LineaTipoAcondicionamiento::where('tipo_acondicionamiento_id', $id)->get();
+        $lineas = DB::table('linea_tipo_acondicionamientos as lta')
+        ->leftJoin('stages as std', 'std.id', '=', 'lta.fase')
+        ->leftJoin('tipo_acondicionamientos as ta', 'ta.id', '=', 'lta.tipo_acondicionamiento_id')
+        ->select([
+            'lta.id',
+            'lta.orden',
+            'lta.descripcion',
+            'lta.tipo_acondicionamiento_id',
+            'ta.descripcion as descripcion_tipo',
+            'lta.fase',
+            'std.description as descripcion_fase',
+            'std.status',
+            'lta.editable',
+            'lta.control',
+            'lta.fase_control',
+            'lta.created_at',
+            'lta.updated_at'
+        ])
+        ->where('lta.tipo_acondicionamiento_id', $id)
+        ->get();
+ 
         return response()->json([
             'tipos' => $tipos,
             'lineas' => $lineas
@@ -155,12 +181,12 @@ class LineaTipoAcondicionamientoController extends Controller
 
     public function getSelectStages(): JsonResponse
     {
-        $fases = Stage::all();  
+        $fases = Stage::all();
         $controles = Stage::where('phase_type', 'Control')->get();
-        
+
         return response()->json([
             'fases' => $fases,
             'controles' => $controles
         ]);
     }
-} 
+}

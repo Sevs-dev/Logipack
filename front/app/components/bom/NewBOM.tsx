@@ -6,6 +6,7 @@ import Button from "../buttons/buttons";
 import Text from "../text/Text";
 import Table from "../table/Table";
 import { showSuccess, showError, showConfirm } from "../toastr/Toaster";
+import ModalSection from "../modal/ModalSection";
 // Servicios 
 import { getClients, getClientsId } from "@/app/services/userDash/clientServices";
 import { getArticleByCode, newArticle, getArticlesId, deleteArticle, updateArticle, getBoms } from "@/app/services/bom/articleServices";
@@ -325,179 +326,168 @@ function BOMManager() {
             </div>
 
             {isModalOpen && (
-                <motion.div
-                    className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center p-4 z-50"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                >
-                    <motion.div
-                        className="bg-white p-6 rounded-lg shadow-lg w-full max-w-[800px] max-h-[90vh] overflow-y-auto z-50"
-                        initial={{ y: -50, opacity: 0 }}
-                        animate={{ y: 0, opacity: 1 }}
-                        exit={{ y: -50, opacity: 0 }}
-                    >
-                        <Text type="title">
-                            {currentBomId ? "Editar BOM" : "Crear BOM"}
-                        </Text>
+                <ModalSection isVisible={isModalOpen} onClose={() => { setIsModalOpen(false) }}>
 
-                        <div className="mb-4">
-                            <Text type="subtitle">Selecciona un Cliente:</Text>
-                            <select
-                                className="w-full border p-2 rounded text-black text-center"
-                                value={selectedClient}
-                                onChange={e => setSelectedClient(e.target.value)}
-                            >
-                                <option value="">Seleccione...</option>
-                                {clients.map(client => (
-                                    <option key={client.code} value={client.id.toString()}>
-                                        {client.name}
-                                    </option>
-                                ))}
-                            </select>
-                        </div>
+                    <Text type="title">
+                        {currentBomId ? "Editar BOM" : "Crear BOM"}
+                    </Text>
 
-                        {(selectedClient || currentBomId) && (
-                            <div className="mt-4 grid grid-cols-2 gap-4">
-                                <div>
-                                    <Text type="subtitle">Artículos Disponibles:</Text>
-                                    <div className="mb-2">
-                                        <input
-                                            type="text"
-                                            placeholder="Buscar artículos..."
-                                            value={searchTerm}
-                                            onChange={(e) => setSearchTerm(e.target.value)}
-                                            className="border p-2 rounded w-full text-black"
-                                        />
-                                    </div>
-                                    {loadingArticles ? (
-                                        <p className="text-blue-500">Cargando artículos...</p>
-                                    ) : filteredArticles.length > 0 ? (
-                                        <ul className="border p-2 rounded bg-gray-100 h-40 overflow-y-auto">
-                                            {filteredArticles.map((article) => (
-                                                <li
-                                                    key={article.codart}
-                                                    className="border-b py-1 px-2 text-black cursor-pointer hover:bg-blue-100"
-                                                    onClick={() => handleSelectArticle(article)}
-                                                >
-                                                    {article.desart} ({article.codart})
-                                                </li>
-                                            ))}
-                                        </ul>
-                                    ) : (
-                                        <Text type="error">No se encontraron coincidencias.</Text>
-                                    )}
+                    <div className="mb-4">
+                        <Text type="subtitle">Selecciona un Cliente:</Text>
+                        <select
+                            className="w-full border p-2 rounded text-black text-center"
+                            value={selectedClient}
+                            onChange={e => setSelectedClient(e.target.value)}
+                        >
+                            <option value="">Seleccione...</option>
+                            {clients.map(client => (
+                                <option key={client.code} value={client.id.toString()}>
+                                    {client.name}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+
+                    {(selectedClient || currentBomId) && (
+                        <div className="mt-4 grid grid-cols-2 gap-4">
+                            <div>
+                                <Text type="subtitle">Artículos Disponibles:</Text>
+                                <div className="mb-2">
+                                    <input
+                                        type="text"
+                                        placeholder="Buscar artículos..."
+                                        value={searchTerm}
+                                        onChange={(e) => setSearchTerm(e.target.value)}
+                                        className="border p-2 rounded w-full text-black"
+                                    />
                                 </div>
-
-                                <div>
-                                    <Text type="subtitle">Artículo Seleccionado:</Text>
-                                    {selectedArticle ? (
-                                        <div className="border p-2 rounded bg-gray-100 flex justify-between items-center">
-                                            <span className="text-black">
-                                                {selectedArticle.desart} ({selectedArticle.codart})
-                                            </span>
-                                            <button
-                                                onClick={handleDeselectArticle}
-                                                className="bg-red-500 text-white px-2 py-1 rounded"
+                                {loadingArticles ? (
+                                    <p className="text-blue-500">Cargando artículos...</p>
+                                ) : filteredArticles.length > 0 ? (
+                                    <ul className="border p-2 rounded bg-gray-100 h-40 overflow-y-auto">
+                                        {filteredArticles.map((article) => (
+                                            <li
+                                                key={article.codart}
+                                                className="border-b py-1 px-2 text-black cursor-pointer hover:bg-blue-100"
+                                                onClick={() => handleSelectArticle(article)}
                                             >
-                                                X
-                                            </button>
-                                        </div>
-                                    ) : (
-                                        <Text type="alert">No se ha seleccionado ningún artículo.</Text>
-                                    )}
-                                </div>
-                            </div>
-                        )}
-
-                        <div className="flex justify-center space-x-2">
-                            <div className="mt-4">
-                                <Text type="subtitle">Cantidad Base:</Text>
-                                <input
-                                    type="number"
-                                    min="0"
-                                    className="w-full border p-2 rounded text-black text-center"
-                                    value={baseQuantity}
-                                    onChange={e => setBaseQuantity(Number(e.target.value))}
-                                />
+                                                {article.desart} ({article.codart})
+                                            </li>
+                                        ))}
+                                    </ul>
+                                ) : (
+                                    <Text type="error">No se encontraron coincidencias.</Text>
+                                )}
                             </div>
 
-                            <div className="mt-4">
-                                <Text type="subtitle">Estado:</Text>
-                                <select
-                                    className="w-full border p-2 rounded text-black text-center"
-                                    value={bomStatus ? "activo" : "inactivo"}
-                                    onChange={e => setBomStatus(e.target.value === "activo")}
-                                >
-                                    <option value="activo">Activo</option>
-                                    <option value="inactivo">Inactivo</option>
-                                </select>
+                            <div>
+                                <Text type="subtitle">Artículo Seleccionado:</Text>
+                                {selectedArticle ? (
+                                    <div className="border p-2 rounded bg-gray-100 flex justify-between items-center">
+                                        <span className="text-black">
+                                            {selectedArticle.desart} ({selectedArticle.codart})
+                                        </span>
+                                        <button
+                                            onClick={handleDeselectArticle}
+                                            className="bg-red-500 text-white px-2 py-1 rounded"
+                                        >
+                                            X
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <Text type="alert">No se ha seleccionado ningún artículo.</Text>
+                                )}
                             </div>
                         </div>
+                    )}
 
-                        {selectedArticle && (
-                            <div className="mt-4">
-                                <Text type="subtitle">Materiales:</Text>
-                                <div className="border p-4 rounded bg-gray-50 space-y-4">
-                                    {ingredients.length > 0 ? (
-                                        ingredients.map((ing, index) => (
-                                            <div key={index} className="flex flex-col space-y-2 border p-2 rounded bg-white">
-                                                <div className="flex items-center space-x-2 w-full">
-                                                    <select
-                                                        className="border p-1 rounded text-black w-[70%]"
-                                                        value={ing.codart}
-                                                        onChange={e => handleIngredientSelect(index, e.target.value)}
-                                                    >
-                                                        <option value="">Seleccione un artículo</option>
-                                                        {allArticles.map(article => (
-                                                            <option key={article.codart} value={article.codart}>
-                                                                {article.desart} ({article.codart})
-                                                            </option>
-                                                        ))}
-                                                    </select>
-                                                    <input
-                                                        type="number"
-                                                        className="border p-1 rounded text-black w-[15%] text-center"
-                                                        placeholder="Cantidad"
-                                                        value={ing.quantity}
-                                                        onChange={e => handleIngredientChange(index, "quantity", e.target.value)}
-                                                    />
-                                                    <input
-                                                        type="number"
-                                                        className="border p-1 rounded text-black w-[15%] text-center"
-                                                        placeholder="% Merma"
-                                                        value={ing.merma}
-                                                        onChange={e => handleIngredientChange(index, "merma", e.target.value)}
-                                                    />
-                                                    <button
-                                                        onClick={() => removeIngredientRow(index)}
-                                                        className="bg-red-500 text-white px-2 py-1 rounded"
-                                                    >
-                                                        X
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        ))
-                                    ) : (
-                                        <Text type="alert">No hay ingredientes agregados.</Text>
-                                    )}
-
-                                    <Button onClick={addIngredientRow} variant="create" label="Agregar Ingrediente" />
-                                </div>
-                            </div>
-                        )}
-
-                        <div className="flex justify-end space-x-4 mt-4">
-                            <Button onClick={() => setIsModalOpen(false)} variant="cancel" label="Cancelar" />
-                            <Button
-                                onClick={handleSaveBOM}
-                                variant="create"
-                                label={currentBomId ? "Actualizar BOM" : "Guardar BOM"}
-                                disabled={loadingArticles || isSaving}
+                    <div className="flex justify-center space-x-2">
+                        <div className="mt-4">
+                            <Text type="subtitle">Cantidad Base:</Text>
+                            <input
+                                type="number"
+                                min="0"
+                                className="w-full border p-2 rounded text-black text-center"
+                                value={baseQuantity}
+                                onChange={e => setBaseQuantity(Number(e.target.value))}
                             />
                         </div>
-                    </motion.div>
-                </motion.div>
+
+                        <div className="mt-4">
+                            <Text type="subtitle">Estado:</Text>
+                            <select
+                                className="w-full border p-2 rounded text-black text-center"
+                                value={bomStatus ? "activo" : "inactivo"}
+                                onChange={e => setBomStatus(e.target.value === "activo")}
+                            >
+                                <option value="activo">Activo</option>
+                                <option value="inactivo">Inactivo</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    {selectedArticle && (
+                        <div className="mt-4">
+                            <Text type="subtitle">Materiales:</Text>
+                            <div className="border p-4 rounded bg-gray-50 space-y-4">
+                                {ingredients.length > 0 ? (
+                                    ingredients.map((ing, index) => (
+                                        <div key={index} className="flex flex-col space-y-2 border p-2 rounded bg-white">
+                                            <div className="flex items-center space-x-2 w-full">
+                                                <select
+                                                    className="border p-1 rounded text-black w-[70%]"
+                                                    value={ing.codart}
+                                                    onChange={e => handleIngredientSelect(index, e.target.value)}
+                                                >
+                                                    <option value="">Seleccione un artículo</option>
+                                                    {allArticles.map(article => (
+                                                        <option key={article.codart} value={article.codart}>
+                                                            {article.desart} ({article.codart})
+                                                        </option>
+                                                    ))}
+                                                </select>
+                                                <input
+                                                    type="number"
+                                                    className="border p-1 rounded text-black w-[15%] text-center"
+                                                    placeholder="Cantidad"
+                                                    value={ing.quantity}
+                                                    onChange={e => handleIngredientChange(index, "quantity", e.target.value)}
+                                                />
+                                                <input
+                                                    type="number"
+                                                    className="border p-1 rounded text-black w-[15%] text-center"
+                                                    placeholder="% Merma"
+                                                    value={ing.merma}
+                                                    onChange={e => handleIngredientChange(index, "merma", e.target.value)}
+                                                />
+                                                <button
+                                                    onClick={() => removeIngredientRow(index)}
+                                                    className="bg-red-500 text-white px-2 py-1 rounded"
+                                                >
+                                                    X
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ))
+                                ) : (
+                                    <Text type="alert">No hay ingredientes agregados.</Text>
+                                )}
+
+                                <Button onClick={addIngredientRow} variant="create" label="Agregar Ingrediente" />
+                            </div>
+                        </div>
+                    )}
+
+                    <div className="flex justify-end space-x-4 mt-4">
+                        <Button onClick={() => setIsModalOpen(false)} variant="cancel" label="Cancelar" />
+                        <Button
+                            onClick={handleSaveBOM}
+                            variant="create"
+                            label={currentBomId ? "Actualizar BOM" : "Guardar BOM"}
+                            disabled={loadingArticles || isSaving}
+                        />
+                    </div>
+                </ModalSection>
             )}
 
             <Table

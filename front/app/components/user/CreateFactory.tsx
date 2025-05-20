@@ -50,8 +50,7 @@ function CreateFactory() {
             showError("Por favor, completa todos los campos antes de continuar.");
             return;
         }
-        const factoryData = { name, location, capacity, manager, employees, status, prefix };
-        console.log("Factory Data:", factoryData);
+        const factoryData = { name, location, capacity, manager, employees, status, prefix }; 
         try {
             if (editingFactory) {
                 await updateFactory(editingFactory.id, factoryData);

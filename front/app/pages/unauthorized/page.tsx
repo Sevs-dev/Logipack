@@ -54,7 +54,7 @@ export default function UnauthorizedPage() {
         whileTap={{ scale: 0.95, rotate: -1 }}
       >
         <Link
-          href="/"
+          href="/pages/login"
           className="inline-block bg-green-700 text-white px-5 py-2 rounded-md hover:bg-green-800 transition"
         >
           Volver al inicio

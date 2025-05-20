@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { API_URL } from '../../config/api';
+import { DataService } from '../../interfaces/NewMaestra';
 
 const Maestras = axios.create({
     baseURL: API_URL,
@@ -8,20 +9,9 @@ const Maestras = axios.create({
     },
 });
 
-interface Data {
-    descripcion: string;
-    requiere_bom: boolean;
-    type_product: string;
-    type_stage: number[];
-    status_type: string | null; 
-    aprobado: boolean;
-    duration: string;
-    duration_user: string;
-}
-
 // Crear una nueva Maestra
-export const createMaestra = async (data: Data): Promise<any> => {
-    console.log('Data a enviar:', data); // Agregado para depuración
+export const createMaestra = async (data: DataService): Promise<any> => {
+    // console.log('DataService a enviar:', data); // Agregado para depuración
     try {
         const response = await Maestras.post('/newMaestra', data);
         return response.data;
@@ -44,7 +34,7 @@ export const getMaestra = async (): Promise<any> => {
 
 export const getTipo = async () => {
     try {
-        const response = await Maestras.get(`/getTipo`); 
+        const response = await Maestras.get(`/getTipo`);
         return response.data;
     } catch (error: any) {
         if (error.response && error.response.status === 404) {
@@ -69,9 +59,9 @@ export const deleteMaestra = async (id: number): Promise<any> => {
 };
 
 // Obtener una Maestra por su ID
-export const getMaestraId = async (id: number): Promise<any> => { 
+export const getMaestraId = async (id: number): Promise<any> => {
     try {
-        const response = await Maestras.get(`/MaestraId/${id}`); 
+        const response = await Maestras.get(`/MaestraId/${id}`);
         return response.data;
     } catch (error) {
         console.error('Error en getMaestraId:', error);
@@ -91,7 +81,7 @@ export const getMaestraName = async (name: string): Promise<any> => {
 };
 
 // Actualizar una Maestra
-export const updateMaestra = async (id: number, data: Data): Promise<any> => {
+export const updateMaestra = async (id: number, data: DataService): Promise<any> => {
     try {
         const response = await Maestras.put(`/updateMaestra/${id}`, data);
         return response.data;

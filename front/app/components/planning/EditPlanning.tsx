@@ -7,6 +7,7 @@ import { showSuccess, showError } from "../toastr/Toaster";
 import Table from "../table/Table";
 import Text from "../text/Text";
 import { IconSelector } from "../dinamicSelect/IconSelector";
+import ModalSection from "../modal/ModalSection";
 // 🔹 Servicios 
 import { getPlanning, updatePlanning } from "../../services/planing/planingServices";
 import { getClientsId } from "@/app/services/userDash/clientServices";
@@ -176,318 +177,329 @@ function EditPlanning() {
         console.log("Eliminar", id);
     }, []);
 
+    const getFormattedDuration = (minutes: number): string => {
+        if (minutes <= 0) return 'menos de 1 minuto';
+        const days = Math.floor(minutes / 1440); // 1440 min = 1 día
+        const remainingMinutesAfterDays = minutes % 1440;
+        const hours = Math.floor(remainingMinutesAfterDays / 60);
+        const remainingMinutes = remainingMinutesAfterDays % 60;
+        const parts: string[] = [];
+        if (days > 0) parts.push(`${days} día${days > 1 ? 's' : ''}`);
+        if (hours > 0) parts.push(`${hours} hora${hours > 1 ? 's' : ''}`);
+        if (remainingMinutes > 0) parts.push(`${remainingMinutes} min`);
+        return parts.join(' ');
+    };
+
     return (
         <div>
             {isOpen && currentPlan && (
-                <motion.div
-                    className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center p-4 z-50"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                >
-                    <motion.div
-                        className="bg-white rounded-lg shadow-xl w-full max-w-xl sm:max-w-2xl md:max-w-3xl lg:max-w-[900px] max-h-[90vh] overflow-y-auto p-4 sm:p-6"
-                        initial={{ y: -50, opacity: 0 }}
-                        animate={{ y: 0, opacity: 1 }}
-                        exit={{ y: 50, opacity: 0 }}
-                        transition={{ duration: 0.3 }}
-                    >
-                        <Text type="title">Editar Acondicionamiento</Text>
-                        <h2 className="text-xl font-bold mb-6">Editar planificación</h2>
+                <ModalSection isVisible={isOpen} onClose={() => { setIsOpen(false) }}>
+                    <Text type="title">Editar Acondicionamiento</Text>
+                    <h2 className="text-xl font-bold mb-6">Editar planificación</h2>
 
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            {/* 🔹 Artículo */}
-                            <div>
-                                <Text type="subtitle">Artículo</Text>
-                                <input
-                                    className="w-full border p-3 rounded-lg text-gray-800 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500 text-center"
-                                    readOnly
-                                    value={currentPlan.codart}
-                                    onChange={(e) =>
-                                        setCurrentPlan({ ...currentPlan, codart: e.target.value })
-                                    }
-                                />
-                            </div>
-
-                            {/* 🔹 Fecha de entrega */}
-                            <div>
-                                <Text type="subtitle">Fecha de entrega</Text>
-                                <input
-                                    className="w-full border p-3 rounded-lg text-gray-800 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500 text-center"
-                                    type="date"
-                                    readOnly
-                                    value={currentPlan.deliveryDate}
-                                    onChange={(e) =>
-                                        setCurrentPlan({ ...currentPlan, deliveryDate: e.target.value })
-                                    }
-                                />
-                            </div>
-
-                            {/* 🔹 Registro Sanitario */}
-                            <div>
-                                <Text type="subtitle">Registro Sanitario</Text>
-                                <input
-                                    className="w-full border p-3 rounded-lg text-gray-800 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500 text-center"
-                                    value={currentPlan.healthRegistration}
-                                    readOnly
-                                    onChange={(e) =>
-                                        setCurrentPlan({
-                                            ...currentPlan,
-                                            healthRegistration: e.target.value,
-                                        })
-                                    }
-                                />
-                            </div>
-
-                            {/* 🔹 Lote */}
-                            <div>
-                                <Text type="subtitle">Lote</Text>
-                                <input
-                                    className="w-full border p-3 rounded-lg text-gray-800 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500 text-center"
-                                    value={currentPlan.lot}
-                                    readOnly
-                                    onChange={(e) =>
-                                        setCurrentPlan({ ...currentPlan, lot: e.target.value })
-                                    }
-                                />
-                            </div>
-
-                            {/* 🔹 N° de orden */}
-                            <div>
-                                <Text type="subtitle">N° de orden</Text>
-                                <input
-                                    className="w-full border p-3 rounded-lg text-gray-800 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500 text-center"
-                                    value={currentPlan.orderNumber}
-                                    readOnly
-                                    onChange={(e) =>
-                                        setCurrentPlan({ ...currentPlan, orderNumber: e.target.value })
-                                    }
-                                />
-                            </div>
-
-                            {/* 🔹 Cantidad a producir */}
-                            <div>
-                                <Text type="subtitle">Cantidad a producir</Text>
-                                <input
-                                    className="w-full border p-3 rounded-lg text-gray-800 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500 text-center"
-                                    type="number"
-                                    readOnly
-                                    value={currentPlan.quantityToProduce.toString()}
-                                    onChange={(e) =>
-                                        setCurrentPlan({
-                                            ...currentPlan,
-                                            quantityToProduce: parseFloat(e.target.value),
-                                        })
-                                    }
-                                />
-                            </div>
-                            {/* 🔹 Cliente */}
-                            <div>
-                                <Text type="subtitle">Cliente</Text>
-                                <input
-                                    className="w-full border p-3 rounded-lg text-gray-800 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500 text-center"
-                                    value={currentPlan.client_name || ""}
-                                    readOnly
-                                    onChange={(e) =>
-                                        setCurrentPlan({ ...currentPlan, client_name: e.target.value })
-                                    }
-                                />
-                            </div>
-                            {/* 🔹 Estado */}
-                            <div>
-                                <Text type="subtitle">Estado</Text>
-                                <select
-                                    className="w-full border p-3 rounded-lg text-gray-800 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500 text-center"
-                                    value={currentPlan.status_dates}
-                                    onChange={(e) =>
-                                        setCurrentPlan({ ...currentPlan, status_dates: e.target.value })
-                                    }
-                                >
-                                    <option value="">Seleccione una opción</option>
-                                    <option value="En Creación">En Creación</option>
-                                    <option value="Planificación">Planificación</option>
-                                </select>
-                            </div>
-                            {/* 🔹 Planta */}
-                            <div>
-                                <Text type="subtitle">Planta</Text>
-                                <select
-                                    className="w-full border p-3 rounded-lg text-gray-800 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500 text-center"
-                                    value={currentPlan.factory || ""}  // Asegúrate de que factory esté presente
-                                    onChange={(e) =>
-                                        setCurrentPlan({ ...currentPlan, factory: e.target.value })
-                                    }
-                                >
-                                    <option value="">Seleccione una planta</option>
-                                    {factories.length > 0 ? (
-                                        factories.map((factory) => (
-                                            <option key={factory.id} value={factory.id}>
-                                                {factory.name} {/* Mostrar el nombre */}
-                                            </option>
-                                        ))
-                                    ) : (
-                                        <option value="" disabled>
-                                            No hay fábricas disponibles
-                                        </option>
-                                    )}
-                                </select>
-                            </div>
-                            {/* 🔹 Lineas */}
-                            <div>
-                                <Text type="subtitle">Lineas</Text>
-                                <select
-                                    className="w-full border p-3 rounded-lg text-gray-800 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500 text-center"
-                                    value={currentPlan.line || ""}
-                                    onChange={(e) =>
-                                        setCurrentPlan({ ...currentPlan, line: e.target.value })
-                                    }
-                                >
-                                    <option value="">Seleccione una planta</option>
-                                    {manu.length > 0 ? (
-                                        manu.map((line) => (
-                                            <option key={line.id} value={line.id}>
-                                                {line.name} {/* Mostrar el nombre */}
-                                            </option>
-                                        ))
-                                    ) : (
-                                        <option value="" disabled>
-                                            No hay lineas disponibles
-                                        </option>
-                                    )}
-                                </select>
-                            </div>
-                            {/* 🔹 Maquinaria */}
-                            <div>
-                                <Text type="subtitle">Maquinaria</Text>
-                                <select
-                                    className="w-full border p-3 rounded-lg text-gray-800 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500 text-center"
-                                    value={currentPlan.machine || ""}
-                                    onChange={(e) =>
-                                        setCurrentPlan({ ...currentPlan, machine: e.target.value })
-                                    }
-                                >
-                                    <option value="">Seleccione una Maquina</option>
-                                    {machine.length > 0 ? (
-                                        machine.map((machine) => (
-                                            <option key={machine.id} value={machine.id}>
-                                                {machine.name} {/* Mostrar el nombre */}
-                                            </option>
-                                        ))
-                                    ) : (
-                                        <option value="" disabled>
-                                            No hay maquinas disponibles
-                                        </option>
-                                    )}
-                                </select>
-                            </div>
-                            {/* 🔹 Recursos */}
-                            <div>
-                                <Text type="subtitle">Recursos</Text>
-                                <textarea
-                                    name="resource"
-                                    value={currentPlan.resource || ""}
-                                    onChange={(e) =>
-                                        setCurrentPlan({
-                                            ...currentPlan,
-                                            resource: e.target.value,
-                                        })
-                                    }
-                                    className="w-full border p-3 rounded-lg text-gray-800 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                    rows={4}
-                                />
-                            </div>
-                            {/* Color */}
-                            <div>
-                                <Text type="subtitle">Color</Text>
-                                <div className="flex flex-wrap gap-2 mt-2">
-                                    {COLORS.map((color, index) => {
-                                        const isSelected = currentPlan.color === color;
-                                        return (
-                                            <button
-                                                key={`${color}-${index}`}
-                                                type="button"
-                                                className={`w-6 h-6 rounded-full relative flex items-center justify-center transition-shadow duration-200 ${isSelected ? "ring-2 ring-white ring-offset-2" : ""
-                                                    }`}
-                                                style={{ backgroundColor: color }}
-                                                onClick={() => setCurrentPlan({ ...currentPlan, color })}
-                                                aria-label={`Seleccionar color ${color}`}
-                                            >
-                                                {isSelected && (
-                                                    <svg
-                                                        className="w-3 h-3 text-white"
-                                                        fill="none"
-                                                        stroke="currentColor"
-                                                        strokeWidth="3"
-                                                        viewBox="0 0 24 24"
-                                                    >
-                                                        <path d="M5 13l4 4L19 7" />
-                                                    </svg>
-                                                )}
-                                            </button>
-                                        );
-                                    })}
-                                </div>
-                            </div>
-                            {/* Icono */}
-                            <div>
-                                <Text type="subtitle">Icono</Text>
-                                <IconSelector
-                                    selectedIcon={currentPlan?.icon || ""}
-                                    onChange={(iconName) =>
-                                        setCurrentPlan((prev) =>
-                                            prev ? { ...prev, icon: iconName } : prev
-                                        )
-                                    }
-                                />
-                            </div>
-                            {/* 🔹 Fecha de Inicio */}
-                            <div>
-                                <Text type="subtitle">Fecha y Hora de Inicio</Text>
-                                <input
-                                    className="w-full border p-3 rounded-lg text-gray-800 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500 text-center"
-                                    value={currentPlan.start_date || ""}
-                                    type="datetime-local"
-                                    onChange={(e) => {
-                                        const start = e.target.value;
-                                        let end = "";
-
-                                        if (currentPlan?.duration) {
-                                            end = calculateEndDateRespectingWorkHours(start, Number(currentPlan.duration));
-                                        } else {
-                                            const fallback = new Date(start);
-                                            fallback.setHours(18, 0, 0, 0);
-                                            const pad = (n: number) => n.toString().padStart(2, "0");
-                                            end = `${fallback.getFullYear()}-${pad(fallback.getMonth() + 1)}-${pad(fallback.getDate())}T${pad(fallback.getHours())}:${pad(fallback.getMinutes())}`;
-                                        }
-
-                                        setCurrentPlan({
-                                            ...currentPlan,
-                                            start_date: start,
-                                            end_date: end,
-                                        });
-                                    }}
-                                />
-                            </div>
-
-                            <div>
-                                <Text type="subtitle">Fecha y Hora de Final</Text>
-                                <input
-                                    className="w-full border p-3 rounded-lg text-gray-800 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500 text-center"
-                                    value={currentPlan.end_date || ""}
-                                    type="datetime-local"
-                                    onChange={(e) =>
-                                        setCurrentPlan({ ...currentPlan, end_date: e.target.value })
-                                    }
-                                />
-                            </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        {/* 🔹 Artículo */}
+                        <div>
+                            <Text type="subtitle">Artículo</Text>
+                            <input
+                                className="w-full border p-3 rounded-lg text-gray-800 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500 text-center"
+                                readOnly
+                                value={currentPlan.codart}
+                                onChange={(e) =>
+                                    setCurrentPlan({ ...currentPlan, codart: e.target.value })
+                                }
+                            />
                         </div>
 
-                        <div className="flex justify-end gap-2 mt-6">
-                            <Button onClick={() => setIsOpen(false)} variant="cancel" label="Cancelar" />
-                            <Button onClick={() => handleSave(currentPlan)} variant="save" label="Guardar" />
+                        {/* 🔹 Fecha de entrega */}
+                        <div>
+                            <Text type="subtitle">Fecha de entrega</Text>
+                            <input
+                                className="w-full border p-3 rounded-lg text-gray-800 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500 text-center"
+                                type="date"
+                                readOnly
+                                value={currentPlan.deliveryDate}
+                                onChange={(e) =>
+                                    setCurrentPlan({ ...currentPlan, deliveryDate: e.target.value })
+                                }
+                            />
                         </div>
-                    </motion.div>
-                </motion.div>
+
+                        {/* 🔹 Registro Sanitario */}
+                        <div>
+                            <Text type="subtitle">Registro Sanitario</Text>
+                            <input
+                                className="w-full border p-3 rounded-lg text-gray-800 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500 text-center"
+                                value={currentPlan.healthRegistration}
+                                readOnly
+                                onChange={(e) =>
+                                    setCurrentPlan({
+                                        ...currentPlan,
+                                        healthRegistration: e.target.value,
+                                    })
+                                }
+                            />
+                        </div>
+
+                        {/* 🔹 Lote */}
+                        <div>
+                            <Text type="subtitle">Lote</Text>
+                            <input
+                                className="w-full border p-3 rounded-lg text-gray-800 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500 text-center"
+                                value={currentPlan.lot}
+                                readOnly
+                                onChange={(e) =>
+                                    setCurrentPlan({ ...currentPlan, lot: e.target.value })
+                                }
+                            />
+                        </div>
+
+                        {/* 🔹 N° de orden */}
+                        <div>
+                            <Text type="subtitle">N° de orden</Text>
+                            <input
+                                className="w-full border p-3 rounded-lg text-gray-800 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500 text-center"
+                                value={currentPlan.orderNumber}
+                                readOnly
+                                onChange={(e) =>
+                                    setCurrentPlan({ ...currentPlan, orderNumber: e.target.value })
+                                }
+                            />
+                        </div>
+
+                        {/* 🔹 Cantidad a producir */}
+                        <div>
+                            <Text type="subtitle">Cantidad a producir</Text>
+                            <input
+                                className="w-full border p-3 rounded-lg text-gray-800 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500 text-center"
+                                type="number"
+                                readOnly
+                                value={currentPlan.quantityToProduce.toString()}
+                                onChange={(e) =>
+                                    setCurrentPlan({
+                                        ...currentPlan,
+                                        quantityToProduce: parseFloat(e.target.value),
+                                    })
+                                }
+                            />
+                        </div>
+                        {/* 🔹 Cliente */}
+                        <div>
+                            <Text type="subtitle">Cliente</Text>
+                            <input
+                                className="w-full border p-3 rounded-lg text-gray-800 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500 text-center"
+                                value={currentPlan.client_name || ""}
+                                readOnly
+                                onChange={(e) =>
+                                    setCurrentPlan({ ...currentPlan, client_name: e.target.value })
+                                }
+                            />
+                        </div>
+                        {/* 🔹 Estado */}
+                        <div>
+                            <Text type="subtitle">Estado</Text>
+                            <select
+                                className="w-full border p-3 rounded-lg text-gray-800 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500 text-center"
+                                value={currentPlan.status_dates}
+                                onChange={(e) =>
+                                    setCurrentPlan({ ...currentPlan, status_dates: e.target.value })
+                                }
+                            >
+                                <option value="">Seleccione una opción</option>
+                                <option value="En Creación">En Creación</option>
+                                <option value="Planificación">Planificación</option>
+                            </select>
+                        </div>
+                        {/* 🔹 Planta */}
+                        <div>
+                            <Text type="subtitle">Planta</Text>
+                            <select
+                                className="w-full border p-3 rounded-lg text-gray-800 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500 text-center"
+                                value={currentPlan.factory || ""}  // Asegúrate de que factory esté presente
+                                onChange={(e) =>
+                                    setCurrentPlan({ ...currentPlan, factory: e.target.value })
+                                }
+                            >
+                                <option value="">Seleccione una planta</option>
+                                {factories.length > 0 ? (
+                                    factories.map((factory) => (
+                                        <option key={factory.id} value={factory.id}>
+                                            {factory.name} {/* Mostrar el nombre */}
+                                        </option>
+                                    ))
+                                ) : (
+                                    <option value="" disabled>
+                                        No hay fábricas disponibles
+                                    </option>
+                                )}
+                            </select>
+                        </div>
+                        {/* 🔹 Lineas */}
+                        <div>
+                            <Text type="subtitle">Lineas</Text>
+                            <select
+                                className="w-full border p-3 rounded-lg text-gray-800 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500 text-center"
+                                value={currentPlan.line || ""}
+                                onChange={(e) =>
+                                    setCurrentPlan({ ...currentPlan, line: e.target.value })
+                                }
+                            >
+                                <option value="">Seleccione una planta</option>
+                                {manu.length > 0 ? (
+                                    manu.map((line) => (
+                                        <option key={line.id} value={line.id}>
+                                            {line.name} {/* Mostrar el nombre */}
+                                        </option>
+                                    ))
+                                ) : (
+                                    <option value="" disabled>
+                                        No hay lineas disponibles
+                                    </option>
+                                )}
+                            </select>
+                        </div>
+                        {/* 🔹 Maquinaria */}
+                        <div>
+                            <Text type="subtitle">Maquinaria</Text>
+                            <select
+                                className="w-full border p-3 rounded-lg text-gray-800 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500 text-center"
+                                value={currentPlan.machine || ""}
+                                onChange={(e) =>
+                                    setCurrentPlan({ ...currentPlan, machine: e.target.value })
+                                }
+                            >
+                                <option value="">Seleccione una Maquina</option>
+                                {machine.length > 0 ? (
+                                    machine.map((machine) => (
+                                        <option key={machine.id} value={machine.id}>
+                                            {machine.name} {/* Mostrar el nombre */}
+                                        </option>
+                                    ))
+                                ) : (
+                                    <option value="" disabled>
+                                        No hay maquinas disponibles
+                                    </option>
+                                )}
+                            </select>
+                        </div>
+                        {/* 🔹 Recursos */}
+                        <div>
+                            <Text type="subtitle">Recursos</Text>
+                            <textarea
+                                name="resource"
+                                value={currentPlan.resource || ""}
+                                onChange={(e) =>
+                                    setCurrentPlan({
+                                        ...currentPlan,
+                                        resource: e.target.value,
+                                    })
+                                }
+                                className="w-full border p-3 rounded-lg text-gray-800 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                rows={4}
+                            />
+                        </div>
+                        {/* Color */}
+                        <div>
+                            <Text type="subtitle">Color</Text>
+                            <div className="flex flex-wrap gap-2 mt-2">
+                                {COLORS.map((color, index) => {
+                                    const isSelected = currentPlan.color === color;
+                                    return (
+                                        <button
+                                            key={`${color}-${index}`}
+                                            type="button"
+                                            className={`w-6 h-6 rounded-full relative flex items-center justify-center transition-shadow duration-200 ${isSelected ? "ring-2 ring-white ring-offset-2" : ""
+                                                }`}
+                                            style={{ backgroundColor: color }}
+                                            onClick={() => setCurrentPlan({ ...currentPlan, color })}
+                                            aria-label={`Seleccionar color ${color}`}
+                                        >
+                                            {isSelected && (
+                                                <svg
+                                                    className="w-3 h-3 text-white"
+                                                    fill="none"
+                                                    stroke="currentColor"
+                                                    strokeWidth="3"
+                                                    viewBox="0 0 24 24"
+                                                >
+                                                    <path d="M5 13l4 4L19 7" />
+                                                </svg>
+                                            )}
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                        {/* Icono */}
+                        <div>
+                            <Text type="subtitle">Icono</Text>
+                            <IconSelector
+                                selectedIcon={currentPlan?.icon || ""}
+                                onChange={(iconName) =>
+                                    setCurrentPlan((prev) =>
+                                        prev ? { ...prev, icon: iconName } : prev
+                                    )
+                                }
+                            />
+                        </div>
+                        {/* 🔹 Duración */}
+                        <div>
+                            <Text type="subtitle">Duración (minutos)</Text>
+                             <input
+                                        type="text"
+                                        readOnly
+                                        className="w-full pl-10 pr-4 py-2 rounded-md border border-gray-300 bg-gray-100 text-sm text-gray-700 text-center"
+                                        value={`${currentPlan.duration} min ---> ${getFormattedDuration(Number(currentPlan.duration))}`}
+                                    />
+                             
+                        </div>
+                        {/* 🔹 Fecha de Inicio */}
+                        <div>
+                            <Text type="subtitle">Fecha y Hora de Inicio</Text>
+                            <input
+                                className="w-full border p-3 rounded-lg text-gray-800 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500 text-center"
+                                value={currentPlan.start_date || ""}
+                                type="datetime-local"
+                                onChange={(e) => {
+                                    const start = e.target.value;
+                                    let end = "";
+
+                                    if (currentPlan?.duration) {
+                                        end = calculateEndDateRespectingWorkHours(start, Number(currentPlan.duration));
+                                    } else {
+                                        const fallback = new Date(start);
+                                        fallback.setHours(18, 0, 0, 0);
+                                        const pad = (n: number) => n.toString().padStart(2, "0");
+                                        end = `${fallback.getFullYear()}-${pad(fallback.getMonth() + 1)}-${pad(fallback.getDate())}T${pad(fallback.getHours())}:${pad(fallback.getMinutes())}`;
+                                    }
+
+                                    setCurrentPlan({
+                                        ...currentPlan,
+                                        start_date: start,
+                                        end_date: end,
+                                    });
+                                }}
+                            />
+                        </div>
+
+                        <div>
+                            <Text type="subtitle">Fecha y Hora de Final</Text>
+                            <input
+                                className="w-full border p-3 rounded-lg text-gray-800 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500 text-center"
+                                value={currentPlan.end_date || ""}
+                                type="datetime-local"
+                                onChange={(e) =>
+                                    setCurrentPlan({ ...currentPlan, end_date: e.target.value })
+                                }
+                            />
+                        </div>
+                    </div>
+
+                    <div className="flex justify-end gap-2 mt-6">
+                        <Button onClick={() => setIsOpen(false)} variant="cancel" label="Cancelar" />
+                        <Button onClick={() => handleSave(currentPlan)} variant="save" label="Guardar" />
+                    </div>
+                </ModalSection>
             )}
 
             <Table

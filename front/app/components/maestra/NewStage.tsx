@@ -1,6 +1,5 @@
 "use client";
 import React, { useState, useEffect } from "react";
-import { motion } from "framer-motion";
 import { createStage, getStageId, updateStage, deleteStage, getStage } from "../../services/maestras/stageServices";
 import { getActivitie } from "../../services/maestras/activityServices";
 import { showError, showSuccess, showConfirm } from "../toastr/Toaster";
@@ -10,6 +9,7 @@ import { Stage, Data } from "../../interfaces/NewStage";
 const phases = ["Planeacion", "Conciliación", "Control", "Actividades"];
 import Text from "../text/Text";
 import { Search, Clock } from "lucide-react";
+import { motion } from "framer-motion";
 
 function NewStage() {
     const [isOpen, setIsOpen] = useState(false);
@@ -19,11 +19,12 @@ function NewStage() {
     const [description, setDescription] = useState("");
     const [duration, setDuration] = useState("");
     const [durationUser, setDurationUser] = useState("");
-    const [phaseType, setPhaseType] = useState<"Planeacion" | "Conciliación" | "Control" | "Actividades">("Planeacion");
+    const [phaseType, setPhaseType] = useState<string>("Planeacion");
     const [repeat, setRepeat] = useState(false);
     const [repeatMinutes, setRepeatMinutes] = useState("");
     const [alert, setAlert] = useState(false);
     const [status, setStatus] = useState(false);
+    const [multi, setMulti] = useState(false);
     const [canPause, setCanPause] = useState(false);
     const [availableActivities, setAvailableActivities] = useState<{ id: number; description: string; binding: number, duration: number }[]>([]);
     const [selectedActivities, setSelectedActivities] = useState<{ id: number; description: string, duration: number }[]>([]);
@@ -93,6 +94,7 @@ function NewStage() {
             alert,
             can_pause: canPause,
             status,
+            multi,
             activities: "[]",
             duration_user: durationUser,
             duration: duration,
@@ -147,6 +149,7 @@ function NewStage() {
             setRepeatMinutes(data.repeat_minutes?.toString() || "");
             setAlert(data.alert);
             setStatus(data.status);
+            setMulti(data.multi);
             setCanPause(data.can_pause);
             setDuration(data.duration);
             setDurationUser(data.duration_user);
@@ -168,6 +171,7 @@ function NewStage() {
             alert,
             can_pause: canPause,
             status,
+            multi,
             activities: "[]",
             duration_user: durationUser,
             duration: duration,
@@ -218,6 +222,7 @@ function NewStage() {
         setSelectedActivities([]);
         setDuration("");
         setDurationUser("");
+        setMulti(false);
     };
 
     const getFormattedDuration = (minutes: number): string => {
@@ -254,18 +259,6 @@ function NewStage() {
                         exit={{ y: 50, opacity: 0 }}
                         transition={{ duration: 0.3 }}
                     >
-                        {/* Botón de cierre */}
-                        <button
-                            onClick={() => {
-                                editingStage ? setIsEditOpen(false) : setIsOpen(false);
-                                resetForm();
-                            }}
-                            className="absolute top-3 right-3 text-gray-700 hover:text-gray-900 transition"
-                        >
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                            </svg>
-                        </button>
 
                         <Text type="title">{editingStage ? "Editar Fase" : "Crear Fase"}</Text>
 
@@ -287,7 +280,7 @@ function NewStage() {
                                 <select
                                     value={phaseType}
                                     onChange={(e) =>
-                                        setPhaseType(e.target.value as "Planeacion" | "Conciliación" | "Control" |"Actividades")   
+                                        setPhaseType(e.target.value as "Planeacion" | "Conciliación" | "Control" | "Actividades")
                                     }
                                     className="mt-1 w-full text-center p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 text-black"
                                 >
@@ -457,6 +450,15 @@ function NewStage() {
                                     />
                                     <span className="text-sm text-black">Activar Estado</span>
                                 </div>
+                                <div className="flex items-center gap-2">
+                                    <input
+                                        type="checkbox"
+                                        checked={multi}
+                                        onChange={(e) => setMulti(e.target.checked)}
+                                        className="h-5 w-5 text-blue-600"
+                                    />
+                                    <span className="text-sm text-black">¿Es Multi?</span>
+                                </div>
 
                                 <div className="flex items-center gap-2">
                                     <input
@@ -467,6 +469,7 @@ function NewStage() {
                                     />
                                     <span className="text-sm text-black">¿Se puede pausar?</span>
                                 </div>
+
                             </div>
                         </div>
 
@@ -489,6 +492,7 @@ function NewStage() {
                         </div>
                     </motion.div>
                 </motion.div>
+
             )}
 
             {/* Tabla de fases */}

@@ -349,7 +349,7 @@ export default function NewActivity() {
                                 ))}
                             </select>
                         </div>
-                        
+
                         {/* Opciones dinámicas */}
                         {parsedConfig &&
                             ["select", "radio", "checkbox"].includes(parsedConfig.type || "") && (
@@ -407,18 +407,21 @@ export default function NewActivity() {
                                             id="duration"
                                             type="number"
                                             name="duration"
+                                             min={1}               // Esto evita que el usuario pueda poner 0 o menos en el input
                                             value={formData.duration}
-                                            onChange={(e) =>
-                                                setFormData({ ...formData, duration: Number(e.target.value) })
-                                            }
+                                            onChange={(e) => {
+                                                const val = Number(e.target.value);
+                                                if (val >= 1) {
+                                                    setFormData({ ...formData, duration: val });
+                                                } else {
+                                                    setFormData({ ...formData, duration: 1 }); // O déjalo en blanco o el valor que consideres mínimo
+                                                }
+                                            }} 
                                             placeholder="Duración (en minutos)"
-                                            className="w-full max-w-[150px] border p-2 pl-9 rounded-md text-black focus:ring-2 focus:ring-blue-500"
+                                            className="w-full max-w-[350px] border p-2 pl-9 rounded-md text-black focus:ring-2 focus:ring-blue-500"
                                         />
                                     </div>
-                                    <span className="text-sm text-black">min</span>
-                                    <span className="text-sm text-gray-600 whitespace-nowrap">
-                                        ({getFormattedDuration(Number(formData.duration))})
-                                    </span>
+                                    <span className="w-full border border-gray-300 rounded-lg shadow-sm py-3 px-3 text-gray-800 bg-gray-50 mt-1 text-center">min - ({getFormattedDuration(Number(formData.duration))})</span>
                                 </div>
                             )}
                         </div>
@@ -547,7 +550,7 @@ export default function NewActivity() {
                             </div>
 
                             {editingActivity.has_time && (
-                                <div className="flex items-center gap-3 mt-4">
+                                <div className="flex items-center gap-3 ">
                                     <label htmlFor="duration" className="text-sm text-black">
                                         Duración
                                     </label>
@@ -566,14 +569,14 @@ export default function NewActivity() {
                                             placeholder="Duración (en minutos)"
                                             className="w-full max-w-[150px] border p-2 pl-9 rounded-md text-black focus:ring-2 focus:ring-blue-500"
                                         />
-                                        <span className="text-sm text-black">min - </span>
+                                        <span className="w-full border border-gray-300 rounded-lg shadow-sm py-3 px-3 text-gray-800 bg-gray-50 mt-1 text-center">min - ({getFormattedDuration(Number(editingActivity.duration))})</span>
                                     </div>
                                 </div>
                             )}
                         </div>
 
                         {/* Botones */}
-                        <div className="flex justify-end space-x-4 mt-4">
+                        <div className="flex justify-center space-x-4 mt-4">
                             <Button
                                 onClick={() => {
                                     setIsEditOpen(false);

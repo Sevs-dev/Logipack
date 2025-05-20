@@ -38,6 +38,7 @@ return new class extends Migration
             $table->string('color')->nullable();
             $table->string('icon')->nullable();
             $table->string('duration')->nullable();
+            $table->json('duration_breakdown')->nullable();
             $table->dateTime('start_date')->nullable();
             $table->dateTime('end_date')->nullable();
             $table->boolean('clock')->default(true);

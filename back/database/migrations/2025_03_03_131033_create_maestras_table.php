@@ -16,12 +16,14 @@ return new class extends Migration
             $table->string('code')->unique();
             $table->text('descripcion');
             $table->boolean('requiere_bom')->default(false);
-            $table->string('type_product')->nullable();
+            $table->string('type_product')->nullable(); 
+            $table->unsignedBigInteger('type_acondicinamiento')->nullable();
             $table->json('type_stage')->nullable();
             $table->string('status_type')->default('En creación');
             $table->boolean('aprobado')->default(false);
             $table->string('duration')->nullable();
             $table->string('duration_user')->nullable();
+            $table->foreign('type_acondicinamiento')->references('id')->on('tipo_acondicionamientos')->onDelete('cascade');
             $table->timestamps();
         });
     }

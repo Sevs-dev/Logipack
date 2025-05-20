@@ -40,15 +40,24 @@ function Navbar() {
     router.push(path);
   };
 
+  const handleLogout = () => {
+    nookies.destroy(null, "token", { path: "/" });
+    nookies.destroy(null, "userName", { path: "/" });
+    nookies.destroy(null, "userData", { path: "/" });
+    nookies.destroy(null, "email", { path: "/" });
+    nookies.destroy(null, "role", { path: "/" });
+    router.push("/");
+  };
+
   if (!mounted) return null;
 
   return (
-   <motion.nav
-  className="fixed top-0 left-0 w-full bg-black/40 backdrop-blur-lg shadow-md z-50 px-6 py-3 rounded-b-xl"
-  initial={{ opacity: 0, y: -30 }}
-  animate={{ opacity: 1, y: 0 }}
-  transition={{ duration: 0.5 }}
->
+    <motion.nav
+      className="fixed top-0 left-0 w-full bg-black/40 backdrop-blur-lg shadow-md z-50 px-6 py-3 rounded-b-xl"
+      initial={{ opacity: 0, y: -30 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5 }}
+    >
 
       <div className="flex justify-between items-center">
         {/* Logo */}
@@ -96,20 +105,20 @@ function Navbar() {
 
       {/* Mobile Menu */}
       <AnimatePresence>
-            {menuOpen && (
+        {menuOpen && (
           <motion.div
-          className="absolute top-14 left-0 w-full bg-black/40 backdrop-blur-lg shadow-xl py-4 md:hidden rounded-b-xl"
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -20 }}
-        >
-        
+            className="absolute top-14 left-0 w-full bg-black/40 backdrop-blur-lg shadow-xl py-4 md:hidden rounded-b-xl"
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+          >
+
             <div className="flex flex-col space-y-3 px-6">
               {isAuthenticated ? (
                 <>
                   <NavButton onClick={() => handleNavigation("/pages/dashboard")}>Dashboard</NavButton>
                   <NavButton onClick={() => handleNavigation("/pages/perfil")}>Perfil</NavButton>
-                  <NavButton onClick={() => handleNavigation("/")} logout>
+                  <NavButton  onClick={handleLogout} logout>
                     Cerrar Sesión
                   </NavButton>
                 </>
@@ -128,11 +137,10 @@ function Navbar() {
 const NavButton = ({ onClick, children, logout = false }: { onClick: () => void; children: React.ReactNode; logout?: boolean }) => (
   <motion.button
     onClick={onClick}
-    className={`px-6 py-2 text-white font-semibold rounded-full transition-all duration-300 ${
-      logout
-        ? "bg-red-600 hover:bg-red-700"
-        : "bg-blue-500 hover:bg-blue-600"
-    } shadow-md`}
+    className={`px-6 py-2 text-white font-semibold rounded-full transition-all duration-300 ${logout
+      ? "bg-red-600 hover:bg-red-700"
+      : "bg-blue-500 hover:bg-blue-600"
+      } shadow-md`}
     whileHover={{ scale: 1.05 }}
     whileTap={{ scale: 0.95 }}
   >

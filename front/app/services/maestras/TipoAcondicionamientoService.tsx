@@ -67,3 +67,15 @@ export const updateTipoAcondicionamiento = async (id: number, data: Data) => {
         throw error;
     }
 };
+
+// Función para obtener un Stage específico por su ID.
+// Realiza una solicitud GET a la ruta `/getStage/${id}` y retorna los datos del Stage.
+export const getStageById = async (id: number) => {
+    try {
+        const response = await Stage.get(`/getTipoAcondicionamientoId/${id}`);
+        return response.data;
+    } catch (error) {
+        console.error('Error en getTipoAcondicionamientoById:', error);
+        throw error;
+    }
+};

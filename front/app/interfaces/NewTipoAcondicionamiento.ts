@@ -71,6 +71,7 @@ export interface LineaTipoAcondicionamiento {
     editable: boolean;
     control: boolean;
     fase_control: string;
+    descripcion_fase: string;
 };
 
 export interface DataLineaTipoAcondicionamiento {
@@ -82,4 +83,5 @@ export interface DataLineaTipoAcondicionamiento {
     editable: boolean;
     control: boolean;
     fase_control: string;
+    descripcion_fase: string;
 };

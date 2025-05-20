@@ -1,36 +1,20 @@
 "use client"
 // importaciones de react y framer motion
 import { useEffect, useState } from "react";
-import { motion } from "framer-motion";
 // importaciones de componentes
 import Table from "../table/Table";
 import Button from "../buttons/buttons";
 import Text from "../text/Text";
+import ModalSection from "../modal/ModalSection";
+import { showError, showSuccess, showConfirm } from "../toastr/Toaster";
 // importaciones de interfaces
-import {
-    TipoAcondicionamiento, DataTipoAcondicionamiento,
-    LineaTipoAcondicionamiento, DataLineaTipoAcondicionamiento
-} from "@/app/interfaces/NewTipoAcondicionamiento";
+import { TipoAcondicionamiento, DataTipoAcondicionamiento, LineaTipoAcondicionamiento, DataLineaTipoAcondicionamiento } from "@/app/interfaces/NewTipoAcondicionamiento";
 // importaciones de interfaces
-import {
-    Stage
-} from "@/app/interfaces/NewStage";
+import { Stage } from "@/app/interfaces/NewStage";
 // importaciones de servicios
-import {
-    createStage as createTipoAcom,
-    getStage as listTipoAcondicionamiento,
-    deleteStage as deleteTipoAcom,
-    updateTipoAcondicionamiento as updateTipoAcom
-} from "@/app/services/maestras/TipoAcondicionamientoService";
-import {
-    createStage as createLineaTipoAcom,
-    getStage as listLineaTipoAcondicionamiento,
-    deleteStage as deleteLineaTipoAcom,
-    updateLineaTipoAcondicionamiento as updateLineaTipoAcom,
-    getLineaTipoAcondicionamientoById as getLineaTipoAcomById,
-    getListTipoyLineas as getListTipoyLineas,
-    getSelectStagesControls as getSelectStagesControls
-} from "@/app/services/maestras/LineaTipoAcondicionamientoService";
+import { createStage as createTipoAcom, getStage as listTipoAcondicionamiento, deleteStage as deleteTipoAcom, updateTipoAcondicionamiento as updateTipoAcom } from "@/app/services/maestras/TipoAcondicionamientoService";
+import { createStage as createLineaTipoAcom, getStage as listLineaTipoAcondicionamiento, deleteStage as deleteLineaTipoAcom, updateLineaTipoAcondicionamiento as updateLineaTipoAcom, getLineaTipoAcondicionamientoById as getLineaTipoAcomById, getListTipoyLineas as getListTipoyLineas, getSelectStagesControls as getSelectStagesControls } from "@/app/services/maestras/LineaTipoAcondicionamientoService";
+import { getStageId } from "@/app/services/maestras/stageServices";
 
 // función principal del componente
 export default function NewTipoAcondicionamiento() {
@@ -43,12 +27,13 @@ export default function NewTipoAcondicionamiento() {
         descripcion: "",
         status: false
     });
-    const [objectLineaTipoAcom, setObjectLineaTipoAcom] = useState<LineaTipoAcondicionamiento>({
+    const [unknown, setObjectLineaTipoAcom] = useState<LineaTipoAcondicionamiento>({
         id: 0,
         tipo_acondicionamiento_id: 0,
         orden: 0,
         descripcion: "",
         fase: "",
+        descripcion_fase: "",
         editable: false,
         control: false,
         fase_control: ""
@@ -67,11 +52,13 @@ export default function NewTipoAcondicionamiento() {
             [e.target.name]: e.target.value
         });
     }
+    const getStageId = (id: string | number) =>
+        listStages.find((item) => item.id === id);
 
     // captura de los datos de la linea tipo de acondicionamiento
     const inputChangeObjectLineaTipoAcom = (e: React.ChangeEvent<HTMLInputElement>) => {
         setObjectLineaTipoAcom({
-            ...objectLineaTipoAcom,
+            ...unknown,
             [e.target.name]: e.target.value
         });
     }
@@ -103,14 +90,14 @@ export default function NewTipoAcondicionamiento() {
 
     // función para crear una linea tipo de acondicionamiento
     const handleBtnAgregarLinea = async () => {
-        const response = await createLineaTipoAcom(objectLineaTipoAcom);
+        const response = await createLineaTipoAcom(unknown);
         if (response.status === 201) {
 
             // resetear los datos de la linea tipo de acondicionamiento
             setObjectLineaTipoAcom((prev) => ({
                 ...prev,
                 id: 0,
-                tipo_acondicionamiento_id: objectLineaTipoAcom.tipo_acondicionamiento_id,
+                tipo_acondicionamiento_id: unknown.tipo_acondicionamiento_id,
                 orden: 0,
                 descripcion: "",
                 fase: "",
@@ -126,7 +113,14 @@ export default function NewTipoAcondicionamiento() {
 
     // función para eliminar un tipo de acondicionamiento
     const handleDelete = async (id: number) => {
-        await deleteTipoAcom(id);
+        showConfirm("¿Seguro que quieres eliminar esta fase?", async () => {
+            try {
+                await deleteTipoAcom(id);
+            } catch (error) {
+                console.error("Error al eliminar fase:", error);
+                showError("Error al eliminar fase");
+            }
+        });
         await getListTipoAcom();
     }
 
@@ -153,7 +147,7 @@ export default function NewTipoAcondicionamiento() {
 
     // función para listar las lineas de tipo de acondicionamiento
     const getListLineaTipoAcom = async () => {
-        const response = await getLineaTipoAcomById(objectLineaTipoAcom.tipo_acondicionamiento_id);
+        const response = await getLineaTipoAcomById(unknown.tipo_acondicionamiento_id);
         setLineaTipoAcom(response);
     }
 
@@ -229,16 +223,16 @@ export default function NewTipoAcondicionamiento() {
             fase_control: prev.control ?
                 prev.fase_control : ""
         }));
-    }, [objectLineaTipoAcom.control]);
+    }, [unknown.control]);
 
     // Renderización del componente
     return (
         <>
             {/* Bloque del componente 1 */}
+            <div className="flex justify-center space-x-2 mb-2">
+                <Button onClick={() => setIsOpen(true)} variant="create" label="Crear" /></div>
             <div>
                 {/* Botón abrir modal de creación */}
-                <Button onClick={() => setIsOpen(true)}
-                    variant="create" label="Crear" />
 
                 {/* Tabla de tipos de acondicionamiento */}
                 <Table columns={["id", "descripcion", "status"]} rows={listTipoAcom}
@@ -253,225 +247,207 @@ export default function NewTipoAcondicionamiento() {
             <div>
                 {/* Modal de creación y edición */}
                 {(isOpen || isOpenEdit) && (
-                    <motion.div
-                        className="fixed inset-0 bg-black 
-                        bg-opacity-50 flex justify-center items-start p-4 z-50"
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}>
+                    <ModalSection isVisible={isOpen || isOpenEdit} onClose={() => {
+                        if (isOpenEdit) {
+                            handleReset();
+                        } else {
+                            setIsOpen(false);
+                        }
+                        setIsOpenEdit(false);
+                    }} >
+                        {/* Título */}
+                        <Text type="title" >{isOpenEdit ? "Editar Tipo de Orden de Acondicionamiento" : "Crear Nuevo Tipo de Acondicionamiento"}</Text>
+                        {/* Formulario principal */}
+                        <div className="mb-8">
+                            <Text type="subtitle">Descripción</Text>
+                            <input
+                                id="descripcion"
+                                type="text"
+                                name="descripcion"
+                                value={objectTipoAcom.descripcion}
+                                onChange={(e) => inputChangeObjectTipoAcom(e)}
+                                disabled={btnAplicar}
+                                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 placeholder-gray-400 text-center"
+                                placeholder="Ejemplo: Revisión técnica"
+                            />
+                        </div>
 
-                        <motion.div
-                            className="mt-20 bg-white rounded-lg shadow-xl 
-                            w-full max-w-xl sm:max-w-2xl md:max-w-3xl 
-                            lg:max-w-[1800px] max-h-[90vh] 
-                            overflow-y-auto p-4 sm:p-6 relative"
-                            initial={{ y: -50, opacity: 0 }}
-                            animate={{ y: 0, opacity: 1 }}
-                            exit={{ y: 50, opacity: 0 }}
-                            transition={{ duration: 0.3 }}>
-
-                            {/* Botón de cierre */}
-                            <button
-                                onClick={() => {
-                                    isOpenEdit ? handleReset() :
-                                        setIsOpen(false);
-                                    setIsOpenEdit(false);
-                                }}
-                                className="absolute top-3 right-3 text-gray-700 hover:text-gray-900 transition">
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5"
-                                    fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round"
-                                        strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                </svg>
-                            </button>
-
-                            {/* Título */}
-                            <Text type="title">
-                                {isOpenEdit ? (
-                                    "Editar Tipo de Ordenes de Acondicionamiento"
-                                ) : (
-                                    <>
-                                        <p>Crear</p>
-                                        <p>Tipo Acondicionamiento</p>
-                                    </>
-                                )}
-                            </Text>
-
-
-                            {/* Contenedor para formulario tipo de acondicionamiento */}
-                            <div className="flex justify-center gap-8 mt-6 flex-wrap" >
-
-                                {/* Grupo 1: Formulario */}
-                                <div className="w-full lg:w-1/2 max-w-[600px] space-y-4 border-b pb-6">
-                                    <Text type="subtitle">Descripción</Text>
-                                    <input type="text"
-                                        value={objectTipoAcom.descripcion}
-                                        onChange={(e) => inputChangeObjectTipoAcom(e)}
-                                        name="descripcion"
-                                        disabled={btnAplicar}
-                                        className="mt-1 w-full text-center p-2 border 
-                                        border-gray-300 rounded-lg focus:outline-none 
-                                        focus:ring-2 focus:ring-blue-400 text-black"
-                                    />
-
-                                    {/* Botón para aplicar los cambios */}
-                                    {!btnAplicar && (
-                                        <div className="flex justify-center">
-                                            <Button
-                                                onClick={() => {
-                                                    isOpenEdit ? handleBtnAplicarEdit() : handleBtnAplicar();
-                                                }}
-                                                variant="save"
-                                                // disabled={!object.descripcion.trim()}
-                                                label={isOpenEdit ? "Actualizar" : "Aplicar"} />
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-
-                            {/* Grupo 2: Tabla y botones */}
-                            {(btnAplicar || isOpenEdit) && (
-                                <div className="mt-6 space-y-4">
-                                    <div>
-                                        <table className="w-full text-sm text-left rtl:text-right 
-                                        text-gray-500 dark:text-gray-400">
-                                            <thead className="text-xs text-gray-700 uppercase 
-                                            bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
-                                                <tr style={{ textAlign: "center", fontSize: "18px", height: "50px" }}>
-                                                    <th>Orden</th>
-                                                    <th>Descripción</th>
-                                                    <th>Fase</th>
-                                                    <th>Es Editable</th>
-                                                    <th>Control</th>
-                                                    <th>Fase Control</th>
-                                                    <th>Acciones</th>
+                        {/* Tabla y formulario dinámico (solo si se aplicó el tipo base) */}
+                        {(btnAplicar || isOpenEdit) && (
+                            <>
+                                <Text type="title" >Líneas de Acondicionamiento</Text>
+                                <div className="overflow-x-auto rounded-lg border border-gray-200 shadow-sm">
+                                    <table className="min-w-full divide-y divide-gray-200 text-gray-700 text-center">
+                                        <thead className="bg-gray-50">
+                                            <tr>
+                                                <th className="px-4 py-3 text-xs font-medium uppercase tracking-wider text-gray-600">Orden</th>
+                                                <th className="px-4 py-3 text-xs font-medium uppercase tracking-wider text-gray-600">Descripción</th>
+                                                <th className="px-4 py-3 text-xs font-medium uppercase tracking-wider text-gray-600">Fase</th>
+                                                <th className="px-4 py-3 text-xs font-medium uppercase tracking-wider text-gray-600">Editable</th>
+                                                <th className="px-4 py-3 text-xs font-medium uppercase tracking-wider text-gray-600">Control</th>
+                                                <th className="px-4 py-3 text-xs font-medium uppercase tracking-wider text-gray-600">Fase Control</th>
+                                                <th className="px-4 py-3 text-xs font-medium uppercase tracking-wider text-gray-600">Acciones</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-gray-200">
+                                            {listLinaTipoAcom.map((item) => (
+                                                <tr key={item.id} className="hover:bg-gray-50 transition-colors">
+                                                    <td className="px-4 py-3">{item.orden}</td>
+                                                    <td className="px-4 py-3">{item.descripcion}</td>
+                                                    <td className="px-4 py-3">{item.descripcion_fase}</td>
+                                                    <td className="px-4 py-3">{item.editable ? "Sí" : "No"}</td>
+                                                    <td className="px-4 py-3">{item.control ? "Sí" : "No"}</td>
+                                                    <td className="px-4 py-3">{item.fase_control || "-"}</td>
+                                                    <td className="px-4 py-3">
+                                                        <button
+                                                            onClick={() => handleDeleteLinea(item.id)}
+                                                            className="text-red-500 hover:text-red-700"
+                                                            title="Eliminar línea"
+                                                        >
+                                                            Eliminar
+                                                        </button>
+                                                    </td>
                                                 </tr>
-                                            </thead>
-                                            <tbody style={{ textAlign: "center", fontSize: "18px" }}>
-                                                {listLinaTipoAcom.map((item) => (
-                                                    <tr key={item.id}>
-                                                        <td>{item.orden}</td>
-                                                        <td>{item.descripcion}</td>
-                                                        <td>{item.fase}</td>
-                                                        <td>{item.editable ? "Si" : "No"}</td>
-                                                        <td>{item.control ? "Si" : "No"}</td>
-                                                        <td>{item.fase_control}</td>
-                                                        <td>
-                                                            <div style={{ display: "flex", justifyContent: "center" }}>
-                                                                <Button
-                                                                    onClick={() => handleDeleteLinea(item.id)}
-                                                                    variant="cancel" label="" />
-                                                            </div>
-                                                        </td>
-                                                    </tr>
-                                                ))}
+                                            ))}
 
-                                                {/* Formulario para agregar una linea tipo de acondicionamiento */}
-                                                <tr>
-                                                    <td>
-                                                        <input type="number" name="orden"
-                                                            onChange={(e) => inputChangeObjectLineaTipoAcom(e)}
-                                                            value={
-                                                                objectLineaTipoAcom.orden === 0 ?
-                                                                    "" : objectLineaTipoAcom.orden
-                                                            }
-                                                            className="mt-1 w-full text-center p-2 border 
-                                                            border-gray-300 rounded-lg focus:outline-none 
-                                                            focus:ring-2 focus:ring-blue-400 text-black" />
-                                                    </td>
-                                                    <td>
-                                                        <input type="text" name="descripcion"
-                                                            onChange={(e) => inputChangeObjectLineaTipoAcom(e)}
-                                                            value={objectLineaTipoAcom.descripcion}
-                                                            className="mt-1 w-full text-center p-2 border 
-                                                            border-gray-300 rounded-lg focus:outline-none 
-                                                            focus:ring-2 focus:ring-blue-400 text-black" />
-                                                    </td>
-                                                    <td>
-                                                        <select name="fase"
+                                            {/* Fila de formulario */}
+                                            <tr className="bg-white">
+                                                <td className="px-4 py-3">
+                                                    <div className="flex justify-center items-center">
+                                                        <input
+                                                            type="number"
+                                                            name="orden"
+                                                            min="1"
+                                                            value={unknown.orden === 0 ? "" : unknown.orden}
                                                             onChange={(e) => {
-                                                                setObjectLineaTipoAcom({
-                                                                    ...objectLineaTipoAcom,
-                                                                    fase: e.target.value
-                                                                });
+                                                                const newOrden = parseInt(e.target.value);
+                                                                const isDuplicate = listLinaTipoAcom.some(
+                                                                    (item) =>
+                                                                        item.orden === newOrden && item.id !== unknown.id
+                                                                );
+                                                                if (isDuplicate) {
+                                                                    alert(`Ya existe una línea con orden ${newOrden}`);
+                                                                    return;
+                                                                }
+                                                                inputChangeObjectLineaTipoAcom(e);
                                                             }}
-                                                            value={objectLineaTipoAcom.fase}
-                                                            className="mt-1 w-full text-center p-2 border 
-                                                            border-gray-300 rounded-lg focus:outline-none 
-                                                            focus:ring-2 focus:ring-blue-400 text-black">
+                                                            className="w-full px-3 py-2 border border-gray-300 rounded-md text-center focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                        />
+                                                    </div>
+                                                </td>
+                                                <td className="px-4 py-3">
+                                                    <input
+                                                        type="text"
+                                                        name="descripcion"
+                                                        value={unknown.descripcion}
+                                                        onChange={inputChangeObjectLineaTipoAcom}
+                                                        className="w-full px-3 py-2 border border-gray-300 rounded-md text-center focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                    />
+                                                </td>
+                                                <td className="px-4 py-3">
+                                                    <div className="flex justify-center items-center">
+                                                        <select
+                                                            name="fase"
+                                                            value={unknown.fase}
+                                                            onChange={(e) =>
+                                                                setObjectLineaTipoAcom({
+                                                                    ...unknown,
+                                                                    fase: e.target.value,
+                                                                })
+                                                            }
+                                                            className="w-full px-3 py-2 border flex justify-center items-center border-gray-300 rounded-md text-center text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                        >
                                                             <option value="">Seleccione una fase</option>
-                                                            {listStages.map((item) => (
-                                                                <option value={item.id}>{item.description}</option>
-                                                            ))}
+                                                            {/* Mostrar la opción seleccionada al editar si ya está asignada */}
+                                                            {unknown.fase &&
+                                                                !listStages.find((item) => item.id === Number(unknown.fase)) && (
+                                                                    <option value={unknown.fase}>
+                                                                        {
+                                                                            getStageId(unknown.fase)?.description ||
+                                                                            'Fase desconocida'
+                                                                        }
+                                                                    </option>
+                                                                )}
+                                                            {listStages
+                                                                .filter((item) => item.phase_type !== 'Control')
+                                                                .map((item) => (
+                                                                    <option key={item.id} value={item.id}>
+                                                                        {item.description}
+                                                                    </option>
+                                                                ))}
                                                         </select>
-                                                    </td>
-                                                    <td>
-                                                        <input type="checkbox" name="editable"
-                                                            checked={objectLineaTipoAcom.editable}
-                                                            onChange={(e) => inputCheckboxChange(e)}
-                                                            className="mt-1 h-6 w-6 cursor-pointer appearance-none rounded-md border-2 
-                                                            border-gray-300 bg-white checked:border-blue-500 checked:bg-blue-500 
-                                                            focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2 
-                                                            transition-all duration-200 ease-in-out" />
-                                                    </td>
-                                                    <td>
-                                                        <input type="checkbox" name="control"
-                                                            checked={objectLineaTipoAcom.control}
-                                                            onChange={(e) => inputCheckboxChange(e)}
-                                                            className="mt-1 h-6 w-6 cursor-pointer appearance-none rounded-md border-2 
-                                                            border-gray-300 bg-white checked:border-blue-500 checked:bg-blue-500 
-                                                            focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2 
-                                                            transition-all duration-200 ease-in-out" />
-                                                    </td>
-                                                    <td>
-                                                        {objectLineaTipoAcom.control && (
-
-                                                            <select name="fase_control"
-                                                                onChange={(e) => {
-                                                                    setObjectLineaTipoAcom({
-                                                                        ...objectLineaTipoAcom,
-                                                                        fase_control: e.target.value
-                                                                    });
-                                                                }}
-                                                                value={objectLineaTipoAcom.fase_control}
-                                                                className="mt-1 w-full text-center p-2 border 
-                                                                border-gray-300 rounded-lg focus:outline-none 
-                                                                focus:ring-2 focus:ring-blue-400 text-black">
+                                                    </div>
+                                                </td>
+                                                <td className="px-4 py-3">
+                                                    <div className="flex justify-center items-center">
+                                                        <label className="inline-flex items-center justify-center cursor-pointer">
+                                                            <input
+                                                                type="checkbox"
+                                                                name="editable"
+                                                                checked={unknown.editable}
+                                                                onChange={inputCheckboxChange}
+                                                                className="sr-only peer"
+                                                            />
+                                                            <div className="relative w-11 h-6 bg-gray-200 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                                                        </label>
+                                                    </div>
+                                                </td>
+                                                <td className="px-4 py-3">
+                                                    <div className="flex justify-center items-center">
+                                                        <label className="inline-flex items-center justify-center cursor-pointer">
+                                                            <input
+                                                                type="checkbox"
+                                                                name="control"
+                                                                checked={unknown.control}
+                                                                onChange={inputCheckboxChange}
+                                                                className="sr-only peer"
+                                                            />
+                                                            <div className="relative w-11 h-6 bg-gray-200 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                                                        </label>
+                                                    </div>
+                                                </td>
+                                                <td className="px-4 py-3">
+                                                    <div className="flex justify-center items-center">
+                                                        {unknown.control && (
+                                                            <select
+                                                                name="fase_control"
+                                                                value={unknown.fase_control}
+                                                                onChange={(e) =>
+                                                                    setObjectLineaTipoAcom({ ...unknown, fase_control: e.target.value })
+                                                                }
+                                                                className="w-full px-3 py-2 border border-gray-300 rounded-md text-center text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                            >
                                                                 <option value="">Seleccione una fase control</option>
                                                                 {listStagesControls.map((item) => (
-                                                                    <option value={item.id}>{item.description}</option>
+                                                                    <option key={item.id} value={item.id}>
+                                                                        {item.description}
+                                                                    </option>
                                                                 ))}
                                                             </select>
                                                         )}
-
-                                                    </td>
-                                                    <td>
-                                                        <div style={{ display: "flex", justifyContent: "center" }}>
-                                                            <Button
-                                                                onClick={() => handleBtnAgregarLinea()}
-                                                                variant="create" label="Agregar" />
-                                                        </div>
-                                                    </td>
-                                                </tr>
-                                            </tbody>
-                                        </table>
-                                    </div>
+                                                    </div>
+                                                </td>
+                                                <td className="px-4 py-3">
+                                                    <div className="flex justify-center items-center">
+                                                        <Button onClick={handleBtnAgregarLinea} variant="create" label="" />
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
                                 </div>
-                            )}
 
-                            <div className="mt-4 flex justify-center gap-2" style={{ marginTop: "100px" }}>
-                                {(btnAplicar && listLinaTipoAcom.length > 0 || isOpenEdit) && (
-                                    <Button
-                                        onClick={() => {
-                                            handleReset();
-                                        }}
-                                        variant="cancel"
-                                        // disabled={!object.descripcion.trim()}
-                                        label={"Confirmar y limpiar"} />
-                                )}
-                            </div>
-                        </motion.div>
-                    </motion.div>
+                            </>
+                        )}
+
+                        {/* Acciones finales */}
+                        <div className="flex justify-center space-x-4 mt-4">
+                            <Button onClick={() => { handleReset(); }} variant="cancel" label={"Cerrar"} />
+                            {!btnAplicar && (
+                                <Button onClick={() => { (isOpenEdit ? handleBtnAplicarEdit() : handleBtnAplicar()) }} variant="create" label={isOpenEdit ? "Actualizar" : "Aplicar"} />
+                            )}
+                        </div>
+                    </ModalSection>
                 )}
             </div>
         </>

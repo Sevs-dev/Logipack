@@ -20,12 +20,13 @@ class StagesController extends Controller
     {
         $validatedData = $request->validate([
             'description' => 'required|string',
-            'phase_type' => 'required|in:Planeacion,Conciliación,Actividades',
+            'phase_type' => 'required|string',
             'repeat' => 'boolean',
             'repeat_minutes' => 'nullable|integer',
             'alert' => 'boolean',
             'can_pause' => 'boolean',
             'status' => 'boolean',
+            'multi' => 'boolean',
             'activities' => 'required|json',
             'duration' => 'nullable',
             'duration_user' => 'nullable',
@@ -64,12 +65,13 @@ class StagesController extends Controller
 
         $validatedData = $request->validate([
             'description' => 'required|string',
-            'phase_type' => 'required|in:Planeacion,Conciliación,Actividades',
+            'phase_type' => 'required|string ',
             'repeat' => 'boolean',
             'repeat_minutes' => 'nullable|integer',
             'alert' => 'boolean',
             'can_pause' => 'boolean',
             'status' => 'boolean',
+            'multi' => 'boolean',
             'activities' => 'required|json',
             'duration' => 'nullable',
             'duration_user' => 'nullable',
