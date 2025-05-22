@@ -191,4 +191,5 @@ Route::controller(LineaTipoAcondicionamientoController::class)->group(function (
     Route::get('/getLineaTipoAcondicionamiento/{id}', 'getByTipoAcondicionamiento'); // Obtener una lineas específica
     Route::get('/getListTipoyLineas/{id}', 'getListTipoyLineas'); // Obtener una lineas específica
     Route::get('/getSelectStages', 'getSelectStages'); // Obtener una lineas específica
+    Route::get('/getSelectStages', 'getSelectStages'); // Obtener una lineas específica
 });
