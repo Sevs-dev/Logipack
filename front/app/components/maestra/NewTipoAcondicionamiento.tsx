@@ -6,7 +6,7 @@ import Table from "../table/Table";
 import Button from "../buttons/buttons";
 import Text from "../text/Text";
 import ModalSection from "../modal/ModalSection";
-import { showError, showSuccess, showConfirm } from "../toastr/Toaster";
+import { showError, showConfirm } from "../toastr/Toaster";
 // importaciones de interfaces
 import { TipoAcondicionamiento, DataTipoAcondicionamiento, LineaTipoAcondicionamiento, DataLineaTipoAcondicionamiento } from "@/app/interfaces/NewTipoAcondicionamiento";
 // importaciones de interfaces
@@ -36,7 +36,8 @@ export default function NewTipoAcondicionamiento() {
         descripcion_fase: "",
         editable: false,
         control: false,
-        fase_control: ""
+        fase_control: "",
+        descripcion_fase_control: ""
     });
     const [listTipoAcom, setListTipoAcom] = useState<DataTipoAcondicionamiento[]>([]);
     const [listLinaTipoAcom, setLineaTipoAcom] = useState<DataLineaTipoAcondicionamiento[]>([]);
@@ -102,7 +103,8 @@ export default function NewTipoAcondicionamiento() {
                 fase: "",
                 editable: false,
                 control: false,
-                fase_control: ""
+                fase_control: "",
+                descripcion_fase_control: "",
             }));
 
             // Cambiar estado y obtener la lista de tipos de acondicionamiento
@@ -163,7 +165,8 @@ export default function NewTipoAcondicionamiento() {
             fase: "",
             editable: false,
             control: false,
-            fase_control: ""
+            fase_control: "",
+            descripcion_fase_control: "",
         }));
         setLineaTipoAcom(response.lineas);
         setIsOpenEdit(true);
@@ -200,7 +203,8 @@ export default function NewTipoAcondicionamiento() {
             fase: "",
             editable: false,
             control: false,
-            fase_control: ""
+            fase_control: "",
+            descripcion_fase_control: "",
         }));
 
         // renderizar la lista de tipos de acondicionamiento
@@ -294,8 +298,8 @@ export default function NewTipoAcondicionamiento() {
                                                     <td className="px-4 py-3">{item.descripcion}</td>
                                                     <td className="px-4 py-3">{item.descripcion_fase}</td>
                                                     <td className="px-4 py-3">{item.editable ? "Sí" : "No"}</td>
-                                                    <td className="px-4 py-3">{item.control ? "Sí" : "No"}</td>
-                                                    <td className="px-4 py-3">{item.fase_control || "-"}</td>
+                                                    <td className="px-4 py-3">{item.control ? "Sí" : "No"}</td> 
+                                                    <td className="px-4 py-3">{item.descripcion_fase_control || "-"}</td>
                                                     <td className="px-4 py-3">
                                                         <button
                                                             onClick={() => handleDeleteLinea(item.id)}

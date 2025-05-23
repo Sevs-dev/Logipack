@@ -72,6 +72,7 @@ export interface LineaTipoAcondicionamiento {
     control: boolean;
     fase_control: string;
     descripcion_fase: string;
+    descripcion_fase_control: string;
 };
 
 export interface DataLineaTipoAcondicionamiento {
@@ -84,4 +85,5 @@ export interface DataLineaTipoAcondicionamiento {
     control: boolean;
     fase_control: string;
     descripcion_fase: string;
+    descripcion_fase_control: string;
 };
