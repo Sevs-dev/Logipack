@@ -19,6 +19,7 @@ use App\Http\Controllers\ConsecutiveController;
 use App\Http\Controllers\MachineryController;
 use App\Http\Controllers\TipoAcondicionamientoController;
 use App\Http\Controllers\LineaTipoAcondicionamientoController;
+use App\Http\Controllers\OrdenesEjecutadasController;
 
 Route::controller(AuthController::class)->group(function () {
     Route::post('login', 'login');
@@ -191,4 +192,10 @@ Route::controller(LineaTipoAcondicionamientoController::class)->group(function (
     Route::get('/getLineaTipoAcondicionamiento/{id}', 'getByTipoAcondicionamiento'); // Obtener una lineas específica
     Route::get('/getListTipoyLineas/{id}', 'getListTipoyLineas'); // Obtener una lineas específica
     Route::get('/getSelectStages', 'getSelectStages'); // Obtener una lineas específica
+});
+
+//Rutas Ordenes Ejecutadas
+Route::controller(OrdenesEjecutadasController::class)->group(function () {
+    Route::get('/getOrdenesEjecutadas', 'getAll'); // Obtener todas las lineas   
+    Route::get('/getOrdenesEjecutadas/{id}', 'getAllByAdaptationId'); // Obtener una lineas específica
 });
