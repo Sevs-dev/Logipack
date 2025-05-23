@@ -1,11 +1,10 @@
 "use client";
 // ------------------------- 1. Importaciones de dependencias principales -------------------------
 import React, { useState, useEffect, useCallback } from "react";
-import { motion } from "framer-motion";
 import { Search, X, Clock } from "lucide-react";
 // ------------------------- 2. Importaciones de servicios -------------------------
 import { createMaestra, getMaestra, deleteMaestra, getMaestraId, updateMaestra, getTipo } from "../../services/maestras/maestraServices";
-import { getStage, getStageId } from "../../services/maestras/stageServices";
+import { getStage } from "../../services/maestras/stageServices";
 import { getStage as listTipoAcondicionamiento, getStageById as lisTipoAcondicinamientoId } from "@/app/services/maestras/TipoAcondicionamientoService";
 // ------------------------- 3. Importaciones de componentes de la UI -------------------------
 import Button from "../buttons/buttons";
@@ -16,7 +15,7 @@ import PermissionCheck from "..//permissionCheck/PermissionCheck";
 import ModalSection from "../modal/ModalSection";
 // ------------------------- 5. Tipos de datos e interfaces -------------------------
 import { Stage, Data } from "../../interfaces/NewMaestra";
-import { TipoAcondicionamiento, DataTipoAcondicionamiento, LineaTipoAcondicionamiento, DataLineaTipoAcondicionamiento } from "@/app/interfaces/NewTipoAcondicionamiento";
+import { DataTipoAcondicionamiento, DataLineaTipoAcondicionamiento } from "@/app/interfaces/NewTipoAcondicionamiento";
 import { getLineaTipoAcondicionamientoById as getLineaTipoAcomById } from "@/app/services/maestras/LineaTipoAcondicionamientoService";
 // importaciones de interfaces
 
@@ -29,6 +28,7 @@ const Maestra = () => {
     const [requiereBOM, setRequiereBOM] = useState(false);
     const [estado, setEstado] = useState("");
     const [aprobado, setAprobado] = useState(false);
+    const [paralelo, setParalelo] = useState(false);
     const [stages, setStages] = useState<Stage[]>([]);
     const [selectedStages, setSelectedStages] = useState<Stage[]>([]);
     const [tipoSeleccionado, setTipoSeleccionado] = useState("");
@@ -41,6 +41,7 @@ const Maestra = () => {
     const [tipoSeleccionadoAcon, setTipoSeleccionadoAcon] = useState<number | null>(null);
     const [detalleAcondicionamiento, setDetalleAcondicionamiento] = useState<any[]>([]);
     const [searchTipoAcom, setSearchTipoAcom] = useState("");
+    const [draggedIndex, setDraggedIndex] = React.useState<number | null>(null);
 
     const handleSelectTipoAcondicionamiento = async (tipoId: number) => {
         try {
@@ -129,6 +130,29 @@ const Maestra = () => {
         setSelectedStages(prev => [...prev, stage]);
     };
 
+    const handleDragStart = (index: number) => (e: React.DragEvent<HTMLDivElement>) => {
+        setDraggedIndex(index);
+        e.dataTransfer.effectAllowed = "move";
+    };
+
+    const handleDragOver = (index: number) => (e: React.DragEvent<HTMLDivElement>) => {
+        e.preventDefault(); // necesario para permitir drop
+        e.dataTransfer.dropEffect = "move";
+    };
+
+    const handleDrop = (index: number) => (e: React.DragEvent<HTMLDivElement>) => {
+        e.preventDefault();
+        if (draggedIndex === null || draggedIndex === index) return;
+
+        setSelectedStages((prev) => {
+            const updated = [...prev];
+            const [movedItem] = updated.splice(draggedIndex, 1);
+            updated.splice(index, 0, movedItem);
+            return updated;
+        });
+        setDraggedIndex(null);
+    };
+
     const handleRemoveStage = (stage: Stage) => {
         setSelectedStages(prev => prev.filter(s => s.id !== stage.id));
     };
@@ -147,16 +171,16 @@ const Maestra = () => {
             showError("Debes seleccionar al menos una fase");
             return;
         }
-
         try {
             await createMaestra({
                 descripcion,
                 requiere_bom: requiereBOM,
                 type_product: tipoSeleccionado,
-                type_acondicinamiento: String(tipoSeleccionadoAcon),
-                type_stage: selectedStages.map((s) => s.id),
+                type_acondicinamiento: Number(tipoSeleccionadoAcon),
+                type_stage: selectedStages.map(s => s.id),
                 status_type: "En Creación",
                 aprobado,
+                paralelo,
                 duration,
                 duration_user: durationUser,
             });
@@ -194,7 +218,7 @@ const Maestra = () => {
     // Abrir modal de edición
     const handleEdit = async (id: number) => {
         try {
-            const data = await getMaestraId(id); 
+            const data = await getMaestraId(id);
             setEditingMaestra(data);
             setDescripcion(data.descripcion);
             setRequiereBOM(data.requiere_bom);
@@ -207,6 +231,7 @@ const Maestra = () => {
 
             setEstado(data.status_type);
             setAprobado(data.aprobado);
+            setParalelo(data.paralelo);
             setDuration(data.duration);
             setDurationUser(data.duration_user);
             setTipoSeleccionadoAcon(data.type_acondicinamiento);
@@ -239,10 +264,11 @@ const Maestra = () => {
                 descripcion,
                 requiere_bom: requiereBOM,
                 type_product: tipoSeleccionado,
-                type_acondicinamiento: String(tipoSeleccionadoAcon),
+                type_acondicinamiento: Number(tipoSeleccionadoAcon),
                 type_stage: selectedStages.map((s) => s.id),
                 status_type: estado,
                 aprobado,
+                paralelo,
                 duration,
                 duration_user: durationUser,
             });
@@ -262,6 +288,7 @@ const Maestra = () => {
         setTipoSeleccionado("");
         setEstado("");
         setAprobado(false);
+        setParalelo(false);
         setSelectedStages([]);
         setDuration("");
         setDurationUser("");
@@ -327,7 +354,15 @@ const Maestra = () => {
                                 className="mt-2 w-4 h-4"
                             />
                         </div>
-
+                        <div className="flex flex-col items-center">
+                            <Text type="subtitle">Paralelo</Text>
+                            <input
+                                type="checkbox"
+                                checked={paralelo}
+                                onChange={() => setParalelo(!paralelo)}
+                                className="mt-2 w-4 h-4"
+                            />
+                        </div>
                     </div>
 
                     {/* Selección Tipo de Producto */}
@@ -445,20 +480,25 @@ const Maestra = () => {
                             <div className="w-full md:w-1/2 p-4 rounded-xl bg-white border shadow-sm">
                                 <Text type="subtitle">Fases Seleccionadas</Text>
                                 {selectedStages.length > 0 ? (
-                                    selectedStages.map((stage) => {
-                                        // Busca la fase en detalle para obtener editable
+                                    selectedStages.map((stage, index) => {
                                         const faseDetalle = detalleAcondicionamiento.find(d => d.fase === stage.id);
                                         const isEditable = faseDetalle ? Boolean(Number(faseDetalle.editable)) : true;
+
                                         return (
                                             <div
                                                 key={stage.id}
+                                                draggable={isEditable}  // solo si es editable permite drag
+                                                onDragStart={handleDragStart(index)}
+                                                onDragOver={handleDragOver(index)}
+                                                onDrop={handleDrop(index)}
                                                 className={`flex items-center rounded-full px-3 py-1 text-sm transition-all
-                                                    ${isEditable
+            ${isEditable
                                                         ? "bg-gray-100 text-gray-800 hover:bg-red-400 hover:text-white cursor-pointer"
                                                         : "bg-gray-200 text-gray-500 cursor-not-allowed"}`}
                                                 onClick={() => {
                                                     if (isEditable) handleRemoveStage(stage);
                                                 }}
+                                                style={{ userSelect: "none" }} // para que no seleccione texto al drag
                                             >
                                                 {stage.description}
                                                 {isEditable && <X className="w-4 h-4 ml-2" />}
@@ -468,7 +508,6 @@ const Maestra = () => {
                                 ) : (
                                     <p className="text-gray-400 text-sm text-center mt-4">No hay fases seleccionadas</p>
                                 )}
-                                {/* Sumar las durations y mostrar */}
                             </div>
                         </div>
                         <div className="flex flex-col md:flex-row gap-4 mt-2">
@@ -512,10 +551,11 @@ const Maestra = () => {
                                     descripcion,
                                     requiere_bom: requiereBOM,
                                     type_product: tipoSeleccionado,
-                                    type_acondicinamiento: String(tipoSeleccionadoAcon),
+                                    type_acondicinamiento: Number(tipoSeleccionadoAcon),
                                     type_stage: selectedStages.map((s) => s.id),
                                     status_type: "Aprobada",
                                     aprobado: true,
+                                    paralelo,
                                     duration,
                                     duration_user: durationUser,
                                 };
@@ -556,12 +596,13 @@ const Maestra = () => {
 
             {/* Tabla de maestras */}
             <Table
-                columns={["descripcion", "status_type", "aprobado"]}
+                columns={["descripcion", "status_type", "aprobado", "paralelo"]}
                 rows={maestra}
                 columnLabels={{
                     descripcion: "Descripción",
                     status_type: "Estado",
                     aprobado: "Aprobado",
+                    paralelo: "Paralelo",
                 }}
                 onDelete={handleDelete}
                 onEdit={handleEdit}

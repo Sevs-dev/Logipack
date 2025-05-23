@@ -5,6 +5,7 @@ import { getActivitie } from "../../services/maestras/activityServices";
 import { showError, showSuccess, showConfirm } from "../toastr/Toaster";
 import Table from "../table/Table";
 import Button from "../buttons/buttons";
+import { InfoPopover } from "../buttons/InfoPopover";
 import { Stage, Data } from "../../interfaces/NewStage";
 const phases = ["Planeacion", "Conciliación", "Control", "Actividades"];
 import Text from "../text/Text";
@@ -55,7 +56,7 @@ function NewStage() {
             }
         };
 
-        if (phaseType === "Actividades") {
+        if (phaseType === "Actividades" || phaseType === "Control") {
             fetchActivities();
         } else {
             setAvailableActivities([]);
@@ -76,7 +77,7 @@ function NewStage() {
             showError("Por favor, ingresa un valor numérico válido para 'Repetir cada (min)'.");
             return false;
         }
-        if (phaseType === "Actividades" && selectedActivities.length === 0) {
+        if ((phaseType === "Actividades" || phaseType === "Control") && selectedActivities.length === 0) {
             showError("Debes seleccionar al menos una actividad.");
             return false;
         }
@@ -99,7 +100,7 @@ function NewStage() {
             duration_user: durationUser,
             duration: duration,
         };
-        if (phaseType === "Actividades") {
+        if (phaseType === "Actividades" || phaseType === "Control") {
             const activityIds = selectedActivities.map((activity) => activity.id);
             newStage.activities = JSON.stringify(activityIds);
         }
@@ -120,7 +121,7 @@ function NewStage() {
     };
 
     useEffect(() => {
-        if (editingStage && phaseType === "Actividades" && availableActivities.length > 0) {
+        if (editingStage && (phaseType === "Actividades" || phaseType === "Control") && availableActivities.length > 0) {
             const activityIds = JSON.parse(editingStage.activities);
             const selected = availableActivities.filter(activity =>
                 activityIds.includes(activity.id)
@@ -177,7 +178,7 @@ function NewStage() {
             duration: duration,
         };
 
-        if (phaseType === "Actividades") {
+        if (phaseType === "Actividades" || phaseType === "Control") {
             const activityIds = selectedActivities.map((activity) => activity.id);
             updatedStage.activities = JSON.stringify(activityIds);
         }
@@ -293,7 +294,7 @@ function NewStage() {
                             </div>
 
                             {/* Actividades (solo si Tipo de Fase es Actividades) */}
-                            {phaseType === "Actividades" && (
+                            {(phaseType === "Actividades" || phaseType === "Control") && (
                                 <div className="space-y-4">
                                     <Text type="subtitle">Actividades</Text>
                                     <div className="flex flex-col md:flex-row gap-4">
@@ -371,44 +372,44 @@ function NewStage() {
 
                                         </div>
                                     </div>
-                                    {/* Total de duración */}
-                                    <div className="flex flex-col md:flex-row gap-4">
-                                        <div className="w-full md:w-1/2">
-                                            <Text type="subtitle">Tiempo Estimado</Text>
-                                            <div className="mt-4 relative">
-                                                <Clock className="absolute left-3 top-2.5 w-4 h-4 text-gray-500" />
-                                                <input
-                                                    type="text"
-                                                    readOnly
-                                                    value={`${duration} minutos`}
-                                                    className="w-full border border-gray-300 p-2 pl-9 pr-24 rounded-md text-sm text-black bg-gray-100 cursor-default"
-                                                />
-                                                <span className="absolute right-7 top-2.5 text-sm text-gray-600">
-                                                    ({getFormattedDuration(Number(duration))})
-                                                </span>
-                                            </div>
-                                        </div>
-
-                                        <div className="w-full md:w-1/2">
-                                            <Text type="subtitle">T. Estimado Por El Usuario</Text>
-                                            <div className="mt-4 relative">
-                                                <Clock className="absolute left-3 top-2.5 w-4 h-4 text-gray-500" />
-                                                <input
-                                                    type="number"
-                                                    value={durationUser}
-                                                    onChange={(e) => setDurationUser(e.target.value)}
-                                                    className="w-full border border-gray-300 p-2 pl-9 rounded-md text-sm text-black bg-white"
-                                                />
-                                                {durationUser && (
-                                                    <span className="absolute right-7 top-2.5 text-sm text-gray-600">
-                                                        ({getFormattedDuration(Number(durationUser))})
-                                                    </span>
-                                                )}
-                                            </div>
-                                        </div>
-                                    </div>
                                 </div>
                             )}
+                            {/* Total de duración */}
+                            <div className="flex flex-col md:flex-row gap-4">
+                                <div className="w-full md:w-1/2">
+                                    <Text type="subtitle">Tiempo Estimado</Text>
+                                    <div className="mt-4 relative">
+                                        <Clock className="absolute left-3 top-2.5 w-4 h-4 text-gray-500" />
+                                        <input
+                                            type="text"
+                                            readOnly
+                                            value={`${duration} minutos`}
+                                            className="w-full border border-gray-300 p-2 pl-9 pr-24 rounded-md text-sm text-black bg-gray-100 cursor-default"
+                                        />
+                                        <span className="absolute right-7 top-2.5 text-sm text-gray-600">
+                                            ({getFormattedDuration(Number(duration))})
+                                        </span>
+                                    </div>
+                                </div>
+
+                                <div className="w-full md:w-1/2">
+                                    <Text type="subtitle">T. Estimado Por El Usuario</Text>
+                                    <div className="mt-4 relative">
+                                        <Clock className="absolute left-3 top-2.5 w-4 h-4 text-gray-500" />
+                                        <input
+                                            type="number"
+                                            value={durationUser}
+                                            onChange={(e) => setDurationUser(e.target.value)}
+                                            className="w-full border border-gray-300 p-2 pl-9 rounded-md text-sm text-black bg-white"
+                                        />
+                                        {durationUser && (
+                                            <span className="absolute right-7 top-2.5 text-sm text-gray-600">
+                                                ({getFormattedDuration(Number(durationUser))})
+                                            </span>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
 
                             {/* Opciones adicionales */}
                             <div className="mt-4 flex justify-center gap-4">
@@ -457,7 +458,9 @@ function NewStage() {
                                         onChange={(e) => setMulti(e.target.checked)}
                                         className="h-5 w-5 text-blue-600"
                                     />
-                                    <span className="text-sm text-black">¿Es Multi?</span>
+                                    <span className="text-sm text-black">¿Es Multi?
+                                         <InfoPopover content="Se selecciona para indicarle al sistema que al tener multiples unidades se pultiplique el tiempo" />
+                                    </span>
                                 </div>
 
                                 <div className="flex items-center gap-2">
@@ -486,7 +489,7 @@ function NewStage() {
                             <Button
                                 onClick={() => (editingStage ? handleUpdate() : handleSave())}
                                 variant="create"
-                                disabled={!description.trim() || (phaseType === "Actividades" && selectedActivities.length === 0)}
+                                disabled={!description.trim() || ((phaseType === "Actividades" || phaseType === "Control") && selectedActivities.length === 0)}
                                 label={editingStage ? "Actualizar" : "Crear"}
                             />
                         </div>

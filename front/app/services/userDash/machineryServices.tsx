@@ -10,14 +10,20 @@ const Machinary = axios.create({
 });
 
 export const newMachin = async (data: MachineryForm) => {
-    try {
-        const response = await Machinary.post('/newMachin', data);
-        return response.data;
-    } catch (error: unknown) {
-        console.error("Error en newMachin:", error);
-        throw error;
+  try {
+    const response = await Machinary.post('/newMachin', data);
+    return response.data;
+  } catch (error: any) {
+    if (error.response) {
+      console.error("Error status:", error.response.status);
+      console.error("Error data:", error.response.data);
+    } else {
+      console.error("Error en newMachin:", error.message);
     }
+    throw error;
+  }
 };
+
 
 export const getMachin = async () => {
     try {

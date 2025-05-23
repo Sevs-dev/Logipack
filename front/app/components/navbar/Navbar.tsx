@@ -31,7 +31,7 @@ function Navbar() {
   useEffect(() => {
     const token = nookies.get(null)?.token;
     if (token) {
-      nookies.set(null, "token", token, { maxAge: 30 * 60, path: "/" });
+      nookies.set(null, "token", token, { maxAge: 120 * 60, path: "/" });
     }
   }, [pathname]);
 
@@ -118,7 +118,7 @@ function Navbar() {
                 <>
                   <NavButton onClick={() => handleNavigation("/pages/dashboard")}>Dashboard</NavButton>
                   <NavButton onClick={() => handleNavigation("/pages/perfil")}>Perfil</NavButton>
-                  <NavButton  onClick={handleLogout} logout>
+                  <NavButton onClick={handleLogout} logout>
                     Cerrar Sesión
                   </NavButton>
                 </>

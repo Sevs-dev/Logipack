@@ -43,7 +43,6 @@ export default function NewTipoAcondicionamiento() {
     const [listStages, setListStages] = useState<Stage[]>([]);
     const [listStagesControls, setListStagesControls] = useState<Stage[]>([]);
 
-
     // Captura de los datos del tipo de acondicionamiento
     const inputChangeObjectTipoAcom = (e: React.ChangeEvent<HTMLInputElement>) => {
         setObjectTipoAcom({
@@ -235,9 +234,8 @@ export default function NewTipoAcondicionamiento() {
                 {/* Botón abrir modal de creación */}
 
                 {/* Tabla de tipos de acondicionamiento */}
-                <Table columns={["id", "descripcion", "status"]} rows={listTipoAcom}
-                    columnLabels={{
-                        id: "ID",
+                <Table columns={["descripcion", "status"]} rows={listTipoAcom}
+                    columnLabels={{ 
                         descripcion: "Descripción",
                         status: "Estado",
                     }} onDelete={handleDelete} onEdit={handleOpenEdit} />

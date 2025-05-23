@@ -50,7 +50,7 @@ export const Table: React.FC<TableProps> = ({ rows, columns, columnLabels = {}, 
     const [searchTerm, setSearchTerm] = useState<string>("");
     const [currentPage, setCurrentPage] = useState<number>(1);
     const booleanColumns = ["binding", "status", "aprobado"];
-    const itemsPerPage = 5;
+    const itemsPerPage = 10;
     const maxButtons = 4;
 
     const filteredRows = Array.isArray(rows)

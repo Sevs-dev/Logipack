@@ -1,5 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
-import { motion } from "framer-motion";
+import React, { useState, useEffect, useMemo } from "react"; 
 import { ClipboardCopy } from 'lucide-react';
 // 🔹 Servicios
 import { getClients, getClientsId } from "@/app/services/userDash/clientServices";

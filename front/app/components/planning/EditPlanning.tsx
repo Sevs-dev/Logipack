@@ -1,5 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
-import { motion } from "framer-motion";
+import React, { useState, useEffect, useCallback } from "react"; 
 import { COLORS } from "@/app/constants/colors";
 // 🔹 Componentes
 import Button from "../buttons/buttons";
@@ -14,8 +13,7 @@ import { getPlanning, updatePlanning } from "../../services/planing/planingServi
 import { getClientsId } from "@/app/services/userDash/clientServices";
 import { getFactory, getFactoryId } from "@/app/services/userDash/factoryServices";
 import { getManu, getManuId } from "@/app/services/userDash/manufacturingServices";
-import { getMachin, getMachinById } from "@/app/services/userDash/machineryServices";
-import { getMaestraId } from "@/app/services/maestras/maestraServices";
+import { getMachin, getMachinById } from "@/app/services/userDash/machineryServices"; 
 // 🔹 Interfaces
 import { Plan } from "@/app/interfaces/EditPlanning";
 

@@ -4,10 +4,10 @@ export interface MachineryForm {
   name: string;
   category: string;
   type?: string;
-  power?: number;
-  capacity?: number;
+  power?: string;
+  capacity?: string;
   dimensions?: string;
-  weight?: number;
+  weight?: string;
   is_mobile: boolean;
   description?: string;
 }

@@ -35,12 +35,32 @@ export function useAuth() {
       router.push("/");
     };
 
-    const refreshToken = () => {
-      if (token) {
-        nookies.set(null, "token", token, {
-          maxAge: 1800,
-          path: "/",
-        });
+    const refreshToken = async () => {
+      const cookies = nookies.get(null);
+      const token = cookies.token;
+
+      if (!token) return;
+
+      const decoded = parseJwt(token);
+      const expiresIn = decoded?.exp - Date.now() / 1000;
+
+      if (expiresIn < 300) { // menos de 5 minutos
+        try {
+          const response = await fetch("/api/refresh-token", {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          });
+
+          const { newToken } = await response.json();
+          nookies.set(null, "token", newToken, {
+            maxAge: 1800,
+            path: "/",
+          });
+        } catch (err) {
+          console.error("Error al renovar token", err);
+        }
       }
     };
 

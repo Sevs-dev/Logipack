@@ -39,10 +39,7 @@ export default function PlanningNotifier() {
 
   const fetchActivities = async () => {
     try {
-      const data: any[] = await getPlanning(); // asumiendo que este servicio devuelve cualquier cosa
-
-      console.log("Fetched activities raw:", data);
-
+      const data: any[] = await getPlanning(); // asumiendo que este servicio devuelve cualquier cosa 
       // Normalizamos los datos para que siempre tengan la estructura que espera el componente
       const normalizedData: Planning[] = data.map((item) => ({
         id: item.id,

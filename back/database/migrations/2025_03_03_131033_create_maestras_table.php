@@ -21,6 +21,7 @@ return new class extends Migration
             $table->json('type_stage')->nullable();
             $table->string('status_type')->default('En creación');
             $table->boolean('aprobado')->default(false);
+            $table->boolean('paralelo')->default(false);
             $table->string('duration')->nullable();
             $table->string('duration_user')->nullable();
             $table->foreign('type_acondicinamiento')->references('id')->on('tipo_acondicionamientos')->onDelete('cascade');

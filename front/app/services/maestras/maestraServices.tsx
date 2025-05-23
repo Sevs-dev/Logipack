@@ -11,15 +11,21 @@ const Maestras = axios.create({
 
 // Crear una nueva Maestra
 export const createMaestra = async (data: DataService): Promise<any> => {
-    // console.log('DataService a enviar:', data); // Agregado para depuración
     try {
         const response = await Maestras.post('/newMaestra', data);
         return response.data;
     } catch (error) {
-        console.error('Error al crear la maestra:', error);
-        throw error;
+        if (axios.isAxiosError(error)) {
+            console.error('Error al crear la maestra:', error.response?.data || error.message);
+            // Re-lanzamos el error pero ahora con más info, por si quieres manejarlo después
+            throw error.response?.data || error;
+        } else {
+            console.error('Error inesperado al crear la maestra:', error);
+            throw error;
+        }
     }
 };
+
 
 // Obtener todas las Maestras
 export const getMaestra = async (): Promise<any> => {

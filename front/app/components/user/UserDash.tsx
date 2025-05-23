@@ -11,6 +11,7 @@ import Consecutive from "./CreateConsecutive";
 import PermissionCheck from "..//permissionCheck/PermissionCheck";
 import Machinery from "./CreateMachinery";
 import useUserData from '../../hooks/useUserData';
+import CreateUser from "./CreateUser";
 
 function User() {
   const { userName } = useUserData();
@@ -20,19 +21,7 @@ function User() {
       {/* Administrador de ventanas */}
       <WindowManager
         windowsData={[
-          {
-            id: 1, title: "Usuarios", component:
-              <PermissionCheck requiredPermission="crear_usuarios">
-                <div>
-
-                  {/* Tabla de usuarios */}
-                  <div className="overflow-x-auto">
-                    <DataUsers />
-                  </div>
-                </div>
-              </PermissionCheck>
-            , isProtected: true
-          },
+          { id: 1, title: "Usuarios", component: <CreateUser />, isProtected: true },
           { id: 2, title: "Roles", component: <Roles />, isProtected: true },
           { id: 3, title: "Plantas", component: <Factory />, isProtected: true },
           { id: 4, title: "Lineas", component: <Lista />, isProtected: true },
