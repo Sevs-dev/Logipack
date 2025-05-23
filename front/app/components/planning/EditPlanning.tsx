@@ -8,6 +8,7 @@ import Table from "../table/Table";
 import Text from "../text/Text";
 import { IconSelector } from "../dinamicSelect/IconSelector";
 import ModalSection from "../modal/ModalSection";
+import { InfoPopover } from "../buttons/InfoPopover";
 // 🔹 Servicios 
 import { getPlanning, updatePlanning } from "../../services/planing/planingServices";
 import { getClientsId } from "@/app/services/userDash/clientServices";
@@ -146,16 +147,12 @@ function EditPlanning() {
             return;
         }
         try {
-            const master = await getMaestraId(Number(updatedPlan.master));
-            const updatedWithDuration = {
-                ...updatedPlan,
-                duration: master.duration,
-            };
-            await updatePlanning(updatedWithDuration.id, updatedWithDuration);
+            // Ya no obtenemos ni modificamos duration
+            await updatePlanning(updatedPlan.id, updatedPlan);
             showSuccess("Planificación actualizada");
             setPlanning(prev =>
                 prev.map(plan =>
-                    plan.id === updatedWithDuration.id ? updatedWithDuration : plan
+                    plan.id === updatedPlan.id ? updatedPlan : plan
                 )
             );
             setIsOpen(false);
@@ -164,6 +161,7 @@ function EditPlanning() {
             showError("Error al guardar la planificación");
         }
     };
+
 
     const handleEdit = useCallback((id: number) => {
         const selectedPlan = planning.find(plan => plan.id === id);
@@ -189,6 +187,29 @@ function EditPlanning() {
         if (remainingMinutes > 0) parts.push(`${remainingMinutes} min`);
         return parts.join(' ');
     };
+
+    function formatDurationBreakdown(breakdown: string | any[]): string {
+        const parsed = typeof breakdown === "string" ? JSON.parse(breakdown) : breakdown;
+
+        return parsed
+            .map((item: any) => {
+                if (item.fase === "TOTAL") {
+                    return `🧮 TOTAL → ${getFormattedDuration(item.resultado)}`;
+                }
+
+                const base = item.duracion_base;
+                const teorica = item.teorica_total;
+                const multiplicacion = item.multiplicacion;
+                const resultado = item.resultado;
+
+                if (multiplicacion && teorica) {
+                    return `${item.fase} → ${multiplicacion} = ${resultado} min`;
+                }
+
+                return `${item.fase} → ${resultado} min`;
+            })
+            .join("\n");
+    }
 
     return (
         <div>
@@ -444,16 +465,29 @@ function EditPlanning() {
                         </div>
                         {/* 🔹 Duración */}
                         <div>
-                            <Text type="subtitle">Duración (minutos)</Text>
-                             <input
-                                        type="text"
-                                        readOnly
-                                        className="w-full pl-10 pr-4 py-2 rounded-md border border-gray-300 bg-gray-100 text-sm text-gray-700 text-center"
-                                        value={`${currentPlan.duration} min ---> ${getFormattedDuration(Number(currentPlan.duration))}`}
-                                    />
-                             
+                            <Text type="subtitle">Duración
+                                <InfoPopover content="Esta duracion es calculada segun la cantidad de fases que requiera multiple" />
+                            </Text>
+                            <input
+                                type="text"
+                                readOnly
+                                className="w-full pl-10 pr-4 py-2 rounded-md border border-gray-300 bg-gray-100 text-sm text-gray-700 text-center"
+                                value={`${currentPlan.duration} min ---> ${getFormattedDuration(Number(currentPlan.duration))}`}
+                            />
                         </div>
+
+                        <div>
+                            <Text type="subtitle">Duración por fase</Text>
+                            <div className="w-full p-3 mt-2 text-sm text-gray-800 bg-gray-100 border rounded whitespace-pre-line">
+                                {currentPlan.duration_breakdown
+                                    ? formatDurationBreakdown(currentPlan.duration_breakdown)
+                                    : "Sin desglose disponible"}
+                            </div>
+                        </div>
+
+
                         {/* 🔹 Fecha de Inicio */}
+
                         <div>
                             <Text type="subtitle">Fecha y Hora de Inicio</Text>
                             <input

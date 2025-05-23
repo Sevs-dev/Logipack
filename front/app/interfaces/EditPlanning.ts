@@ -1,4 +1,4 @@
-import { Icon } from 'lucide-react';
+ 
 export interface Plan {
     adaptation_id: number;
     bom: string;
@@ -17,12 +17,23 @@ export interface Plan {
     orderNumber: string;
     quantityToProduce: number;
     resource: string | null;
-    status_dates: string;
-    updated_at: string;
+    status_dates: string; 
     client_name?: string; 
     color?: string;
     icon?: string;
     start_date?: string;
     end_date?: string;
     duration?: number;
+    duration_breakdown: string;
+}
+
+export interface Planning {
+  id: number;
+  number_order: string;
+  clock: boolean;
+  start_date: string | null;
+  end_date: string | null;
+  paused: boolean;
+  finish_notificade: boolean;
+  out: boolean;
 }

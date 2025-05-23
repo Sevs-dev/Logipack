@@ -11,6 +11,8 @@ class Adaptation extends Model
 
     protected $guarded = [];
 
+    public $timestamps = false; 
+
     public function adaptations()
     {
         return $this->hasMany(AdaptationDate::class);

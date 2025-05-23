@@ -36,6 +36,7 @@ class AdaptationDateController extends Controller
             'color' => 'nullable|string',
             'icon' => 'nullable|string',
             'duration' => 'nullable|string',
+            'duration_breakdown' => 'nullable|json',
             'start_date' => 'nullable|date',
             'end_date' => 'nullable|date',
         ]);
@@ -69,6 +70,7 @@ class AdaptationDateController extends Controller
             'color' => 'nullable|string',
             'icon' => 'nullable|string',
             'duration' => 'nullable|string',
+            'duration_breakdown' => 'nullable|json',
             'start_date' => 'nullable|date',
             'end_date' => 'nullable|date',
         ]);

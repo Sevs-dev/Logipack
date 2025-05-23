@@ -20,7 +20,7 @@ return new class extends Migration
             $table->text('descripcion');
             $table->foreignId('fase')
                 ->constrained('stages')
-                ->onDelete('cascade');
+                ->onDelete('cascade')->nullable();
             $table->boolean('editable')->default(false);
             $table->boolean('control')->default(false);
             $table->string('fase_control')->nullable();

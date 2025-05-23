@@ -15,14 +15,14 @@ const container = {
 };
 
 const fadeInUp = {
-  hidden: { 
-    opacity: 0, 
+  hidden: {
+    opacity: 0,
     y: 60,
     scale: 0.95,
     filter: "blur(10px)"
   },
-  visible: { 
-    opacity: 1, 
+  visible: {
+    opacity: 1,
     y: 0,
     scale: 1,
     filter: "blur(0px)",
@@ -63,7 +63,7 @@ function Home() {
         viewport={{ once: true, amount: 0.3 }}
       >
         {/* Cambiar el fondo degradado por una imagen */}
-        <motion.div 
+        <motion.div
           className="absolute inset-0 opacity-30"
           animate={{
             backgroundPosition: ['0% 0%', '100% 100%'],
@@ -79,7 +79,7 @@ function Home() {
             backgroundRepeat: 'no-repeat', // Evita que la imagen se repita
           }}
         />
-        
+
         <motion.div className="max-w-7xl mx-auto px-4 text-center relative z-10" variants={container}>
           <motion.h1
             className="text-6xl md:text-8xl font-bold mb-6 bg-clip-text text-transparent bg-gradient-to-r from-white to-blue-200"
@@ -113,59 +113,59 @@ function Home() {
 
       {/* Features section con variants corregidos */}
       <motion.section
-  id="features"
-  className="py-24 bg-gradient-to-br from-white to-gray-50"
-  initial="hidden"
-  whileInView="visible"
-  viewport={{ once: true, amount: 0.3 }}
->
-  <motion.div className="max-w-7xl mx-auto px-4" variants={container}>
-    <motion.h2
-      className="text-5xl font-bold text-center mb-16 bg-clip-text text-transparent bg-gradient-to-r from-blue-900 to-blue-600"
-      variants={fadeInUp}
-    >
-      Características Destacadas
-    </motion.h2>
-    <motion.div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-      {[1, 2, 3].map((_, index) => (
-        <motion.div
-          key={index}
-          className="backdrop-blur-lg bg-white bg-opacity-60 rounded-2xl overflow-hidden"
-          variants={fadeInUp}
-        >
-          <motion.div 
-            className="p-8 h-full"
-            initial="rest"
-            whileHover="hover"
-            animate="rest"
-            variants={cardHover}
+        id="features"
+        className="py-24 bg-gradient-to-br from-white to-gray-50"
+        initial="hidden"
+        whileInView="visible"
+        viewport={{ once: true, amount: 0.3 }}
+      >
+        <motion.div className="max-w-7xl mx-auto px-4" variants={container}>
+          <motion.h2
+            className="text-5xl font-bold text-center mb-16 bg-clip-text text-transparent bg-gradient-to-r from-blue-900 to-blue-600"
+            variants={fadeInUp}
           >
-            <motion.div 
-              className="h-16 w-16 mb-6"
-              whileHover={{ rotate: 360 }}
-              transition={{ duration: 0.5 }}
-            >
-              {/* Íconos de Lucide */}
-              {index === 0 && <Monitor className="text-blue-600 w-full h-full" />}  {/* Control de Fabricación */}
-              {index === 1 && <FileText className="text-blue-600 w-full h-full" />}  {/* Auditoría */}
-              {index === 2 && <AlertCircle className="text-blue-600 w-full h-full" />}  {/* Reportes de Error */}
-            </motion.div>
-            <h3 className="text-2xl font-bold mb-4 text-gray-800">
-              {["Control de Fabricación", "Auditorías y Compliance", "Reportes en Tiempo Real"][index]}
-            </h3>
-            <p className="text-gray-600 leading-relaxed">
-              {[ 
-                "Monitorea cada fase de la producción en tiempo real, detecta desviaciones y optimiza procesos para garantizar la máxima calidad.",
-                "Realiza auditorías integrales que aseguran el cumplimiento de normativas internacionales.",
-                "Accede a análisis y reportes instantáneos que facilitan la toma de decisiones."
-              ][index]}
-            </p>
+            Características Destacadas
+          </motion.h2>
+          <motion.div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {[1, 2, 3].map((_, index) => (
+              <motion.div
+                key={index}
+                className="backdrop-blur-lg bg-white bg-opacity-60 rounded-2xl overflow-hidden"
+                variants={fadeInUp}
+              >
+                <motion.div
+                  className="p-8 h-full"
+                  initial="rest"
+                  whileHover="hover"
+                  animate="rest"
+                  variants={cardHover}
+                >
+                  <motion.div
+                    className="h-16 w-16 mb-6"
+                    whileHover={{ rotate: 360 }}
+                    transition={{ duration: 0.5 }}
+                  >
+                    {/* Íconos de Lucide */}
+                    {index === 0 && <Monitor className="text-blue-600 w-full h-full" />}  {/* Control de Fabricación */}
+                    {index === 1 && <FileText className="text-blue-600 w-full h-full" />}  {/* Auditoría */}
+                    {index === 2 && <AlertCircle className="text-blue-600 w-full h-full" />}  {/* Reportes de Error */}
+                  </motion.div>
+                  <h3 className="text-2xl font-bold mb-4 text-gray-800">
+                    {["Control de Fabricación", "Auditorías y Compliance", "Reportes en Tiempo Real"][index]}
+                  </h3>
+                  <p className="text-gray-600 leading-relaxed">
+                    {[
+                      "Monitorea cada fase de la producción en tiempo real, detecta desviaciones y optimiza procesos para garantizar la máxima calidad.",
+                      "Realiza auditorías integrales que aseguran el cumplimiento de normativas internacionales.",
+                      "Accede a análisis y reportes instantáneos que facilitan la toma de decisiones."
+                    ][index]}
+                  </p>
+                </motion.div>
+              </motion.div>
+            ))}
           </motion.div>
         </motion.div>
-      ))}
-    </motion.div>
-  </motion.div>
-</motion.section>
+      </motion.section>
 
       {/* Logos de clientes - Carrousel */}
       <motion.section
@@ -222,7 +222,7 @@ function Home() {
                 className="backdrop-blur-lg bg-white bg-opacity-60 rounded-2xl overflow-hidden"
                 variants={fadeInUp}
               >
-                <motion.div 
+                <motion.div
                   className="p-8 h-full"
                   initial="rest"
                   whileHover="hover"
@@ -260,7 +260,7 @@ function Home() {
         whileInView="visible"
         viewport={{ once: true, amount: 0.3 }}
       >
-        <motion.div 
+        <motion.div
           className="absolute inset-0 opacity-30"
           animate={{
             backgroundPosition: ['0% 0%', '100% 100%'],
@@ -275,7 +275,7 @@ function Home() {
             backgroundSize: '100% 100%'
           }}
         />
-        
+
         <motion.div className="max-w-7xl mx-auto px-4 text-center relative z-10" variants={container}>
           <motion.h2
             className="text-5xl font-bold mb-8"
@@ -308,7 +308,7 @@ function Home() {
         whileInView="visible"
         viewport={{ once: true }}
       >
-        <motion.div 
+        <motion.div
           className="max-w-7xl mx-auto px-4 text-center"
           variants={fadeInUp}
         >

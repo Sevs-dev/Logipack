@@ -92,15 +92,12 @@ class AdaptationController extends Controller
 
                 if ($master && is_array($master->type_stage)) {
                     $totalDuration = 0;
-
-                    // Calcular total teorica solo 1 vez para los multi
                     $teoricaTotal = 0;
                     foreach ($ingredients as $ing) {
                         if (isset($ing['teorica'])) {
                             $teoricaTotal += floatval($ing['teorica']);
                         }
                     }
-
                     foreach ($master->type_stage as $stageId) {
                         $stage = Stage::find($stageId);
                         if (!$stage) continue;
@@ -126,13 +123,11 @@ class AdaptationController extends Controller
                             'resultado'      => $duracionEtapa,
                         ];
                     }
-
                     // Agregar total al final del desglose
                     $duration_breakdown[] = [
                         'fase'      => 'TOTAL',
                         'resultado' => $totalDuration,
                     ];
-
                     $masterDuration = $totalDuration;
                 }
             }
@@ -235,171 +230,164 @@ class AdaptationController extends Controller
                 'article_code' => 'required|json',
                 'number_order' => 'required|string',
                 'attachment'   => 'nullable|file',
-                'master'       => 'nullable|json',
-                'bom'          => 'nullable|json',
+                'master'       => 'nullable|exists:maestras,id',
+                'bom'          => 'nullable|exists:boms,id',
                 'ingredients'  => 'nullable|json',
             ]);
 
-            // 🗂 Procesar adjuntos individuales
+            // Procesar adjuntos individuales
             $articleAttachments = [];
             $oldAttachments = json_decode($adaptation->attachment, true) ?? [];
 
             foreach ($request->files as $key => $file) {
                 if (Str::startsWith($key, 'attachment_')) {
                     $codart = Str::after($key, 'attachment_');
+
                     if ($file instanceof SymfonyUploadedFile && !$file instanceof LaravelUploadedFile) {
                         $file = LaravelUploadedFile::createFromBase($file);
                     }
 
+                    // Borrar adjunto antiguo si existe
                     if (isset($oldAttachments[$codart])) {
                         Storage::disk('public')->delete($oldAttachments[$codart]);
                     }
 
-                    $filename = $codart . '_' . now()->format('Ymd_His') . '.' . $file->getClientOriginalExtension();
+                    $safeCodart = preg_replace('/[^A-Za-z0-9_\-\.]/', '_', $codart);
+                    $filename = $safeCodart . '_' . now()->format('Ymd_His') . '.' . $file->getClientOriginalExtension();
                     $path = $file->storeAs('attachments', $filename, 'public');
                     $articleAttachments[$codart] = $path;
                 }
             }
 
-            // 📎 Procesar adjunto general
+            // Procesar adjunto general
             if ($request->hasFile('attachment')) {
                 $file = $request->file('attachment');
+
                 if ($file instanceof SymfonyUploadedFile && !$file instanceof LaravelUploadedFile) {
                     $file = LaravelUploadedFile::createFromBase($file);
                 }
 
+                // Si el attachment anterior era JSON con múltiples archivos, borrar todos
                 if (is_string($adaptation->attachment)) {
-                    Storage::disk('public')->delete($adaptation->attachment);
+                    $oldAttachmentData = json_decode($adaptation->attachment, true);
+                    if (is_array($oldAttachmentData)) {
+                        foreach ($oldAttachmentData as $oldFilePath) {
+                            Storage::disk('public')->delete($oldFilePath);
+                        }
+                    } else {
+                        Storage::disk('public')->delete($adaptation->attachment);
+                    }
                 }
 
-                $filename = 'plano_' . now()->format('Ymd_His') . '.' . $file->getClientOriginalExtension();
+                $filename = 'general_' . now()->format('Ymd_His') . '.' . $file->getClientOriginalExtension();
                 $filePath = $file->storeAs('attachments', $filename, 'public');
-                $validatedData['attachment'] = $filePath;
+                $articleAttachments['general'] = $filePath;
             }
 
+            // Si hay adjuntos, codificarlos en JSON para guardar en DB
             if (!empty($articleAttachments)) {
                 $validatedData['attachment'] = json_encode($articleAttachments);
             }
 
-            // 📦 Decodificar campos JSON
-            $validatedData['master'] = isset($validatedData['master']) ? json_decode($validatedData['master'], true) : null;
-            $validatedData['bom'] = isset($validatedData['bom']) ? json_decode($validatedData['bom'], true) : null;
+            // Decodificar JSON si vienen como string
             $validatedData['ingredients'] = isset($validatedData['ingredients']) ? json_decode($validatedData['ingredients'], true) : null;
 
-            // ⏱ Calcular duración total y desglose
+            // Duración y desglose
             $masterDuration = null;
             $duration_breakdown = [];
 
-            $masterId = is_array($validatedData['master']) ? $validatedData['master']['id'] ?? null : $validatedData['master'];
-            $master = $masterId ? Maestra::find($masterId) : null;
+            if (!empty($validatedData['master'])) {
+                $master = Maestra::find($validatedData['master']);
+                $ingredients = $validatedData['ingredients'] ?? [];
 
-            if ($master && is_array($master->type_stage)) {
-                $totalDuration = 0;
+                if ($master && is_array($master->type_stage)) {
+                    $totalDuration = 0;
+                    $teoricaTotal = 0;
 
-                // Calcular teorica total una sola vez
-                $teoricaTotal = 0;
-                foreach ($validatedData['ingredients'] ?? [] as $ing) {
-                    if (isset($ing['teorica'])) {
-                        $teoricaTotal += floatval($ing['teorica']);
-                    }
-                }
-
-                foreach ($master->type_stage as $stageId) {
-                    $stage = Stage::find($stageId);
-                    if (!$stage) continue;
-
-                    $duracionEtapa = 0;
-                    $duracion_base = floatval($stage->duration);
-                    $esMulti = boolval($stage->multi);
-                    $multiplicacion = null;
-
-                    if ($esMulti) {
-                        $duracionEtapa = $duracion_base * $teoricaTotal;
-                        $multiplicacion = "{$duracion_base} * {$teoricaTotal}";
-                    } else {
-                        $duracionEtapa = $duracion_base;
+                    foreach ($ingredients as $ing) {
+                        if (isset($ing['teorica'])) {
+                            $teoricaTotal += floatval($ing['teorica']);
+                        }
                     }
 
-                    $totalDuration += $duracionEtapa;
+                    foreach ($master->type_stage as $stageId) {
+                        $stage = Stage::find($stageId);
+                        if (!$stage) continue;
+
+                        $duracionEtapa = 0;
+                        $multiplicacion = null;
+
+                        if ($stage->multi) {
+                            $duracionEtapa = $stage->duration * $teoricaTotal;
+                            $multiplicacion = "{$stage->duration} * {$teoricaTotal}";
+                        } else {
+                            $duracionEtapa = $stage->duration;
+                        }
+
+                        $totalDuration += $duracionEtapa;
+
+                        $duration_breakdown[] = [
+                            'fase'           => $stage->description,
+                            'multi'          => $stage->multi,
+                            'duracion_base'  => $stage->duration,
+                            'teorica_total'  => $stage->multi ? $teoricaTotal : null,
+                            'multiplicacion' => $multiplicacion,
+                            'resultado'      => $duracionEtapa,
+                        ];
+                    }
 
                     $duration_breakdown[] = [
-                        'fase'           => $stage->description,
-                        'multi'          => $esMulti,
-                        'duracion_base'  => $duracion_base,
-                        'teorica_total'  => $esMulti ? $teoricaTotal : null,
-                        'multiplicacion' => $multiplicacion,
-                        'resultado'      => $duracionEtapa
+                        'fase'      => 'TOTAL',
+                        'resultado' => $totalDuration,
                     ];
+
+                    $masterDuration = $totalDuration;
                 }
-
-                // Agregar total final al desglose
-                $duration_breakdown[] = [
-                    'fase'      => 'TOTAL',
-                    'resultado' => $totalDuration
-                ];
-
-                $masterDuration = floatval($totalDuration);
             }
 
-            // Guardar desglose y duración total en validatedData para guardar en DB
+            // Guardar desglose y duración en validatedData
             $validatedData['duration_breakdown'] = json_encode($duration_breakdown);
-            $validatedData['duration'] = $masterDuration;
-
-            // 🧠 Log de duración calculada
-            Log::info('Duración total calculada:', ['duration' => $masterDuration]);
-
-            // 🔄 Actualizar adaptación principal
-            $adaptation->update($validatedData);
-
-            // 🧩 Actualizar fechas por artículo
+            $validatedData['duration'] = $masterDuration;  
+            
             $articleCodes = json_decode($validatedData['article_code'], true);
+
             foreach ($articleCodes as $article) {
-                $updateData = [
-                    'client_id'           => $validatedData['client_id'],
-                    'factory_id'          => $validatedData['factory_id'],
-                    'number_order'        => $validatedData['number_order'],
-                    'orderNumber'         => $article['orderNumber'],
-                    'deliveryDate'        => $article['deliveryDate'],
-                    'quantityToProduce'   => $article['quantityToProduce'],
-                    'lot'                 => $article['lot'],
-                    'healthRegistration'  => $article['healthRegistration'],
-                    'master'              => $validatedData['master'],
-                    'bom'                 => $validatedData['bom'],
-                    'ingredients'         => $validatedData['ingredients'],
-                    'duration'            => $masterDuration,
-                    'duration_breakdown' => json_encode($duration_breakdown),
-                ];
-
-                Log::info('Actualizando AdaptationDate:', [
-                    'adaptation_id' => $adaptation->id,
-                    'codart'        => $article['codart'],
-                    'data'          => $updateData,
-                ]);
-
                 AdaptationDate::updateOrCreate(
                     [
                         'adaptation_id' => $adaptation->id,
-                        'codart'        => $article['codart'],
+                        'codart'       => $article['codart'],
                     ],
-                    $updateData
+                    [
+                        'client_id'           => $validatedData['client_id'],
+                        'factory_id'          => $validatedData['factory_id'],
+                        'number_order'        => $validatedData['number_order'],
+                        'orderNumber'         => $article['orderNumber'],
+                        'deliveryDate'        => $article['deliveryDate'],
+                        'quantityToProduce'   => $article['quantityToProduce'],
+                        'lot'                 => $article['lot'],
+                        'healthRegistration'  => $article['healthRegistration'],
+                        'master'              => $validatedData['master'],
+                        'bom'                 => $validatedData['bom'],
+                        'ingredients'         => $validatedData['ingredients'],
+                        'duration'            => $masterDuration,
+                        'duration_breakdown'  => json_encode($duration_breakdown),
+                    ]
                 );
             }
 
             return response()->json([
                 'message'    => 'Adaptation updated successfully',
-                'adaptation' => $adaptation
+                'adaptation' => $adaptation,
             ], 200);
-        } catch (ModelNotFoundException $e) {
-            return response()->json(['error' => 'Adaptation not found'], 404);
         } catch (ValidationException $e) {
             return response()->json([
                 'error'   => 'Validation failed',
-                'details' => $e->errors()
+                'details' => $e->errors(),
             ], 422);
         } catch (\Exception $e) {
             return response()->json([
                 'error'   => 'Error updating adaptation',
-                'details' => $e->getMessage()
+                'details' => $e->getMessage(),
             ], 500);
         }
     }

@@ -1,33 +1,12 @@
+"use client";
 import React, { useEffect, useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { FaRegBell  } from "react-icons/fa";
-
-const getPlanning = async () => [
-  {
-    id: 1,
-    name: "Actividad Test",
-    clock: true,
-    start_date: new Date(Date.now() - 1000 * 60 * 30).toISOString(),
-    end_date: new Date(Date.now() + 1000 * 60 * 30).toISOString(),
-    paused: false,
-    finish_notificade: false,
-    out: false,
-  },
-  {
-    id: 2,
-    name: "Otra actividad",
-    clock: true,
-    start_date: new Date(Date.now() - 1000 * 60 * 10).toISOString(),
-    end_date: new Date(Date.now() + 1000 * 60 * 50).toISOString(),
-    paused: false,
-    finish_notificade: false,
-    out: false,
-  },
-];
+import { FaRegBell } from "react-icons/fa";
+import { getPlanning } from "@/app/services/planing/planingServices";
 
 type Planning = {
   id: number;
-  name: string;
+  number_order: string;
   clock: boolean;
   start_date: string | null;
   end_date: string | null;
@@ -36,10 +15,13 @@ type Planning = {
   out: boolean;
 };
 
-const playMessengerSound = (type: "in" | "out") => {
-  const sound = new Audio(`/sounds/${type === "in" ? "drop-in" : "drop-out"}.mp3`);
+const playMessengerSound = () => {
+  const src = "/sounds/drop-in.mp3";
+  const sound = new Audio(src);
   sound.volume = 0.6;
-  sound.play();
+  sound.play().catch((err) => {
+    console.error("Error reproduciendo sonido:", err, "Archivo:", src);
+  });
 };
 
 export default function PlanningNotifier() {
@@ -55,63 +37,38 @@ export default function PlanningNotifier() {
     }
   }, []);
 
+  const fetchActivities = async () => {
+    try {
+      const data: any[] = await getPlanning(); // asumiendo que este servicio devuelve cualquier cosa
+
+      console.log("Fetched activities raw:", data);
+
+      // Normalizamos los datos para que siempre tengan la estructura que espera el componente
+      const normalizedData: Planning[] = data.map((item) => ({
+        id: item.id,
+        number_order: item.number_order || `Orden #${item.id}`, // si no hay número, ponemos un fallback
+        clock: !!item.clock,
+        start_date: item.start_date || null,
+        end_date: item.end_date || null,
+        paused: !!item.paused,
+        finish_notificade: !!item.finish_notificade,
+        out: false,
+      }));
+
+      setActivities(normalizedData);
+    } catch (error) {
+      console.error("Error fetching planning:", error);
+    }
+  };
+
   useEffect(() => {
-    const fetchActivities = async () => {
-      try {
-        const data = await getPlanning();
-        const now = new Date();
-
-        const updatedActivities = data.map((activity) => {
-          if (!activity.clock || !activity.start_date || !activity.end_date) return activity;
-          const start = new Date(activity.start_date);
-          const end = new Date(activity.end_date);
-          const remainingTime = end.getTime() - now.getTime();
-
-          if (now > end) {
-            return { ...activity, out: true };
-          }
-          if (remainingTime <= 30 * 60 * 1000 && !activity.paused) {
-            return { ...activity, finish_notificade: true };
-          }
-          return activity;
-        });
-
-        const ongoing = updatedActivities.filter((item) => {
-          if (!item.clock || !item.start_date || !item.end_date) return false;
-          const start = new Date(item.start_date);
-          const end = new Date(item.end_date);
-          return start <= now && now <= end && !item.out;
-        });
-
-        const newActivities = ongoing.filter((act) => !notifiedIds.current.has(act.id));
-
-        newActivities.forEach((act) => {
-          if ("Notification" in window && Notification.permission === "granted") {
-            new Notification("Nueva actividad en curso", {
-              body: act.name,
-              icon: "/notification-icon.png",
-            });
-          }
-          notifiedIds.current.add(act.id);
-        });
-
-        setActivities(ongoing);
-        setNotificationCount(ongoing.length);
-        setShowSingle(newActivities.length > 0);
-        if (ongoing.length === 0) setShowModal(false);
-      } catch (error) {
-        console.error("Error fetching planning:", error);
-      }
-    };
-
     fetchActivities();
-    const interval = setInterval(fetchActivities, 60 * 1000);
-    return () => clearInterval(interval);
-  }, []);
+  }, []); 
+ 
 
   useEffect(() => {
     if (showModal && notificationCount > 0) {
-      playMessengerSound("in");
+      playMessengerSound();
     }
   }, [showModal, notificationCount]);
 
@@ -141,7 +98,7 @@ export default function PlanningNotifier() {
   };
 
   const handleCloseSingle = () => {
-    playMessengerSound("out");
+    playMessengerSound();
     setShowSingle(false);
   };
 
@@ -151,7 +108,6 @@ export default function PlanningNotifier() {
 
   return (
     <>
-      {/* Botón con badge */}
       <button
         onClick={toggleModal}
         aria-label="Mostrar todas las notificaciones"
@@ -173,7 +129,6 @@ export default function PlanningNotifier() {
         </span>
       </button>
 
-      {/* Notificación única */}
       <AnimatePresence>
         {showSingle && topActivity && !showModal && (
           <motion.div
@@ -191,21 +146,9 @@ export default function PlanningNotifier() {
               }`}
           >
             <div className="p-4 flex items-center gap-4">
-              {/* Progreso circular */}
               <div className="w-11 h-11 relative shrink-0">
-                <svg
-                  className="w-full h-full transform -rotate-90"
-                  viewBox="0 0 36 36"
-                >
-                  <circle
-                    className="text-zinc-500/30"
-                    strokeWidth="3"
-                    stroke="currentColor"
-                    fill="none"
-                    cx="18"
-                    cy="18"
-                    r="15"
-                  />
+                <svg className="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
+                  <circle className="text-zinc-500/30" strokeWidth="3" stroke="currentColor" fill="none" cx="18" cy="18" r="15" />
                   <circle
                     strokeWidth="3"
                     stroke="white"
@@ -223,10 +166,8 @@ export default function PlanningNotifier() {
                   {formattedRemaining}
                 </span>
               </div>
-
-              {/* Texto */}
               <div className="flex-1">
-                <h3 className="font-bold text-white truncate">{topActivity.name}</h3>
+                <h3 className="font-bold text-white truncate">{topActivity.number_order}</h3>
                 <p className="text-sm text-white/70 select-text">
                   {topActivity.paused
                     ? "Actividad pausada"
@@ -235,8 +176,6 @@ export default function PlanningNotifier() {
                       : "En progreso"}
                 </p>
               </div>
-
-              {/* Botón cerrar */}
               <button
                 aria-label="Cerrar notificación"
                 onClick={handleCloseSingle}
@@ -249,7 +188,6 @@ export default function PlanningNotifier() {
         )}
       </AnimatePresence>
 
-      {/* Modal */}
       <AnimatePresence>
         {showModal && (
           <motion.div
@@ -266,102 +204,47 @@ export default function PlanningNotifier() {
               animate={{ y: 0, opacity: 1 }}
               exit={{ y: 50, opacity: 0 }}
               transition={{ type: "spring", stiffness: 300, damping: 30 }}
-              className="bg-zinc-900 rounded-2xl shadow-2xl w-full max-w-lg p-6 flex flex-col gap-4"
+              className="bg-zinc-900 rounded-2xl shadow-2xl w-full max-w-lg p-6 text-white space-y-4"
             >
-              <h2 className="text-xl font-bold text-white">Actividades en curso</h2>
-
-              {activities.length === 0 && (
-                <p className="text-zinc-400">No hay actividades activas.</p>
+              <h2 className="text-xl font-bold">Actividades en curso</h2>
+              {activities.length === 0 ? (
+                <p className="text-sm text-white/70">No hay actividades activas por ahora.</p>
+              ) : (
+                activities.map((act) => (
+                  <div
+                    key={act.id}
+                    className={`p-4 rounded-xl border shadow flex justify-between items-center transition-all duration-200 ${act.paused
+                      ? "bg-yellow-500/20"
+                      : act.finish_notificade
+                        ? "bg-orange-500/25"
+                        : "bg-indigo-500/15"
+                      }`}
+                  >
+                    <div>
+                      <h3 className="font-semibold truncate">{act.number_order}</h3>
+                      <p className="text-sm text-white/70">
+                        {act.paused
+                          ? "Pausada"
+                          : act.finish_notificade
+                            ? "Cerca de finalizar"
+                            : "En progreso"}
+                      </p>
+                    </div>
+                    {!act.paused && (
+                      <button
+                        onClick={() => handlePause(act.id)}
+                        aria-label={`Pausar actividad ${act.number_order}`}
+                        className="bg-yellow-400 text-black rounded px-3 py-1 text-sm font-semibold hover:bg-yellow-500 transition"
+                      >
+                        Pausar
+                      </button>
+                    )}
+                  </div>
+                ))
               )}
-
-              <ul className="flex flex-col gap-3 overflow-y-auto max-h-96">
-                {activities.map((act) => {
-                  const start = act.start_date ? new Date(act.start_date) : null;
-                  const end = act.end_date ? new Date(act.end_date) : null;
-                  let remaining = 0;
-                  let ratio = 1;
-                  let timeStr = "";
-
-                  if (start && end) {
-                    const now = new Date();
-                    remaining = Math.max(end.getTime() - now.getTime(), 0);
-                    const duration = end.getTime() - start.getTime();
-                    ratio = duration > 0 ? remaining / duration : 0;
-
-                    const totalMin = Math.floor(remaining / (1000 * 60));
-                    const h = Math.floor(totalMin / 60);
-                    const m = totalMin % 60;
-                    timeStr = h > 0 ? `${h}h ${m}m` : `${m}m`;
-                  }
-
-                  return (
-                    <li
-                      key={act.id}
-                      className={`bg-zinc-800 rounded-lg p-3 flex items-center justify-between gap-3
-                        ${act.paused ? "opacity-70" : "opacity-100"}`}
-                    >
-                      <div className="flex items-center gap-3">
-                        {/* Progreso circular pequeño */}
-                        <div className="w-10 h-10 relative shrink-0">
-                          <svg
-                            className="w-full h-full transform -rotate-90"
-                            viewBox="0 0 36 36"
-                          >
-                            <circle
-                              className="text-zinc-700"
-                              strokeWidth="3"
-                              stroke="currentColor"
-                              fill="none"
-                              cx="18"
-                              cy="18"
-                              r="15"
-                            />
-                            <circle
-                              strokeWidth="3"
-                              stroke="cyan"
-                              strokeLinecap="round"
-                              fill="none"
-                              cx="18"
-                              cy="18"
-                              r="15"
-                              strokeDasharray="94.2"
-                              strokeDashoffset={(1 - ratio) * 94.2}
-                              style={{ transition: "stroke-dashoffset 0.3s ease" }}
-                            />
-                          </svg>
-                          <span className="absolute inset-0 grid place-content-center font-mono text-xs text-cyan-300 font-semibold select-none">
-                            {timeStr}
-                          </span>
-                        </div>
-                        <div>
-                          <p className="text-white font-semibold">{act.name}</p>
-                          <p className="text-sm text-zinc-400">
-                            {act.paused
-                              ? "Pausada"
-                              : act.finish_notificade
-                                ? "Finalizando pronto"
-                                : "En progreso"}
-                          </p>
-                        </div>
-                      </div>
-
-                      {!act.paused && (
-                        <button
-                          onClick={() => handlePause(act.id)}
-                          className="px-3 py-1 rounded-md bg-yellow-500 hover:bg-yellow-600 text-zinc-900 font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-yellow-400"
-                          aria-label={`Pausar actividad ${act.name}`}
-                        >
-                          Pausar
-                        </button>
-                      )}
-                    </li>
-                  );
-                })}
-              </ul>
-
               <button
                 onClick={() => setShowModal(false)}
-                className="mt-6 self-end px-5 py-2 bg-indigo-600 hover:bg-indigo-700 rounded-md font-semibold text-white transition-colors focus:outline-none focus:ring-4 focus:ring-indigo-400"
+                className="mt-6 w-full bg-indigo-600 hover:bg-indigo-700 transition rounded py-2 font-semibold"
               >
                 Cerrar
               </button>
