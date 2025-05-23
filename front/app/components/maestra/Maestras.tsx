@@ -15,7 +15,7 @@ function Maestras() {
                     { id: 1, title: "Maestras", component:<NewMaestra />, isProtected: true },
                     { id: 2, title: "Acondicionamientos", component:<NewTipos />, isProtected: true },
                     { id: 3, title: "Fases", component:<NewStage />, isProtected: true },
-                    { id: 4, title: "Actividade", component:<NewActivity />, isProtected: true },
+                    { id: 4, title: "Actividades", component:<NewActivity />, isProtected: true },
                 ]}
             />
         </div>
