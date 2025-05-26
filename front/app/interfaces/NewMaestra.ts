@@ -12,12 +12,13 @@ export interface Data {
   descripcion: string;
   requiere_bom: boolean;
   type_product: string;
-  type_acondicinamiento: Number;
+  type_acondicionamiento?: number;
   type_stage: string;
   status_type: string;
   aprobado: boolean;
   duration: string;
   duration_user: string;
+  paralelo: boolean;
 }
 
 export interface Maestras {
@@ -31,14 +32,14 @@ export interface Maestras {
 }
 
 export interface DataService {
-    descripcion: string;
-    requiere_bom: boolean;
-    type_product: string;
-    type_acondicinamiento: number;
-    type_stage: number[];
-    status_type: string | null; 
-    aprobado: boolean;
-    paralelo: boolean;
-    duration: string;
-    duration_user: string;
+  descripcion: string;
+  requiere_bom: boolean;
+  type_product: string;
+  type_acondicionamiento?: number;
+  type_stage: number[];
+  status_type: string | null;
+  aprobado: boolean;
+  paralelo: boolean;
+  duration: string;
+  duration_user: string;
 }

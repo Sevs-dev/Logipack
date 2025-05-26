@@ -24,7 +24,7 @@ class MaestrasController extends Controller
             'descripcion' => 'required|string',
             'requiere_bom' => 'required|boolean',
             'type_product' => 'required|string',
-            'type_acondicinamiento' => 'required|integer|exists:tipo_acondicionamientos,id',
+            'type_acondicionamiento' => 'nullable|integer|exists:tipo_acondicionamientos,id',
             'type_stage' => 'required|array',
             'status_type' => 'nullable|string',
             'aprobado' => 'required|boolean',
@@ -66,11 +66,11 @@ class MaestrasController extends Controller
             return response()->json(['message' => 'Maestrafactura no encontrada'], 404);
         }
 
-        $request->validate([ 
+        $request->validate([
             'descripcion' => 'required|string',
             'requiere_bom' => 'required|boolean',
             'type_product' => 'required|string',
-            'type_acondicinamiento' => 'required|integer|exists:tipo_acondicionamientos,id',
+            'type_acondicionamiento' => 'nullable|integer|exists:tipo_acondicionamientos,id',
             'type_stage' => 'required|array',
             'status_type' => 'nullable|string',
             'aprobado' => 'required|boolean',

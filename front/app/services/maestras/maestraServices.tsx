@@ -89,11 +89,18 @@ export const getMaestraName = async (name: string): Promise<any> => {
 // Actualizar una Maestra
 export const updateMaestra = async (id: number, data: DataService): Promise<any> => {
     try {
-        const response = await Maestras.put(`/updateMaestra/${id}`, data);
+        // Sanitizar type_acondicionamiento si viene vacío o inválido
+        const sanitizedData = {
+            ...data,
+            type_acondicionamiento: data.type_acondicionamiento || null,
+        };
+
+        const response = await Maestras.put(`/updateMaestra/${id}`, sanitizedData);
         return response.data;
     } catch (error: any) {
         console.error('Error en updateMaestra:', error.response?.data || error.message);
         throw error;
     }
 };
+
 

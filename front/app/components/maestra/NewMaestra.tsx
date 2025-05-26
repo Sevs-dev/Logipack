@@ -5,7 +5,7 @@ import { Search, X, Clock } from "lucide-react";
 // ------------------------- 2. Importaciones de servicios -------------------------
 import { createMaestra, getMaestra, deleteMaestra, getMaestraId, updateMaestra, getTipo } from "../../services/maestras/maestraServices";
 import { getStage } from "../../services/maestras/stageServices";
-import { getStage as listTipoAcondicionamiento, getStageById as lisTipoAcondicinamientoId } from "@/app/services/maestras/TipoAcondicionamientoService";
+import { getStage as listTipoAcondicionamiento, getStageById as lisTipoacondicionamientoId } from "@/app/services/maestras/TipoAcondicionamientoService";
 // ------------------------- 3. Importaciones de componentes de la UI -------------------------
 import Button from "../buttons/buttons";
 import { showSuccess, showError, showConfirm } from "../toastr/Toaster";
@@ -52,7 +52,7 @@ const Maestra = () => {
                 return;
             }
             setTipoSeleccionadoAcon(tipoId);
-            const response = await lisTipoAcondicinamientoId(tipoId);
+            const response = await lisTipoacondicionamientoId(tipoId);
             setStagesAcon(response);
             // Obtiene las fases relacionadas con el tipo
             const detalle = await getLineaTipoAcomById(tipoId);
@@ -176,13 +176,15 @@ const Maestra = () => {
                 descripcion,
                 requiere_bom: requiereBOM,
                 type_product: tipoSeleccionado,
-                type_acondicinamiento: Number(tipoSeleccionadoAcon),
                 type_stage: selectedStages.map(s => s.id),
                 status_type: "En Creación",
                 aprobado,
                 paralelo,
                 duration,
                 duration_user: durationUser,
+                ...(tipoSeleccionadoAcon != null && {
+                    type_acondicionamiento: Number(tipoSeleccionadoAcon),
+                }),
             });
             showSuccess("Maestra creada con éxito");
             setIsOpen(false);
@@ -234,7 +236,7 @@ const Maestra = () => {
             setParalelo(data.paralelo);
             setDuration(data.duration);
             setDurationUser(data.duration_user);
-            setTipoSeleccionadoAcon(data.type_acondicinamiento);
+            setTipoSeleccionadoAcon(data.type_acondicionamiento ?? null);
             setIsOpen(true);
         } catch (error) {
             console.error("Error obteniendo datos de la Maestra:", error);
@@ -264,13 +266,15 @@ const Maestra = () => {
                 descripcion,
                 requiere_bom: requiereBOM,
                 type_product: tipoSeleccionado,
-                type_acondicinamiento: Number(tipoSeleccionadoAcon),
                 type_stage: selectedStages.map((s) => s.id),
                 status_type: estado,
                 aprobado,
                 paralelo,
                 duration,
                 duration_user: durationUser,
+                ...(tipoSeleccionadoAcon != null && {
+                    type_acondicionamiento: Number(tipoSeleccionadoAcon),
+                }),
             });
             showSuccess("Maestra actualizada con éxito");
             setIsOpen(false);
@@ -344,7 +348,7 @@ const Maestra = () => {
                     </div>
 
                     {/* Requiere BOM y Aprobado */}
-                    <div className="flex justify-center space-x-6 mt-4 mb-2">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mt-4 mb-2">
                         <div className="flex flex-col items-center">
                             <Text type="subtitle">Requiere BOM</Text>
                             <input
@@ -363,25 +367,23 @@ const Maestra = () => {
                                 className="mt-2 w-4 h-4"
                             />
                         </div>
-                    </div>
-
-                    {/* Selección Tipo de Producto */}
-                    <div className="mt-4">
-                        <Text type="subtitle">Seleccione Tipo de Producto</Text>
-                        <select
-                            className="w-full p-2 border mb-2 min-w-0 text-black text-center"
-                            value={tipoSeleccionado}
-                            onChange={(e) => setTipoSeleccionado(e.target.value)}
-                        >
-                            <option value="" disabled>
-                                -- Seleccione un tipo de producto --
-                            </option>
-                            {tiposProducto.map((tipo, index) => (
-                                <option key={index} value={tipo}>
-                                    {tipo}
+                        <div className="flex flex-col items-center">
+                            <Text type="subtitle">Seleccione Tipo de Producto</Text>
+                            <select
+                                className="w-full p-2 border mb-2 min-w-0 text-black text-center"
+                                value={tipoSeleccionado}
+                                onChange={(e) => setTipoSeleccionado(e.target.value)}
+                            >
+                                <option value="" disabled>
+                                    -- Seleccione un tipo de producto --
                                 </option>
-                            ))}
-                        </select>
+                                {tiposProducto.map((tipo, index) => (
+                                    <option key={index} value={tipo}>
+                                        {tipo}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
                     </div>
 
                     {/* Selección de Fases */}
@@ -551,7 +553,7 @@ const Maestra = () => {
                                     descripcion,
                                     requiere_bom: requiereBOM,
                                     type_product: tipoSeleccionado,
-                                    type_acondicinamiento: Number(tipoSeleccionadoAcon),
+                                    type_acondicionamiento: Number(tipoSeleccionadoAcon),
                                     type_stage: selectedStages.map((s) => s.id),
                                     status_type: "Aprobada",
                                     aprobado: true,
