@@ -16,7 +16,7 @@ return new class extends Migration
             $table->unsignedBigInteger('client_id');
             $table->unsignedBigInteger('factory_id');
             $table->unsignedBigInteger('master');
-            $table->unsignedBigInteger('bom');
+            $table->unsignedBigInteger('bom')->nullable();
             $table->json('article_code');
             $table->string('attachment')->nullable();
             $table->string('number_order')->nullable();  

@@ -46,7 +46,7 @@ class MachineryController extends Controller
         $validated = $request->validate([
             'factory_id' => 'required|exists:factories,id',
             'name' => 'required|string ',
-            'category' => 'required',
+            'category' => 'required|string',
             'type' => 'nullable|string ',
             'power' => 'nullable|string',
             'capacity' => 'nullable|string',

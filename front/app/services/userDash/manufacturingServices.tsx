@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { API_URL } from '../../config/api'
+import { Manu, Factory, Product } from "../../interfaces/Products"
 
 // Se crea una instancia de axios con la configuración base de la API.
 const apiManu = axios.create({
@@ -9,13 +10,8 @@ const apiManu = axios.create({
     },
 });
 
-export interface ManuData {
-    name: string;
-    line_types: string[];
-}
 
-
-export const createManu = async (dataManuData: ManuData): Promise<void> => {
+export const createManu = async (dataManuData: Manu): Promise<void> => {
     try {
         const response = await apiManu.post('/newManu', dataManuData);
         return response.data;
@@ -55,7 +51,7 @@ export const getManuId = async (id: number) => {
     }
 }
 
-export const updateManu = async (id: number, data: { name: string; line_types: string[] }) => {
+export const updateManu = async (id: number, data: { name: string; products: number[] }) => {
     try {
         const response = await apiManu.put(`/updateManu/${id}`, data);
         return response.data;

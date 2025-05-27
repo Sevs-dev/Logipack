@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('factory_id')->constrained()->onDelete('cascade'); // Relación con la planta
             $table->string('name');
-            $table->enum('category', ['grande', 'mediana', 'pequeña']);
+            $table->string('category')->nullable();
             $table->string('type')->nullable();
             $table->string('power')->nullable();
             $table->string('capacity')->nullable();

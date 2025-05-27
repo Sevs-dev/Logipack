@@ -6,8 +6,6 @@ import nookies from "nookies";
 import { useRouter, usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { getUserByEmail } from "../../services/userDash/authservices";
-import { useAuth } from "../../hooks/useAuth";
-import PermissionOnClick from "../permissionCheck/PermissionOnclick";
 
 interface SidebarProps {
   sidebarOpen: boolean;
@@ -85,7 +83,8 @@ const Sidebar: React.FC<SidebarProps> = ({ sidebarOpen, setSidebarOpen }) => {
   const [userName, setUserName] = useState("");
   const router = useRouter();
   const pathname = usePathname();
-  const { isAuthenticated } = useAuth();
+  const isAuthenticated = Boolean(nookies.get(null).token);
+
 
   // Detecta tamaño de pantalla para comportamiento mobile
   useEffect(() => {
@@ -116,7 +115,7 @@ const Sidebar: React.FC<SidebarProps> = ({ sidebarOpen, setSidebarOpen }) => {
     if (isAuthenticated) {
       fetchUserData();
     }
-  }, [isAuthenticated]);
+  }, []);
 
   const handleLogout = () => {
     if (isMobile) setSidebarOpen(false);
@@ -269,21 +268,19 @@ const Sidebar: React.FC<SidebarProps> = ({ sidebarOpen, setSidebarOpen }) => {
 
         {/* Footer */}
         <div className="mt-auto p-3 border-t border-white/20">
-          <PermissionOnClick requiredPermission="crear_usuarios">
-            <div className="mb-2 flex items-center">
-              <img
-                src="/user.jpg"
-                alt={userName}
-                className="h-10 w-10 rounded-full object-cover cursor-pointer"
-                onClick={() => router.push("/pages/perfil")}
-              />
-              {sidebarOpen && (
-                <span className="ml-2 text-white font-medium">
-                  {userName}
-                </span>
-              )}
-            </div>
-          </PermissionOnClick>
+          <div className="mb-2 flex items-center">
+            <img
+              src="/user.jpg"
+              alt={userName}
+              className="h-10 w-10 rounded-full object-cover cursor-pointer"
+              onClick={() => router.push("/pages/perfil")}
+            />
+            {sidebarOpen && (
+              <span className="ml-2 text-white font-medium">
+                {userName}
+              </span>
+            )}
+          </div>
           <button
             onClick={handleLogout}
             className="w-full bg-red-600 hover:bg-red-500 text-white rounded-md transition-colors flex items-center justify-center p-2"

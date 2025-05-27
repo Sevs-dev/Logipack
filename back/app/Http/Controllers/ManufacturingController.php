@@ -20,14 +20,14 @@ class ManufacturingController extends Controller
     {
         $request->validate([
             'name' => 'required|string|max:255',
-            'line_types' => 'nullable|array', // Validamos que sea un array si se envía
+            'products' => 'required|array',
             'factory_id' => 'required|exists:factories,id',
         ]);
 
         // Guardamos correctamente el name y el JSON
         $Manu = Manufacturing::create([
             'name' => $request->name,
-            'line_types' => $request->has('line_types') ? json_encode($request->line_types) : json_encode([]),
+            'products' => $request->has('products') ? json_encode($request->products) : json_encode([]),
             'factory_id' => $request->factory_id
         ]);
 
@@ -57,7 +57,7 @@ class ManufacturingController extends Controller
 
         $request->validate([
             'name' => 'sometimes|string|max:255',
-            'line_types' => 'sometimes|array',
+            'products' => 'sometimes|array',
             'factory_id' => 'sometimes|exists:factories,id'
         ]);
 

@@ -347,8 +347,8 @@ class AdaptationController extends Controller
 
             // Guardar desglose y duración en validatedData
             $validatedData['duration_breakdown'] = json_encode($duration_breakdown);
-            $validatedData['duration'] = $masterDuration;  
-            
+            $validatedData['duration'] = $masterDuration;
+
             $articleCodes = json_decode($validatedData['article_code'], true);
 
             foreach ($articleCodes as $article) {

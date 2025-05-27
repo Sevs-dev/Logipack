@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('manufacturings', function (Blueprint $table) {
             $table->id();
             $table->string('name'); // Nombre de la línea de producción
-            $table->json('line_types')->nullable(); // Tipos de líneas de producción en formato JSON
+            $table->json('products')->nullable(); // Tipos de líneas de producción en formato JSON
             $table->foreignId('factory_id')->constrained()->onDelete('cascade');
             $table->timestamps();
         });

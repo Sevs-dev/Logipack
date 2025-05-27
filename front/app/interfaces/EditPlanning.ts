@@ -3,6 +3,7 @@ export interface Plan {
     adaptation_id: number;
     bom: string;
     client_id: number;
+    factory_id: number;
     codart: string;
     created_at: string;
     deliveryDate: string;
@@ -11,6 +12,7 @@ export interface Plan {
     id: number;
     ingredients: string;
     line: string | null;
+    activities: string;
     lot: string;
     machine: string | null;
     master: string;

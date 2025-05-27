@@ -16,6 +16,7 @@ export interface Data {
     description: string;
     phase_type: string;
     repeat: boolean;
+    repeatLine: boolean
     repeat_minutes?: number;
     alert: boolean;
     can_pause: boolean;

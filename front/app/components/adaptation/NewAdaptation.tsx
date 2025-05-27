@@ -392,13 +392,13 @@ function NewAdaptation() {
             const hasErrors = selectedArticles.some((article) => {
                 const fields = articleFields[article.codart] || {};
                 if (
-                    !fields.orderNumber ||
-                    !fields.numberOrder ||
+                    !fields.orderNumber || 
                     !fields.deliveryDate ||
                     !fields.quantityToProduce ||
                     !fields.lot ||
                     !fields.healthRegistration
                 ) {
+                    console.error(`Faltan datos en el artículo ${article.codart}.`, fields);
                     showError(`Faltan datos en el artículo ${article.codart}.`);
                     return true;
                 }
@@ -410,7 +410,7 @@ function NewAdaptation() {
                 const fields = articleFields[article.codart];
                 return {
                     codart: article.codart,
-                    number_order: fields.numberOrder,
+                    number_order: client_order,
                     orderNumber: fields.orderNumber,
                     deliveryDate: fields.deliveryDate,
                     quantityToProduce: fields.quantityToProduce,
@@ -442,15 +442,15 @@ function NewAdaptation() {
             });
         }
         // Mostramos los datos que se van a enviar (solo para depuración)
-        // console.log("🧾 Datos a guardar:", {
-        //     client_id: selectedClient,
-        //     plant_id: planta,
-        //     article_code: articlesData,
-        //     number_order: client_order,
-        //     master: selectedMaestras,
-        //     bom: selectedBom,
-        //     ingredients,
-        // });
+        console.log("🧾 Datos a guardar:", {
+            client_id: selectedClient,
+            plant_id: planta,
+            article_code: articlesData,
+            number_order: client_order,
+            master: selectedMaestras,
+            bom: selectedBom,
+            ingredients,
+        });
         // Intentamos guardar los datos en el backend
         try {
             setIsLoading(true); // Indicamos que la carga está en progreso

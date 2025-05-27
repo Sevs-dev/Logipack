@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react"; 
+import React, { useState, useEffect, useCallback } from "react";
 import { COLORS } from "@/app/constants/colors";
 // 🔹 Componentes
 import Button from "../buttons/buttons";
@@ -10,12 +10,16 @@ import ModalSection from "../modal/ModalSection";
 import { InfoPopover } from "../buttons/InfoPopover";
 // 🔹 Servicios 
 import { getPlanning, updatePlanning } from "../../services/planing/planingServices";
+import { getMaestraId } from "../../services/maestras/maestraServices";
+import { getStageId } from "../../services/maestras/stageServices"
+import { getActivitieId } from "../../services/maestras/activityServices"
 import { getClientsId } from "@/app/services/userDash/clientServices";
 import { getFactory, getFactoryId } from "@/app/services/userDash/factoryServices";
 import { getManu, getManuId } from "@/app/services/userDash/manufacturingServices";
-import { getMachin, getMachinById } from "@/app/services/userDash/machineryServices"; 
+import { getMachin, getMachinById } from "@/app/services/userDash/machineryServices";
 // 🔹 Interfaces
 import { Plan } from "@/app/interfaces/EditPlanning";
+import { Activities } from "../../interfaces/NewActivity";
 
 function EditPlanning() {
     const [planning, setPlanning] = useState<Plan[]>([]);
@@ -28,20 +32,50 @@ function EditPlanning() {
     useEffect(() => {
         const fetchPlanning = async () => {
             try {
-                const response = await getPlanning();
-                console.log("Response from getPlanning:", response);
+                const response = await getPlanning(); 
                 const updatedPlanning: Plan[] = await Promise.all(
                     response.map(async (plan: Plan) => {
                         const clientData = await getClientsId(plan.client_id);
-                        const factoryData = plan.factory ? await getFactoryId(Number(plan.factory)) : { name: "—" };
+                        const factoryData = plan.factory_id ? await getFactoryId(Number(plan.factory_id)) : { name: "—" };
                         const manuData = plan.line ? await getManuId(Number(plan.line)) : { name: "—" };
                         const machineData = plan.machine ? await getMachinById(Number(plan.machine)) : { name: "—" };
+
+                        // Aquí viene lo nuevo:
+                        const masterData = plan.master ? await getMaestraId(Number(plan.master)) : null;
+
+                        let stages = [];
+                        let activities: Activities[] = [];
+
+                        if (masterData?.type_stage && Array.isArray(masterData.type_stage)) {
+                            // Por cada id de stage
+                            stages = await Promise.all(
+                                masterData.type_stage.map(async (stageId: number) => {
+                                    const stageData = await getStageId(stageId);
+                                    // Por cada actividad dentro de stage.activities (array de ids)
+                                    if (stageData?.activities && Array.isArray(stageData.activities)) {
+                                        const stageActivities = await Promise.all(
+                                            stageData.activities.map(async (activityId: number) => {
+                                                const activityData = await getActivitieId(activityId);
+                                                return activityData;
+                                            })
+                                        );
+                                        activities = [...activities, ...stageActivities];
+                                    }
+
+                                    return stageData;
+                                })
+                            );
+                        }
+
                         return {
                             ...plan,
                             client_name: clientData.name,
                             factoryName: factoryData.name,
                             lineName: manuData.name,
                             machineName: machineData.name,
+                            masterData,
+                            stages,
+                            activities,
                         };
                     })
                 );
@@ -54,6 +88,24 @@ function EditPlanning() {
         };
         fetchPlanning();
     }, []);
+
+    const [assignedActivities, setAssignedActivities] = React.useState<{ [lineId: string]: Activities[] }>({});
+
+    function handleAssignActivity(lineId: string, activityId: number) {
+        // Busca en las actividades que tienes disponibles para asignar
+        const activity = (currentPlan?.activities || activities).find(a => a.id === activityId);
+        if (!activity) return;
+
+        setAssignedActivities((prev) => {
+            const current = prev[lineId] || [];
+            if (current.find((a) => a.id === activityId)) return prev;
+
+            return {
+                ...prev,
+                [lineId]: [...current, activity],
+            };
+        });
+    }
 
     useEffect(() => {
         const fetchFactories = async () => {
@@ -334,16 +386,16 @@ function EditPlanning() {
                             <Text type="subtitle">Planta</Text>
                             <select
                                 className="w-full border p-3 rounded-lg text-gray-800 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500 text-center"
-                                value={currentPlan.factory || ""}  // Asegúrate de que factory esté presente
+                                value={currentPlan.factory_id || ""} // Usar factory_id
                                 onChange={(e) =>
-                                    setCurrentPlan({ ...currentPlan, factory: e.target.value })
+                                    setCurrentPlan({ ...currentPlan, factory_id: Number(e.target.value) })
                                 }
                             >
                                 <option value="">Seleccione una planta</option>
                                 {factories.length > 0 ? (
                                     factories.map((factory) => (
                                         <option key={factory.id} value={factory.id}>
-                                            {factory.name} {/* Mostrar el nombre */}
+                                            {factory.name}
                                         </option>
                                     ))
                                 ) : (
@@ -357,25 +409,82 @@ function EditPlanning() {
                         <div>
                             <Text type="subtitle">Lineas</Text>
                             <select
+                                multiple
                                 className="w-full border p-3 rounded-lg text-gray-800 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500 text-center"
-                                value={currentPlan.line || ""}
-                                onChange={(e) =>
-                                    setCurrentPlan({ ...currentPlan, line: e.target.value })
-                                }
+                                value={currentPlan?.line || []}
+                                onChange={(e) => {
+                                    const options = e.target.options;
+                                    const selectedLines = [];
+                                    for (let i = 0; i < options.length; i++) {
+                                        if (options[i].selected) selectedLines.push(options[i].value);
+                                    }
+                                    setCurrentPlan({ ...currentPlan, line: selectedLines });
+                                }}
                             >
-                                <option value="">Seleccione una planta</option>
                                 {manu.length > 0 ? (
                                     manu.map((line) => (
-                                        <option key={line.id} value={line.id}>
-                                            {line.name} {/* Mostrar el nombre */}
+                                        <option key={line.id} value={line.id.toString()}>
+                                            {line.name}
                                         </option>
                                     ))
                                 ) : (
-                                    <option value="" disabled>
-                                        No hay lineas disponibles
-                                    </option>
+                                    <option value="" disabled>No hay lineas disponibles</option>
                                 )}
                             </select>
+
+                            <div style={{ display: "flex", gap: "16px" }}>
+                                <div>
+                                    <h3>Actividades disponibles</h3>
+                                    {(currentPlan?.activities || activities).map((activity) => (
+                                        <div
+                                            key={activity.id}
+                                            draggable
+                                            onDragStart={(e) => e.dataTransfer.setData("activityId", activity.id.toString())}
+                                            style={{
+                                                padding: "4px",
+                                                margin: "4px",
+                                                border: "1px solid gray",
+                                                cursor: "grab",
+                                            }}
+                                        >
+                                            {activity.name}
+                                        </div>
+                                    ))}
+                                </div>
+
+                                <div style={{ flexGrow: 1, display: "flex", gap: "16px" }}>
+                                    {(currentPlan?.line || []).map((lineId) => (
+                                        <div
+                                            key={lineId}
+                                            onDragOver={(e) => e.preventDefault()}
+                                            onDrop={(e) => {
+                                                e.preventDefault();
+                                                const activityId = e.dataTransfer.getData("activityId");
+                                                if (!activityId) return;
+                                                handleAssignActivity(lineId, Number(activityId));
+                                            }}
+                                            style={{
+                                                minHeight: "100px",
+                                                margin: "8px",
+                                                padding: "8px",
+                                                backgroundColor: "#f0f0f0",
+                                                borderRadius: "4px",
+                                            }}
+                                        >
+                                            <strong>Línea {lineId}</strong>
+                                            {(assignedActivities[lineId] || []).map((act) => (
+                                                <div
+                                                    key={act.id}
+                                                    style={{ padding: "4px", border: "1px solid green", margin: "4px 0" }}
+                                                >
+                                                    {act.name}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+
                         </div>
                         {/* 🔹 Maquinaria */}
                         <div>
@@ -473,7 +582,6 @@ function EditPlanning() {
                                 value={`${currentPlan.duration} min ---> ${getFormattedDuration(Number(currentPlan.duration))}`}
                             />
                         </div>
-
                         <div>
                             <Text type="subtitle">Duración por fase</Text>
                             <div className="w-full p-3 mt-2 text-sm text-gray-800 bg-gray-100 border rounded whitespace-pre-line">
@@ -482,10 +590,7 @@ function EditPlanning() {
                                     : "Sin desglose disponible"}
                             </div>
                         </div>
-
-
                         {/* 🔹 Fecha de Inicio */}
-
                         <div>
                             <Text type="subtitle">Fecha y Hora de Inicio</Text>
                             <input
@@ -513,7 +618,6 @@ function EditPlanning() {
                                 }}
                             />
                         </div>
-
                         <div>
                             <Text type="subtitle">Fecha y Hora de Final</Text>
                             <input

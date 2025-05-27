@@ -22,6 +22,7 @@ function NewStage() {
     const [durationUser, setDurationUser] = useState("");
     const [phaseType, setPhaseType] = useState<string>("Planeacion");
     const [repeat, setRepeat] = useState(false);
+    const [repeatLine, setRepeatLine] = useState(false);
     const [repeatMinutes, setRepeatMinutes] = useState("");
     const [alert, setAlert] = useState(false);
     const [status, setStatus] = useState(false);
@@ -91,6 +92,7 @@ function NewStage() {
             description,
             phase_type: phaseType,
             repeat,
+            repeatLine,
             repeat_minutes: repeat ? Number(repeatMinutes) : undefined,
             alert,
             can_pause: canPause,
@@ -147,6 +149,7 @@ function NewStage() {
             setDescription(data.description);
             setPhaseType(data.phase_type);
             setRepeat(data.repeat);
+            setRepeatLine(data.repeatLine);
             setRepeatMinutes(data.repeat_minutes?.toString() || "");
             setAlert(data.alert);
             setStatus(data.status);
@@ -168,6 +171,7 @@ function NewStage() {
             description,
             phase_type: phaseType,
             repeat,
+            repeatLine,
             repeat_minutes: repeat ? Number(repeatMinutes) : undefined,
             alert,
             can_pause: canPause,
@@ -473,6 +477,15 @@ function NewStage() {
                                     <span className="text-sm text-black">¿Se puede pausar?</span>
                                 </div>
 
+                                <div className="flex items-center gap-2">
+                                    <input
+                                        type="checkbox"
+                                        checked={repeatLine}
+                                        onChange={(e) => setRepeatLine(e.target.checked)}
+                                        className="h-5 w-5 text-blue-600"
+                                    />
+                                    <span className="text-sm text-black">Repetir Línea</span>
+                                </div>
                             </div>
                         </div>
 

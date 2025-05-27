@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
-import { useAuth } from "../context/AuthContext";
+import { useAuth } from "../context/AuthProvider";
 import { getPermissionRole } from "../services/userDash/roleServices";
 
 interface PermissionRoleResponse {

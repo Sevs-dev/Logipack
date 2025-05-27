@@ -4,7 +4,7 @@ import { usePathname } from "next/navigation";
 import Navbar from "./components/navbar/Navbar";
 import Sidebar from "./components/sidebar/Sidebar";
 import Toaster from "./components/toastr/Toaster";
-import { AuthProvider } from "./context/AuthContext";
+import { AuthProvider } from "./context/AuthProvider";
 import  PlanningNotifier  from "@/app/components/clock/PlanningNotifier";
 
 export default function ClientLayout({ children }: { children: React.ReactNode }) {

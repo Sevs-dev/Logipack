@@ -1,36 +1,26 @@
 "use client";
-import React, { useEffect, useState } from "react";
+import React, { useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useAuth } from "../context/AuthProvider";
 import Loader from "../components/loader/Loader";
-import nookies from "nookies";
 
-function withAuth<P extends {}>(
-  WrappedComponent: React.ComponentType<P>
-): React.FC<P> {
-  const AuthComponent: React.FC<P> = (props: P) => {
+function withAuth<P extends {}>(Component: React.ComponentType<P>): React.FC<P> {
+  return (props: P) => {
+    const { user, loading } = useAuth();
     const router = useRouter();
-    const [isAllowed, setIsAllowed] = useState(false);
 
     useEffect(() => {
-      const cookies = nookies.get(null);
-      const token = cookies.token;
-
-      if (!token) {
-        console.warn("🔐 Acceso denegado. Redirigiendo a la vaca 🐄");
+      if (!loading && !user) {
         router.replace("/pages/noneUser");
-      } else {
-        setIsAllowed(true);
       }
-    }, [router]);
+    }, [loading, user, router]);
 
-    if (!isAllowed) {
-      return <Loader />;
-    }
+    if (loading) return <Loader />;
 
-    return <WrappedComponent {...props} />;
+    if (!user) return null; // Para que no intente renderizar nada mientras redirige
+
+    return <Component {...props} />;
   };
-
-  return AuthComponent;
 }
 
 export default withAuth;

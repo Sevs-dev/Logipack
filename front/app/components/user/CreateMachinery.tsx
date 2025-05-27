@@ -179,9 +179,9 @@ function CreateMachinery() {
                   onChange={(e) => setCategory(e.target.value)}
                 >
                   <option value="">Seleccione una categoría</option>
-                  <option value="grande">Grande</option>
-                  <option value="mediana">Mediana</option>
-                  <option value="pequeña">Pequeña</option>
+                  <option value="Grande">Grande</option>
+                  <option value="Mediana">Mediana</option>
+                  <option value="Pequeña">Pequeña</option>
                 </select>
               </div>
 
