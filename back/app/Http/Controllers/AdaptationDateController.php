@@ -105,6 +105,7 @@ class AdaptationDateController extends Controller
     {
         try {
             $plan = AdaptationDate::findOrFail($id);
+            
             return response()->json([
                 'plan' => $plan
             ], 200);

@@ -38,30 +38,87 @@ const Maestra = () => {
     const [durationUser, setDurationUser] = useState("");
     const [listTipoAcom, setListTipoAcom] = useState<DataTipoAcondicionamiento[]>([]);
     const [, setStagesAcon] = useState<DataLineaTipoAcondicionamiento[]>([]);
-    const [tipoSeleccionadoAcon, setTipoSeleccionadoAcon] = useState<number | null>(null);
+    const [tipoSeleccionadoAcon, setTipoSeleccionadoAcon] = useState<number[]>([]);
     const [detalleAcondicionamiento, setDetalleAcondicionamiento] = useState<any[]>([]);
     const [searchTipoAcom, setSearchTipoAcom] = useState("");
     const [draggedIndex, setDraggedIndex] = React.useState<number | null>(null);
 
     const handleSelectTipoAcondicionamiento = async (tipoId: number) => {
         try {
-            if (!tipoId) {
-                setStages([]);
-                setTipoSeleccionadoAcon(null);
-                setSelectedStages([]);
-                return;
+            const seleccionados = Array.isArray(tipoSeleccionadoAcon) ? tipoSeleccionadoAcon : [];
+            const yaSeleccionado = seleccionados.includes(tipoId);
+            let nuevosSeleccionados = [];
+
+            if (yaSeleccionado) {
+                // Verifica si hay fases no editables
+                const noSePuedeEliminar = detalleAcondicionamiento.some(
+                    item => item.tipo_acondicionamiento_id === tipoId && item.editable === false
+                );
+
+                if (noSePuedeEliminar) {
+                    showError("Este tipo de acondicionamiento no se puede eliminar porque contiene fases no editables.");
+                    return;
+                }
+
+                nuevosSeleccionados = seleccionados.filter(id => id !== tipoId);
+
+                // Elimina fases y detalles relacionados
+                setStagesAcon(prev => prev.filter(item => item.tipo_acondicionamiento_id !== tipoId));
+                setDetalleAcondicionamiento(prev => prev.filter(item => item.tipo_acondicionamiento_id !== tipoId));
+
+                // Elimina de selectedStages las fases relacionadas a ese tipo
+                const fasesAEliminar = detalleAcondicionamiento
+                    .filter(item => item.tipo_acondicionamiento_id === tipoId)
+                    .map(item => Number(item.fase));
+
+                setSelectedStages(prev =>
+                    prev.filter(stage => !fasesAEliminar.includes(stage.id))
+                );
+            } else {
+                nuevosSeleccionados = [...seleccionados, tipoId];
+
+                // Cargar fases
+                const response = await lisTipoacondicionamientoId(tipoId);
+                const dataArray = Array.isArray(response) ? response : response.data || [];
+
+                setStagesAcon(prev => {
+                    const combined = [...prev, ...dataArray];
+                    return combined.filter((item, index, self) =>
+                        index === self.findIndex(t => t.id === item.id)
+                    );
+                });
+
+                // Cargar detalles
+                const detalle = await getLineaTipoAcomById(tipoId);
+                const detalleArray = Array.isArray(detalle) ? detalle : detalle.data || [];
+
+                setDetalleAcondicionamiento(prev => {
+                    const combined = [...prev, ...detalleArray];
+                    return combined.filter((item, index, self) =>
+                        index === self.findIndex(t => t.fase === item.fase)
+                    );
+                });
+
+                // Marcar fases seleccionadas
+                const faseIds = detalleArray.map((d: DataLineaTipoAcondicionamiento) => Number(d.fase));
+                const fasesSeleccionadas = stages.filter(stage => faseIds.includes(stage.id));
+
+                setSelectedStages(prev => {
+                    const combined = [...prev, ...fasesSeleccionadas];
+                    return combined.filter((item, index, self) =>
+                        index === self.findIndex(t => t.id === item.id)
+                    );
+                });
             }
-            setTipoSeleccionadoAcon(tipoId);
-            const response = await lisTipoacondicionamientoId(tipoId);
-            setStagesAcon(response);
-            // Obtiene las fases relacionadas con el tipo
-            const detalle = await getLineaTipoAcomById(tipoId);
-            // De detalle obtienes los ids de fase
-            const faseIds = detalle.map((d: any) => d.fase);
-            setDetalleAcondicionamiento(detalle);
-            // Filtras en stages las fases que coincidan con esos ids
-            const fasesSeleccionadas = stages.filter((stage) => faseIds.includes(stage.id));
-            setSelectedStages(fasesSeleccionadas); // Setea las fases seleccionadas automáticamente
+
+            setTipoSeleccionadoAcon(nuevosSeleccionados);
+
+            // Limpieza solo si no queda nada
+            if (nuevosSeleccionados.length === 0) {
+                setStagesAcon([]);
+                setDetalleAcondicionamiento([]);
+                setSelectedStages([]);
+            }
         } catch (error) {
             console.error("Error al obtener fases o detalles:", error);
             setStages([]);
@@ -183,7 +240,8 @@ const Maestra = () => {
             duration,
             duration_user: durationUser,
             ...(tipoSeleccionadoAcon != null && {
-                type_acondicionamiento: Number(tipoSeleccionadoAcon),
+                // Sin convertir a número, enviamos el array tal cual
+                type_acondicionamiento: tipoSeleccionadoAcon,
             }),
         };
 
@@ -231,22 +289,73 @@ const Maestra = () => {
     const handleEdit = async (id: number) => {
         try {
             const data = await getMaestraId(id);
+
             setEditingMaestra(data);
             setDescripcion(data.descripcion);
             setRequiereBOM(data.requiere_bom);
             setTipoSeleccionado(data.type_product);
-            const selectedStageIds = data.type_stage;
-            const selectedStagesData = stages.filter((stage) =>
-                selectedStageIds.includes(stage.id)
-            );
-            setSelectedStages(selectedStagesData);
-
             setEstado(data.status_type);
             setAprobado(data.aprobado);
             setParalelo(data.paralelo);
             setDuration(data.duration);
             setDurationUser(data.duration_user);
-            setTipoSeleccionadoAcon(data.type_acondicionamiento ?? null);
+
+            const tiposAcond = Array.isArray(data.type_acondicionamiento)
+                ? data.type_acondicionamiento
+                : data.type_acondicionamiento != null
+                    ? [data.type_acondicionamiento]
+                    : [];
+
+            setTipoSeleccionadoAcon(tiposAcond);
+
+            // Limpia antes de cargar nuevos datos
+            setStagesAcon([]);
+            setDetalleAcondicionamiento([]);
+            setSelectedStages([]);
+
+            for (const tipoId of tiposAcond) {
+                const response = await lisTipoacondicionamientoId(tipoId);
+                const dataArray = Array.isArray(response) ? response : response.data || [];
+
+                setStagesAcon(prev => {
+                    const combined = [...prev, ...dataArray];
+                    return combined.filter((item, index, self) =>
+                        index === self.findIndex(t => t.id === item.id)
+                    );
+                });
+
+                const detalle = await getLineaTipoAcomById(tipoId);
+                const detalleArray: DataLineaTipoAcondicionamiento[] = Array.isArray(detalle) ? detalle : detalle.data || [];
+
+                setDetalleAcondicionamiento(prev => {
+                    const combined = [...prev, ...detalleArray];
+                    return combined.filter((item, index, self) =>
+                        index === self.findIndex(t => t.fase === item.fase)
+                    );
+                });
+
+                const faseIds = detalleArray.map(d => Number(d.fase));
+                const fasesSeleccionadas = stages.filter(stage => faseIds.includes(stage.id));
+
+                setSelectedStages(prev => {
+                    const combined = [...prev, ...fasesSeleccionadas];
+                    return combined.filter((item, index, self) =>
+                        index === self.findIndex(t => t.id === item.id)
+                    );
+                });
+            }
+
+            // Stages generales (no por acondicionamiento)
+            const selectedStageIds = data.type_stage;
+            const selectedStagesData = stages.filter(stage => selectedStageIds.includes(stage.id));
+
+            setSelectedStages(prev => {
+                const combined = [...prev, ...selectedStagesData];
+                return combined.filter((item, index, self) =>
+                    index === self.findIndex(t => t.id === item.id)
+                );
+            });
+
             setIsOpen(true);
         } catch (error) {
             console.error("Error obteniendo datos de la Maestra:", error);
@@ -283,7 +392,8 @@ const Maestra = () => {
                 duration,
                 duration_user: durationUser,
                 ...(tipoSeleccionadoAcon != null && {
-                    type_acondicionamiento: Number(tipoSeleccionadoAcon),
+                    // Sin convertir a número, enviamos el array tal cual
+                    type_acondicionamiento: tipoSeleccionadoAcon,
                 }),
             });
             showSuccess("Maestra actualizada con éxito");
@@ -306,7 +416,7 @@ const Maestra = () => {
         setSelectedStages([]);
         setDuration("");
         setDurationUser("");
-        setTipoSeleccionadoAcon(null);
+        setTipoSeleccionadoAcon([]);
         setSearchStage("");
     };
 
@@ -420,20 +530,17 @@ const Maestra = () => {
                                             tipo.descripcion.toLowerCase().includes(searchTipoAcom.toLowerCase())
                                         )
                                         .map((tipo) => {
-                                            const isSelected = tipoSeleccionadoAcon === tipo.id;
+                                            const isSelected = (tipoSeleccionadoAcon ?? []).includes(tipo.id);
                                             return (
                                                 <div key={tipo.id} className="p-2 border-b">
                                                     <button
                                                         className={`w-full text-sm transition text-center ${isSelected
-                                                            ? "text-gray-400 cursor-not-allowed"
+                                                            ? "text-green-600 font-semibold"
                                                             : "text-blue-500 hover:text-blue-700"
                                                             }`}
-                                                        disabled={isSelected}
-                                                        onClick={() => {
-                                                            if (!isSelected) handleSelectTipoAcondicionamiento(tipo.id);
-                                                        }}
+                                                        onClick={() => handleSelectTipoAcondicionamiento(tipo.id)}
                                                     >
-                                                        {tipo.descripcion}
+                                                        {isSelected ? `✓ ${tipo.descripcion}` : tipo.descripcion}
                                                     </button>
                                                 </div>
                                             );
@@ -441,6 +548,7 @@ const Maestra = () => {
                                 ) : (
                                     <p className="text-gray-500 text-center">No hay tipos disponibles</p>
                                 )}
+
                             </div>
 
                             {/* Lista de fases disponibles */}
@@ -564,7 +672,8 @@ const Maestra = () => {
                                     requiere_bom: requiereBOM,
                                     type_product: tipoSeleccionado,
                                     ...(tipoSeleccionadoAcon != null && {
-                                        type_acondicionamiento: Number(tipoSeleccionadoAcon),
+                                        // Sin convertir a número, enviamos el array tal cual
+                                        type_acondicionamiento: tipoSeleccionadoAcon,
                                     }),
                                     type_stage: selectedStages.map((s) => s.id),
                                     status_type: "Aprobada",

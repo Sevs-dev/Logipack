@@ -12,7 +12,7 @@ export interface Data {
   descripcion: string;
   requiere_bom: boolean;
   type_product: string;
-  type_acondicionamiento?: number;
+  type_acondicionamiento?: number[];
   type_stage: number[];
   status_type: string;
   aprobado: boolean;
@@ -35,7 +35,7 @@ export interface DataService {
   descripcion: string;
   requiere_bom: boolean;
   type_product: string;
-  type_acondicionamiento?: number;
+  type_acondicionamiento?: number[];
   type_stage: number[];
   status_type: string | null;
   aprobado: boolean;

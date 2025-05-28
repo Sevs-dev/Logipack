@@ -165,48 +165,13 @@ function EditPlanning() {
         }
     };
 
-    const handleEdit = useCallback(async (id: number) => {
-        try {
-            const selectedPlan = planning.find(plan => plan.id === id);
-            if (!selectedPlan) {
-                console.warn(`No se encontró plan con id ${id}`);
-                return;
-            }
-
+    const handleEdit = useCallback((id: number) => {
+        const selectedPlan = planning.find(plan => plan.id === id);
+        if (selectedPlan) {
             setCurrentPlan(selectedPlan);
             setIsOpen(true);
-            const master = selectedPlan.master;
-            // 1. Obtener type_stage con getMaestraId
-            const maestraData = await getMaestraId(Number(master));
-            const typeStages = maestraData.type_stage;
-            // 2. Por cada type_stage obtener activities con getStageId
-            const stagesData = await Promise.all(
-                typeStages.map(async (stageId: number) => {
-                    const stage = await getStageId(stageId);
-                    return stage;
-                })
-            );
-            // 3. Parsear el string JSON y obtener todos los ids de actividades en un array plano
-            const activitiesIds = stagesData.flatMap(stage => {
-                try {
-                    return JSON.parse(stage.activities);
-                } catch {
-                    return [];
-                }
-            });
-            // 4. Consultar getActivitieId para cada activityId
-            const activitiesDetails = await Promise.all(
-                activitiesIds.map(async (activityId) => {
-                    const activity = await getActivitieId(activityId);
-                    return activity;
-                })
-            );
-            setActivitiesDetails(activitiesDetails);
-        } catch (error) {
-            console.error('Error en handleEdit:', error);
         }
     }, [planning]);
-    console.log("activitiesDetails", activitiesDetails);
 
     // Cuando empiezas a arrastrar la actividad
     const onDragStart = (e: React.DragEvent<HTMLDivElement>, activity: NewActivity) => {

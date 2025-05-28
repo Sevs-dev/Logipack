@@ -22,10 +22,12 @@ use Illuminate\Support\Facades\Log;
 
 class AdaptationController extends Controller
 {
-
+    
     public function newAdaptation(Request $request)
     {
         try {
+            Log::info('🔄 Iniciando creación de nueva adaptación', ['request' => $request->all()]);
+
             $validatedData = $request->validate([
                 'client_id'    => 'required|exists:clients,id',
                 'article_code' => 'required|json',
@@ -36,20 +38,27 @@ class AdaptationController extends Controller
                 'number_order' => 'required|string',
                 'factory_id'   => 'required|exists:factories,id',
             ]);
+
+            Log::info('✅ Datos validados correctamente', ['validated' => $validatedData]);
+
             $now = Carbon::now();
             $prefix = Str::before($validatedData['number_order'], '-');
             $currentYear = $now->year;
             $currentMonth = $now->format('m');
+
             $consecutive = Consecutive::firstOrNew(['prefix' => $prefix]);
             if ($consecutive->year != $currentYear || $consecutive->month != $currentMonth) {
+                Log::info('🆕 Reiniciando consecutivo para nuevo año/mes', ['prefix' => $prefix]);
                 $consecutive->year = $currentYear;
                 $consecutive->month = $currentMonth;
                 $consecutive->consecutive = '0000000';
             } else {
-                $consecutive->consecutive = str_pad((int)$consecutive->consecutive + 1, 7, '0', STR_PAD_LEFT); // 🟢 Incremento con ceros
+                $consecutive->consecutive = str_pad((int)$consecutive->consecutive + 1, 7, '0', STR_PAD_LEFT);
+                Log::info('🔢 Consecutivo actualizado', ['consecutive' => $consecutive->consecutive]);
             }
 
             $consecutive->save();
+
             $newNumberOrder = sprintf(
                 '%s-%04d-%02d-%07d',
                 $prefix,
@@ -58,13 +67,18 @@ class AdaptationController extends Controller
                 $consecutive->consecutive
             );
             $validatedData['number_order'] = $newNumberOrder;
+
+            Log::info('📝 Nuevo número de orden generado', ['number_order' => $newNumberOrder]);
+
             $articleAttachments = [];
             if ($request->hasFile('attachment')) {
                 $file = $request->file('attachment');
                 $filename = 'general_' . now()->format('Ymd_His') . '.' . $file->getClientOriginalExtension();
                 $path = $file->storeAs('attachments', $filename, 'public');
                 $articleAttachments['general'] = $path;
+                Log::info('📎 Archivo general adjuntado', ['path' => $path]);
             }
+
             foreach ($request->files as $key => $file) {
                 if (Str::startsWith($key, 'attachment_')) {
                     $codart = Str::after($key, 'attachment_');
@@ -77,12 +91,18 @@ class AdaptationController extends Controller
                     $filename = $safeCodart . '_' . now()->format('Ymd_His') . '.' . $file->getClientOriginalExtension();
                     $path = $file->storeAs('attachments', $filename, 'public');
                     $articleAttachments[$codart] = $path;
+
+                    Log::info("📎 Archivo adjuntado para artículo {$codart}", ['path' => $path]);
                 }
             }
+
             if (!empty($articleAttachments)) {
                 $validatedData['attachment'] = json_encode($articleAttachments);
             }
+
             $adaptation = Adaptation::create($validatedData);
+            Log::info('🧾 Adaptación creada', ['adaptation_id' => $adaptation->id]);
+
             $masterDuration = null;
             $duration_breakdown = [];
 
@@ -90,28 +110,23 @@ class AdaptationController extends Controller
                 $master = Maestra::find($validatedData['master']);
                 $ingredients = json_decode($validatedData['ingredients'], true) ?? [];
 
+                Log::info('🍳 Ingredientes recibidos', ['ingredients' => $ingredients]);
+
                 if ($master && is_array($master->type_stage)) {
                     $totalDuration = 0;
                     $teoricaTotal = 0;
+
                     foreach ($ingredients as $ing) {
                         if (isset($ing['teorica'])) {
                             $teoricaTotal += floatval($ing['teorica']);
                         }
                     }
+
                     foreach ($master->type_stage as $stageId) {
                         $stage = Stage::find($stageId);
                         if (!$stage) continue;
 
-                        $duracionEtapa = 0;
-                        $multiplicacion = null;
-
-                        if ($stage->multi) {
-                            $duracionEtapa = $stage->duration * $teoricaTotal;
-                            $multiplicacion = "{$stage->duration} * {$teoricaTotal}";
-                        } else {
-                            $duracionEtapa = $stage->duration;
-                        }
-
+                        $duracionEtapa = $stage->multi ? $stage->duration * $teoricaTotal : $stage->duration;
                         $totalDuration += $duracionEtapa;
 
                         $duration_breakdown[] = [
@@ -119,16 +134,21 @@ class AdaptationController extends Controller
                             'multi'          => $stage->multi,
                             'duracion_base'  => $stage->duration,
                             'teorica_total'  => $stage->multi ? $teoricaTotal : null,
-                            'multiplicacion' => $multiplicacion,
+                            'multiplicacion' => $stage->multi ? "{$stage->duration} * {$teoricaTotal}" : null,
                             'resultado'      => $duracionEtapa,
                         ];
                     }
-                    // Agregar total al final del desglose
+
                     $duration_breakdown[] = [
-                        'fase'      => 'TOTAL',
+                        'fase' => 'TOTAL',
                         'resultado' => $totalDuration,
                     ];
                     $masterDuration = $totalDuration;
+
+                    Log::info('📐 Duración calculada por etapas', [
+                        'masterDuration' => $masterDuration,
+                        'desglose' => $duration_breakdown
+                    ]);
                 }
             }
 
@@ -151,6 +171,7 @@ class AdaptationController extends Controller
                     'duration'            => $masterDuration,
                     'duration_breakdown' => json_encode($duration_breakdown),
                 ]);
+                Log::info('📅 AdaptationDate creada para artículo', ['codart' => $article['codart']]);
             }
 
             Consecutive_date::create([
@@ -164,6 +185,8 @@ class AdaptationController extends Controller
                 'status'         => true,
             ]);
 
+            Log::info('🗂️ Consecutive_date registrada');
+
             return response()->json([
                 'message'       => 'Adaptation saved successfully',
                 'number_order'  => $newNumberOrder,
@@ -171,11 +194,16 @@ class AdaptationController extends Controller
                 'article_files' => $articleAttachments,
             ], 201);
         } catch (ValidationException $e) {
+            Log::warning('❌ Fallo de validación', ['errors' => $e->errors()]);
             return response()->json([
                 'error'   => 'Validation failed',
                 'details' => $e->errors()
             ], 422);
         } catch (\Exception $e) {
+            Log::error('🔥 Error inesperado al guardar la adaptación', [
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
             return response()->json([
                 'error'   => 'Error saving adaptation',
                 'details' => $e->getMessage()
