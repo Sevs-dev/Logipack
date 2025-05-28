@@ -13,5 +13,6 @@ class Maestra extends Model
 
     protected $casts = [
         'type_stage' => 'array',
+        'type_acondicionamiento' => 'array',
     ];
 }

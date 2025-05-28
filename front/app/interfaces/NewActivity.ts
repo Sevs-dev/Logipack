@@ -5,6 +5,11 @@ export type ActivityType = {
     options?: string[];
 };
 
+export interface NewActivity {
+    id: number;
+    description: string;
+}
+
 export interface Activities {
     id: number;
     code: number;

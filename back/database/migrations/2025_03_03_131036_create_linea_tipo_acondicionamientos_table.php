@@ -18,7 +18,7 @@ return new class extends Migration
                 ->onDelete('cascade');
             $table->integer('orden');
             $table->text('descripcion');
-            $table->foreignId('fase')
+            $table->foreignId('fase')->nullable()
                 ->constrained('stages')
                 ->onDelete('cascade')->nullable();
             $table->boolean('editable')->default(false);

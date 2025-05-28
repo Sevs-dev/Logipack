@@ -285,7 +285,7 @@ export default function NewTipoAcondicionamiento() {
                                                 <th className="px-4 py-3 text-xs font-medium uppercase tracking-wider text-gray-600">Orden</th>
                                                 <th className="px-4 py-3 text-xs font-medium uppercase tracking-wider text-gray-600">Descripción</th>
                                                 <th className="px-4 py-3 text-xs font-medium uppercase tracking-wider text-gray-600">Fase</th>
-                                                <th className="px-4 py-3 text-xs font-medium uppercase tracking-wider text-gray-600">Editable</th>
+                                                <th className="px-4 py-3 text-xs font-medium uppercase tracking-wider text-gray-600">Actividades en Proceso</th>
                                                 <th className="px-4 py-3 text-xs font-medium uppercase tracking-wider text-gray-600">Control</th>
                                                 <th className="px-4 py-3 text-xs font-medium uppercase tracking-wider text-gray-600">Fase Control</th>
                                                 <th className="px-4 py-3 text-xs font-medium uppercase tracking-wider text-gray-600">Acciones</th>

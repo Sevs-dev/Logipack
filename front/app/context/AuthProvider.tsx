@@ -52,27 +52,27 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  const refreshToken = async (token: string) => {
-    try {
-      const decoded = parseJwt(token);
-      const expiresIn = decoded?.exp - Date.now() / 1000;
-      if (expiresIn < 300) {
-        const res = await fetch("/api/refresh-token", {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-        const data = await res.json();
-        nookies.set(null, "token", data.newToken, {
-          maxAge: 7200,
-          path: "/",
-        });
-      }
-    } catch (err) {
-      console.error("Error al renovar token", err);
-    }
-  };
+  // const refreshToken = async (token: string) => {
+  //   try {
+  //     const decoded = parseJwt(token);
+  //     const expiresIn = decoded?.exp - Date.now() / 1000;
+  //     if (expiresIn < 300) {
+  //       const res = await fetch("/api/refresh-token", {
+  //         method: "POST",
+  //         headers: {
+  //           Authorization: `Bearer ${token}`,
+  //         },
+  //       });
+  //       const data = await res.json();
+  //       nookies.set(null, "token", data.newToken, {
+  //         maxAge: 7200,
+  //         path: "/",
+  //       });
+  //     }
+  //   } catch (err) {
+  //     console.error("Error al renovar token", err);
+  //   }
+  // };
 
   useEffect(() => {
     const cookies = nookies.get();
@@ -93,7 +93,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
 
     const decodedEmail = decodeURIComponent(email);
-    refreshToken(token);
+    // refreshToken(token);
 
     getUserByEmail(decodedEmail)
       .then((res) => {
@@ -107,14 +107,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setLoading(false);
       });
 
-    const keepAlive = () => refreshToken(token);
-    window.addEventListener("mousemove", keepAlive);
-    window.addEventListener("keydown", keepAlive);
+    // const keepAlive = () => refreshToken(token);
+    // window.addEventListener("mousemove", keepAlive);
+    // window.addEventListener("keydown", keepAlive);
 
-    return () => {
-      window.removeEventListener("mousemove", keepAlive);
-      window.removeEventListener("keydown", keepAlive);
-    };
+    // return () => {
+    //   window.removeEventListener("mousemove", keepAlive);
+    //   window.removeEventListener("keydown", keepAlive);
+    // };
   }, [router]);
 
   if (loading) {

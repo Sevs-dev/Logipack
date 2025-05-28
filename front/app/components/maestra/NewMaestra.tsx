@@ -171,26 +171,36 @@ const Maestra = () => {
             showError("Debes seleccionar al menos una fase");
             return;
         }
+
+        const payload = {
+            descripcion,
+            requiere_bom: requiereBOM,
+            type_product: tipoSeleccionado,
+            type_stage: selectedStages.map(s => s.id),
+            status_type: "En Creación",
+            aprobado,
+            paralelo,
+            duration,
+            duration_user: durationUser,
+            ...(tipoSeleccionadoAcon != null && {
+                type_acondicionamiento: Number(tipoSeleccionadoAcon),
+            }),
+        };
+
+        console.log(payload);
+        console.groupCollapsed("📤 Enviando datos para crear Maestra");
+        console.groupEnd();
+
         try {
-            await createMaestra({
-                descripcion,
-                requiere_bom: requiereBOM,
-                type_product: tipoSeleccionado,
-                type_stage: selectedStages.map(s => s.id),
-                status_type: "En Creación",
-                aprobado,
-                paralelo,
-                duration,
-                duration_user: durationUser,
-                ...(tipoSeleccionadoAcon != null && {
-                    type_acondicionamiento: Number(tipoSeleccionadoAcon),
-                }),
-            });
+            await createMaestra(payload);
             showSuccess("Maestra creada con éxito");
             setIsOpen(false);
             resetForm();
             fetchMaestra();
         } catch (error) {
+            console.group("❌ Error al crear la Maestra");
+            console.error(error);
+            console.groupEnd();
             showError("Error al crear la maestra");
         }
     };
@@ -553,7 +563,9 @@ const Maestra = () => {
                                     descripcion,
                                     requiere_bom: requiereBOM,
                                     type_product: tipoSeleccionado,
-                                    type_acondicionamiento: Number(tipoSeleccionadoAcon),
+                                    ...(tipoSeleccionadoAcon != null && {
+                                        type_acondicionamiento: Number(tipoSeleccionadoAcon),
+                                    }),
                                     type_stage: selectedStages.map((s) => s.id),
                                     status_type: "Aprobada",
                                     aprobado: true,
@@ -561,7 +573,6 @@ const Maestra = () => {
                                     duration,
                                     duration_user: durationUser,
                                 };
-
                                 try {
                                     if (editingMaestra) {
                                         await updateMaestra(editingMaestra.id, payload);

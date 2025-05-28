@@ -24,8 +24,7 @@ export const newAdaptation = async (data: FormData) => {
                 "Content-Type": "multipart/form-data"
             }
         });
-
-        console.log("Creando adaptación:", response.data);
+ 
         return response.data;
     } catch (error: unknown) {
         console.error("Error en newAdaptation:", error);

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react"; 
+import React, { useState, useEffect, useMemo } from "react";
 import { ClipboardCopy } from 'lucide-react';
 // 🔹 Servicios
 import { getClients, getClientsId } from "@/app/services/userDash/clientServices";
@@ -392,7 +392,7 @@ function NewAdaptation() {
             const hasErrors = selectedArticles.some((article) => {
                 const fields = articleFields[article.codart] || {};
                 if (
-                    !fields.orderNumber || 
+                    !fields.orderNumber ||
                     !fields.deliveryDate ||
                     !fields.quantityToProduce ||
                     !fields.lot ||
@@ -507,21 +507,42 @@ function NewAdaptation() {
                 showError("La adaptación no existe");
                 return;
             }
+
+            // Logs detallados de campos clave
+            // console.log("client_id:", adaptation.client_id);
+            // console.log("factory_id:", adaptation.factory_id);
+            // console.log("master:", adaptation.master);
+            // console.log("bom:", adaptation.bom);
+            // console.log("article_code (raw):", adaptation.article_code);
+            // console.log("ingredients (raw):", adaptation.ingredients);
+
             // Configuramos el formulario en modo edición
             setIsEditMode(true);
             setEditAdaptationId(id);
-            setSelectedClient(adaptation.client_id.toString());
-            setPlanta(adaptation.factory_id?.toString() ?? "");
-            setSelectedMaestras(adaptation.master.toString());
-            setSelectedBom(adaptation.bom.toString());
+
+            // Conversión segura con logs
+            const clientIdStr = adaptation.client_id?.toString() ?? "";
+            setSelectedClient(clientIdStr);
+
+            const plantaStr = adaptation.factory_id?.toString() ?? "";
+            setPlanta(plantaStr);
+
+            const masterStr = adaptation.master?.toString() ?? "";
+            setSelectedMaestras(masterStr);
+
+            const bomStr = adaptation.bom?.toString() ?? "";
+            setSelectedBom(bomStr);
+
             // Procesamos los artículos
             const parsedArticles = adaptation.article_code
                 ? JSON.parse(adaptation.article_code)
                 : [];
             setSelectedArticles(parsedArticles.map((a: any) => ({ codart: a.codart })));
+
             // Procesamos los campos específicos del artículo si es necesario
             setClientOrder(adaptation.number_order || "");
-            if (adaptation.bom.toString() !== "") {
+
+            if (bomStr !== "") {
                 const general = parsedArticles[0] || {};
                 setOrderNumber(general.orderNumber ?? "");
                 setClientOrder(general.client_order ?? adaptation.number_order ?? "");
@@ -549,6 +570,7 @@ function NewAdaptation() {
                 });
                 setArticleFields(fieldsMap);
             }
+
             // Procesamos los ingredientes si existen
             if (adaptation.ingredients) {
                 try {
@@ -561,12 +583,12 @@ function NewAdaptation() {
                     }));
                     setIngredients(parsedIng);
                 } catch (e) {
-                    console.error("Error al parsear ingredientes:", e);
                     setIngredients([]); // Si ocurre un error al parsear los ingredientes, los dejamos vacíos
                 }
             } else {
                 setIngredients([]); // Si no hay ingredientes, lo dejamos vacío
             }
+
             setIsOpen(true); // Abrimos el modal para edición
         } catch (error) {
             // Si hay algún error en el proceso de edición, lo mostramos

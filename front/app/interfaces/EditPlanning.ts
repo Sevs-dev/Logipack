@@ -11,8 +11,7 @@ export interface Plan {
     healthRegistration: string;
     id: number;
     ingredients: string;
-    line: string | null;
-    activities: string;
+    line: number[]; 
     lot: string;
     machine: string | null;
     master: string;

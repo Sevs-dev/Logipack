@@ -13,7 +13,7 @@ export interface Data {
   requiere_bom: boolean;
   type_product: string;
   type_acondicionamiento?: number;
-  type_stage: string;
+  type_stage: number[];
   status_type: string;
   aprobado: boolean;
   duration: string;

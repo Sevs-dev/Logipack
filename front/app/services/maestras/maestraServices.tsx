@@ -16,8 +16,7 @@ export const createMaestra = async (data: DataService): Promise<any> => {
         return response.data;
     } catch (error) {
         if (axios.isAxiosError(error)) {
-            console.error('Error al crear la maestra:', error.response?.data || error.message);
-            // Re-lanzamos el error pero ahora con más info, por si quieres manejarlo después
+            console.error('Error al crear la maestra:', error.response?.data || error.message); 
             throw error.response?.data || error;
         } else {
             console.error('Error inesperado al crear la maestra:', error);
