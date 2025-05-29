@@ -6,7 +6,7 @@ import nookies from 'nookies';
 import { motion } from 'framer-motion';
 
 const cookieOptions = {
-  maxAge: 30 * 60,
+  maxAge: 7200, // 2 hours
   path: '/',
   secure: process.env.NODE_ENV === 'production',
   sameSite: 'strict',

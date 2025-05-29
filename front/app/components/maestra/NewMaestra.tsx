@@ -13,6 +13,7 @@ import Text from "../text/Text";
 import Table from "../table/Table";
 import PermissionCheck from "..//permissionCheck/PermissionCheck";
 import ModalSection from "../modal/ModalSection";
+import { InfoPopover } from "../buttons/InfoPopover";
 // ------------------------- 5. Tipos de datos e interfaces -------------------------
 import { Stage, Data } from "../../interfaces/NewMaestra";
 import { DataTipoAcondicionamiento, DataLineaTipoAcondicionamiento } from "@/app/interfaces/NewTipoAcondicionamiento";
@@ -47,73 +48,70 @@ const Maestra = () => {
         try {
             const seleccionados = Array.isArray(tipoSeleccionadoAcon) ? tipoSeleccionadoAcon : [];
             const yaSeleccionado = seleccionados.includes(tipoId);
-            let nuevosSeleccionados = [];
-
+            let nuevosSeleccionados: number[] = [];
             if (yaSeleccionado) {
-                // Verifica si hay fases no editables
                 const noSePuedeEliminar = detalleAcondicionamiento.some(
                     item => item.tipo_acondicionamiento_id === tipoId && item.editable === false
                 );
-
                 if (noSePuedeEliminar) {
                     showError("Este tipo de acondicionamiento no se puede eliminar porque contiene fases no editables.");
                     return;
                 }
-
+                // Eliminar tipo de acondicionamiento
                 nuevosSeleccionados = seleccionados.filter(id => id !== tipoId);
-
-                // Elimina fases y detalles relacionados
-                setStagesAcon(prev => prev.filter(item => item.tipo_acondicionamiento_id !== tipoId));
-                setDetalleAcondicionamiento(prev => prev.filter(item => item.tipo_acondicionamiento_id !== tipoId));
-
-                // Elimina de selectedStages las fases relacionadas a ese tipo
                 const fasesAEliminar = detalleAcondicionamiento
                     .filter(item => item.tipo_acondicionamiento_id === tipoId)
                     .map(item => Number(item.fase));
 
+                setStagesAcon(prev =>
+                    prev.filter(item => item.tipo_acondicionamiento_id !== tipoId)
+                );
+                setDetalleAcondicionamiento(prev =>
+                    prev.filter(item => item.tipo_acondicionamiento_id !== tipoId)
+                );
                 setSelectedStages(prev =>
                     prev.filter(stage => !fasesAEliminar.includes(stage.id))
                 );
             } else {
+                // Agregar tipo de acondicionamiento
                 nuevosSeleccionados = [...seleccionados, tipoId];
-
-                // Cargar fases
                 const response = await lisTipoacondicionamientoId(tipoId);
                 const dataArray = Array.isArray(response) ? response : response.data || [];
-
                 setStagesAcon(prev => {
                     const combined = [...prev, ...dataArray];
-                    return combined.filter((item, index, self) =>
-                        index === self.findIndex(t => t.id === item.id)
+                    return combined.filter(
+                        (item, index, self) =>
+                            index === self.findIndex(
+                                t =>
+                                    t.id === item.id &&
+                                    t.tipo_acondicionamiento_id === item.tipo_acondicionamiento_id
+                            )
                     );
                 });
-
-                // Cargar detalles
                 const detalle = await getLineaTipoAcomById(tipoId);
                 const detalleArray = Array.isArray(detalle) ? detalle : detalle.data || [];
-
                 setDetalleAcondicionamiento(prev => {
                     const combined = [...prev, ...detalleArray];
-                    return combined.filter((item, index, self) =>
-                        index === self.findIndex(t => t.fase === item.fase)
+                    return combined.filter(
+                        (item, index, self) =>
+                            index === self.findIndex(
+                                t =>
+                                    t.fase === item.fase &&
+                                    t.tipo_acondicionamiento_id === item.tipo_acondicionamiento_id
+                            )
                     );
                 });
-
-                // Marcar fases seleccionadas
                 const faseIds = detalleArray.map((d: DataLineaTipoAcondicionamiento) => Number(d.fase));
                 const fasesSeleccionadas = stages.filter(stage => faseIds.includes(stage.id));
-
                 setSelectedStages(prev => {
                     const combined = [...prev, ...fasesSeleccionadas];
-                    return combined.filter((item, index, self) =>
-                        index === self.findIndex(t => t.id === item.id)
+                    return combined.filter(
+                        (item, index, self) =>
+                            index === self.findIndex(t => t.id === item.id)
                     );
                 });
             }
-
             setTipoSeleccionadoAcon(nuevosSeleccionados);
-
-            // Limpieza solo si no queda nada
             if (nuevosSeleccionados.length === 0) {
                 setStagesAcon([]);
                 setDetalleAcondicionamiento([]);
@@ -329,8 +327,11 @@ const Maestra = () => {
 
                 setDetalleAcondicionamiento(prev => {
                     const combined = [...prev, ...detalleArray];
-                    return combined.filter((item, index, self) =>
-                        index === self.findIndex(t => t.fase === item.fase)
+                    return combined.filter(
+                        (item, index, self) =>
+                            index === self.findIndex(
+                                t => t.fase === item.fase && t.tipo_acondicionamiento_id === item.tipo_acondicionamiento_id
+                            )
                     );
                 });
 
@@ -508,7 +509,9 @@ const Maestra = () => {
 
                     {/* Selección de Fases */}
                     <div className="mt-4">
-                        <Text type="subtitle">Seleccione las Fases</Text>
+                        <Text type="subtitle">Seleccione las Fases
+                            <InfoPopover content="Al seleccionar un acondicionamiento, si se tienen las mismas fases se determinara la primera seleccionada con su funcion" />
+                        </Text>
                         <div className="flex flex-col md:flex-row space-y-4 md:space-y-0 md:space-x-4">
                             <div className="w-full md:w-1/2 border p-4 max-h-60 overflow-y-auto rounded-xl bg-white shadow-sm">
                                 <Text type="subtitle">Acondicionamientos Disponibles</Text>

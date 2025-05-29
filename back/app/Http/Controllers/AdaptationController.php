@@ -26,7 +26,7 @@ class AdaptationController extends Controller
     public function newAdaptation(Request $request)
     {
         try {
-            Log::info('🔄 Iniciando creación de nueva adaptación', ['request' => $request->all()]);
+            // Log::info('🔄 Iniciando creación de nueva adaptación', ['request' => $request->all()]);
 
             $validatedData = $request->validate([
                 'client_id'    => 'required|exists:clients,id',
@@ -39,7 +39,7 @@ class AdaptationController extends Controller
                 'factory_id'   => 'required|exists:factories,id',
             ]);
 
-            Log::info('✅ Datos validados correctamente', ['validated' => $validatedData]);
+            // Log::info('✅ Datos validados correctamente', ['validated' => $validatedData]);
 
             $now = Carbon::now();
             $prefix = Str::before($validatedData['number_order'], '-');
@@ -48,13 +48,13 @@ class AdaptationController extends Controller
 
             $consecutive = Consecutive::firstOrNew(['prefix' => $prefix]);
             if ($consecutive->year != $currentYear || $consecutive->month != $currentMonth) {
-                Log::info('🆕 Reiniciando consecutivo para nuevo año/mes', ['prefix' => $prefix]);
+                // Log::info('🆕 Reiniciando consecutivo para nuevo año/mes', ['prefix' => $prefix]);
                 $consecutive->year = $currentYear;
                 $consecutive->month = $currentMonth;
                 $consecutive->consecutive = '0000000';
             } else {
                 $consecutive->consecutive = str_pad((int)$consecutive->consecutive + 1, 7, '0', STR_PAD_LEFT);
-                Log::info('🔢 Consecutivo actualizado', ['consecutive' => $consecutive->consecutive]);
+                // Log::info('🔢 Consecutivo actualizado', ['consecutive' => $consecutive->consecutive]);
             }
 
             $consecutive->save();
@@ -68,7 +68,7 @@ class AdaptationController extends Controller
             );
             $validatedData['number_order'] = $newNumberOrder;
 
-            Log::info('📝 Nuevo número de orden generado', ['number_order' => $newNumberOrder]);
+            // Log::info('📝 Nuevo número de orden generado', ['number_order' => $newNumberOrder]);
 
             $articleAttachments = [];
             if ($request->hasFile('attachment')) {
@@ -76,7 +76,7 @@ class AdaptationController extends Controller
                 $filename = 'general_' . now()->format('Ymd_His') . '.' . $file->getClientOriginalExtension();
                 $path = $file->storeAs('attachments', $filename, 'public');
                 $articleAttachments['general'] = $path;
-                Log::info('📎 Archivo general adjuntado', ['path' => $path]);
+                // Log::info('📎 Archivo general adjuntado', ['path' => $path]);
             }
 
             foreach ($request->files as $key => $file) {
@@ -92,7 +92,7 @@ class AdaptationController extends Controller
                     $path = $file->storeAs('attachments', $filename, 'public');
                     $articleAttachments[$codart] = $path;
 
-                    Log::info("📎 Archivo adjuntado para artículo {$codart}", ['path' => $path]);
+                    // Log::info("📎 Archivo adjuntado para artículo {$codart}", ['path' => $path]);
                 }
             }
 
@@ -101,7 +101,7 @@ class AdaptationController extends Controller
             }
 
             $adaptation = Adaptation::create($validatedData);
-            Log::info('🧾 Adaptación creada', ['adaptation_id' => $adaptation->id]);
+            // Log::info('🧾 Adaptación creada', ['adaptation_id' => $adaptation->id]);
 
             $masterDuration = null;
             $duration_breakdown = [];
@@ -110,7 +110,7 @@ class AdaptationController extends Controller
                 $master = Maestra::find($validatedData['master']);
                 $ingredients = json_decode($validatedData['ingredients'], true) ?? [];
 
-                Log::info('🍳 Ingredientes recibidos', ['ingredients' => $ingredients]);
+                // Log::info('🍳 Ingredientes recibidos', ['ingredients' => $ingredients]);
 
                 if ($master && is_array($master->type_stage)) {
                     $totalDuration = 0;
@@ -145,10 +145,10 @@ class AdaptationController extends Controller
                     ];
                     $masterDuration = $totalDuration;
 
-                    Log::info('📐 Duración calculada por etapas', [
-                        'masterDuration' => $masterDuration,
-                        'desglose' => $duration_breakdown
-                    ]);
+                    // Log::info('📐 Duración calculada por etapas', [
+                    //     'masterDuration' => $masterDuration,
+                    //     'desglose' => $duration_breakdown
+                    // ]);
                 }
             }
 
@@ -171,7 +171,7 @@ class AdaptationController extends Controller
                     'duration'            => $masterDuration,
                     'duration_breakdown' => json_encode($duration_breakdown),
                 ]);
-                Log::info('📅 AdaptationDate creada para artículo', ['codart' => $article['codart']]);
+                // Log::info('📅 AdaptationDate creada para artículo', ['codart' => $article['codart']]);
             }
 
             Consecutive_date::create([
@@ -185,7 +185,7 @@ class AdaptationController extends Controller
                 'status'         => true,
             ]);
 
-            Log::info('🗂️ Consecutive_date registrada');
+            // Log::info('🗂️ Consecutive_date registrada');
 
             return response()->json([
                 'message'       => 'Adaptation saved successfully',
@@ -194,16 +194,16 @@ class AdaptationController extends Controller
                 'article_files' => $articleAttachments,
             ], 201);
         } catch (ValidationException $e) {
-            Log::warning('❌ Fallo de validación', ['errors' => $e->errors()]);
+            // Log::warning('❌ Fallo de validación', ['errors' => $e->errors()]);
             return response()->json([
                 'error'   => 'Validation failed',
                 'details' => $e->errors()
             ], 422);
         } catch (\Exception $e) {
-            Log::error('🔥 Error inesperado al guardar la adaptación', [
-                'message' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-            ]);
+            // Log::error('🔥 Error inesperado al guardar la adaptación', [
+            //     'message' => $e->getMessage(),
+            //     'trace' => $e->getTraceAsString(),
+            // ]);
             return response()->json([
                 'error'   => 'Error saving adaptation',
                 'details' => $e->getMessage()
