@@ -17,4 +17,9 @@ class Adaptation extends Model
     {
         return $this->hasMany(AdaptationDate::class);
     }
+
+    public function maestra()
+    {
+        return $this->belongsTo(Maestra::class, 'master');
+    }
 }

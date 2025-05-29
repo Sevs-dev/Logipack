@@ -656,7 +656,7 @@ function NewAdaptation() {
                     )}
 
                     {/* Contenido responsivo */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         {/* Cliente */}
                         <div className="col-span-full">
                             <div className="flex gap-4">
@@ -874,77 +874,74 @@ function NewAdaptation() {
                             </div>
                         </div>
 
-                        {/* Campos en grid responsivo */}
-                        {maestraRequiereBOM ? (
-                            <div className="col-span-full grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                                {/* Número de Orden */}
-                                <div>
-                                    <Text type="subtitle">N° Orden del Cliente:</Text>
-                                    <input
-                                        type="text"
-                                        className="w-full border p-3 rounded-lg text-gray-800 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500 text-center"
-                                        value={orderNumber}
-                                        onChange={e => setOrderNumber(e.target.value)}
-                                    />
-                                </div>
+                        <div className="flex-[1] flex gap-6 flex-wrap">
+                            {/* Campos en grid responsivo */}
+                            {maestraRequiereBOM ? (
+                                <div className="flex-1 min-w-[250px] border-2 border-dashed border-blue-300 rounded-lg p-4 bg-blue-50 transition-colors">
+                                    {/* Número de Orden */}
+                                    <div>
+                                        <Text type="subtitle">N° Orden del Cliente:</Text>
+                                        <input
+                                            type="text"
+                                            className="w-full border p-3 rounded-lg text-gray-800 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500 text-center"
+                                            value={orderNumber}
+                                            onChange={e => setOrderNumber(e.target.value)}
+                                        />
+                                    </div>
 
-                                {/* Fecha Entrega */}
-                                <div>
-                                    <Text type="subtitle">Fecha Entrega:</Text>
-                                    <input
-                                        type="date"
-                                        className="w-full border p-3 rounded-lg text-gray-800 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500 text-center"
-                                        value={deliveryDate}
-                                        onChange={e => setDeliveryDate(e.target.value)}
-                                    />
-                                </div>
+                                    {/* Fecha Entrega */}
+                                    <div>
+                                        <Text type="subtitle">Fecha Entrega:</Text>
+                                        <input
+                                            type="date"
+                                            className="w-full border p-3 rounded-lg text-gray-800 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500 text-center"
+                                            value={deliveryDate}
+                                            onChange={e => setDeliveryDate(e.target.value)}
+                                        />
+                                    </div>
 
-                                {/* Cantidad a producir */}
-                                <div>
-                                    <Text type="subtitle">Cantidad a Producir:</Text>
-                                    <input
-                                        type="number"
-                                        className="w-full border p-3 rounded-lg text-gray-800 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500 text-center"
-                                        value={quantityToProduce}
-                                        onChange={e => setQuantityToProduce(e.target.value)}
-                                        min={1}
-                                    />
-                                </div>
-                                {/* Lote */}
-                                <div>
-                                    <Text type="subtitle">Lote:</Text>
-                                    <input
-                                        type="text"
-                                        className="w-full border p-3 rounded-lg text-gray-800 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500 text-center"
-                                        value={lot}
-                                        onChange={e => setLot(e.target.value)}
-                                    />
-                                </div>
+                                    {/* Cantidad a producir */}
+                                    <div>
+                                        <Text type="subtitle">Cantidad a Producir:</Text>
+                                        <input
+                                            type="number"
+                                            className="w-full border p-3 rounded-lg text-gray-800 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500 text-center"
+                                            value={quantityToProduce}
+                                            onChange={e => setQuantityToProduce(e.target.value)}
+                                            min={1}
+                                        />
+                                    </div>
+                                    {/* Lote */}
 
-                                {/* Registro Sanitario */}
-                                <div>
-                                    <Text type="subtitle">Registro Sanitario:</Text>
-                                    <input
-                                        type="text"
-                                        className="w-full border p-3 rounded-lg text-gray-800 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500 text-center"
-                                        value={healthRegistration}
-                                        onChange={e => setHealthRegistration(e.target.value)}
-                                    />
-                                </div>
+                                    <div>
+                                        <Text type="subtitle">Lote:</Text>
+                                        <input
+                                            type="text"
+                                            className="w-full border p-3 rounded-lg text-gray-800 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500 text-center"
+                                            value={lot}
+                                            onChange={e => setLot(e.target.value)}
+                                        />
+                                    </div>
 
-                                {/* Adjunto */}
-                                <div className="flex flex-col">
-                                    <Text type="subtitle">Adjuntar:</Text>
-                                    <File onChange={setAttachment} />;
+                                    {/* Registro Sanitario */}
+                                    <div>
+                                        <Text type="subtitle">Registro Sanitario:</Text>
+                                        <input
+                                            type="text"
+                                            className="w-full border p-3 rounded-lg text-gray-800 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500 text-center"
+                                            value={healthRegistration}
+                                            onChange={e => setHealthRegistration(e.target.value)}
+                                        />
+                                    </div>
+
+                                    {/* Adjunto */}
+                                    <div className="flex flex-col">
+                                        <Text type="subtitle">Adjuntar:</Text>
+                                        <File onChange={setAttachment} />;
+                                    </div>
                                 </div>
-                            </div>
-                        ) : (
-                            <>
-                                <div className="grid gap-6"
-                                    style={{
-                                        gridTemplateColumns: 'repeat(2, minmax(410px, 1fr))',
-                                        gridAutoRows: 'auto',
-                                    }}>
+                            ) : (
+                                <div className="border border-blue-300 p-3 mb-3 rounded-md cursor-grab bg-teal-50 shadow-sm hover:shadow-md transition-shadow flex justify-between items-center">
                                     {selectedArticles.map((article) => (
                                         <div key={article.codart} className="border border-gray-200 p-4 rounded-lg bg-gray-50">
                                             <Text type="title">Artículo: {article.codart}</Text>
@@ -1004,9 +1001,8 @@ function NewAdaptation() {
                                         </div>
                                     ))}
                                 </div>
-
-                            </>
-                        )}
+                            )}
+                        </div>
 
                         {/* Materiales */}
                         {maestraRequiereBOM ? (

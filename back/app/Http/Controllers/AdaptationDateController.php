@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\AdaptationDate;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 class AdaptationDateController extends Controller
 {
@@ -24,7 +25,7 @@ class AdaptationDateController extends Controller
             'client_id' => 'required|exists:clients,id',
             'codart' => 'required|string',
             'orderNumber' => 'required|string',
-            'number_order' => 'required|string', 
+            'number_order' => 'required|string',
             'deliveryDate' => 'required|date',
             'quantityToProduce' => 'required|integer',
             'lot' => 'required|string',
@@ -47,7 +48,13 @@ class AdaptationDateController extends Controller
 
     public function update(Request $request, $id)
     {
-        $record = AdaptationDate::findOrFail($id);
+        Log::info('Update Request payload: ' . json_encode($request->all()));
+        if ($request->has('line') && is_string($request->line)) {
+            $request->merge([
+                'line' => json_decode($request->line, true)
+            ]);
+            Log::info('Decoded line to array:', ['line' => $request->line]);
+        }
 
         $validated = $request->validate([
             'client_id' => 'sometimes|exists:clients,id',
@@ -62,9 +69,9 @@ class AdaptationDateController extends Controller
             'bom' => 'nullable|json',
             'ingredients' => 'nullable|json',
             'adaptation_id' => 'nullable|exists:adaptations,id',
-            'status_dates' =>'nullable|string',
+            'status_dates' => 'nullable|string',
             'factory' => 'nullable|string',
-            'line' => 'nullable|string',
+            'line' => 'sometimes|array',
             'resource' => 'nullable|string',
             'machine' => 'nullable|string',
             'color' => 'nullable|string',
@@ -73,9 +80,11 @@ class AdaptationDateController extends Controller
             'duration_breakdown' => 'nullable|json',
             'start_date' => 'nullable|date',
             'end_date' => 'nullable|date',
+            'activities' => 'nullable|array',
         ]);
-
+        $record = AdaptationDate::findOrFail($id);
         $record->update($validated);
+        Log::info('Update successful:', $record->toArray());
         return response()->json($record);
     }
 
@@ -104,15 +113,17 @@ class AdaptationDateController extends Controller
     public function getPlanById($id)
     {
         try {
-            $plan = AdaptationDate::findOrFail($id);
-            
-            return response()->json([
-                'plan' => $plan
-            ], 200);
+            $plan = AdaptationDate::getPlanByIdEloquent($id);
+
+            if (!$plan) {
+                return response()->json(['error' => 'Adaptation not found'], 404);
+            }
+
+            return response()->json(['plan' => $plan], 200);
         } catch (\Exception $e) {
             return response()->json([
-                'error'   => 'Error retrieving plan',
-                'details' => $e->getMessage()
+                'error' => 'Error retrieving plan',
+                'details' => $e->getMessage(),
             ], 500);
         }
     }
