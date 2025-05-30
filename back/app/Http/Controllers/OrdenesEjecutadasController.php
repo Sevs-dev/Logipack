@@ -117,7 +117,6 @@ class OrdenesEjecutadasController extends Controller
             // Si la fase se repite en la linea de produccion
             if ($fase->repeat_line) {
                 
-                // uu
                 // duplicar la fase
                 $lineas = json_decode($acondicionamiento[0]->linea_produccion);
                 for($i = 1; $i < count($lineas) + 1; $i++) {
