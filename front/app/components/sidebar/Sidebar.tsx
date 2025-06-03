@@ -51,7 +51,7 @@ const menuItems: MenuItem[] = [
         link: "/pages/inventory",
       },
       {
-        label: "Acondicionamiento",
+        label: "Ordenes de Acon.",
         icon: <FaFileInvoice />,
         link: "/pages/adaptation",
       },

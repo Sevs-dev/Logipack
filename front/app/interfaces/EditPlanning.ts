@@ -3,7 +3,7 @@ export interface ActivityDetail {
   code: number;
   description: string;
   config: string;
-  binding: number;
+  binding: number | number[] | null;
   value?: string | number | boolean | null;
 }
 
@@ -24,6 +24,7 @@ export interface Plan {
   machine: string | null;
   master: string;
   orderNumber: string;
+  number_order: string;
   quantityToProduce: number;
   resource: string | null;
   status_dates: string;
@@ -51,3 +52,37 @@ export interface Planning {
   finish_notificade: boolean;
   out: boolean;
 }
+
+export interface NewActivity {
+  id: number;
+  description: string;
+  value?: string | number | boolean | null;
+  code?: number;
+  config?: string;
+  binding?: number | number[] | null;
+}
+
+export const sanitizePlan = (plan: Plan): any => {
+  return {
+    id: plan.id,
+    client_id: plan.client_id,
+    factory_id: plan.factory_id,
+    master: plan.master,
+    bom: plan.bom,
+    codart: plan.codart,
+    deliveryDate: plan.deliveryDate,
+    healthRegistration: plan.healthRegistration,
+    ingredients: plan.ingredients,
+    line: plan.line,
+    lot: plan.lot,
+    machine: plan.machine,
+    quantityToProduce: plan.quantityToProduce,
+    resource: plan.resource,
+    start_date: plan.start_date,
+    end_date: plan.end_date,
+    duration: Number(plan.duration || 0),
+    duration_breakdown: plan.duration_breakdown,
+    status_dates: plan.status_dates,
+    created_at: plan.created_at,
+  };
+};

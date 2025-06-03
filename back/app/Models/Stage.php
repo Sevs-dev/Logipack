@@ -7,6 +7,9 @@ use Illuminate\Database\Eloquent\Model;
 
 class Stage extends Model
 {
+    use HasFactory;
+    
+    protected $guarded = [];
     // Aseguramos que Laravel decodifique automáticamente el campo activities
     protected $casts = [
         'activities' => 'array',

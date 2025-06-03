@@ -20,7 +20,7 @@ export const getPlanning = async () => {
     }
 }
 
-export const getPlanningId = async (id: number) => {
+export const getActivitiesByPlanning = async (id: number) => {
     try {
         const response = await Planning.get(`/getPlanId/${id}`);
         return response.data;
@@ -37,5 +37,15 @@ export const updatePlanning = async (id: number, updatedPlan: Plan) => {
     } catch (error: unknown) {
         console.error("Error en updatePlan:", error);
         throw error; 
+    }
+}
+
+export const getPlanningById = async (id: number) => {
+    try {
+        const response = await Planning.get(`/getPlannId/${id}`);
+        return response.data;
+    } catch (error: unknown) {
+        console.error("Error en getPlanId:", error);
+        throw error;
     }
 }

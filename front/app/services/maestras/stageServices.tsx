@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { API_URL } from '../../config/api'
+import { Data } from '../../interfaces/NewStage';
 
 // Se crea una instancia de axios con la configuración base de la API.
 const Stage = axios.create({
@@ -9,18 +10,6 @@ const Stage = axios.create({
     },
 });
 
-export interface Data {
-    description: string;
-    phase_type: string;
-    repeat: boolean;
-    repeat_minutes?: number;
-    alert: boolean;
-    can_pause: boolean;
-    status: boolean;
-    activities: string;
-}
-
- 
 // Función para crear un nuevo Stage.
 // Envía una solicitud POST a la ruta '/newStage' con los datos proporcionados.
 export const createStage = async (data: Data): Promise<{ status: number; message?: string }> => {
@@ -92,9 +81,15 @@ export const updateStage = async (id: number, data: Data) => {
     try {
         const response = await Stage.put(`/updateFase/${id}`, data);
         return response.data;
-    } catch (error) {
-        console.error('Error en updateStage:', error);
+    } catch (error: any) {
+        // Si usas Axios, error.response.data tiene el mensaje del backend
+        if (error.response && error.response.data) {
+            console.error('Error en updateStage:', error.response.data);
+        } else {
+            console.error('Error en updateStage:', error.message);
+        }
         throw error;
     }
 };
+
 

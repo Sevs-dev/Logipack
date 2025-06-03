@@ -425,6 +425,7 @@ function NewAdaptation() {
         formData.append("factory_id", planta.toString());
         formData.append("article_code", JSON.stringify(articlesData));
         formData.append("number_order", client_order);
+        formData.append("orderNumber", orderNumber);
         formData.append("master", selectedMaestras.toString());
         formData.append("bom", selectedBom.toString() || "");
         formData.append("ingredients", JSON.stringify(ingredients));
@@ -447,6 +448,7 @@ function NewAdaptation() {
             plant_id: planta,
             article_code: articlesData,
             number_order: client_order,
+            orderNumber,
             master: selectedMaestras,
             bom: selectedBom,
             ingredients,
@@ -488,13 +490,6 @@ function NewAdaptation() {
             // Independientemente del resultado, apagamos el indicador de carga
             setIsLoading(false);
         }
-    };
-
-    // Función para formatear las fechas a formato YYYY-MM-DD
-    const formatDate = (dateString: string): string => {
-        const dt = new Date(dateString);
-        if (isNaN(dt.getTime())) return ""; // Si la fecha es inválida, devolvemos una cadena vacía
-        return dt.toISOString().slice(0, 10); // Devolvemos la fecha en formato YYYY-MM-DD
     };
 
     // Función para cargar los datos de una adaptación para editarla
@@ -576,9 +571,7 @@ function NewAdaptation() {
                 try {
                     const parsedIng = JSON.parse(adaptation.ingredients).map((ing: any) => ({
                         ...ing,
-                        teorica:
-                            ing.teorica ??
-                            (Number(ing.quantity || "0") * (1 + Number(ing.merma || "0"))).toFixed(4),
+                        teorica: (Number(ing.quantity || "0") * (1 + Number(ing.merma || "0"))).toFixed(4),
                         validar: ing.validar ?? "",
                     }));
                     setIngredients(parsedIng);
@@ -610,6 +603,13 @@ function NewAdaptation() {
                 console.error(error);
             }
         }
+    };
+
+    // Función para formatear las fechas a formato YYYY-MM-DD
+    const formatDate = (dateString: string): string => {
+        const dt = new Date(dateString);
+        if (isNaN(dt.getTime())) return ""; // Si la fecha es inválida, devolvemos una cadena vacía
+        return dt.toISOString().slice(0, 10); // Devolvemos la fecha en formato YYYY-MM-DD
     };
 
     // Resetear el formulario

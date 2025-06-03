@@ -49,6 +49,8 @@ class AdaptationDateController extends Controller
     public function update(Request $request, $id)
     {
         Log::info('Update Request payload: ' . json_encode($request->all()));
+
+        // Si mandan 'line' como string JSON, decodificamos
         if ($request->has('line') && is_string($request->line)) {
             $request->merge([
                 'line' => json_decode($request->line, true)
@@ -56,6 +58,7 @@ class AdaptationDateController extends Controller
             Log::info('Decoded line to array:', ['line' => $request->line]);
         }
 
+        // Validamos normalmente, ahora 'line' es array de IDs y 'activities' es array plano
         $validated = $request->validate([
             'client_id' => 'sometimes|exists:clients,id',
             'codart' => 'sometimes|string',
@@ -71,7 +74,8 @@ class AdaptationDateController extends Controller
             'adaptation_id' => 'nullable|exists:adaptations,id',
             'status_dates' => 'nullable|string',
             'factory' => 'nullable|string',
-            'line' => 'sometimes|array',
+            'line' => 'nullable|array',       
+            'activities' => 'nullable|array',
             'resource' => 'nullable|string',
             'machine' => 'nullable|string',
             'color' => 'nullable|string',
@@ -80,10 +84,13 @@ class AdaptationDateController extends Controller
             'duration_breakdown' => 'nullable|json',
             'start_date' => 'nullable|date',
             'end_date' => 'nullable|date',
-            'activities' => 'nullable|array',
         ]);
+
         $record = AdaptationDate::findOrFail($id);
+
+        // Actualizamos el registro con ambos campos bien separados
         $record->update($validated);
+
         Log::info('Update successful:', $record->toArray());
         return response()->json($record);
     }
@@ -114,6 +121,24 @@ class AdaptationDateController extends Controller
     {
         try {
             $plan = AdaptationDate::getPlanByIdEloquent($id);
+
+            if (!$plan) {
+                return response()->json(['error' => 'Adaptation not found'], 404);
+            }
+
+            return response()->json(['plan' => $plan], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => 'Error retrieving plan',
+                'details' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    public function getPlanUnic($id)
+    {
+        try {
+            $plan = AdaptationDate::find($id);
 
             if (!$plan) {
                 return response()->json(['error' => 'Adaptation not found'], 404);

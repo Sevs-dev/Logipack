@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { COLORS } from "@/app/constants/colors";
 // 🔹 Componentes
 import Button from "../buttons/buttons";
@@ -9,15 +9,15 @@ import { IconSelector } from "../dinamicSelect/IconSelector";
 import ModalSection from "../modal/ModalSection";
 import { InfoPopover } from "../buttons/InfoPopover";
 // 🔹 Servicios 
-import { getPlanning, updatePlanning, getPlanningId } from "../../services/planing/planingServices";
+import { getPlanning, updatePlanning, getActivitiesByPlanning } from "../../services/planing/planingServices";
 import { getActivitieId } from "../../services/maestras/activityServices"
 import { getClientsId } from "@/app/services/userDash/clientServices";
 import { getFactory } from "@/app/services/userDash/factoryServices";
 import { getManu } from "@/app/services/userDash/manufacturingServices";
 import { getMachin } from "@/app/services/userDash/machineryServices";
+import { getManuId } from "@/app/services/userDash/manufacturingServices";
 // 🔹 Interfaces
-import { Plan } from "@/app/interfaces/EditPlanning";
-import { NewActivity } from "../../interfaces/NewActivity";
+import { Plan, ActivityDetail, sanitizePlan } from "@/app/interfaces/EditPlanning"; 
 
 function EditPlanning() {
     const [planning, setPlanning] = useState<Plan[]>([]);
@@ -26,111 +26,100 @@ function EditPlanning() {
     const [factories, setFactories] = useState<{ id: number, name: string }[]>([]);
     const [manu, setManu] = useState<{ id: number, name: string }[]>([]);
     const [machine, setMachine] = useState<{ id: number, name: string }[]>([]);
-    const [activitiesDetails, setActivitiesDetails] = useState<NewActivity[]>([]);
+    const [activitiesDetails, setActivitiesDetails] = useState<ActivityDetail[]>([]);
     const [lineActivities, setLineActivities] = useState<Record<number, number[]>>({});
     const [draggedActivityId, setDraggedActivityId] = useState<number | null>(null);
+    const [lineDetails, setLineDetails] = useState<Record<number, { name: string }>>({});
 
-    useEffect(() => {
-        const fetchPlanning = async () => {
-            try {
-                const response = await getPlanning();
-                const updatedPlanning: Plan[] = await Promise.all(
-                    response.map(async (plan: Plan) => {
-                        const clientData = await getClientsId(plan.client_id);
-                        return {
-                            ...plan,
-                            client_name: clientData.name,
-                        };
-                    })
-                );
+    // Extraer fetchAll para poder reutilizarlo
+    const fetchAll = useCallback(async () => {
+        try {
+            const [planningData, factoriesData, manuData, machineData] = await Promise.all([
+                getPlanning(),
+                getFactory(),
+                getManu(),
+                getMachin(),
+            ]);
 
-                setPlanning(updatedPlanning);
-            } catch (error) {
-                showError("Error al cargar la planificación");
-                console.error(error);
-            }
-        };
-        fetchPlanning();
+            const updatedPlanning = await Promise.all(
+                planningData.map(async (plan: Plan) => {
+                    const clientData = await getClientsId(plan.client_id);
+                    return { ...plan, client_name: clientData.name };
+                })
+            );
+
+            setPlanning(updatedPlanning);
+            setFactories(factoriesData);
+            setManu(manuData);
+            setMachine(machineData);
+        } catch (error) {
+            showError("Error cargando datos iniciales");
+            console.error(error);
+        }
     }, []);
 
     useEffect(() => {
-        const fetchFactories = async () => {
-            try {
-                const response = await getFactory();
-                setFactories(response);
-            } catch (error) {
-                showError("Error al cargar las fábricas");
-                console.error("Error al cargar fábricas:", error);
-            }
-        };
-
-        fetchFactories();
-    }, []);
-
-    useEffect(() => {
-        const fetchManu = async () => {
-            try {
-                const response = await getManu();
-                setManu(response);
-            } catch (error) {
-                showError("Error al cargar las Manu");
-                console.error("Error al cargar Manu:", error);
-            }
-        };
-
-        fetchManu();
-    }, []);
-
-    useEffect(() => {
-        const fetchMachine = async () => {
-            try {
-                const response = await getMachin();
-                setMachine(response);
-            } catch (error) {
-                showError("Error al cargar las Machine");
-                console.error("Error al cargar Machine:", error);
-            }
-        };
-
-        fetchMachine();
-    }, []);
+        fetchAll();
+    }, [fetchAll]);
 
     useEffect(() => {
         if (!currentPlan) return;
 
-        if (currentPlan.lineActivities) {
-            setLineActivities(currentPlan.lineActivities);
-        } else {
-            let keys: string[] = [];
+        setLineActivities((prev) => {
+            if (Object.keys(prev).length > 0) return prev;
+            if (currentPlan.lineActivities && Object.keys(currentPlan.lineActivities).length > 0) {
+                return currentPlan.lineActivities;
+            }
+            let keys: number[] = [];
             if (Array.isArray(currentPlan.line)) {
-                // Es un array, perfecto
-                keys = currentPlan.line.map(String);
-            } else if (
-                currentPlan.line &&
-                typeof currentPlan.line === 'object' &&
-                !Array.isArray(currentPlan.line)
-            ) {
-                // Es objeto, sacamos las keys
-                keys = Object.keys(currentPlan.line);
-            } else {
-                // No es array ni objeto, no hay líneas
-                keys = [];
+                keys = currentPlan.line;
+            } else if (typeof currentPlan.line === 'string') {
+                try {
+                    keys = JSON.parse(currentPlan.line);
+                } catch {
+                    keys = [];
+                }
             }
             const initial = keys.reduce((acc, lineId) => {
                 acc[lineId] = [];
                 return acc;
-            }, {} as Record<string, number[]>);
+            }, {} as Record<number, number[]>);
 
-            setLineActivities(initial);
-        }
+            return initial;
+        });
     }, [currentPlan]);
 
+    useEffect(() => {
+        const fetchLineDetails = async () => {
+            if (!currentPlan || !currentPlan.line) {
+                setLineDetails({});
+                return;
+            }
 
-    // 🔧 Función para calcular la fecha final respetando el rango laboral
+            const lines = getLinesArray(currentPlan.line);
+            const details: Record<number, { name: string }> = {};
+
+            await Promise.all(
+                lines.map(async (lineId) => {
+                    try {
+                        const data = await getManuId(lineId);
+                        details[lineId] = data;
+                    } catch (err) {
+                        console.error(`Error cargando línea ${lineId}`, err);
+                        details[lineId] = { name: `Línea ${lineId} (error)` };
+                    }
+                })
+            );
+
+            setLineDetails(details);
+        };
+
+        fetchLineDetails();
+    }, [currentPlan]);
+
     function calculateEndDateRespectingWorkHours(start: string, durationMinutes: number): string {
         const WORK_START_HOUR = 6;
         const WORK_END_HOUR = 18;
-        const WORK_MINUTES_PER_DAY = (WORK_END_HOUR - WORK_START_HOUR) * 60;
 
         let remainingMinutes = durationMinutes;
         const current = new Date(start);
@@ -163,37 +152,9 @@ function EditPlanning() {
             }
         }
 
-        // 🕓 Convertimos a formato compatible con <input type="datetime-local"> en zona local
         const pad = (n: number) => n.toString().padStart(2, "0");
         return `${current.getFullYear()}-${pad(current.getMonth() + 1)}-${pad(current.getDate())}T${pad(current.getHours())}:${pad(current.getMinutes())}`;
     }
-
-    const sanitizePlan = (plan: Plan): any => {
-        return {
-            id: plan.id,
-            client_id: plan.client_id,
-            factory_id: plan.factory_id,
-            master: plan.master,
-            bom: plan.bom,
-            codart: plan.codart,
-            deliveryDate: plan.deliveryDate,
-            factory: plan.factory,
-            healthRegistration: plan.healthRegistration,
-            ingredients: plan.ingredients,
-            line: plan.line,
-            lot: plan.lot,
-            machine: plan.machine,
-            number_order: plan.orderNumber,
-            quantityToProduce: plan.quantityToProduce,
-            resource: plan.resource,
-            start_date: plan.start_date,
-            end_date: plan.end_date,
-            duration: Number(plan.duration || 0),
-            duration_breakdown: plan.duration_breakdown,
-            status_dates: plan.status_dates,
-            created_at: plan.created_at,
-        };
-    };
 
     const handleSave = async (updatedPlan: Plan) => {
         if (!updatedPlan) {
@@ -202,23 +163,42 @@ function EditPlanning() {
         }
         try {
             const cleanedPlan = sanitizePlan(updatedPlan);
+
+            const lines: number[] = getLinesArray(updatedPlan.line);
+
+            const formattedLines = lines.map(lineId => {
+                const activityIdsInLine = lineActivities[lineId] || [];
+                const filteredActivities = (activitiesDetails || []).filter(activity =>
+                    activityIdsInLine.includes(activity.id)
+                );
+                return {
+                    id: lineId,
+                    activities: filteredActivities.map(activity => ({ id: activity.id })),
+                };
+            });
+
+            const safeActivities = formattedLines.length > 0
+                ? formattedLines
+                : lines.map(lineId => ({ id: lineId, activities: [] }));
+
             const planToSave = {
                 ...cleanedPlan,
-                line: Array.isArray(updatedPlan.line) ? JSON.stringify(updatedPlan.line) : updatedPlan.line,
+                estado: currentPlan?.status_dates || "En Creación",
+                color: currentPlan?.color || null,
+                icon: currentPlan?.icon || null,
+                line: lines,
+                activities: safeActivities,
                 duration: updatedPlan.duration?.toString() ?? null,
-                activities: Array.isArray(updatedPlan.activitiesDetails)
-                    ? updatedPlan.activitiesDetails.map(a => a.id)
-                    : [],
             };
-            console.log("Guardando planificación:", planToSave);
+
             await updatePlanning(updatedPlan.id, planToSave);
-            showSuccess("Planificación actualizada");
-            setPlanning(prev =>
-                prev.map(plan =>
-                    plan.id === updatedPlan.id ? planToSave : plan
-                )
-            );
+
+            // Refrescar la data desde el servidor después de guardar
+            await fetchAll();
+
             setIsOpen(false);
+            handleClose();
+            showSuccess("Planificación guardada correctamente");
         } catch (error) {
             console.error("Error al guardar cambios:", error);
             showError("Error al guardar la planificación");
@@ -227,59 +207,73 @@ function EditPlanning() {
 
     const handleEdit = useCallback(async (id: number) => {
         const selectedPlan = planning.find(plan => plan.id === id);
-        // console.log("Planificación seleccionada:", selectedPlan);
         if (!selectedPlan) {
             showError("Planificación no encontrada localmente");
             return;
         }
+
         try {
-            const plan = await getPlanningId(id);
-            const plansArray = plan.plan;
+            const serverPlansWithDetails = await fetchAndProcessPlans(id);
 
-            if (!plansArray || !Array.isArray(plansArray) || plansArray.length === 0) {
-                showError("Planificación no encontrada desde servidor");
-                return;
-            }
-            const plansWithActivities = await Promise.all(
-                plansArray.map(async (planItem) => {
-                    if (!planItem.ID_ACTIVITIES || !Array.isArray(planItem.ID_ACTIVITIES)) {
-                        return { ...planItem, activitiesDetails: [] };
-                    }
-
-                    const activitiesDetails = await Promise.all(
-                        planItem.ID_ACTIVITIES.map((activityId: number) =>
-                            getActivitieId(activityId)
-                        )
-                    );
-                    return {
-                        ...planItem,
-                        activitiesDetails,
-                    };
-                })
-            );
-            const matchedPlan = plansWithActivities.find(
+            const matchedPlan = serverPlansWithDetails.find(
                 p => p.ID_ADAPTACION === selectedPlan.id
-            ) || plansWithActivities[0];
-            setActivitiesDetails(matchedPlan.activitiesDetails); 
-            const enrichedSelectedPlan = {
+            ) || serverPlansWithDetails[0];
+
+            const newLineActivities: Record<number, number[]> = {};
+
+            if (selectedPlan.activities && Array.isArray(selectedPlan.activities)) {
+                selectedPlan.activities.forEach((line: any) => {
+                    const lineId = line.id;
+                    const activityIds = Array.isArray(line.activities)
+                        ? line.activities.map((a: any) => a.id)
+                        : [];
+                    if (lineId != null) {
+                        newLineActivities[lineId] = activityIds;
+                    }
+                });
+            } else if (serverPlansWithDetails && serverPlansWithDetails.length > 0) {
+                serverPlansWithDetails.forEach(line => {
+                    const lineId = line.ID_LINEA ?? line.ID_LINE ?? null;
+                    const activityIds = Array.isArray(line.ID_ACTIVITIES) ? line.ID_ACTIVITIES : [];
+                    if (lineId !== null) {
+                        newLineActivities[lineId] = activityIds;
+                    }
+                });
+            }
+
+            setLineActivities(newLineActivities);
+
+            setActivitiesDetails(matchedPlan.activitiesDetails);
+
+            setCurrentPlan({
                 ...selectedPlan,
                 activitiesDetails: matchedPlan.activitiesDetails,
-            };
-            setCurrentPlan(enrichedSelectedPlan);
+                lineActivities: newLineActivities,
+                line: getLinesArray(selectedPlan.line),
+            });
             setIsOpen(true);
+
         } catch (error) {
             console.error("Error fetching plan:", error);
-            showError("Error al cargar planificación desde servidor");
+            showError("Error al cargar la planificación para edición");
         }
     }, [planning]);
 
-    const handleDelete = useCallback((id: number) => {
-        console.log("Eliminar", id);
+    const handleClose = useCallback(() => {
+        setIsOpen(false);
+        setCurrentPlan(null);
+        setLineActivities({});
+        setActivitiesDetails([]);
+        setDraggedActivityId(null);
+    }, []);
+
+    const handleDelete = useCallback(() => {
+        // console.log("Eliminar", id);
     }, []);
 
     const getFormattedDuration = (minutes: number): string => {
         if (minutes <= 0) return 'menos de 1 minuto';
-        const days = Math.floor(minutes / 1440); // 1440 min = 1 día
+        const days = Math.floor(minutes / 1440);
         const remainingMinutesAfterDays = minutes % 1440;
         const hours = Math.floor(remainingMinutesAfterDays / 60);
         const remainingMinutes = remainingMinutesAfterDays % 60;
@@ -299,7 +293,6 @@ function EditPlanning() {
                     return `🧮 TOTAL → ${getFormattedDuration(item.resultado)}`;
                 }
 
-                const base = item.duracion_base;
                 const teorica = item.teorica_total;
                 const multiplicacion = item.multiplicacion;
                 const resultado = item.resultado;
@@ -317,44 +310,61 @@ function EditPlanning() {
         if (draggedActivityId === null) return;
         setLineActivities((prev) => {
             const updated = { ...prev };
-            // Quitar actividad de cualquier línea donde esté
             for (const key in updated) {
-                updated[key] = updated[key].filter((id) => id !== draggedActivityId);
-                // No borrar la clave, dejar array vacío para no romper lógica
+                updated[key] = updated[key].filter(id => id !== draggedActivityId);
             }
-            // Agregar actividad a línea destino
-            if (!updated[lineId]) updated[lineId] = [];
-            updated[lineId].push(draggedActivityId);
+            updated[lineId] = [...(updated[lineId] || []), draggedActivityId];
             return updated;
         });
-
         setDraggedActivityId(null);
     };
 
-    const assignedActivityIds = Object.values(lineActivities).flat();
-    const availableActivities = activitiesDetails.filter(
-        (a) => !assignedActivityIds.includes(a.id)
-    );
-
-    const removeActivityFromLine = (lineId: string | number, actId: string | number) => {
+    const removeActivityFromLine = (lineId: number, actId: number) => {
         setLineActivities((prev) => {
-            const updated: Record<string | number, number[]> = { ...prev };
+            const updated = { ...prev };
             if (updated[lineId]) {
-                updated[lineId] = updated[lineId].filter((id) => id !== actId);
+                updated[lineId] = updated[lineId].filter(id => id !== actId);
             }
             return updated;
         });
     };
 
-    const getLinesArray = (line: any): number[] => {
-        if (!line) return [];
+    function getLinesArray(line: string | number[] | null): number[] {
         if (Array.isArray(line)) return line;
-        try {
-            return JSON.parse(line);
-        } catch {
-            return [];
+        if (typeof line === 'string') {
+            try {
+                return JSON.parse(line);
+            } catch {
+                return [];
+            }
         }
-    };
+        return [];
+    }
+
+    const assignedActivityIds = useMemo(() => Object.values(lineActivities).flat(), [lineActivities]);
+    const availableActivities = useMemo(() =>
+        activitiesDetails.filter(a => !assignedActivityIds.includes(a.id)),
+        [activitiesDetails, assignedActivityIds]
+    );
+
+    async function fetchAndProcessPlans(id: number) {
+        const { plan: serverPlans = [] } = await getActivitiesByPlanning(id);
+
+        if (!Array.isArray(serverPlans) || serverPlans.length === 0) {
+            throw new Error("Planificación no encontrada desde servidor");
+        }
+
+        const serverPlansWithDetails = await Promise.all(
+            serverPlans.map(async (line) => {
+                const activitiesDetails = Array.isArray(line.ID_ACTIVITIES)
+                    ? await Promise.all(line.ID_ACTIVITIES.map(getActivitieId))
+                    : [];
+                return { ...line, activitiesDetails };
+            })
+        );
+
+        return serverPlansWithDetails;
+    }
 
     return (
         <div>
@@ -364,6 +374,17 @@ function EditPlanning() {
                     <h2 className="text-xl font-bold mb-6">Editar planificación</h2>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <Text type="subtitle">Consecutivo</Text>
+                            <input
+                                className="w-full border p-3 rounded-lg text-gray-800 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500 text-center"
+                                readOnly
+                                value={currentPlan.number_order}
+                                onChange={(e) =>
+                                    setCurrentPlan({ ...currentPlan, number_order: e.target.value })
+                                }
+                            />
+                        </div>
                         {/* 🔹 Artículo */}
                         <div>
                             <Text type="subtitle">Artículo</Text>
@@ -474,26 +495,13 @@ function EditPlanning() {
                         {/* 🔹 Planta */}
                         <div>
                             <Text type="subtitle">Planta</Text>
-                            <select
+                            <input
                                 className="w-full border p-3 rounded-lg text-gray-800 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500 text-center"
-                                value={currentPlan.factory_id || ""} // Usar factory_id
-                                onChange={(e) =>
-                                    setCurrentPlan({ ...currentPlan, factory_id: Number(e.target.value) })
+                                value={
+                                    factories.find(f => f.id === currentPlan.factory_id)?.name || ""
                                 }
-                            >
-                                <option value="">Seleccione una planta</option>
-                                {factories.length > 0 ? (
-                                    factories.map((factory) => (
-                                        <option key={factory.id} value={factory.id}>
-                                            {factory.name}
-                                        </option>
-                                    ))
-                                ) : (
-                                    <option value="" disabled>
-                                        No hay fábricas disponibles
-                                    </option>
-                                )}
-                            </select>
+                                readOnly
+                            />
                         </div>
                         {/* 🔹 Lineas */}
                         <div>
@@ -532,7 +540,7 @@ function EditPlanning() {
                                     >
                                         {manu.length > 0 ? (
                                             manu
-                                                .filter(line => !(currentPlan.line ?? []).includes(line.id)) // Oculta las ya seleccionadas
+                                                .filter(line => !(currentPlan.line ?? []).includes(line.id))
                                                 .map((line) => (
                                                     <option key={line.id} value={line.id.toString()}>
                                                         {line.name}
@@ -581,7 +589,6 @@ function EditPlanning() {
                         {/* Actividades disponibles para arrastrar */}
                         <div className="flex-1 border border-gray-200 rounded-lg p-4 bg-gray-50 shadow-sm transition-all">
                             <Text type="subtitle">Actividades disponibles</Text>
-
                             {availableActivities.length === 0 ? (
                                 <p className="text-sm text-gray-500">(Ninguna disponible)</p>
                             ) : (
@@ -600,45 +607,63 @@ function EditPlanning() {
 
                         {/* Líneas y sus actividades */}
                         <div className="flex-[3] flex gap-6 flex-wrap">
-                            {getLinesArray(currentPlan.line).map((lineId) => (
-                                <div
-                                    key={lineId}
-                                    onDragOver={(e) => e.preventDefault()}
-                                    onDrop={() => handleDrop(lineId)}
-                                    className="flex-1 min-w-[250px] border-2 border-dashed border-blue-300 rounded-lg p-4 bg-blue-50 transition-colors"
-                                >
-                                    <Text type="subtitle">{lineId}</Text>
+                            {!currentPlan || !currentPlan.line ? (
+                                <p>No hay líneas disponibles.</p>
+                            ) : (
+                                getLinesArray(currentPlan.line).map((lineId) => {
+                                    // console.log("Render línea:", lineId, "Actividades:", lineActivities[lineId]);
+                                    return (
+                                        <div
+                                            key={lineId}
+                                            onDragOver={(e) => e.preventDefault()}
+                                            onDrop={() => handleDrop(lineId)}
+                                            className="flex-1 min-w-[250px] border-2 border-dashed border-blue-300 rounded-lg p-4 bg-blue-50 transition-colors"
+                                        >
+                                            <Text type="subtitle">
+                                                {lineDetails[lineId]?.name || `Línea ${lineId}`}
+                                            </Text>
+                                            {Array.isArray(lineActivities[lineId]) && lineActivities[lineId].length > 0 ? (
+                                                lineActivities[lineId].map((actId) => {
+                                                    const act = activitiesDetails.find(a => a.id === actId);
+                                                    // console.log("Buscando actividad con ID:", actId, "Encontrada:", act);
+                                                    if (!act) {
+                                                        return (
+                                                            <p key={actId} className="text-red-400 italic">
+                                                                Actividad no encontrada (ID: {actId})
+                                                            </p>
+                                                        );
+                                                    }
+                                                    return (
+                                                        <div
+                                                            key={act.id}
+                                                            draggable
+                                                            onDragStart={() => setDraggedActivityId(act.id)}
+                                                            className="border border-blue-300 p-3 mb-3 rounded-md cursor-grab bg-teal-50 shadow-sm hover:shadow-md transition-shadow flex justify-between items-center"
+                                                        >
+                                                            <span className="text-gray-800 text-center">{act.description}</span>
+                                                            <button
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    removeActivityFromLine(lineId, act.id);
+                                                                }}
+                                                                className="ml-3 text-red-500 hover:text-red-700 font-bold"
+                                                                aria-label={`Eliminar actividad ${act.description}`}
+                                                            >
+                                                                &times;
+                                                            </button>
+                                                        </div>
+                                                    );
+                                                })
+                                            ) : (
+                                                <p className="text-gray-400 italic">Sin actividades</p>
+                                            )}
+                                        </div>
+                                    );
+                                })
 
-                                    {lineActivities[lineId]?.length > 0 ? (
-                                        lineActivities[lineId].map((actId) => {
-                                            const act = activitiesDetails.find((a) => a.id === actId);
-                                            return (
-                                                <div
-                                                    key={actId}
-                                                    draggable
-                                                    onDragStart={() => setDraggedActivityId(actId)}
-                                                    className="border border-blue-300 p-3 mb-3 rounded-md cursor-grab bg-teal-50 shadow-sm hover:shadow-md transition-shadow flex justify-between items-center"
-                                                >
-                                                    <span className="text-gray-800 text-center">{act?.description ?? "Actividad no encontrada"}</span>
-                                                    <button
-                                                        onClick={(e) => {
-                                                            e.stopPropagation(); // Para que no interfiera con el drag
-                                                            removeActivityFromLine(lineId, actId);
-                                                        }}
-                                                        className="ml-3 text-red-500 hover:text-red-700 font-bold"
-                                                        aria-label={`Eliminar actividad ${act?.description ?? ""}`}
-                                                    >
-                                                        &times;
-                                                    </button>
-                                                </div>
-                                            );
-                                        })
-                                    ) : (
-                                        <p className="text-gray-400 italic">Sin actividades</p>
-                                    )}
-                                </div>
-                            ))}
+                            )}
                         </div>
+
 
                         {/* 🔹 Maquinaria */}
                         <div>

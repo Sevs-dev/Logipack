@@ -162,6 +162,7 @@ Route::controller(AdaptationDateController::class)->group(function () {
     Route::post('/newPlan', 'newAPlan'); // Crear una nueva lineas 
     Route::put('/updatePlan/{id}', 'update'); // Crear una nueva lineas 
     Route::get('/getPlanId/{id}', 'getPlanById'); // Obtener una lineas específica  
+    Route::get('/getPlannId/{id}', 'getPlanUnic'); // Obtener una lineas específica  
     Route::delete('/deletePlan/{id}', 'destroy'); // Eliminar una lineas
 });
 

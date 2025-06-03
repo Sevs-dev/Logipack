@@ -10,7 +10,7 @@ class AdaptationDate extends Model
     use HasFactory;
 
     protected $guarded = [];
-    
+
     protected $casts = [
         'activities' => 'array',
         // otros casts...
@@ -66,7 +66,10 @@ class AdaptationDate extends Model
             $typeAcom = [];
         }
 
-        $stages = Stage::whereIn('id', $typeStages)->get();
+        $stages = Stage::whereIn('id', $typeStages)
+            ->where('phase_type', 'Procesos')
+            ->get();
+
         $lineaAcoms = LineaTipoAcondicionamiento::whereIn('tipo_acondicionamiento_id', $typeAcom)->get();
 
         $result = collect();

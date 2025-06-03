@@ -22,7 +22,7 @@ export interface Data {
     can_pause: boolean;
     status: boolean;
     multi: boolean;
-    activities: string;
+    activities: number[];
     duration: string;
     duration_user: string;
 }

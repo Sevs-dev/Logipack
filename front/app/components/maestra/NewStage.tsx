@@ -7,10 +7,10 @@ import Table from "../table/Table";
 import Button from "../buttons/buttons";
 import { InfoPopover } from "../buttons/InfoPopover";
 import { Stage, Data } from "../../interfaces/NewStage";
-const phases = ["Planeacion", "Conciliación", "Control", "Actividades"];
 import Text from "../text/Text";
 import { Search, Clock } from "lucide-react";
 import { motion } from "framer-motion";
+const phases = ["Planeación", "Conciliación", "Control", "Actividades", "Procesos"];
 
 function NewStage() {
     const [isOpen, setIsOpen] = useState(false);
@@ -20,7 +20,7 @@ function NewStage() {
     const [description, setDescription] = useState("");
     const [duration, setDuration] = useState("");
     const [durationUser, setDurationUser] = useState("");
-    const [phaseType, setPhaseType] = useState<string>("Planeacion");
+    const [phaseType, setPhaseType] = useState<string>("Planeación");
     const [repeat, setRepeat] = useState(false);
     const [repeatLine, setRepeatLine] = useState(false);
     const [repeatMinutes, setRepeatMinutes] = useState("");
@@ -57,7 +57,7 @@ function NewStage() {
             }
         };
 
-        if (phaseType === "Actividades" || phaseType === "Control") {
+        if (phaseType === "Actividades" || phaseType === "Control" || phaseType === "Procesos") {
             fetchActivities();
         } else {
             setAvailableActivities([]);
@@ -78,7 +78,7 @@ function NewStage() {
             showError("Por favor, ingresa un valor numérico válido para 'Repetir cada (min)'.");
             return false;
         }
-        if ((phaseType === "Actividades" || phaseType === "Control") && selectedActivities.length === 0) {
+        if ((phaseType === "Actividades" || phaseType === "Control" || phaseType === "Procesos") && selectedActivities.length === 0) {
             showError("Debes seleccionar al menos una actividad.");
             return false;
         }
@@ -98,14 +98,16 @@ function NewStage() {
             can_pause: canPause,
             status,
             multi,
-            activities: "[]",
+            activities: [],
             duration_user: durationUser,
-            duration: duration,
+            duration,
         };
-        if (phaseType === "Actividades" || phaseType === "Control") {
+
+        if (phaseType === "Actividades" || phaseType === "Control" || phaseType === "Procesos") {
             const activityIds = selectedActivities.map((activity) => activity.id);
-            newStage.activities = JSON.stringify(activityIds);
+            newStage.activities = activityIds;  // sin stringify
         }
+
         try {
             const response = await createStage(newStage);
             if (response.status === 201) {
@@ -123,15 +125,22 @@ function NewStage() {
     };
 
     useEffect(() => {
-        if (editingStage && (phaseType === "Actividades" || phaseType === "Control") && availableActivities.length > 0) {
-            const activityIds = JSON.parse(editingStage.activities);
-            const selected = availableActivities.filter(activity =>
-                activityIds.includes(activity.id)
-            );
-            setSelectedActivities(selected);
+        if (
+            editingStage &&
+            ["Actividades", "Control", "Procesos"].includes(phaseType) &&
+            availableActivities.length > 0
+        ) {
+            const selected = editingStage.activities;
 
+            if (Array.isArray(selected) && selected.every(item => typeof item === 'object' && item.id)) {
+                setSelectedActivities(selected);
+            } else {
+                console.warn("El campo 'activities' no es un array de objetos válidos:", selected);
+                setSelectedActivities([]);
+            }
         }
     }, [availableActivities, editingStage, phaseType]);
+
 
     useEffect(() => {
         const total = selectedActivities.reduce(
@@ -144,7 +153,7 @@ function NewStage() {
     const handleEdit = async (id: number) => {
         try {
             const data = await getStageId(id);
-            console.log("Datos obtenidos para editar la fase:", data); // 🚀 LOG
+            // console.log("Datos obtenidos para editar la fase:", data); // 🚀 LOG
             setEditingStage(data);
             setDescription(data.description);
             setPhaseType(data.phase_type);
@@ -167,31 +176,32 @@ function NewStage() {
     const handleUpdate = async () => {
         if (!editingStage) return;
 
+        let activityIds: number[] = [];
+
+        if (["Actividades", "Control", "Procesos"].includes(phaseType)) {
+            activityIds = selectedActivities.map(a => a.id);
+        }
+
         const updatedStage: Data = {
             description,
             phase_type: phaseType,
-            repeat,
-            repeatLine,
+            repeat: Boolean(repeat),
+            repeatLine: Boolean(repeatLine),
             repeat_minutes: repeat ? Number(repeatMinutes) : undefined,
-            alert,
-            can_pause: canPause,
-            status,
-            multi,
-            activities: "[]",
-            duration_user: durationUser,
-            duration: duration,
+            alert: Boolean(alert),
+            can_pause: Boolean(canPause),
+            status: Boolean(status),
+            multi: Boolean(multi),
+            activities: activityIds,
+            duration_user: durationUser ?? "",
+            duration,
         };
 
-        if (phaseType === "Actividades" || phaseType === "Control") {
-            const activityIds = selectedActivities.map((activity) => activity.id);
-            updatedStage.activities = JSON.stringify(activityIds);
-        }
-
-        console.log("Datos a enviar al actualizar la fase:", updatedStage); // 🚀 LOG
+        console.log("Datos a enviar al actualizar la fase:", updatedStage);
 
         try {
             const response = await updateStage(editingStage.id, updatedStage);
-            console.log("Respuesta del servidor al actualizar la fase:", response); // 🚀 LOG
+            console.log("Respuesta del servidor al actualizar la fase:", response);
 
             showSuccess("Fase actualizada con éxito");
             setIsEditOpen(false);
@@ -202,6 +212,7 @@ function NewStage() {
             showError("Ocurrió un error al actualizar la fase");
         }
     };
+
 
     const handleDelete = async (id: number) => {
         showConfirm("¿Seguro que quieres eliminar esta fase?", async () => {
@@ -218,7 +229,7 @@ function NewStage() {
 
     const resetForm = () => {
         setDescription("");
-        setPhaseType("Planeacion");
+        setPhaseType("Planeación");
         setRepeat(false);
         setRepeatMinutes("");
         setAlert(false);
@@ -285,7 +296,7 @@ function NewStage() {
                                 <select
                                     value={phaseType}
                                     onChange={(e) =>
-                                        setPhaseType(e.target.value as "Planeacion" | "Conciliación" | "Control" | "Actividades")
+                                        setPhaseType(e.target.value as "Planeación" | "Conciliación" | "Control" | "Actividades" | "Procesos")
                                     }
                                     className="mt-1 w-full text-center p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 text-black"
                                 >
@@ -298,7 +309,7 @@ function NewStage() {
                             </div>
 
                             {/* Actividades (solo si Tipo de Fase es Actividades) */}
-                            {(phaseType === "Actividades" || phaseType === "Control") && (
+                            {(phaseType === "Actividades" || phaseType === "Control" || phaseType === "Procesos") && (
                                 <div className="space-y-4">
                                     <Text type="subtitle">Actividades</Text>
                                     <div className="flex flex-col md:flex-row gap-4">
@@ -463,7 +474,7 @@ function NewStage() {
                                         className="h-5 w-5 text-blue-600"
                                     />
                                     <span className="text-sm text-black">¿Es Multi?
-                                         <InfoPopover content="Se selecciona para indicarle al sistema que al tener multiples unidades se pultiplique el tiempo" />
+                                        <InfoPopover content="Se selecciona para indicarle al sistema que al tener multiples unidades se pultiplique el tiempo" />
                                     </span>
                                 </div>
 
@@ -492,6 +503,7 @@ function NewStage() {
                         {/* Botones de acción */}
                         <div className="mt-4 flex justify-center gap-4">
                             <Button
+
                                 onClick={() => {
                                     editingStage ? setIsEditOpen(false) : setIsOpen(false);
                                     resetForm();
@@ -522,3 +534,4 @@ function NewStage() {
 }
 
 export default NewStage;
+

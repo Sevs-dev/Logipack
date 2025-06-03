@@ -19,7 +19,7 @@ class StagesController extends Controller
     public function newFase(Request $request): JsonResponse
     {
         $validatedData = $request->validate([
-            'description' => 'required|string',
+             'description' => 'required|string',
             'phase_type' => 'required|string',
             'repeat' => 'boolean',
             'repeat_line' => 'boolean',
@@ -28,9 +28,9 @@ class StagesController extends Controller
             'can_pause' => 'boolean',
             'status' => 'boolean',
             'multi' => 'boolean',
-            'activities' => 'required|json',
-            'duration' => 'nullable',
-            'duration_user' => 'nullable',
+            'activities' => 'required|array', 
+            'duration' => 'nullable|string',
+            'duration_user' => 'nullable|string',
         ]);
 
         // Generar código autoincremental manualmente
@@ -66,7 +66,7 @@ class StagesController extends Controller
 
         $validatedData = $request->validate([
             'description' => 'required|string',
-            'phase_type' => 'required|string ',
+            'phase_type' => 'required|string',
             'repeat' => 'boolean',
             'repeat_line' => 'boolean',
             'repeat_minutes' => 'nullable|integer',
@@ -74,10 +74,11 @@ class StagesController extends Controller
             'can_pause' => 'boolean',
             'status' => 'boolean',
             'multi' => 'boolean',
-            'activities' => 'required|json',
-            'duration' => 'nullable',
-            'duration_user' => 'nullable',
+            'activities' => 'required|array', 
+            'duration' => 'nullable|string',
+            'duration_user' => 'nullable|string',
         ]);
+
 
         $Fase->update($validatedData);
 

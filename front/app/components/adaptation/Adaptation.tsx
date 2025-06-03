@@ -9,7 +9,7 @@ function Adaptation() {
     return (
         <WindowManager
             windowsData={[
-                { id: 1, title: "Acondicionamiento", component: <NewAdaptation />, isProtected: true },
+                { id: 1, title: "Ordenes de Acondicionamiento", component: <NewAdaptation />, isProtected: true },
             ]}
         />
     )

@@ -442,6 +442,7 @@ const Maestra = () => {
         if (remainingMinutes > 0) parts.push(`${remainingMinutes} min`);
         return parts.join(' ');
     };
+    const selectedId = (tipoSeleccionadoAcon ?? [])[0]; // solo toma uno
 
     return (
         <div>
@@ -533,13 +534,13 @@ const Maestra = () => {
                                             tipo.descripcion.toLowerCase().includes(searchTipoAcom.toLowerCase())
                                         )
                                         .map((tipo) => {
-                                            const isSelected = (tipoSeleccionadoAcon ?? []).includes(tipo.id);
+                                            const isSelected = tipo.id === selectedId;
                                             return (
                                                 <div key={tipo.id} className="p-2 border-b">
                                                     <button
                                                         className={`w-full text-sm transition text-center ${isSelected
-                                                            ? "text-green-600 font-semibold"
-                                                            : "text-blue-500 hover:text-blue-700"
+                                                                ? "text-green-600 font-semibold"
+                                                                : "text-blue-500 hover:text-blue-700"
                                                             }`}
                                                         onClick={() => handleSelectTipoAcondicionamiento(tipo.id)}
                                                     >
@@ -548,6 +549,7 @@ const Maestra = () => {
                                                 </div>
                                             );
                                         })
+
                                 ) : (
                                     <p className="text-gray-500 text-center">No hay tipos disponibles</p>
                                 )}
