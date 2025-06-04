@@ -42,7 +42,7 @@ class OrdenesEjecutadasController extends Controller
             $join->on(DB::raw('FIND_IN_SET(tipo_acon.id, REPLACE(REPLACE(COALESCE(mae.type_acondicionamiento, \'\'), \'[\', \'\'), \']\', \'\'))'), '>', DB::raw('0'));
         })
         ->join('linea_tipo_acondicionamientos as lin_tipo_acon', 'tipo_acon.id', '=', 'lin_tipo_acon.tipo_acondicionamiento_id')
-        ->leftJoin('stages as std', 'std.id', '=', 'lin_tipo_acon.fase')
+        ->Join('stages as std', 'std.id', '=', 'lin_tipo_acon.fase')
         ->where('ada.id', $id)
         ->select(
             'tipo_acon.id as tipo_acondicionamiento_id',
@@ -53,6 +53,7 @@ class OrdenesEjecutadasController extends Controller
             'std.repeat_line'
         )->get();
 
+        // Recorrer cada tipo de acondicionamiento
         foreach ($maestra_tipo_acondicionamiento_fk as $tipo_acondicionamiento) {
             $list = DB::table('stages as std')
             ->leftJoin('activities as atc', function ($join) {
@@ -67,20 +68,21 @@ class OrdenesEjecutadasController extends Controller
             )
             ->get();
 
-            // Asignar actividades al tipo de acondicionamiento
-            $tipo_acondicionamiento->actividades = $list;
-            
+            // Array para almacenar las actividades
+            $actividades = [];
             // Si el tipo de acondicionamiento se repite en la linea de produccion
             if ($tipo_acondicionamiento->repeat_line) {
-                
-                // duplicar el tipo de acondicionamiento
-                for($i = 1; $i < count(json_decode($acondicionamiento[0]->linea_produccion)) + 1; $i++) {
-                    $propiedad = "actividades_" . $i;
-                    $tipo_acondicionamiento->{$propiedad} = $list;
+                // Duplicar el tipo de acondicionamiento
+                for ($a = 0; $a < count(json_decode($acondicionamiento[0]->linea_produccion)); $a++) {
+                    $actividades[] = clone $list;
                 }
-            }            
+            } else {
+                $actividades[] = clone $list;
+            }
+            // Asignar actividades al tipo de acondicionamiento
+            $tipo_acondicionamiento->actividades = $actividades;          
         }
-        
+
         // Obtener lista de fases y sus actividades
         $maestra_fases_fk = DB::table('adaptations as ada')
         ->join('maestras as mae', 'mae.id', '=', 'ada.master')
@@ -97,12 +99,13 @@ class OrdenesEjecutadasController extends Controller
             std.repeat_line
         ")->get();
 
-        foreach ($maestra_fases_fk as $fase) {
+        // Recorrer cada fase
+        for ($i = 0; $i < count($maestra_fases_fk); $i++) {
             $list = DB::table('stages as std')
             ->leftJoin('activities as atc', function ($join) {
                 $join->on(DB::raw("FIND_IN_SET(atc.id, REPLACE(REPLACE(COALESCE(std.activities, ''), '[', ''), ']', ''))"), '>', DB::raw('0'));
             })
-            ->where('std.id', $fase->fases_fk)
+            ->where('std.id', $maestra_fases_fk[$i]->fases_fk)
             ->select(
                 'atc.id as id_activitie',
                 'atc.description as descripcion_activitie',
@@ -110,20 +113,20 @@ class OrdenesEjecutadasController extends Controller
                 'atc.binding'
             )
             ->get();
-            
-            // Asignar actividades a la fase
-            $fase->actividades = $list;
-            
-            // Si la fase se repite en la linea de produccion
-            if ($fase->repeat_line) {
-                
-                // duplicar la fase
-                $lineas = json_decode($acondicionamiento[0]->linea_produccion);
-                for($i = 1; $i < count($lineas) + 1; $i++) {
-                    $propiedad = "actividades_" . $i;
-                    $fase->{$propiedad} = $list;
+
+            // Array para almacenar las actividades
+            $actividades = [];
+            // Si la fase se repite en la linea de produccion (duplicala la cantidad de actividades)
+            if ($maestra_fases_fk[$i]->repeat_line) {
+                for ($a = 0; $a < count(json_decode($acondicionamiento[0]->linea_produccion)); $a++) {
+                    $actividades[] = clone $list;
                 }
+            }else{
+                // Si la fase no se repite en la linea de produccion (1 sola actividad)
+                $actividades[] = clone $list;
             }
+            // Asignar actividades a la fase
+            $maestra_fases_fk[$i]->actividades = $actividades;
         };
 
         return response()->json([
