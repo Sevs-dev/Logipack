@@ -7,6 +7,7 @@ import Button from "../buttons/buttons";
 import Text from "../text/Text";
 import ModalSection from "../modal/ModalSection";
 import { showError, showConfirm } from "../toastr/Toaster";
+import { CreateClientProps } from "../../interfaces/CreateClientProps";
 // importaciones de interfaces
 import { TipoAcondicionamiento, DataTipoAcondicionamiento, LineaTipoAcondicionamiento, DataLineaTipoAcondicionamiento } from "@/app/interfaces/NewTipoAcondicionamiento";
 // importaciones de interfaces
@@ -17,7 +18,7 @@ import { createStage as createLineaTipoAcom, getStage as listLineaTipoAcondicion
 import { getStageId } from "@/app/services/maestras/stageServices";
 
 // función principal del componente
-export default function NewTipoAcondicionamiento() {
+export default function NewTipoAcondicionamiento({ canEdit = false, canView = false }: CreateClientProps) {
     // variables de estado
     const [isOpen, setIsOpen] = useState(false);
     const [isOpenEdit, setIsOpenEdit] = useState(false);
@@ -213,11 +214,13 @@ export default function NewTipoAcondicionamiento() {
 
     // Instancia del componente
     useEffect(() => {
-        // listar los tipos de acondicionamiento
-        getListTipoAcom();
-        getListLineaTipoAcom();
-        getSelectStages();
-    }, []);
+        if (canView) {
+            // listar los tipos de acondicionamiento
+            getListTipoAcom();
+            getListLineaTipoAcom();
+            getSelectStages();
+        }
+    }, [canView]);
 
     // Cambio de estado del checkbox control
     useEffect(() => {
@@ -232,17 +235,21 @@ export default function NewTipoAcondicionamiento() {
     return (
         <>
             {/* Bloque del componente 1 */}
-            <div className="flex justify-center space-x-2 mb-2">
-                <Button onClick={() => setIsOpen(true)} variant="create" label="Crear" /></div>
-            <div>
-                {/* Botón abrir modal de creación */}
 
+            <div className="flex justify-center space-x-2 mb-2">
+                {canEdit && (
+                    <Button onClick={() => setIsOpen(true)} variant="create" label="Crear" />
+                )}
+            </div>
+            <div>
                 {/* Tabla de tipos de acondicionamiento */}
                 <Table columns={["descripcion", "status"]} rows={listTipoAcom}
-                    columnLabels={{ 
+                    columnLabels={{
                         descripcion: "Descripción",
                         status: "Estado",
-                    }} onDelete={handleDelete} onEdit={handleOpenEdit} />
+                    }}
+                    onDelete={canEdit ? handleDelete : undefined}
+                    onEdit={handleOpenEdit} />
             </div>
 
             {/* Bloque del componente 2 */}
@@ -268,7 +275,7 @@ export default function NewTipoAcondicionamiento() {
                                 name="descripcion"
                                 value={objectTipoAcom.descripcion}
                                 onChange={(e) => inputChangeObjectTipoAcom(e)}
-                                disabled={btnAplicar}
+                                disabled={btnAplicar || !canEdit}
                                 className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 placeholder-gray-400 text-center"
                                 placeholder="Ejemplo: Revisión técnica"
                             />
@@ -298,13 +305,14 @@ export default function NewTipoAcondicionamiento() {
                                                     <td className="px-4 py-3">{item.descripcion}</td>
                                                     <td className="px-4 py-3">{item.descripcion_fase}</td>
                                                     <td className="px-4 py-3">{item.editable ? "Sí" : "No"}</td>
-                                                    <td className="px-4 py-3">{item.control ? "Sí" : "No"}</td> 
+                                                    <td className="px-4 py-3">{item.control ? "Sí" : "No"}</td>
                                                     <td className="px-4 py-3">{item.descripcion_fase_control || "-"}</td>
                                                     <td className="px-4 py-3">
                                                         <button
                                                             onClick={() => handleDeleteLinea(item.id)}
                                                             className="text-red-500 hover:text-red-700"
                                                             title="Eliminar línea"
+                                                            disabled={!canEdit}
                                                         >
                                                             Eliminar
                                                         </button>
@@ -334,6 +342,7 @@ export default function NewTipoAcondicionamiento() {
                                                                 inputChangeObjectLineaTipoAcom(e);
                                                             }}
                                                             className="w-full px-3 py-2 border border-gray-300 rounded-md text-center focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                            disabled={!canEdit}
                                                         />
                                                     </div>
                                                 </td>
@@ -344,6 +353,7 @@ export default function NewTipoAcondicionamiento() {
                                                         value={unknown.descripcion}
                                                         onChange={inputChangeObjectLineaTipoAcom}
                                                         className="w-full px-3 py-2 border border-gray-300 rounded-md text-center focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                        disabled={!canEdit}
                                                     />
                                                 </td>
                                                 <td className="px-4 py-3">
@@ -358,6 +368,7 @@ export default function NewTipoAcondicionamiento() {
                                                                 })
                                                             }
                                                             className="w-full px-3 py-2 border flex justify-center items-center border-gray-300 rounded-md text-center text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                            disabled={!canEdit}
                                                         >
                                                             <option value="">Seleccione una fase</option>
                                                             {/* Mostrar la opción seleccionada al editar si ya está asignada */}
@@ -389,6 +400,7 @@ export default function NewTipoAcondicionamiento() {
                                                                 checked={unknown.editable}
                                                                 onChange={inputCheckboxChange}
                                                                 className="sr-only peer"
+                                                                disabled={!canEdit}
                                                             />
                                                             <div className="relative w-11 h-6 bg-gray-200 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
                                                         </label>
@@ -403,6 +415,7 @@ export default function NewTipoAcondicionamiento() {
                                                                 checked={unknown.control}
                                                                 onChange={inputCheckboxChange}
                                                                 className="sr-only peer"
+                                                                disabled={!canEdit}
                                                             />
                                                             <div className="relative w-11 h-6 bg-gray-200 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
                                                         </label>
@@ -417,6 +430,7 @@ export default function NewTipoAcondicionamiento() {
                                                                 onChange={(e) =>
                                                                     setObjectLineaTipoAcom({ ...unknown, fase_control: e.target.value })
                                                                 }
+                                                                disabled={!canEdit}
                                                                 className="w-full px-3 py-2 border border-gray-300 rounded-md text-center text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                                                             >
                                                                 <option value="">Seleccione una fase control</option>
@@ -431,7 +445,7 @@ export default function NewTipoAcondicionamiento() {
                                                 </td>
                                                 <td className="px-4 py-3">
                                                     <div className="flex justify-center items-center">
-                                                        <Button onClick={handleBtnAgregarLinea} variant="create" label="" />
+                                                        <Button onClick={handleBtnAgregarLinea} variant="create" label="" disabled={!canEdit} />
                                                     </div>
                                                 </td>
                                             </tr>
@@ -445,7 +459,7 @@ export default function NewTipoAcondicionamiento() {
                         {/* Acciones finales */}
                         <div className="flex justify-center space-x-4 mt-4">
                             <Button onClick={() => { handleReset(); }} variant="cancel" label={"Cerrar"} />
-                            {!btnAplicar && (
+                            {canEdit && (
                                 <Button onClick={() => { (isOpenEdit ? handleBtnAplicarEdit() : handleBtnAplicar()) }} variant="create" label={isOpenEdit ? "Actualizar" : "Aplicar"} />
                             )}
                         </div>

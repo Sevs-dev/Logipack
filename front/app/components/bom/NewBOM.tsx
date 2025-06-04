@@ -7,13 +7,14 @@ import Text from "../text/Text";
 import Table from "../table/Table";
 import { showSuccess, showError, showConfirm } from "../toastr/Toaster";
 import ModalSection from "../modal/ModalSection";
+import { CreateClientProps } from "../../interfaces/CreateClientProps";
 // Servicios 
 import { getClients, getClientsId } from "@/app/services/userDash/clientServices";
 import { getArticleByCode, newArticle, getArticlesId, deleteArticle, updateArticle, getBoms } from "@/app/services/bom/articleServices";
 // Tipos e interfaces
 import { Client, Article, Ingredient, Bom, BomView } from "@/app/interfaces/BOM";
 
-function BOMManager() {
+function BOMManager({ canEdit = false, canView = false }: CreateClientProps) {
     // Estados
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [currentBomId, setCurrentBomId] = useState<number | null>(null);
@@ -91,8 +92,10 @@ function BOMManager() {
     };
 
     useEffect(() => {
-        fetchBOMs(); // Ejecutar al montar
-    }, []);
+        if (canView) {
+            fetchBOMs(); // Ejecutar al montar
+        }
+    }, [canView]);
 
     // Cargar datos para edición si se abre el modal y hay un BOM seleccionado
     useEffect(() => {
@@ -286,6 +289,7 @@ function BOMManager() {
 
     // Eliminar BOM con confirmación
     const handleDelete = async (id: number) => {
+        if (!canEdit) return;
         showConfirm("¿Estás seguro de eliminar este BOM?", async () => {
             try {
                 await deleteArticle(id);
@@ -315,19 +319,20 @@ function BOMManager() {
     return (
         <div>
             <div className="flex justify-center space-x-2 mb-2">
-                <Button
-                    onClick={() => {
-                        resetForm();
-                        setIsModalOpen(true);
-                    }}
-                    variant="create"
-                    label="Crear BOM"
-                />
+                {canEdit && (
+                    <Button
+                        onClick={() => {
+                            resetForm();
+                            setIsModalOpen(true);
+                        }}
+                        variant="create"
+                        label="Crear BOM"
+                    />
+                )}
             </div>
 
             {isModalOpen && (
                 <ModalSection isVisible={isModalOpen} onClose={() => { setIsModalOpen(false) }}>
-
                     <Text type="title">
                         {currentBomId ? "Editar BOM" : "Crear BOM"}
                     </Text>
@@ -338,6 +343,7 @@ function BOMManager() {
                             className="w-full border p-2 rounded text-black text-center"
                             value={selectedClient}
                             onChange={e => setSelectedClient(e.target.value)}
+                            disabled={!canEdit}
                         >
                             <option value="">Seleccione...</option>
                             {clients.map(client => (
@@ -359,6 +365,7 @@ function BOMManager() {
                                         value={searchTerm}
                                         onChange={(e) => setSearchTerm(e.target.value)}
                                         className="border p-2 rounded w-full text-black"
+                                        disabled={!canEdit}
                                     />
                                 </div>
                                 {loadingArticles ? (
@@ -368,11 +375,16 @@ function BOMManager() {
                                         {filteredArticles.map((article) => (
                                             <li
                                                 key={article.codart}
-                                                className="border-b py-1 px-2 text-black cursor-pointer hover:bg-blue-100"
-                                                onClick={() => handleSelectArticle(article)}
+                                                className={`border-b py-1 px-2 text-black cursor-pointer transition ${canEdit ? "hover:bg-blue-100" : "text-gray-400 cursor-not-allowed"
+                                                    }`}
+                                                onClick={() => {
+                                                    if (canEdit) handleSelectArticle(article);
+                                                }}
+                                                title={!canEdit ? "No tienes permiso para seleccionar artículos" : ""}
                                             >
                                                 {article.desart} ({article.codart})
                                             </li>
+
                                         ))}
                                     </ul>
                                 ) : (
@@ -390,6 +402,7 @@ function BOMManager() {
                                         <button
                                             onClick={handleDeselectArticle}
                                             className="bg-red-500 text-white px-2 py-1 rounded"
+                                            disabled={!canEdit}
                                         >
                                             X
                                         </button>
@@ -410,6 +423,7 @@ function BOMManager() {
                                 className="w-full border p-2 rounded text-black text-center"
                                 value={baseQuantity}
                                 onChange={e => setBaseQuantity(Number(e.target.value))}
+                                disabled={!canEdit}
                             />
                         </div>
 
@@ -419,6 +433,7 @@ function BOMManager() {
                                 className="w-full border p-2 rounded text-black text-center"
                                 value={bomStatus ? "activo" : "inactivo"}
                                 onChange={e => setBomStatus(e.target.value === "activo")}
+                                disabled={!canEdit}
                             >
                                 <option value="activo">Activo</option>
                                 <option value="inactivo">Inactivo</option>
@@ -438,6 +453,7 @@ function BOMManager() {
                                                     className="border p-1 rounded text-black w-[70%]"
                                                     value={ing.codart}
                                                     onChange={e => handleIngredientSelect(index, e.target.value)}
+                                                    disabled={!canEdit}
                                                 >
                                                     <option value="">Seleccione un artículo</option>
                                                     {allArticles.map(article => (
@@ -452,6 +468,7 @@ function BOMManager() {
                                                     placeholder="Cantidad"
                                                     value={ing.quantity}
                                                     onChange={e => handleIngredientChange(index, "quantity", e.target.value)}
+                                                    disabled={!canEdit}
                                                 />
                                                 <input
                                                     type="number"
@@ -459,10 +476,12 @@ function BOMManager() {
                                                     placeholder="% Merma"
                                                     value={ing.merma}
                                                     onChange={e => handleIngredientChange(index, "merma", e.target.value)}
+                                                    disabled={!canEdit}
                                                 />
                                                 <button
                                                     onClick={() => removeIngredientRow(index)}
                                                     className="bg-red-500 text-white px-2 py-1 rounded"
+                                                    disabled={!canEdit}
                                                 >
                                                     X
                                                 </button>
@@ -473,19 +492,21 @@ function BOMManager() {
                                     <Text type="alert">No hay ingredientes agregados.</Text>
                                 )}
 
-                                <Button onClick={addIngredientRow} variant="create" label="Agregar Ingrediente" />
+                                <Button onClick={addIngredientRow} variant="create" label="Agregar Ingrediente" disabled={!canEdit} />
                             </div>
                         </div>
                     )}
 
                     <div className="flex justify-end space-x-4 mt-4">
                         <Button onClick={() => setIsModalOpen(false)} variant="cancel" label="Cancelar" />
-                        <Button
-                            onClick={handleSaveBOM}
-                            variant="create"
-                            label={currentBomId ? "Actualizar BOM" : "Guardar BOM"}
-                            disabled={loadingArticles || isSaving}
-                        />
+                        {canEdit && (
+                            <Button
+                                onClick={handleSaveBOM}
+                                variant="create"
+                                label={currentBomId ? "Actualizar BOM" : "Guardar BOM"}
+                                disabled={loadingArticles || isSaving}
+                            />
+                        )}
                     </div>
                 </ModalSection>
             )}
@@ -499,7 +520,7 @@ function BOMManager() {
                     article_desart: "Descripción Artículo",
                     status: "Estado",
                 }}
-                onDelete={handleDelete}
+                onDelete={canEdit ? handleDelete : undefined}
                 onEdit={handleEdit}
             />
 

@@ -2,6 +2,8 @@ import React from "react";
 import WindowManager from "../windowManager/WindowManager";
 import EditPlanning from "./EditPlanning";
 import useUserData from "../../hooks/useUserData";
+import PermissionWrapper from "../PermissionWrapper/PermissionWrapper";
+import NonePermission from "../loader/NonePermission";
 
 function Planificacion() {
   const { userName } = useUserData();
@@ -9,7 +11,7 @@ function Planificacion() {
   return (
     <WindowManager
       windowsData={[
-        { id: 1, title: "Planificación", component: <EditPlanning />, isProtected: true },
+        { id: 1, title: "Planificación", component: <PermissionWrapper fallback={<NonePermission />}><EditPlanning /></PermissionWrapper>, isProtected: true },
       ]}
     />
   )

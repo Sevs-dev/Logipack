@@ -2,6 +2,8 @@ import React from "react";
 import WindowManager from "../windowManager/WindowManager";
 import NewBOM from './NewBOM';
 import useUserData from '../../hooks/useUserData';
+import PermissionWrapper from "../PermissionWrapper/PermissionWrapper";
+import NonePermission from "../loader/NonePermission";
 
 function BOM() {
     const { userName } = useUserData();
@@ -10,7 +12,7 @@ function BOM() {
         <div>
             <WindowManager
                 windowsData={[
-                    { id: 1, title: "BOM", component: <NewBOM />, isProtected: true },
+                    { id: 1, title: "BOM", component: <PermissionWrapper fallback={<NonePermission />}><NewBOM /></PermissionWrapper>, isProtected: true },
                 ]}
             />
         </div>

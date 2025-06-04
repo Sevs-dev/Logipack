@@ -8,6 +8,7 @@ import Text from "../text/Text";
 import { IconSelector } from "../dinamicSelect/IconSelector";
 import ModalSection from "../modal/ModalSection";
 import { InfoPopover } from "../buttons/InfoPopover";
+import { CreateClientProps } from "../../interfaces/CreateClientProps";
 // 🔹 Servicios 
 import { getPlanning, updatePlanning, getActivitiesByPlanning } from "../../services/planing/planingServices";
 import { getActivitieId } from "../../services/maestras/activityServices"
@@ -17,9 +18,9 @@ import { getManu } from "@/app/services/userDash/manufacturingServices";
 import { getMachin } from "@/app/services/userDash/machineryServices";
 import { getManuId } from "@/app/services/userDash/manufacturingServices";
 // 🔹 Interfaces
-import { Plan, ActivityDetail, sanitizePlan } from "@/app/interfaces/EditPlanning"; 
+import { Plan, ActivityDetail, sanitizePlan } from "@/app/interfaces/EditPlanning";
 
-function EditPlanning() {
+function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
     const [planning, setPlanning] = useState<Plan[]>([]);
     const [isOpen, setIsOpen] = useState(false);
     const [currentPlan, setCurrentPlan] = useState<Plan | null>(null);
@@ -59,12 +60,13 @@ function EditPlanning() {
     }, []);
 
     useEffect(() => {
-        fetchAll();
-    }, [fetchAll]);
+        if (canView) {
+            fetchAll();
+        }
+    }, [fetchAll, canView]);
 
     useEffect(() => {
         if (!currentPlan) return;
-
         setLineActivities((prev) => {
             if (Object.keys(prev).length > 0) return prev;
             if (currentPlan.lineActivities && Object.keys(currentPlan.lineActivities).length > 0) {
@@ -95,10 +97,8 @@ function EditPlanning() {
                 setLineDetails({});
                 return;
             }
-
             const lines = getLinesArray(currentPlan.line);
             const details: Record<number, { name: string }> = {};
-
             await Promise.all(
                 lines.map(async (lineId) => {
                     try {
@@ -110,10 +110,8 @@ function EditPlanning() {
                     }
                 })
             );
-
             setLineDetails(details);
         };
-
         fetchLineDetails();
     }, [currentPlan]);
 
@@ -270,7 +268,6 @@ function EditPlanning() {
     const handleDelete = useCallback(() => {
         // console.log("Eliminar", id);
     }, []);
-
     const getFormattedDuration = (minutes: number): string => {
         if (minutes <= 0) return 'menos de 1 minuto';
         const days = Math.floor(minutes / 1440);
@@ -286,7 +283,6 @@ function EditPlanning() {
 
     function formatDurationBreakdown(breakdown: string | any[]): string {
         const parsed = typeof breakdown === "string" ? JSON.parse(breakdown) : breakdown;
-
         return parsed
             .map((item: any) => {
                 if (item.fase === "TOTAL") {
@@ -383,6 +379,7 @@ function EditPlanning() {
                                 onChange={(e) =>
                                     setCurrentPlan({ ...currentPlan, number_order: e.target.value })
                                 }
+                                disabled={!canEdit}
                             />
                         </div>
                         {/* 🔹 Artículo */}
@@ -395,6 +392,7 @@ function EditPlanning() {
                                 onChange={(e) =>
                                     setCurrentPlan({ ...currentPlan, codart: e.target.value })
                                 }
+                                disabled={!canEdit}
                             />
                         </div>
                         {/* 🔹 Fecha de entrega */}
@@ -408,6 +406,7 @@ function EditPlanning() {
                                 onChange={(e) =>
                                     setCurrentPlan({ ...currentPlan, deliveryDate: e.target.value })
                                 }
+                                disabled={!canEdit}
                             />
                         </div>
                         {/* 🔹 Registro Sanitario */}
@@ -423,6 +422,7 @@ function EditPlanning() {
                                         healthRegistration: e.target.value,
                                     })
                                 }
+                                disabled={!canEdit}
                             />
                         </div>
                         {/* 🔹 Lote */}
@@ -435,6 +435,7 @@ function EditPlanning() {
                                 onChange={(e) =>
                                     setCurrentPlan({ ...currentPlan, lot: e.target.value })
                                 }
+                                disabled={!canEdit}
                             />
                         </div>
                         {/* 🔹 N° de orden */}
@@ -447,6 +448,7 @@ function EditPlanning() {
                                 onChange={(e) =>
                                     setCurrentPlan({ ...currentPlan, orderNumber: e.target.value })
                                 }
+                                disabled={!canEdit}
                             />
                         </div>
                         {/* 🔹 Cantidad a producir */}
@@ -463,6 +465,7 @@ function EditPlanning() {
                                         quantityToProduce: parseFloat(e.target.value),
                                     })
                                 }
+                                disabled={!canEdit}
                             />
                         </div>
                         {/* 🔹 Cliente */}
@@ -475,6 +478,7 @@ function EditPlanning() {
                                 onChange={(e) =>
                                     setCurrentPlan({ ...currentPlan, client_name: e.target.value })
                                 }
+                                disabled={!canEdit}
                             />
                         </div>
                         {/* 🔹 Estado */}
@@ -486,6 +490,7 @@ function EditPlanning() {
                                 onChange={(e) =>
                                     setCurrentPlan({ ...currentPlan, status_dates: e.target.value })
                                 }
+                                disabled={!canEdit}
                             >
                                 <option value="">Seleccione una opción</option>
                                 <option value="En Creación">En Creación</option>
@@ -501,6 +506,7 @@ function EditPlanning() {
                                     factories.find(f => f.id === currentPlan.factory_id)?.name || ""
                                 }
                                 readOnly
+                                disabled={!canEdit}
                             />
                         </div>
                         {/* 🔹 Lineas */}
@@ -537,6 +543,7 @@ function EditPlanning() {
                                             const merged = Array.from(new Set([...currentLine, ...selected]));
                                             setCurrentPlan({ ...currentPlan, line: merged });
                                         }}
+                                        disabled={!canEdit}
                                     >
                                         {manu.length > 0 ? (
                                             manu
@@ -572,6 +579,7 @@ function EditPlanning() {
                                                             })
                                                         }
                                                         className="text-red-500 hover:text-red-700 font-bold"
+                                                        disabled={!canEdit}
                                                     >
                                                         ✖
                                                     </button>
@@ -589,20 +597,24 @@ function EditPlanning() {
                         {/* Actividades disponibles para arrastrar */}
                         <div className="flex-1 border border-gray-200 rounded-lg p-4 bg-gray-50 shadow-sm transition-all">
                             <Text type="subtitle">Actividades disponibles</Text>
-                            {availableActivities.length === 0 ? (
-                                <p className="text-sm text-gray-500">(Ninguna disponible)</p>
-                            ) : (
-                                availableActivities.map((act) => (
+                            {availableActivities.map((act) => {
+                                const isDisabled = !canEdit;
+                                return (
                                     <div
                                         key={act.id}
-                                        draggable
-                                        onDragStart={() => setDraggedActivityId(act.id)}
-                                        className="border border-gray-300 p-3 mb-3 rounded-md cursor-grab bg-white shadow-sm hover:shadow transition-shadow flex justify-between items-center"
+                                        draggable={!isDisabled}
+                                        onDragStart={() => {
+                                            if (!isDisabled) setDraggedActivityId(act.id);
+                                        }}
+                                        className={`border border-gray-300 p-3 mb-3 rounded-md ${isDisabled ? "cursor-not-allowed bg-gray-100 text-gray-400" : "cursor-grab bg-white hover:shadow"
+                                            } shadow-sm transition-shadow flex justify-between items-center`}
+                                        title={isDisabled ? "No tienes permiso para arrastrar actividades" : ""}
                                     >
-                                        <span className="text-gray-700 text-center">{act.description}</span>
+                                        <span className="text-center">{act.description}</span>
                                     </div>
-                                ))
-                            )}
+                                );
+                            })}
+
                         </div>
 
                         {/* Líneas y sus actividades */}

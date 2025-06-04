@@ -7,7 +7,7 @@ interface PermissionWrapperProps {
 }
 
 const rolePermissions: Record<string, { canEdit: boolean; canView: boolean }> = {
-  Administrador: { canEdit: true, canView: true }, 
+  Administrador: { canEdit: true, canView: true },
   J_Calidad: { canEdit: true, canView: true },
   Calidad: { canEdit: true, canView: true },
   Operativo: { canEdit: false, canView: true },
@@ -24,7 +24,20 @@ const PermissionWrapper: React.FC<PermissionWrapperProps> = ({ fallback = null, 
 
   if (!canView) {
     return (
-      <div style={{ width: '1190px', height: '200px', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+      <div
+        style={{
+          width: '100%',
+          maxWidth: '1190px',
+          height: 'auto',
+          minHeight: '50px',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          padding: '1rem',
+          boxSizing: 'border-box',
+          margin: '0 auto',
+        }}
+      >
         {typeof fallback === 'function' ? fallback() : fallback}
       </div>
     );

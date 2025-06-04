@@ -9,7 +9,7 @@ import Consecutive from "./CreateConsecutive";
 import Machinery from "./CreateMachinery";
 import useUserData from '../../hooks/useUserData';
 import CreateUser from "./CreateUser";
-import PermissionWrapper from "./PermissionWrapper";
+import PermissionWrapper from "../PermissionWrapper/PermissionWrapper";
 import NonePermission from "../loader/NonePermission";
 
 function User() {
