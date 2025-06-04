@@ -166,6 +166,11 @@ class OrdenesEjecutadasController extends Controller
             ]); 
         }
 
+        // se actualiza el estado de la adaptacion a completado
+        $adaptation_dates = AdaptationDates::where('adaptation_id', $ordenes['adaptation_id'])->first();
+        $adaptation_dates->status_dates = 'Completado';
+        $adaptation_dates->save();
+
         // Devolver una respuesta JSON con un mensaje de éxito y el objeto orden creado
         return response()->json([
             'message' => 'Orden ejecutada creada exitosamente',
