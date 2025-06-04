@@ -16,7 +16,7 @@ class UserSeeder extends Seeder
             'name'     => 'Admin Logismart',
             'email'    => 'admin@logismart.com',
             'password' => bcrypt('Logismart123*'),
-            'role'     => 'admin'
+            'role'     => 'Administrador',
         ]);
     }
 }

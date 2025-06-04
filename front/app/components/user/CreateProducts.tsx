@@ -2,15 +2,17 @@ import React, { useState, useEffect } from "react";
 import { getProduct, getProductId, createProduct, updateProduct, deleteProduct, } from "../../services/userDash/productServices";
 import Table from "../table/Table";
 import { showSuccess, showError, showConfirm } from "../toastr/Toaster";
-import { motion, AnimatePresence } from "framer-motion";
-import Button from "../buttons/buttons" 
+import Button from "../buttons/buttons"
+import { CreateClientProps } from "../../interfaces/CreateClientProps";
+import ModalSection from "../modal/ModalSection";
+import Text from "../text/Text";
 // Definición de la interfaz para un producto
 interface Product {
   id: number;
   name: string;
 }
 
-function Products() {
+function Products({ canEdit = false, canView = false }: CreateClientProps) {
   const [products, setProducts] = useState<Product[]>([]);
   const [showModal, setShowModal] = useState(false);
   const [name, setName] = useState("");
@@ -23,8 +25,10 @@ function Products() {
   const columns = ["name"];
 
   useEffect(() => {
-    fetchProducts();
-  }, []);
+    if (canView) {
+      fetchProducts();
+    }
+  }, [canView]);
 
   // Obtener la lista de productos
   const fetchProducts = async () => {
@@ -131,59 +135,45 @@ function Products() {
 
   return (
     <div>
-      <div className="flex justify-center mb-2">
-        <Button onClick={openCreateModal} variant="create" label="Crear Producto" />
-      </div>
+      {canEdit && (
+        <div className="flex justify-center mb-2">
+          <Button onClick={openCreateModal} variant="create" label="Crear Producto" />
+        </div>
+      )}
 
       {/* Modal para crear o editar producto */}
-      <AnimatePresence>
-        {showModal && (
-          <motion.div
-            className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm z-50"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-          >
-            <motion.div
-              className="bg-white p-6 rounded-2xl shadow-xl w-80"
-              initial={{ scale: 0.8, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.8, opacity: 0 }}
-              transition={{ duration: 0.3 }}
-            >
-              <h2 className="text-xl text-center font-semibold text-black mb-4">
-                {editingProduct ? "Editar Tipo de Producto" : "Crear Tipo de Producto"}
-              </h2>
-              <form onSubmit={editingProduct ? handleUpdate : handleCreate}>
-                <div className="mb-4">
-                  <label htmlFor="name" className="block text-gray-700 mb-1">
-                    Nombre del Tipo:
-                  </label>
-                  <input
-                    type="text"
-                    id="name"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    className="w-full text-black px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-400 outline-none"
-                  />
-                </div>
-                {error && <p className="text-red-500 mb-4">{error}</p>}
-                <div className="flex justify-center gap-2 mt-2">
-                  <Button onClick={() => setShowModal(false)} variant="cancel" />
-                  <Button type="submit" variant="save" />
-                </div>
-              </form>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {showModal && (
+        <ModalSection isVisible={showModal} onClose={() => setShowModal(false)}>
+          <Text type="title">{editingProduct ? "Editar Tipo de Producto" : "Crear Tipo de Producto"}</Text>
+          <form onSubmit={editingProduct ? handleUpdate : handleCreate}>
+            <div className="mb-4">
+              <Text type="subtitle">Nombre del Tipo</Text>
+              <input
+                type="text"
+                id="name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                className="w-full text-black px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-400 outline-none text-center"
+                disabled={!canEdit}
+              />
+            </div>
+            {error && <p className="text-red-500 mb-4">{error}</p>}
+            <div className="flex justify-center gap-2 mt-2">
+              <Button onClick={() => setShowModal(false)} variant="cancel" />
+              {canEdit && (
+                <Button type="submit" variant="save" />
+              )}
+            </div>
+          </form>
+        </ModalSection>
+      )}
 
       {/* Tabla de productos */}
       <Table
         columns={columns}
         rows={products}
         columnLabels={columnLabels}
-        onDelete={handleDelete}
+        onDelete={canEdit ? handleDelete : undefined}
         onEdit={openEditModal}
       />
     </div>

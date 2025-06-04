@@ -14,6 +14,7 @@ import MultiSelect from "../dinamicSelect/MultiSelect";
 import Table from "../table/Table";
 import Text from "../text/Text";
 import ModalSection from "../modal/ModalSection";
+import { CreateClientProps } from "../../interfaces/CreateClientProps";
 // 🔹 Toastr
 import { showSuccess, showError } from "../toastr/Toaster";
 // 🔹 Interfaces
@@ -21,7 +22,7 @@ import { Client, Article, Ingredient } from "@/app/interfaces/BOM";
 import { Data } from "@/app/interfaces/NewMaestra";
 import { BOM, Adaptation, ArticleFormData, Plant } from "@/app/interfaces/NewAdaptation";
 
-function NewAdaptation() {
+function NewAdaptation({ canEdit = false, canView = false }: CreateClientProps) {
     const [isOpen, setIsOpen] = useState(false);
     const [selectedClient, setSelectedClient] = useState<string>("");
     const [plantas, setPlantas] = useState<Plant[]>([]);
@@ -48,6 +49,13 @@ function NewAdaptation() {
     const [selectedBom, setSelectedBom] = useState<number | "">("");
     const [isLoading, setIsLoading] = useState(false);
     const [articleFields, setArticleFields] = useState<Record<string, ArticleFormData>>({});
+
+    // Ejecutar al montar el componente
+    useEffect(() => {
+        if (canView) {
+            fetchAdaptations();
+        } // Llamamos a la función para cargar las adaptaciones
+    }, [canView]);
 
     useEffect(() => {
         // Función asincrónica para obtener los clientes
@@ -338,11 +346,6 @@ function NewAdaptation() {
         }
     };
 
-    // Ejecutar al montar el componente
-    useEffect(() => {
-        fetchAdaptations(); // Llamamos a la función para cargar las adaptaciones
-    }, []);
-
     // Manejo del envío del formulario
     const handleSubmit = async () => {
         // Validaciones para asegurarse de que todos los campos estén completos
@@ -592,6 +595,7 @@ function NewAdaptation() {
 
     // Manejo de la eliminación de una adaptación
     const handleDelete = async (id: number) => {
+        if (!canEdit) return;
         const confirmDelete = window.confirm("¿Estás seguro de que deseas eliminar esta adaptación?");
         if (confirmDelete) {
             try {
@@ -636,10 +640,12 @@ function NewAdaptation() {
     return (
         <div>
             <div className="flex justify-center space-x-2 mb-2">
-                <Button onClick={() => {
-                    resetForm();
-                    setIsOpen(true);
-                }} variant="create" label="Crear Acondicionamiento" />
+                {canEdit && (
+                    <Button onClick={() => {
+                        resetForm();
+                        setIsOpen(true);
+                    }} variant="create" label="Crear Acondicionamiento" />
+                )}
             </div>
 
             {isOpen && (
@@ -666,6 +672,7 @@ function NewAdaptation() {
                                         className="w-full border p-3 rounded-lg text-gray-800 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500 text-center"
                                         value={planta}
                                         onChange={e => handlePlantaChange(e.target.value)}
+                                        disabled={!canEdit}
                                     >
                                         <option value="">Seleccione...</option>
                                         {plantas.map((plant) => (
@@ -685,6 +692,7 @@ function NewAdaptation() {
                                             setSelectedClient(e.target.value);
                                             setIngredients([]);
                                         }}
+                                        disabled={!canEdit}
                                     >
                                         <option value="">Seleccione...</option>
                                         {clients.map(client => (
@@ -712,6 +720,7 @@ function NewAdaptation() {
                                             onPaste={e => e.preventDefault()}
                                             onCut={e => e.preventDefault()}
                                             aria-readonly="true"
+                                            disabled={!canEdit}
                                         />
 
                                         {/* Botón con tooltip y mejor posicionamiento */}
@@ -748,6 +757,7 @@ function NewAdaptation() {
                                     className="w-full border p-3 rounded-lg text-gray-800 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500  text-center"
                                     value={selectedMaestras.length > 0 ? selectedMaestras[0] : ""}
                                     onChange={(e) => setSelectedMaestras([e.target.value])}
+                                    disabled={!canEdit}
                                 >
                                     <option value="">Seleccione...</option>
                                     {maestra.map((master) => (
@@ -787,6 +797,7 @@ function NewAdaptation() {
                                                 setSelectedArticles([]);
                                             }
                                         }}
+                                        disabled={!canEdit}
                                         value={selectedBom || ""}
                                     >
                                         <option value="">Seleccione un BOM...</option>
@@ -837,6 +848,7 @@ function NewAdaptation() {
                                                 console.warn("❌ codart vacío tras parsear el BOM");
                                             }
                                         }}
+                                        disabled={!canEdit}
                                         value={selectedBom || ""}
                                     >
                                         <option value="">Seleccione un BOM...</option>
@@ -886,6 +898,7 @@ function NewAdaptation() {
                                             className="w-full border p-3 rounded-lg text-gray-800 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500 text-center"
                                             value={orderNumber}
                                             onChange={e => setOrderNumber(e.target.value)}
+                                            disabled={!canEdit}
                                         />
                                     </div>
 
@@ -897,6 +910,7 @@ function NewAdaptation() {
                                             className="w-full border p-3 rounded-lg text-gray-800 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500 text-center"
                                             value={deliveryDate}
                                             onChange={e => setDeliveryDate(e.target.value)}
+                                            disabled={!canEdit}
                                         />
                                     </div>
 
@@ -909,6 +923,7 @@ function NewAdaptation() {
                                             value={quantityToProduce}
                                             onChange={e => setQuantityToProduce(e.target.value)}
                                             min={1}
+                                            disabled={!canEdit}
                                         />
                                     </div>
                                     {/* Lote */}
@@ -920,6 +935,7 @@ function NewAdaptation() {
                                             className="w-full border p-3 rounded-lg text-gray-800 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500 text-center"
                                             value={lot}
                                             onChange={e => setLot(e.target.value)}
+                                            disabled={!canEdit}
                                         />
                                     </div>
 
@@ -931,13 +947,16 @@ function NewAdaptation() {
                                             className="w-full border p-3 rounded-lg text-gray-800 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500 text-center"
                                             value={healthRegistration}
                                             onChange={e => setHealthRegistration(e.target.value)}
+                                            disabled={!canEdit}
                                         />
                                     </div>
 
                                     {/* Adjunto */}
                                     <div className="flex flex-col">
                                         <Text type="subtitle">Adjuntar:</Text>
-                                        <File onChange={setAttachment} />;
+                                        {canEdit && (
+                                            <File onChange={setAttachment} />
+                                        )}
                                     </div>
                                 </div>
                             ) : (
@@ -953,6 +972,7 @@ function NewAdaptation() {
                                                         className="border border-gray-300 rounded-md px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-500 text-center text-black"
                                                         value={articleFields[article.codart]?.orderNumber || ""}
                                                         onChange={(e) => handleFieldChange(article.codart, "orderNumber", e.target.value)}
+                                                        disabled={!canEdit}
                                                     />
                                                 </div>
                                                 <div className="col-span-1">
@@ -962,6 +982,7 @@ function NewAdaptation() {
                                                         className="border border-gray-300 rounded-md px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-500 text-center text-black"
                                                         value={articleFields[article.codart]?.deliveryDate || ""}
                                                         onChange={(e) => handleFieldChange(article.codart, "deliveryDate", e.target.value)}
+                                                        disabled={!canEdit}
                                                     />
                                                 </div>
                                                 <div className="col-span-1">
@@ -971,6 +992,7 @@ function NewAdaptation() {
                                                         className="border border-gray-300 rounded-md px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-500 text-center text-black"
                                                         value={articleFields[article.codart]?.quantityToProduce || ""}
                                                         onChange={(e) => handleFieldChange(article.codart, "quantityToProduce", Number(e.target.value))}
+                                                        disabled={!canEdit}
                                                     />
                                                 </div>
                                                 <div className="col-span-1">
@@ -980,6 +1002,7 @@ function NewAdaptation() {
                                                         className="border border-gray-300 rounded-md px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-500 text-center text-black"
                                                         value={articleFields[article.codart]?.lot || ""}
                                                         onChange={(e) => handleFieldChange(article.codart, "lot", e.target.value)}
+                                                        disabled={!canEdit}
                                                     />
                                                 </div>
                                                 <div className="col-span-1">
@@ -989,13 +1012,16 @@ function NewAdaptation() {
                                                         className="border border-gray-300 rounded-md px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-500 text-center text-black"
                                                         value={articleFields[article.codart]?.healthRegistration || ""}
                                                         onChange={(e) => handleFieldChange(article.codart, "healthRegistration", e.target.value)}
+                                                        disabled={!canEdit}
                                                     />
                                                 </div>
                                                 <div className="col-span-1 flex flex-col">
                                                     <Text type="subtitle">Adjuntar:</Text>
-                                                    <File
-                                                        onChange={(file) => handleFieldChange(article.codart, "attachment", file)}
-                                                    />
+                                                    {canEdit && (
+                                                        <File
+                                                            onChange={(file) => handleFieldChange(article.codart, "attachment", file)}
+                                                        />
+                                                    )}
                                                 </div>
                                             </div>
                                         </div>
@@ -1033,6 +1059,7 @@ function NewAdaptation() {
                                                             className="text-black p-1 border border-gray-300 rounded text-center"
                                                             value={Number(ing.teorica).toFixed(2)}
                                                             onChange={(e) => handleChange(index, "teorica", e.target.value)}
+                                                            disabled={!canEdit}
                                                         />
                                                     </td>
                                                     <td className="border border-black p-2">
@@ -1041,6 +1068,7 @@ function NewAdaptation() {
                                                             className="text-black p-1 border border-gray-300 rounded text-center"
                                                             value={ing.validar}
                                                             onChange={(e) => handleChange(index, "validar", e.target.value)}
+                                                            disabled={!canEdit}
                                                         />
                                                     </td>
                                                 </tr>
@@ -1059,7 +1087,9 @@ function NewAdaptation() {
                             resetForm();
                             setIsOpen(false);
                         }} variant="cancel" label="Cancelar" />
-                        <Button onClick={handleSubmit} variant="save" label="Guardar" />
+                        {canEdit && (
+                            <Button onClick={handleSubmit} variant="save" label="Guardar" />
+                        )}
                     </div>
                 </ModalSection>
             )}
@@ -1071,7 +1101,7 @@ function NewAdaptation() {
                     client_name: "Cliente",
                     number_order: "N° Orden",
                 }}
-                onDelete={handleDelete}
+                onDelete={canEdit ? handleDelete : undefined}
                 onEdit={handleEdit}
             />
         </div>

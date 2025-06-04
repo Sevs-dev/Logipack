@@ -11,16 +11,16 @@ import Button from "../buttons/buttons";
 import { showSuccess, showError, showConfirm } from "../toastr/Toaster";
 import Text from "../text/Text";
 import Table from "../table/Table";
-import PermissionCheck from "..//permissionCheck/PermissionCheck";
 import ModalSection from "../modal/ModalSection";
 import { InfoPopover } from "../buttons/InfoPopover";
+import { CreateClientProps } from "../../interfaces/CreateClientProps";
 // ------------------------- 5. Tipos de datos e interfaces -------------------------
 import { Stage, Data } from "../../interfaces/NewMaestra";
 import { DataTipoAcondicionamiento, DataLineaTipoAcondicionamiento } from "@/app/interfaces/NewTipoAcondicionamiento";
 import { getLineaTipoAcondicionamientoById as getLineaTipoAcomById } from "@/app/services/maestras/LineaTipoAcondicionamientoService";
 // importaciones de interfaces
 
-const Maestra = () => {
+const Maestra = ({ canEdit = false, canView = false }: CreateClientProps) => {
     // Estados del componente
     const [isOpen, setIsOpen] = useState(false);
     const [maestra, setMaestra] = useState<Data[]>([]);
@@ -161,8 +161,10 @@ const Maestra = () => {
     }, []);
 
     useEffect(() => {
-        fetchMaestra();
-    }, [fetchMaestra]);
+        if (canView) {
+            fetchMaestra();
+        }
+    }, [fetchMaestra, canView]);
 
     // Cargar los tipos cuando el componente se monte
     useEffect(() => {
@@ -442,16 +444,17 @@ const Maestra = () => {
         if (remainingMinutes > 0) parts.push(`${remainingMinutes} min`);
         return parts.join(' ');
     };
+
     const selectedId = (tipoSeleccionadoAcon ?? [])[0]; // solo toma uno
 
     return (
         <div>
             {/* Botón para abrir el modal de creación */}
-            <div className="flex justify-center space-x-2 mb-2">
-                <PermissionCheck requiredPermission="crear_maestras">
+            {canEdit && (
+                <div className="flex justify-center space-x-2 mb-2">
                     <Button onClick={openCreateModal} variant="create" label="Crear Maestra" />
-                </PermissionCheck>
-            </div>
+                </div>
+            )}
 
             {/* Modal de creación/edición */}
             {isOpen && (
@@ -466,6 +469,7 @@ const Maestra = () => {
                             className="w-full p-2 border text-black mb-2 min-w-0 text-center"
                             value={descripcion}
                             onChange={(e) => setDescripcion(e.target.value)}
+                            disabled={!canEdit}
                         />
                     </div>
 
@@ -478,6 +482,7 @@ const Maestra = () => {
                                 checked={requiereBOM}
                                 onChange={() => setRequiereBOM(!requiereBOM)}
                                 className="mt-2 w-4 h-4"
+                                disabled={!canEdit}
                             />
                         </div>
                         <div className="flex flex-col items-center">
@@ -487,6 +492,7 @@ const Maestra = () => {
                                 checked={paralelo}
                                 onChange={() => setParalelo(!paralelo)}
                                 className="mt-2 w-4 h-4"
+                                disabled={!canEdit}
                             />
                         </div>
                         <div className="flex flex-col items-center">
@@ -495,6 +501,7 @@ const Maestra = () => {
                                 className="w-full p-2 border mb-2 min-w-0 text-black text-center"
                                 value={tipoSeleccionado}
                                 onChange={(e) => setTipoSeleccionado(e.target.value)}
+                                disabled={!canEdit}
                             >
                                 <option value="" disabled>
                                     -- Seleccione un tipo de producto --
@@ -525,6 +532,7 @@ const Maestra = () => {
                                         className="w-full border border-gray-300 p-2 pl-9 rounded-md text-sm text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
                                         value={searchTipoAcom}
                                         onChange={(e) => setSearchTipoAcom(e.target.value)}
+                                        disabled={!canEdit}
                                     />
                                 </div>
 
@@ -539,10 +547,11 @@ const Maestra = () => {
                                                 <div key={tipo.id} className="p-2 border-b">
                                                     <button
                                                         className={`w-full text-sm transition text-center ${isSelected
-                                                                ? "text-green-600 font-semibold"
-                                                                : "text-blue-500 hover:text-blue-700"
+                                                            ? "text-green-600 font-semibold"
+                                                            : "text-blue-500 hover:text-blue-700"
                                                             }`}
                                                         onClick={() => handleSelectTipoAcondicionamiento(tipo.id)}
+                                                        disabled={!canEdit}
                                                     >
                                                         {isSelected ? `✓ ${tipo.descripcion}` : tipo.descripcion}
                                                     </button>
@@ -568,6 +577,7 @@ const Maestra = () => {
                                         className="w-full border border-gray-300 p-2 pl-9 rounded-md text-sm text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
                                         value={searchStage}
                                         onChange={(e) => setSearchStage(e.target.value)}
+                                        disabled={!canEdit}
                                     />
                                 </div>
 
@@ -582,7 +592,7 @@ const Maestra = () => {
                                             return (
                                                 <div key={stage.id} className="p-2 border-b">
                                                     <button
-                                                        disabled={isSelected}
+                                                        disabled={isSelected || !canEdit}
                                                         className={`w-full text-sm transition text-center ${isSelected
                                                             ? "text-gray-400 cursor-not-allowed"
                                                             : "text-blue-500 hover:text-blue-700"
@@ -612,21 +622,20 @@ const Maestra = () => {
                                         return (
                                             <div
                                                 key={stage.id}
-                                                draggable={isEditable}  // solo si es editable permite drag
+                                                draggable={isEditable || !canEdit}  // solo si es editable permite drag
                                                 onDragStart={handleDragStart(index)}
                                                 onDragOver={handleDragOver(index)}
                                                 onDrop={handleDrop(index)}
-                                                className={`flex items-center rounded-full px-3 py-1 text-sm transition-all
-            ${isEditable
-                                                        ? "bg-gray-100 text-gray-800 hover:bg-red-400 hover:text-white cursor-pointer"
-                                                        : "bg-gray-200 text-gray-500 cursor-not-allowed"}`}
+                                                className={`flex items-center rounded-full px-3 py-1 text-sm transition-all ${isEditable || !canEdit
+                                                    ? "bg-gray-100 text-gray-800 hover:bg-red-400 hover:text-white cursor-pointer"
+                                                    : "bg-gray-200 text-gray-500 cursor-not-allowed"}`}
                                                 onClick={() => {
                                                     if (isEditable) handleRemoveStage(stage);
                                                 }}
                                                 style={{ userSelect: "none" }} // para que no seleccione texto al drag
                                             >
                                                 {stage.description}
-                                                {isEditable && <X className="w-4 h-4 ml-2" />}
+                                                {isEditable || !canEdit && <X className="w-4 h-4 ml-2" />}
                                             </div>
                                         );
                                     })
@@ -646,6 +655,7 @@ const Maestra = () => {
                                         readOnly
                                         className="w-full pl-10 pr-4 py-2 rounded-md border border-gray-300 bg-gray-100 text-sm text-gray-700"
                                         value={`${duration} min ---> ${getFormattedDuration(Number(duration))}`}
+                                        disabled={!canEdit}
                                     />
                                 </div>
                             </div>
@@ -660,6 +670,7 @@ const Maestra = () => {
                                         readOnly
                                         className="w-full pl-10 pr-4 py-2 rounded-md border border-gray-300 bg-gray-100 text-sm text-gray-700"
                                         value={`${durationUser} min ---> ${getFormattedDuration(Number(durationUser))}`}
+                                        disabled={!canEdit}
                                     />
                                 </div>
                             </div>
@@ -670,53 +681,56 @@ const Maestra = () => {
                     <div className="flex justify-center space-x-4 mt-4">
                         <Button onClick={() => setIsOpen(false)} variant="cancel" label="Cancelar" />
                         {/* Botón Finalizado */}
-                        <Button
-                            onClick={async () => {
-                                const payload = {
-                                    descripcion,
-                                    requiere_bom: requiereBOM,
-                                    type_product: tipoSeleccionado,
-                                    ...(tipoSeleccionadoAcon != null && {
-                                        // Sin convertir a número, enviamos el array tal cual
-                                        type_acondicionamiento: tipoSeleccionadoAcon,
-                                    }),
-                                    type_stage: selectedStages.map((s) => s.id),
-                                    status_type: "Aprobada",
-                                    aprobado: true,
-                                    paralelo,
-                                    duration,
-                                    duration_user: durationUser,
-                                };
-                                try {
-                                    if (editingMaestra) {
-                                        await updateMaestra(editingMaestra.id, payload);
-                                    } else {
-                                        await createMaestra(payload);
+                        {canEdit && (
+                            <Button
+                                onClick={async () => {
+                                    const payload = {
+                                        descripcion,
+                                        requiere_bom: requiereBOM,
+                                        type_product: tipoSeleccionado,
+                                        ...(tipoSeleccionadoAcon != null && {
+                                            // Sin convertir a número, enviamos el array tal cual
+                                            type_acondicionamiento: tipoSeleccionadoAcon,
+                                        }),
+                                        type_stage: selectedStages.map((s) => s.id),
+                                        status_type: "Aprobada",
+                                        aprobado: true,
+                                        paralelo,
+                                        duration,
+                                        duration_user: durationUser,
+                                    };
+                                    try {
+                                        if (editingMaestra) {
+                                            await updateMaestra(editingMaestra.id, payload);
+                                        } else {
+                                            await createMaestra(payload);
+                                        }
+                                        showSuccess(editingMaestra ? "Maestra actualizada con éxito" : "Maestra creada con éxito");
+                                        setIsOpen(false);
+                                        resetForm();
+                                        fetchMaestra();
+                                    } catch (error) {
+                                        showError("Error al guardar la maestra");
+                                        console.error("Error al guardar:", error);
                                     }
-                                    showSuccess(editingMaestra ? "Maestra actualizada con éxito" : "Maestra creada con éxito");
-                                    setIsOpen(false);
-                                    resetForm();
-                                    fetchMaestra();
-                                } catch (error) {
-                                    showError("Error al guardar la maestra");
-                                    console.error("Error al guardar:", error);
-                                }
-                            }}
-                            variant="create2"
-                            label={editingMaestra ? "Finalizar Edición" : "Finalizar"}
-                        />
-
+                                }}
+                                variant="create2"
+                                label={editingMaestra ? "Finalizar Edición" : "Finalizar"}
+                            />
+                        )}
 
                         {/* Botón Crear o Actualizar */}
-                        <Button
-                            onClick={() => {
-                                setEstado("En creación");
-                                setAprobado(false);
-                                editingMaestra ? handleUpdate() : handleSubmit();
-                            }}
-                            variant="create"
-                            label={editingMaestra ? "Actualizar" : "Crear"}
-                        />
+                        {canEdit && (
+                            <Button
+                                onClick={() => {
+                                    setEstado("En creación");
+                                    setAprobado(false);
+                                    editingMaestra ? handleUpdate() : handleSubmit();
+                                }}
+                                variant="create"
+                                label={editingMaestra ? "Actualizar" : "Crear"}
+                            />
+                        )}
                     </div>
                 </ModalSection>
             )}
@@ -731,7 +745,7 @@ const Maestra = () => {
                     aprobado: "Aprobado",
                     paralelo: "Paralelo",
                 }}
-                onDelete={handleDelete}
+                onDelete={canEdit ? handleDelete : undefined}
                 onEdit={handleEdit}
             />
         </div >
