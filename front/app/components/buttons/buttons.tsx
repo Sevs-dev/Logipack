@@ -59,7 +59,7 @@ const Button: React.FC<ButtonProps> = ({ type = "button", variant, onClick, disa
         ${buttonStyles[variant]} ${disabled ? "opacity-50 cursor-not-allowed" : ""}`}
     >
       {icons[variant]}
-      {variant !== "edit" && variant !== "delete" ? (label ?? labels[variant] ?? "") : null}
+      {variant !== "edit" && variant !== "delete" && variant !== "create2"? (label ?? labels[variant] ?? "") : null}
 
       {particles.map((_, i) => (
         <motion.span

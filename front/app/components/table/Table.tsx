@@ -9,8 +9,10 @@ interface TableProps {
     columnLabels?: { [key: string]: string };
     onEdit: (id: any) => void;
     onDelete?: (id: any) => void | Promise<void>;
+    onTerciario?: (id: any) => void | Promise<void>;
     showDeleteButton?: boolean;
     showEditButton?: boolean;
+    showTerciarioButton?: boolean;
 }
 
 interface HeaderProps {
@@ -43,7 +45,7 @@ const Header: React.FC<HeaderProps> = ({ column, label, onSort, sortOrder, sortC
     );
 };
 
-export const Table: React.FC<TableProps> = ({ rows, columns, columnLabels = {}, onEdit, onDelete, showDeleteButton = true, showEditButton = true }) => {
+export const Table: React.FC<TableProps> = ({ rows, columns, columnLabels = {}, onEdit, onDelete, onTerciario, showDeleteButton = true, showEditButton = true, showTerciarioButton = true }) => {
     const [sortColumn, setSortColumn] = useState<string>(columns[0]);
     const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
     const [searchTerm, setSearchTerm] = useState<string>("");
@@ -177,6 +179,12 @@ export const Table: React.FC<TableProps> = ({ rows, columns, columnLabels = {}, 
                                                         }
                                                     }}
                                                     variant="delete"
+                                                />
+                                            )}
+                                            {showTerciarioButton && onTerciario && (
+                                                <Button
+                                                    onClick={() => { onTerciario(row.id) }}
+                                                    variant="create2"
                                                 />
                                             )}
                                         </td>

@@ -10,7 +10,7 @@ import ModalSection from "../modal/ModalSection";
 import { InfoPopover } from "../buttons/InfoPopover";
 import { CreateClientProps } from "../../interfaces/CreateClientProps";
 // 🔹 Servicios 
-import { getPlanning, updatePlanning, getActivitiesByPlanning } from "../../services/planing/planingServices";
+import { getPlanning, updatePlanning, getActivitiesByPlanning, getPlanningById } from "../../services/planing/planingServices";
 import { getActivitieId } from "../../services/maestras/activityServices"
 import { getClientsId } from "@/app/services/userDash/clientServices";
 import { getFactory } from "@/app/services/userDash/factoryServices";
@@ -361,6 +361,11 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
 
         return serverPlansWithDetails;
     }
+
+
+    const handleTerciario = useCallback(() => {
+        // console.log("Eliminar", id);
+    }, []);
 
     return (
         <div>
@@ -843,6 +848,7 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
                 onDelete={handleDelete}
                 showDeleteButton={false}
                 onEdit={handleEdit}
+                onTerciario={handleTerciario}
             />
         </div>
     );
