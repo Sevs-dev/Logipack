@@ -106,11 +106,11 @@ const Fases = ({
   }, []);
 
   return (
-    <div className="w-full py-8 px-6 bg-white">
+    <div className=" text-black w-full py-8 px-6 bg-white">
       <form ref={formRef} onSubmit={handleSubmit} noValidate>
         {lista && (
-          <div className="bg-white shadow-md rounded-lg mb-6 overflow-hidden">
-            <header className="bg-blue-50 text-white px-4 py-3 font-semibold">
+          <div className=" text-black bg-white shadow-md rounded-lg mb-6 overflow-hidden">
+            <header className=" text-black bg-blue-50 text-white px-4 py-3 font-semibold">
               <Text type="title">Fases de la orden #{lineaIndex + 1} de {listas.length}</Text>
             </header>
             <div className={`${estado_form || finalizado_form ? 'hidden' : 'block'} p-6`}>
@@ -118,14 +118,14 @@ const Fases = ({
               <Text type="subtitle">Actividades - Grupo {actividadIndex + 1} de {actividades.length}</Text>
 
               {/* Aquí está el grid de dos columnas */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className=" text-black grid grid-cols-1 md:grid-cols-2 gap-4">
                 {actividadGrupo.map((tarea, j) => {
                   const config = typeof tarea.config === 'string' ? JSON.parse(tarea.config) : tarea.config;
 
                   return (
                     <div
                       key={`tarea-${j}`}
-                      className="border border-gray-300 rounded-md p-4 mb-4 bg-gray-50"
+                      className=" text-black border border-gray-300 rounded-md p-4 mb-4 bg-gray-50"
                     >
                       <Text type="subtitle">Descripción: {tarea.descripcion_activitie}</Text>
                       {config.type === "select" && (
@@ -133,7 +133,7 @@ const Fases = ({
                           name={tarea.id_activitie}
                           required={tarea.binding}
                           onChange={inputChange}
-                          className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className=" text-black w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                         >
                           <option value="">Seleccione</option>
                           {config.options.map((opt, k) => (
@@ -148,7 +148,7 @@ const Fases = ({
                         config.options.map((opt, k) => (
                           <label
                             key={`opt-${k}`}
-                            className="inline-flex items-center mr-4 cursor-pointer"
+                            className=" text-black inline-flex items-center mr-4 cursor-pointer"
                           >
                             <input
                               type={config.type}
@@ -156,9 +156,9 @@ const Fases = ({
                               value={opt}
                               required={tarea.binding}
                               onChange={inputChange}
-                              className="form-checkbox form-radio text-blue-600"
+                              className=" text-black form-checkbox form-radio text-blue-600"
                             />
-                            <span className="ml-2">{opt}</span>
+                            <span className=" text-black ml-2">{opt}</span>
                           </label>
                         ))}
 
@@ -168,7 +168,7 @@ const Fases = ({
                           name={tarea.id_activitie}
                           required={tarea.binding}
                           onChange={inputChange}
-                          className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className=" text-black w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                         />
                       )}
 
@@ -179,7 +179,7 @@ const Fases = ({
                           name={tarea.id_activitie}
                           required={tarea.binding}
                           onChange={inputChange}
-                          className="w-full"
+                          className=" text-black w-full"
                         />
                       )}
 
@@ -188,7 +188,7 @@ const Fases = ({
                           name={tarea.id_activitie}
                           required={tarea.binding}
                           onChange={inputChange}
-                          className="w-full border border-gray-300 rounded px-3 py-2 resize-y focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className=" text-black w-full border border-gray-300 rounded px-3 py-2 resize-y focus:outline-none focus:ring-2 focus:ring-blue-500"
                         />
                       )}
 
@@ -199,7 +199,7 @@ const Fases = ({
                           name={tarea.id_activitie}
                           required={tarea.binding}
                           onChange={inputChange}
-                          className="w-full"
+                          className=" text-black w-full"
                         />
                       )}
 
@@ -218,7 +218,7 @@ const Fases = ({
                             name={tarea.id_activitie}
                             required={tarea.binding}
                             onChange={inputChange}
-                            className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            className=" text-black w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                           />
                         )}
                     </div>
@@ -226,7 +226,7 @@ const Fases = ({
                 })}
               </div>
 
-              <div className="flex justify-center space-x-4 mt-4">
+              <div className=" text-black flex justify-center space-x-4 mt-4">
                 {actividadIndex === actividades.length - 1 ? (
                   <>
                     {lineaIndex === listas.length - 1 ? (

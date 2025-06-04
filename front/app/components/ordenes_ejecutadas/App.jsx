@@ -4,6 +4,7 @@ import Fases from './Fases';
 import Text from "../text/Text";
 import Button from "../buttons/buttons";
 import { BadgeCheck } from "lucide-react";
+import { div } from 'framer-motion/client';
 
 // Hook para obtener datos
 const useFetchData = () => {
@@ -80,7 +81,7 @@ const App = () => {
 
   return (
     <div className="w-full py-8 px-6 bg-white">
-      <div className="w-full max-w-3xl mx-auto py-8 px-4 bg-white">
+      <div className="w-full py-8 px-6 bg-white">
         <Text type="title"> Órdenes de Acondicionamiento</Text>
 
         {list_data.acondicionamiento?.map((acon, index) => (
@@ -88,7 +89,7 @@ const App = () => {
             key={`acon-${index}`}
             className="bg-white border border-gray-200 rounded-xl shadow-md hover:shadow-lg transition-shadow duration-300 mb-6 overflow-hidden"
           >
-            <div className="bg-blue-50 px-6 py-3 border-b border-gray-200 flex items-center justify-between">
+            <div className="bg-blue-50 w-full py-8 px-6 border-b border-gray-200 flex items-center justify-between">
               <Text type="subtitle"  >
                 Orden #{acon.number_order}
               </Text>
@@ -131,11 +132,11 @@ const App = () => {
       {/* Enviar datos */}
       <div className="w-full max-w-2xl mx-auto mt-4 px-4">
         {(estado_form && finalizado_form && memoria.length >= 2) && (
-          <div className="bg-gray-100 rounded-lg shadow p-6">
+          <div>
             <Text type="subtitle">Enviar Datos</Text>
-            {!(estado_form && finalizado_form) && (
-              <Button onClick={handleFinalSubmit} variant="save" label="Guardar" />
-            )}
+            <div className="flex justify-center space-x-4 mt-4">
+              <Button onClick={handleFinalSubmit} variant="save" label="Guardar" disabled={!(estado_form && finalizado_form)} />
+            </div>
           </div>
         )}
       </div>
