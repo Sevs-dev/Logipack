@@ -2,6 +2,7 @@ import React, { ReactElement, cloneElement } from 'react';
 import nookies from 'nookies';
 
 interface PermissionWrapperProps {
+  allowedRoles?: string[]; // Roles permitidos explícitamente
   fallback?: React.ReactNode | (() => React.ReactNode);
   children: ReactElement<{ canEdit?: boolean; canView?: boolean }>;
 }
@@ -16,19 +17,25 @@ const rolePermissions: Record<string, { canEdit: boolean; canView: boolean }> = 
   Visitante: { canEdit: false, canView: false },
 };
 
-const PermissionWrapper: React.FC<PermissionWrapperProps> = ({ fallback = null, children }) => {
+const PermissionWrapper: React.FC<PermissionWrapperProps> = ({
+  allowedRoles,
+  fallback = <p>No tienes permiso para ver este contenido.</p>,
+  children,
+}) => {
   const cookies = nookies.get();
   const role = cookies.role || 'Visitante';
 
-  const { canEdit, canView } = rolePermissions[role] || { canEdit: false, canView: false };
+  const permissions = rolePermissions[role] || { canEdit: false, canView: false };
 
-  if (!canView) {
+  // Verificación de roles explícitamente permitidos
+  const isAllowedRole = !allowedRoles || allowedRoles.includes(role);
+
+  if (!isAllowedRole || !permissions.canView) {
     return (
       <div
         style={{
           width: '100%',
           maxWidth: '1190px',
-          height: 'auto',
           minHeight: '50px',
           display: 'flex',
           justifyContent: 'center',
@@ -43,8 +50,10 @@ const PermissionWrapper: React.FC<PermissionWrapperProps> = ({ fallback = null, 
     );
   }
 
-
-  return cloneElement(children, { canEdit, canView });
+  return cloneElement(children, {
+    canEdit: permissions.canEdit,
+    canView: permissions.canView,
+  });
 };
 
 export default PermissionWrapper;
