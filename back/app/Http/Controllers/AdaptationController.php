@@ -22,7 +22,6 @@ use Illuminate\Support\Facades\Log;
 
 class AdaptationController extends Controller
 {
-    
     public function newAdaptation(Request $request)
     {
         try {

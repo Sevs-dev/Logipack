@@ -606,11 +606,11 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
                                         onDragStart={() => {
                                             if (!isDisabled) setDraggedActivityId(act.id);
                                         }}
-                                        className={`border border-gray-300 p-3 mb-3 rounded-md ${isDisabled ? "cursor-not-allowed bg-gray-100 text-gray-400" : "cursor-grab bg-white hover:shadow"
+                                        className={`border border-gray-300 p-3 mb-3 rounded-md ${isDisabled ? "cursor-not-allowed bg-gray-100 text-gray-900" : "cursor-grab bg-white hover:shadow"
                                             } shadow-sm transition-shadow flex justify-between items-center`}
                                         title={isDisabled ? "No tienes permiso para arrastrar actividades" : ""}
                                     >
-                                        <span className="text-center">{act.description}</span>
+                                        <span className="text-gray-700 text-center">{act.description}</span>
                                     </div>
                                 );
                             })}
