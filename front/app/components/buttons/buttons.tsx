@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 
 interface ButtonProps {
   type?: "button" | "submit" | "reset";
-  variant: "save" | "cancel" | "edit" | "delete" | "create"| "create2";
+  variant: "save" | "cancel" | "edit" | "delete" | "create"| "create2" | "terciario";
   onClick?: () => void;
   disabled?: boolean;
   label?: string;
@@ -17,6 +17,7 @@ const buttonStyles = {
   delete: "bg-red-600 hover:bg-red-700 focus:ring-red-400 shadow-red-500/50 p-1", // Reducido de p-2 a p-1
   create: "bg-green-500 hover:bg-green-600 focus:ring-green-400 shadow-green-500/50",
   create2: "bg-yellow-500 hover:bg-yellow-600 focus:ring-yellow-400 shadow-yellow-500/50",
+  terciario: "bg-yellow-500 hover:bg-yellow-600 focus:ring-yellow-400 shadow-yellow-500/50",
 };
 
 const icons = {
@@ -26,6 +27,7 @@ const icons = {
   delete: <FaTrash />,
   create: <FaPlus />,
   create2: <FaPlus />,
+  terciario: <FaPlus />,
 };
 
 const labels: Record<ButtonProps["variant"], string> = {
@@ -35,6 +37,7 @@ const labels: Record<ButtonProps["variant"], string> = {
   delete: "Eliminar",
   create: "Crear",
   create2: "Finalizar",
+  terciario: "Finalizar",
 };
 
 const Button: React.FC<ButtonProps> = ({ type = "button", variant, onClick, disabled = false, label }) => {

@@ -714,7 +714,7 @@ const Maestra = ({ canEdit = false, canView = false }: CreateClientProps) => {
                                         console.error("Error al guardar:", error);
                                     }
                                 }}
-                                variant="create2"
+                                variant="terciario"
                                 label={editingMaestra ? "Finalizar Edición" : "Finalizar"}
                             />
                         )}
