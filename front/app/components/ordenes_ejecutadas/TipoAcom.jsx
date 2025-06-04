@@ -126,7 +126,7 @@ const TipoAcom = ({
 
   return (
     <>
-      <div className="container py-4 w-50" style={{ marginTop: '-50px' }}>
+      <div className=" text-black w-full py-8 px-6 bg-white">
         <form ref={formRef} onSubmit={handleSubmit}>
           {lista && (
             <div className="card mb-5 shadow-sm">
