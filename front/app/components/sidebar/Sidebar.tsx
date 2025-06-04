@@ -55,6 +55,11 @@ const menuItems: MenuItem[] = [
         icon: <FaBookmark />,
         link: "/pages/planificacion",
       },
+      {
+        label: "Ordenes",
+        icon: <FaBookmark />,
+        link: "/pages/ordenes_ejecutadas",
+      },
     ],
   },
   {
