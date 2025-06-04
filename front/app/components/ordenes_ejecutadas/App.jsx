@@ -13,8 +13,10 @@ const useFetchData = () => {
   const [error, setError] = useState(null);
 
   const fetchData = async () => {
+
     try {
-      const response = await fetch('http://127.0.0.1:8000/api/getOrdenesEjecutadas/2');
+      const plan = JSON.parse(localStorage.getItem("ejecutar") || "{}");
+      const response = await fetch(`http://127.0.0.1:8000/api/getOrdenesEjecutadas/${plan.adaptation_id}`);
       if (!response.ok) throw new Error('Error al obtener los datos');
       const data = await response.json();
       setListData(data);
@@ -46,6 +48,10 @@ const useEnviardata = () => {
         body: JSON.stringify(data),
       });
       if (!response.ok) throw new Error('Error al enviar los datos');
+      localStorage.removeItem("ejecutar");
+      // cierra la pestaña
+      window.close();
+      window.location.reload();
     } catch (e) {
       setError(e.message);
     } finally {

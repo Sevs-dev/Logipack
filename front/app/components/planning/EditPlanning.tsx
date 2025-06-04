@@ -363,8 +363,11 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
     }
 
 
-    const handleTerciario = useCallback(() => {
-        // console.log("Eliminar", id);
+    const handleTerciario = useCallback(async (id: number) => {
+        const {plan} = await getPlanningById(id);
+        // console.log("Terciario", JSON.stringify(plan));
+        localStorage.setItem("ejecutar", JSON.stringify(plan));
+        window.open("/pages/ordenes_ejecutadas", "_blank");
     }, []);
 
     return (
