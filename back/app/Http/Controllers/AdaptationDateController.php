@@ -74,7 +74,7 @@ class AdaptationDateController extends Controller
             'adaptation_id' => 'nullable|exists:adaptations,id',
             'status_dates' => 'nullable|string',
             'factory' => 'nullable|string',
-            'line' => 'nullable|array',       
+            'line' => 'nullable|array',
             'activities' => 'nullable|array',
             'resource' => 'nullable|string',
             'machine' => 'nullable|string',
@@ -85,7 +85,10 @@ class AdaptationDateController extends Controller
             'start_date' => 'nullable|date',
             'end_date' => 'nullable|date',
         ]);
-
+        // Limpiamos espacios en blanco en cada elemento de 'line', si existe
+        if (isset($validated['line']) && is_array($validated['line'])) {
+            $validated['line'] = array_map(fn($item) => trim($item), $validated['line']);
+        }
         $record = AdaptationDate::findOrFail($id);
 
         // Actualizamos el registro con ambos campos bien separados

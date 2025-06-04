@@ -32,16 +32,15 @@ class MaestrasController extends Controller
             'duration' => 'nullable',
             'duration_user' => 'nullable',
         ]);
-
-        Log::info('Datos recibidos en newMaestra:', $request->all());
-
+        // Limpiamos espacios en cada elemento de type_stage
+        if (isset($validatedData['type_stage']) && is_array($validatedData['type_stage'])) {
+            $validatedData['type_stage'] = array_map(fn($item) => trim($item), $validatedData['type_stage']);
+        }
         // Generar código autoincremental manualmente
         $lastCode = Maestra::max('code') ?? 0;
         $validatedData['code'] = $lastCode + 1;
-
         // Crear la nueva Fase
         $Maestra = Maestra::create($validatedData);
-
         return response()->json([
             'message' => 'Línea creada exitosamente',
             'Maestra' => $Maestra
@@ -65,8 +64,7 @@ class MaestrasController extends Controller
         if (!$Maestra) {
             return response()->json(['message' => 'Maestrafactura no encontrada'], 404);
         }
-
-        $request->validate([
+        $validatedData = $request->validate([
             'descripcion' => 'required|string',
             'requiere_bom' => 'required|boolean',
             'type_product' => 'required|string',
@@ -78,9 +76,11 @@ class MaestrasController extends Controller
             'duration' => 'nullable',
             'duration_user' => 'nullable',
         ]);
-
-        $Maestra->update($request->all());
-
+        // Limpiar espacios en cada elemento de type_stage
+        if (isset($validatedData['type_stage']) && is_array($validatedData['type_stage'])) {
+            $validatedData['type_stage'] = array_map(fn($item) => trim($item), $validatedData['type_stage']);
+        }
+        $Maestra->update($validatedData);
         return response()->json([
             'message' => 'Maestrafactura actualizada correctamente',
             'Maestra' => $Maestra
