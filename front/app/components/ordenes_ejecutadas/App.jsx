@@ -48,10 +48,10 @@ const useEnviardata = () => {
         body: JSON.stringify(data),
       });
       if (!response.ok) throw new Error('Error al enviar los datos');
+      
+      // sino hay errores  cierra la pestaña y limpia el localStorage
       localStorage.removeItem("ejecutar");
-      // cierra la pestaña
       window.close();
-      window.location.reload();
     } catch (e) {
       setError(e.message);
     } finally {
