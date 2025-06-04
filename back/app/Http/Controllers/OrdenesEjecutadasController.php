@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\OrdenesEjecutadas;
 use App\Models\ActividadesEjecutadas;
+use App\Models\AdaptationDate;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
@@ -39,7 +40,7 @@ class OrdenesEjecutadasController extends Controller
         $maestra_tipo_acondicionamiento_fk = DB::table('adaptations as ada')
         ->join('maestras as mae', 'mae.id', '=', 'ada.master')
         ->leftJoin('tipo_acondicionamientos as tipo_acon', function($join) {
-            $join->on(DB::raw('FIND_IN_SET(tipo_acon.id, REPLACE(REPLACE(COALESCE(mae.type_acondicionamiento, \'\'), \'[\', \'\'), \']\', \'\'))'), '>', DB::raw('0'));
+            $join->on(DB::raw("FIND_IN_SET(tipo_acon.id, REPLACE(REPLACE(REPLACE(REPLACE(COALESCE(mae.type_acondicionamiento, ''), '[', ''), ']', ''), ' ', ''), '\"', ''))"), '>', DB::raw('0'));
         })
         ->join('linea_tipo_acondicionamientos as lin_tipo_acon', 'tipo_acon.id', '=', 'lin_tipo_acon.tipo_acondicionamiento_id')
         ->Join('stages as std', 'std.id', '=', 'lin_tipo_acon.fase')
@@ -57,7 +58,7 @@ class OrdenesEjecutadasController extends Controller
         foreach ($maestra_tipo_acondicionamiento_fk as $tipo_acondicionamiento) {
             $list = DB::table('stages as std')
             ->leftJoin('activities as atc', function ($join) {
-                $join->on(DB::raw("FIND_IN_SET(atc.id, REPLACE(REPLACE(COALESCE(std.activities, ''), '[', ''), ']', ''))"), '>', DB::raw('0'));
+                $join->on(DB::raw("FIND_IN_SET(atc.id, REPLACE(REPLACE(REPLACE(REPLACE(COALESCE(std.activities, ''), '[', ''), ']', ''), ' ', ''), '\"', ''))"), '>', DB::raw('0'));
             })
             ->where('std.id', $tipo_acondicionamiento->fases_fk)
             ->select(
@@ -87,7 +88,7 @@ class OrdenesEjecutadasController extends Controller
         $maestra_fases_fk = DB::table('adaptations as ada')
         ->join('maestras as mae', 'mae.id', '=', 'ada.master')
         ->leftJoin('stages as std', function ($join) {
-            $join->on(DB::raw("FIND_IN_SET(std.id, REPLACE(REPLACE(COALESCE(mae.type_stage, ''), '[', ''), ']', ''))"), '>', DB::raw('0'));
+            $join->on(DB::raw("FIND_IN_SET(std.id, REPLACE(REPLACE(REPLACE(REPLACE(COALESCE(mae.type_stage, ''), '[', ''), ']', ''), ' ', ''), '\"', ''))"), '>', DB::raw('0'));
         })
         ->where('ada.id', $id)
         ->selectRaw("
@@ -103,7 +104,7 @@ class OrdenesEjecutadasController extends Controller
         for ($i = 0; $i < count($maestra_fases_fk); $i++) {
             $list = DB::table('stages as std')
             ->leftJoin('activities as atc', function ($join) {
-                $join->on(DB::raw("FIND_IN_SET(atc.id, REPLACE(REPLACE(COALESCE(std.activities, ''), '[', ''), ']', ''))"), '>', DB::raw('0'));
+                $join->on(DB::raw("FIND_IN_SET(atc.id, REPLACE(REPLACE(REPLACE(REPLACE(COALESCE(std.activities, ''), '[', ''), ']', ''), ' ', ''), '\"', ''))"), '>', DB::raw('0'));
             })
             ->where('std.id', $maestra_fases_fk[$i]->fases_fk)
             ->select(
@@ -166,8 +167,8 @@ class OrdenesEjecutadasController extends Controller
             ]); 
         }
 
-        // se actualiza el estado de la adaptacion a completado
-        $adaptation_dates = AdaptationDates::where('adaptation_id', $ordenes['adaptation_id'])->first();
+        // se actualiza el estado de la adaptacion
+        $adaptation_dates = AdaptationDate::where('adaptation_id', $ordenes['adaptation_id'])->first();
         $adaptation_dates->status_dates = 'Completado';
         $adaptation_dates->save();
 

@@ -16,7 +16,6 @@ class AdaptationDate extends Model
         // otros casts...
     ];
 
-
     // ✅ Relación con Adaptation (asumiendo que tiene adaptation_id)
     public function adaptation()
     {
