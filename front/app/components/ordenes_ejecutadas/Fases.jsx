@@ -110,7 +110,7 @@ const Fases = ({
       <form ref={formRef} onSubmit={handleSubmit} noValidate>
         {lista && (
           <div className=" text-black bg-white shadow-md rounded-lg mb-6 overflow-hidden">
-            <header className=" text-black bg-blue-50 text-white px-4 py-3 font-semibold">
+            <header className=" text-black bg-blue-50 px-4 py-3 font-semibold">
               <Text type="title">Fases de la orden #{lineaIndex + 1} de {listas.length}</Text>
             </header>
             <div className={`${estado_form || finalizado_form ? 'hidden' : 'block'} p-6`}>
@@ -156,7 +156,7 @@ const Fases = ({
                               value={opt}
                               required={tarea.binding}
                               onChange={inputChange}
-                              className=" text-black form-checkbox form-radio text-blue-600"
+                              className=" text-black form-checkbox form-radio "
                             />
                             <span className=" text-black ml-2">{opt}</span>
                           </label>
