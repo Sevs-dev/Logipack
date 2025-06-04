@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import 'bootstrap/dist/css/bootstrap.min.css';
 import TipoAcom from './TipoAcom';
 import Fases from './Fases';
+import Text from "../text/Text";
+import Button from "../buttons/buttons";
+import { BadgeCheck } from "lucide-react";
 
 // Hook para obtener datos
 const useFetchData = () => {
@@ -9,7 +11,6 @@ const useFetchData = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // funcion para obtener datos
   const fetchData = async () => {
     try {
       const response = await fetch('http://127.0.0.1:8000/api/getOrdenesEjecutadas/2');
@@ -23,7 +24,6 @@ const useFetchData = () => {
     }
   };
 
-  // useEffect para obtener datos
   useEffect(() => {
     fetchData();
   }, []);
@@ -41,13 +41,9 @@ const useEnviardata = () => {
       setLoading(true);
       const response = await fetch('http://127.0.0.1:8000/api/newOrdenesEjecutadas', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
       });
-      // console.log(await response.json());
-      // window.location.reload();
       if (!response.ok) throw new Error('Error al enviar los datos');
     } catch (e) {
       setError(e.message);
@@ -59,60 +55,60 @@ const useEnviardata = () => {
   return { enviarData, loading, error };
 };
 
-// componente principal
 const App = () => {
   const [memoria, setMemoria] = useState([]);
   const [estado_form, setEstado_form] = useState(false);
   const [finalizado_form, setFinalizado_form] = useState(false);
-  const { list_data, loading, error, reloadData } = useFetchData();
+  const { list_data, loading, error } = useFetchData();
   const { enviarData, error: error_envio } = useEnviardata();
 
   const handleFinalSubmit = () => {
-    console.log('Formulario finalizado con memoria');
-    setEstado_form(true); // Marca el formulario como completado
+    setEstado_form(true);
     setFinalizado_form(true);
-    // Envía los datos actualizados (incluyendo el último formulario)
     enviarData(memoria);
-    console.log(memoria);
-    if (error_envio) {
-      console.log(error_envio);
-    }
+    if (error_envio) console.log(error_envio);
   };
 
-  // useEffect para almacenar la primera instancia
   useEffect(() => {
     if (list_data?.acondicionamiento?.length) {
       setMemoria(list_data.acondicionamiento);
     }
   }, [list_data]);
 
-  // renderizado de componentes
   if (loading) return <div className="p-4">Cargando...</div>;
-  if (error) return <div className="p-4 text-danger">Error: {error}</div>;
+  if (error) return <div className="p-4 text-red-600">Error: {error}</div>;
 
   return (
-    <>
-      <div className="container py-5 w-50">
-        <h2 className="mb-4">Órdenes de Acondicionamiento</h2>
+    <div className="w-full py-8 px-6 bg-white">
+      <div className="w-full max-w-3xl mx-auto py-8 px-4 bg-white">
+        <Text type="title"> Órdenes de Acondicionamiento</Text>
+
         {list_data.acondicionamiento?.map((acon, index) => (
-          <div className="card mb-4 shadow-sm" key={`acon-${index}`}>
-            <div className="card-header bg-primary text-white">
-              Orden #{acon.number_order}
+          <div
+            key={`acon-${index}`}
+            className="bg-white border border-gray-200 rounded-xl shadow-md hover:shadow-lg transition-shadow duration-300 mb-6 overflow-hidden"
+          >
+            <div className="bg-blue-50 px-6 py-3 border-b border-gray-200 flex items-center justify-between">
+              <Text type="subtitle"  >
+                Orden #{acon.number_order}
+              </Text>
+              <BadgeCheck className="text-green-500 w-5 h-5" />
             </div>
-            <div className="card-body">
-              <p><strong>Adaptation ID:</strong> {acon.adaptation_id}</p>
-              <p><strong>Maestra ID:</strong> {acon.maestra_id}</p>
-              <p><strong>Descripción Maestra:</strong> {acon.descripcion_maestra}</p>
-              <p><strong>Línea Producción:</strong> {acon.linea_produccion}</p>
-              <p><strong>Tipo Acondicionamiento FK:</strong> {acon.maestra_tipo_acondicionamiento_fk}</p>
-              <p><strong>Fase FK:</strong> {acon.maestra_fases_fk}</p>
-              <p><strong>Status Dates:</strong> {acon.status_dates}</p>
+
+            <div className="px-6 py-4 text-sm text-gray-700 grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2">
+              <div><span className="font-medium text-gray-600">Adaptation ID:</span> {acon.adaptation_id}</div>
+              <div><span className="font-medium text-gray-600">Maestra ID:</span> {acon.maestra_id}</div>
+              <div className="sm:col-span-2"><span className="font-medium text-gray-600">Descripción Maestra:</span> {acon.descripcion_maestra}</div>
+              <div><span className="font-medium text-gray-600">Línea Producción:</span> {acon.linea_produccion}</div>
+              <div><span className="font-medium text-gray-600">Tipo Acond. FK:</span> {acon.maestra_tipo_acondicionamiento_fk}</div>
+              <div><span className="font-medium text-gray-600">Fase FK:</span> {acon.maestra_fases_fk}</div>
+              <div className="sm:col-span-2"><span className="font-medium text-gray-600">Status Dates:</span> {acon.status_dates}</div>
             </div>
           </div>
         ))}
       </div>
 
-      {/* tipo de acondicionamiento */}
+      {/* Tipo Acondicionamiento */}
       <TipoAcom
         proms={list_data.maestra_tipo_acondicionamiento_fk}
         setMemoria={setMemoria}
@@ -121,8 +117,9 @@ const App = () => {
         setEstado_form={setEstado_form}
       />
 
-      {/* fases */}
-      <Fases proms={list_data.maestra_fases_fk}
+      {/* Fases */}
+      <Fases
+        proms={list_data.maestra_fases_fk}
         setMemoria={setMemoria}
         memoria={memoria}
         estado_form={!estado_form}
@@ -131,24 +128,18 @@ const App = () => {
         setFinalizado_form={setFinalizado_form}
       />
 
-      {/* enviar datos */}
-      <div className="container py-4 w-50" style={{ marginTop: '-50px' }}>
-        <div className="card mb-5 shadow-sm">
-          <div className="card-header bg-secondary text-white">
-            Enviar Datos
+      {/* Enviar datos */}
+      <div className="w-full max-w-2xl mx-auto mt-4 px-4">
+        {(estado_form && finalizado_form && memoria.length >= 2) && (
+          <div className="bg-gray-100 rounded-lg shadow p-6">
+            <Text type="subtitle">Enviar Datos</Text>
+            {!(estado_form && finalizado_form) && (
+              <Button onClick={handleFinalSubmit} variant="save" label="Guardar" />
+            )}
           </div>
-          <div className="card-body" style={{ textAlign: 'center', 
-            display: (estado_form === false) || (finalizado_form === false || memoria.length < 2) ? 'none' : 'block' }}>
-            <button
-              className="btn btn-success mt-4 btn-lg"
-              onClick={handleFinalSubmit}
-              disabled={(estado_form === false) || (finalizado_form === false)}>
-              Confirmar y enviar
-            </button>
-          </div>
-        </div>
+        )}
       </div>
-    </>
+    </div>
   );
 };
 

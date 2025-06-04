@@ -1,17 +1,15 @@
 import React, { useState, useRef, useEffect } from 'react';
+import Text from "../text/Text";
+import Button from "../buttons/buttons";
 
 // Hook para enviar datos
 const useEnviardata = () => {
-
-  // funcion para enviar datos
   const enviarData = (data) => {
     console.log("confirmar datos fases", data);
   };
-
   return { enviarData };
 };
 
-// componente Lineas de Acondicionamiento
 const Fases = ({
   proms,
   setMemoria,
@@ -27,7 +25,6 @@ const Fases = ({
   const formRef = useRef();
   const { enviarData } = useEnviardata();
 
-  // Recibir cambios de inputs
   const inputChange = (e) => {
     const { name, type, value, checked, files } = e.target;
 
@@ -39,14 +36,12 @@ const Fases = ({
           [name]: checked ? [...current, value] : current.filter((v) => v !== value),
         };
       }
-
       if (type === 'file') {
         return {
           ...prev,
           [name]: files.length > 1 ? Array.from(files) : files[0],
         };
       }
-
       return {
         ...prev,
         [name]: value,
@@ -54,43 +49,31 @@ const Fases = ({
     });
   };
 
-  // almacenar datos
   const almacenarDatos = (callback) => {
-    // Verifica que todos los campos del formulario sean válidos
     if (!formRef.current.checkValidity()) {
-      formRef.current.reportValidity(); // Muestra mensajes de validación
-      return; // Detiene la ejecución si el formulario no es válido
+      formRef.current.reportValidity();
+      return;
     }
 
-    // Construye un objeto con los datos actuales más el valor de "stage" (manual)
     const datosConStage = {
-      ...info,               // Copia los datos del formulario
+      ...info,
       tipo_acon: lista.tipo_acondicionamiento_id,
-      stage: lista.fases_fk  // Agrega la fase actual como 'stage'
+      stage: lista.fases_fk
     };
 
-    // Crea una nueva copia de la memoria con el nuevo dato incluido
     const nuevaMemoria = [...memoria, datosConStage];
-
-    // Actualiza el estado con los nuevos datos
     setMemoria(nuevaMemoria);
 
-    // Limpia el formulario y los datos temporales
-    formRef.current.reset(); // Limpia los campos del formulario
-    setInfo({});             // Reinicia el estado de info
+    formRef.current.reset();
+    setInfo({});
 
-    // Ejecuta el callback si se proporciona (por ejemplo, finalizar)
     if (typeof callback === 'function') callback();
   };
 
-  // siguiente actividad
   const handleNextActivity = () => {
-    almacenarDatos(() => {
-      setActividadIndex((prev) => prev + 1);
-    });
+    almacenarDatos(() => setActividadIndex((prev) => prev + 1));
   };
 
-  // siguiente linea
   const handleNextLine = () => {
     almacenarDatos(() => {
       setLineaIndex((prev) => prev + 1);
@@ -98,21 +81,23 @@ const Fases = ({
     });
   };
 
-  // Confirmar envio
   const handleFinalSubmit = () => {
     almacenarDatos(() => {
-      setEstado_form(true); // Marca el formulario como completado
+      setEstado_form(true);
       setFinalizado_form(true);
-      // Envía los datos actualizados (incluyendo el último formulario)
       enviarData(memoria);
     });
   };
 
-  // Disparar evento submit
   const handleSubmit = (e) => {
     e.preventDefault();
-    ref.current.reset();
-  }
+    formRef.current.reset();
+  };
+
+  const listas = proms || [];
+  const lista = listas[lineaIndex];
+  const actividades = lista?.actividades || [];
+  const actividadGrupo = actividades[actividadIndex] || [];
 
   useEffect(() => {
     if (actividadGrupo.length < 1) {
@@ -120,155 +105,147 @@ const Fases = ({
     }
   }, []);
 
-  // console.log("finalizado_form", finalizado_form);
-
-  // constrantes de iteracion
-  const listas = proms || [];
-  const lista = listas[lineaIndex];
-  const actividades = lista?.actividades || [];
-  const actividadGrupo = actividades[actividadIndex] || [];
-
   return (
-    <>
-      <div className="container py-4 w-50" style={{ marginTop: '-50px' }}>
-        <form ref={formRef} onSubmit={handleSubmit}>
-          {lista && (
-            <div className="card mb-5 shadow-sm">
-              <div className="card-header bg-secondary text-white">
-                Fases de la orden #{lineaIndex + 1} de {listas.length}
-              </div>
-              <div className="card-body" style={{ display: estado_form || finalizado_form ? 'none' : 'block' }}>
-                <h5>
-                  Fase: {lista.fases_fk + " | " + lista.descripcion_fase}
-                </h5>
-                <h5>
-                  Actividades - Grupo {actividadIndex + 1} de {actividades.length}
-                </h5>
+    <div className="w-full py-8 px-6 bg-white">
+      <form ref={formRef} onSubmit={handleSubmit} noValidate>
+        {lista && (
+          <div className="bg-white shadow-md rounded-lg mb-6 overflow-hidden">
+            <header className="bg-blue-50 text-white px-4 py-3 font-semibold">
+              <Text type="title">Fases de la orden #{lineaIndex + 1} de {listas.length}</Text>
+            </header>
+            <div className={`${estado_form || finalizado_form ? 'hidden' : 'block'} p-6`}>
+              <Text type="subtitle">Fase: {lista.fases_fk} | {lista.descripcion_fase}</Text>
+              <Text type="subtitle">Actividades - Grupo {actividadIndex + 1} de {actividades.length}</Text>
 
-                {/* Mapeo de actividades */}
+              {/* Aquí está el grid de dos columnas */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {actividadGrupo.map((tarea, j) => {
                   const config = typeof tarea.config === 'string' ? JSON.parse(tarea.config) : tarea.config;
 
-                  // renderizado de actividades
                   return (
-                    <div key={`tarea-${j}`} className="border p-3 mb-3 rounded bg-light">
-                      <p><strong>Descripción:</strong> {tarea.descripcion_activitie}</p>
-
+                    <div
+                      key={`tarea-${j}`}
+                      className="border border-gray-300 rounded-md p-4 mb-4 bg-gray-50"
+                    >
+                      <Text type="subtitle">Descripción: {tarea.descripcion_activitie}</Text>
                       {config.type === "select" && (
                         <select
                           name={tarea.id_activitie}
-                          className="form-select"
                           required={tarea.binding}
-                          onChange={inputChange}>
+                          onChange={inputChange}
+                          className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        >
                           <option value="">Seleccione</option>
                           {config.options.map((opt, k) => (
-                            <option key={`opt-${k}`} value={opt}>{opt}</option>
+                            <option key={`opt-${k}`} value={opt}>
+                              {opt}
+                            </option>
                           ))}
                         </select>
                       )}
 
                       {['checkbox', 'radio'].includes(config.type) &&
                         config.options.map((opt, k) => (
-                          <div className="form-check" key={`opt-${k}`}>
+                          <label
+                            key={`opt-${k}`}
+                            className="inline-flex items-center mr-4 cursor-pointer"
+                          >
                             <input
-                              className="form-check-input"
                               type={config.type}
                               name={tarea.id_activitie}
                               value={opt}
                               required={tarea.binding}
                               onChange={inputChange}
+                              className="form-checkbox form-radio text-blue-600"
                             />
-                            <label className="form-check-label">{opt}</label>
-                          </div>
+                            <span className="ml-2">{opt}</span>
+                          </label>
                         ))}
 
-                      {config.type === "signature" || config.type === "text" ? (
+                      {(config.type === "signature" || config.type === "text") && (
                         <input
-                          className="form-control"
                           type="text"
                           name={tarea.id_activitie}
                           required={tarea.binding}
                           onChange={inputChange}
+                          className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                         />
-                      ) : null}
+                      )}
 
                       {config.type === "image" && (
                         <input
-                          className="form-control"
                           type="file"
-                          name={tarea.id_activitie}
                           accept="image/*"
+                          name={tarea.id_activitie}
                           required={tarea.binding}
                           onChange={inputChange}
+                          className="w-full"
                         />
                       )}
 
                       {config.type === "textarea" && (
                         <textarea
-                          className="form-control"
                           name={tarea.id_activitie}
                           required={tarea.binding}
-                          onChange={inputChange}></textarea>
+                          onChange={inputChange}
+                          className="w-full border border-gray-300 rounded px-3 py-2 resize-y focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
                       )}
 
                       {config.type === "file" && (
                         <input
-                          className="form-control"
                           type="file"
-                          name={tarea.id_activitie}
                           accept=".doc,.docx,.xls,.xlsx,.ppt,.pptx,.odt,.ods,.odp,.pdf,.txt,.rtf"
+                          name={tarea.id_activitie}
                           required={tarea.binding}
                           onChange={inputChange}
+                          className="w-full"
                         />
                       )}
 
-                      {!['select', 'checkbox', 'radio', 'signature',
-                        'image', 'textarea', 'file', 'text'].includes(config.type) && (
+                      {![
+                        'select',
+                        'checkbox',
+                        'radio',
+                        'signature',
+                        'image',
+                        'textarea',
+                        'file',
+                        'text',
+                      ].includes(config.type) && (
                           <input
-                            className="form-control"
                             type={config.type}
                             name={tarea.id_activitie}
                             required={tarea.binding}
                             onChange={inputChange}
+                            className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                           />
                         )}
                     </div>
                   );
                 })}
+              </div>
 
-                {/* Botones de siguiente actividad y siguiente linea */}
-                <div className="d-flex justify-content-end gap-2 mb-3">
-                  {actividadIndex === actividades.length - 1 ? (
-                    <>
-                      {lineaIndex === listas.length - 1 ? (
-                        <button type="button" className="btn btn-success" onClick={handleFinalSubmit}>
-                          Confirmar
-                        </button>
-                      ) : (
-                        <button
-                          type="button"
-                          className="btn btn-success"
-                          onClick={handleNextLine}>
-                          Siguiente línea
-                        </button>
-                      )}
-                    </>
-                  ) : (
-                    <button
-                      type="button"
-                      className="btn btn-primary"
-                      onClick={handleNextActivity}>
-                      Siguiente actividad
-                    </button>
-                  )}
-                </div>
+              <div className="flex justify-center space-x-4 mt-4">
+                {actividadIndex === actividades.length - 1 ? (
+                  <>
+                    {lineaIndex === listas.length - 1 ? (
+                      <Button onClick={handleFinalSubmit} variant="save" label="Confirmar" />
+                    ) : (
+                      <Button onClick={handleNextLine} variant="save" label="Siguiente línea" />
+                    )}
+                  </>
+                ) : (
+                  <Button onClick={handleNextActivity} variant="save" label="Siguiente línea" />
+                )}
               </div>
             </div>
-          )}
-        </form>
-      </div>
-    </>
+          </div>
+        )}
+      </form>
+    </div>
+
   );
-}
+};
 
 export default Fases;

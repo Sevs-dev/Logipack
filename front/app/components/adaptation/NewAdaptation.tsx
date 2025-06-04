@@ -1049,7 +1049,7 @@ function NewAdaptation({ canEdit = false, canView = false }: CreateClientProps) 
                     </div>
 
                     {/* Botones */}
-                    <div className="flex justify-end space-x-4 mt-4">
+                    <div className="flex justify-center space-x-4 mt-4">
                         <Button onClick={() => {
                             resetForm();
                             setIsOpen(false);
