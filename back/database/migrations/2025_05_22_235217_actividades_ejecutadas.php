@@ -11,15 +11,14 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('ordenes_ejecutadas', function (Blueprint $table) {
+        Schema::create('actividades_ejecutadas', function (Blueprint $table) {
             $table->id();
+            $table->string('orden_id')->nullable();
             $table->string('adaptation_id')->nullable(); // Concatena los datos de los id
-            $table->string('maestra_id')->nullable();
             $table->string('number_order')->nullable();
-            $table->string('descripcion_maestra')->nullable();
-            $table->string('maestra_fases_fk')->nullable();
-            $table->string('maestra_tipo_acondicionamiento_fk')->nullable();
-            $table->string('linea_produccion')->nullable();
+            $table->string('tipo_acondicionamiento_fk')->nullable();
+            $table->string('fases_fk')->nullable();
+            $table->string('datos_forms')->nullable();
             $table->timestamps();
         });
     }
@@ -29,6 +28,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('ordenes_ejecutadas');
+        Schema::dropIfExists('actividades_ejecutadas');
     }
 };

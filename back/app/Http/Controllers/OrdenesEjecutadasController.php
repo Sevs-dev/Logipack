@@ -3,10 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Models\OrdenesEjecutadas;
+use App\Models\ActividadesEjecutadas;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
-
 
 class OrdenesEjecutadasController extends Controller
 {
@@ -136,6 +136,40 @@ class OrdenesEjecutadasController extends Controller
         ]);
     }
 
-    
+    public function newOrdnesEjecutadas(Request $request): JsonResponse{
 
+        // registro de la ordenes
+        $ordenes = $request->all()[0];
+        $orden = OrdenesEjecutadas::create([
+            'adaptation_id' => $ordenes['adaptation_id'],
+            'maestra_id' => $ordenes['maestra_id'],
+            'number_order' => $ordenes['number_order'],
+            'descripcion_maestra' => $ordenes['descripcion_maestra'],
+            'maestra_fases_fk' => $ordenes['maestra_fases_fk'],
+            'maestra_tipo_acondicionamiento_fk' => $ordenes['maestra_tipo_acondicionamiento_fk'],
+            'linea_produccion' => $ordenes['linea_produccion'],
+        ]);
+
+        // obtener el id del registro creado
+        $orden_id = $orden->id;
+
+        // registrar actividades
+        $actividades = $request->all();
+        for ($i=1; $i < count($actividades); $i++) {     
+            ActividadesEjecutadas::create([
+                'orden_id' => $orden_id,
+                'adaptation_id' => $ordenes['adaptation_id'],
+                'number_order' => $ordenes['number_order'],
+                'tipo_acondicionamiento_fk' => $actividades[$i]['tipo_acon'],
+                'fases_fk' => $actividades[$i]['stage'],
+                'datos_forms' => json_encode($actividades[$i]),
+            ]); 
+        }
+
+        // Devolver una respuesta JSON con un mensaje de éxito y el objeto orden creado
+        return response()->json([
+            'message' => 'Orden ejecutada creada exitosamente',
+            'orden' => $orden,
+        ]);     
+    }
 }
