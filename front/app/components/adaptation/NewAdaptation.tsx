@@ -347,38 +347,17 @@ function NewAdaptation({ canEdit = false, canView = false }: CreateClientProps) 
     };
 
     // Manejo del envío del formulario
-    const handleSubmit = async () => {
-        // Validaciones para asegurarse de que todos los campos estén completos
-        if (!selectedClient) {
-            showError("Por favor, selecciona un Cliente.");
-            return;
-        }
-        if (!planta) {
-            showError("Por favor, selecciona una Planta.");
-            return;
-        }
-        if (!selectedArticles.length) {
-            showError("Por favor, selecciona al menos un artículo.");
-            return;
-        }
-        if (!selectedMaestras.length) {
-            showError("Por favor, selecciona al menos una Maestra.");
-            return;
-        }
-
-        // Inicializamos el objeto que contendrá los datos de los artículos
+    const handleSubmit = async () => { 
+        if (!selectedClient) return showError("Por favor, selecciona un Cliente.");
+        if (!planta) return showError("Por favor, selecciona una Planta.");
+        if (!selectedArticles.length) return showError("Por favor, selecciona al menos un artículo.");
+        if (!selectedMaestras.length) return showError("Por favor, selecciona al menos una Maestra.");
         let articlesData;
         if (maestraRequiereBOM) {
-            // Si la maestra requiere BOM, validamos los campos específicos
-            if (!orderNumber) {
-                showError("Por favor, ingresa el número de orden.");
-                return;
-            }
+            if (!orderNumber) return showError("Por favor, ingresa el número de orden.");
             if (!deliveryDate || !quantityToProduce || !lot || !healthRegistration) {
-                showError("Por favor, completa todos los campos del artículo.");
-                return;
+                return showError("Por favor, completa todos los campos del artículo.");
             }
-            // Creamos los datos del artículo con la información obtenida
             articlesData = [
                 {
                     codart: selectedArticles[0]?.codart || "",
@@ -391,24 +370,22 @@ function NewAdaptation({ canEdit = false, canView = false }: CreateClientProps) 
                 },
             ];
         } else {
-            // Si no requiere BOM, verificamos que todos los artículos tengan los campos completos
-            const hasErrors = selectedArticles.some((article) => {
+            const invalidArticles = selectedArticles.filter((article) => {
                 const fields = articleFields[article.codart] || {};
-                if (
-                    !fields.orderNumber ||
-                    !fields.deliveryDate ||
-                    !fields.quantityToProduce ||
-                    !fields.lot ||
-                    !fields.healthRegistration
-                ) {
-                    console.error(`Faltan datos en el artículo ${article.codart}.`, fields);
-                    showError(`Faltan datos en el artículo ${article.codart}.`);
+                const missingFields = [];
+                if (!fields.orderNumber) missingFields.push("orderNumber");
+                if (!fields.deliveryDate) missingFields.push("deliveryDate");
+                if (!fields.quantityToProduce) missingFields.push("quantityToProduce");
+                if (!fields.lot) missingFields.push("lot");
+                if (!fields.healthRegistration) missingFields.push("healthRegistration");
+                if (missingFields.length) {
+                    console.error(`❌ Faltan campos en el artículo ${article.codart}:`, missingFields);
+                    showError(`Faltan campos en el artículo ${article.codart}: ${missingFields.join(", ")}`);
                     return true;
                 }
                 return false;
             });
-            if (hasErrors) return;
-            // Creamos los datos de los artículos
+            if (invalidArticles.length) return;
             articlesData = selectedArticles.map((article) => {
                 const fields = articleFields[article.codart];
                 return {
@@ -422,30 +399,25 @@ function NewAdaptation({ canEdit = false, canView = false }: CreateClientProps) 
                 };
             });
         }
-        // Preparamos el FormData para enviar al backend
+        // Construcción del FormData
         const formData = new FormData();
         formData.append("client_id", selectedClient.toString());
         formData.append("factory_id", planta.toString());
         formData.append("article_code", JSON.stringify(articlesData));
         formData.append("number_order", client_order);
         formData.append("orderNumber", orderNumber);
-        formData.append("master", selectedMaestras.toString());
-        formData.append("bom", selectedBom.toString() || "");
+        formData.append("master", selectedMaestras[0] || "");
+        formData.append("bom", selectedBom?.toString() || "");
         formData.append("ingredients", JSON.stringify(ingredients));
-        // Adjuntamos los archivos si es necesario
+        // Archivos
         if (maestraRequiereBOM) {
-            if (attachment) {
-                formData.append("attachment", attachment);
-            }
+            if (attachment) formData.append("attachment", attachment);
         } else {
             selectedArticles.forEach((article) => {
                 const file = articleFields[article.codart]?.attachment;
-                if (file) {
-                    formData.append(`attachment_${article.codart}`, file);
-                }
+                if (file) formData.append(`attachment_${article.codart}`, file);
             });
         }
-        // Mostramos los datos que se van a enviar (solo para depuración)
         console.log("🧾 Datos a guardar:", {
             client_id: selectedClient,
             plant_id: planta,
@@ -456,32 +428,27 @@ function NewAdaptation({ canEdit = false, canView = false }: CreateClientProps) 
             bom: selectedBom,
             ingredients,
         });
-        // Intentamos guardar los datos en el backend
         try {
-            setIsLoading(true); // Indicamos que la carga está en progreso
+            setIsLoading(true);
             if (isEditMode) {
-                // Si estamos en modo edición, actualizamos la adaptación
                 await updateAdaptation(editAdaptationId!, formData);
                 showSuccess("Acondicionamiento actualizado.");
             } else {
-                // Si estamos creando una nueva adaptación, la guardamos
                 await newAdaptation(formData);
                 showSuccess("Acondicionamiento creado.");
             }
-            resetForm(); // Reiniciamos el formulario
-            setIsOpen(false); // Cerramos el modal
+            resetForm();
+            setIsOpen(false);
             const { adaptations } = await getAdaptations();
-            setAdaptation(adaptations); // Refrescamos la lista de adaptaciones
-            fetchAdaptations(); // Llamamos de nuevo a fetchAdaptations para asegurar que esté actualizada
+            setAdaptation(adaptations);
+            fetchAdaptations();
         } catch (error: any) {
-            // Si ocurre un error al guardar, mostramos un mensaje de error
             showError("Error al guardar.");
             console.error("🔥 Error completo:", error);
             if (error?.response) {
-                // Mostramos detalles específicos del error
                 console.error("🧠 Respuesta del servidor:", error.response.data);
                 const details = error.response.data?.details;
-                if (details && typeof details === 'object') {
+                if (details && typeof details === "object") {
                     Object.entries(details).forEach(([key, value]) => {
                         console.error(`❌ Error en "${key}":`, value);
                     });
@@ -490,10 +457,10 @@ function NewAdaptation({ canEdit = false, canView = false }: CreateClientProps) 
                 console.error("💥 Error sin respuesta del servidor:", error.message);
             }
         } finally {
-            // Independientemente del resultado, apagamos el indicador de carga
             setIsLoading(false);
         }
     };
+
 
     // Función para cargar los datos de una adaptación para editarla
     const handleEdit = async (id: number) => {

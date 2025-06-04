@@ -55,11 +55,6 @@ const menuItems: MenuItem[] = [
         icon: <FaBookmark />,
         link: "/pages/planificacion",
       },
-      {
-        label: "Calendario",
-        icon: <FaCalendarAlt />,
-        link: "/pages/calendar",
-      }
     ],
   },
   {
@@ -71,6 +66,11 @@ const menuItems: MenuItem[] = [
         icon: <FaDolly />,
         link: "/pages/inventory",
       },
+      {
+        label: "Calendario",
+        icon: <FaCalendarAlt />,
+        link: "/pages/calendar",
+      }
     ],
   },
   {

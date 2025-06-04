@@ -15,9 +15,8 @@ return new class extends Migration
             $table->id();
             $table->foreignId('client_id')->constrained('clients');
             $table->foreignId('factory_id')->constrained('factories');
-            $table->foreignId('master')->nullable()->constrained('factories');
-            $table->foreignId('bom')->nullable()->constrained('factories');
-
+            $table->foreignId('master')->nullable()->constrained('maestras');
+            $table->foreignId('bom')->nullable()->constrained('boms');
             // Los campos que vienen dentro de cada article_code
             $table->string('number_order')->nullable();
             $table->string('codart');
@@ -26,7 +25,6 @@ return new class extends Migration
             $table->integer('quantityToProduce');
             $table->string('lot');
             $table->string('healthRegistration');
-
             // Lo demás 
             $table->json('ingredients')->nullable();
             $table->foreignId('adaptation_id')->nullable()->constrained('adaptations');
