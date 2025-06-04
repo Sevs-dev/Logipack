@@ -4,14 +4,15 @@ import { useState, useEffect } from "react";
 import { createManu, getManu, getManuId, updateManu, deleteManu } from "../../services/userDash/manufacturingServices";
 import ModalSection from "../modal/ModalSection";
 import { getProduct } from "../../services/userDash/productServices";
-import { getFactory, getFactoryId } from "../../services/userDash/factoryServices";
+import { getFactory } from "../../services/userDash/factoryServices";
 import Table from "../table/Table";
 import { showSuccess, showError, showConfirm } from "../toastr/Toaster";
 import Button from "../buttons/buttons";
 import Text from "../text/Text";
 import { Manu, Factory, Product } from "../../interfaces/Products"
+import { CreateClientProps } from "../../interfaces/CreateClientProps";
 
-function CreateManufacturing() {
+function CreateManufacturing({ canEdit = false, canView = false }: CreateClientProps) {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [formData, setFormData] = useState<Manu>({ name: "", products: [], factory_id: 0 });
     const [factories, setFactories] = useState<Factory[]>([]);
@@ -44,8 +45,10 @@ function CreateManufacturing() {
     };
 
     useEffect(() => {
-        fetchData();
-    }, []);
+        if (canView) {
+            fetchData();
+        }
+    }, [canView]);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
@@ -127,9 +130,11 @@ function CreateManufacturing() {
 
     return (
         <div>
-            <div className="flex justify-center mb-2">
-                <Button onClick={openModal} variant="create" label="Crear Línea" />
-            </div>
+            {canEdit && (
+                <div className="flex justify-center mb-2">
+                    <Button onClick={openModal} variant="create" label="Crear Línea" />
+                </div>
+            )}
 
             {isModalOpen && (
                 <ModalSection isVisible={isModalOpen} onClose={closeModal}>
@@ -144,6 +149,7 @@ function CreateManufacturing() {
                                 onChange={handleChange}
                                 placeholder="Nombre"
                                 className="w-full text-black border p-2 mb-3"
+                                disabled={!canEdit}
                             />
                         </div>
 
@@ -154,6 +160,7 @@ function CreateManufacturing() {
                                 value={formData.factory_id}
                                 onChange={handleChange}
                                 className="w-full text-black border p-2 mb-3"
+                                disabled={!canEdit}
                             >
                                 <option value="">Seleccionar...</option>
                                 {factories.map((factory) => (
@@ -173,8 +180,8 @@ function CreateManufacturing() {
                                         .map((product) => (
                                             <div
                                                 key={product.id}
-                                                className="cursor-pointer text-black p-1 hover:bg-gray-200"
-                                                onClick={() => handleSelectChange(product.id)}
+                                                className={`text-black p-1 ${canEdit ? 'cursor-pointer hover:bg-gray-200' : 'opacity-50 cursor-not-allowed'}`}
+                                                onClick={canEdit ? () => handleSelectChange(product.id) : undefined}
                                             >
                                                 {product.name}
                                             </div>
@@ -189,7 +196,7 @@ function CreateManufacturing() {
                                             <div
                                                 key={productId}
                                                 className="cursor-pointer p-1 text-black bg-blue-200 hover:bg-red-200"
-                                                onClick={() => handleSelectChange(productId)}
+                                                onClick={canEdit ? () => handleSelectChange(productId) : undefined}
                                             >
                                                 {product?.name || `Producto ID ${productId}`}
                                             </div>
@@ -201,7 +208,7 @@ function CreateManufacturing() {
 
                         <div className="flex justify-center gap-2 mt-2">
                             <Button onClick={closeModal} variant="cancel" />
-                            <Button type="submit" variant="save" />
+                            {canEdit && <Button type="submit" variant="save" />}
                         </div>
                     </form>
                 </ModalSection>
@@ -211,7 +218,7 @@ function CreateManufacturing() {
                 columns={columns}
                 rows={manu}
                 columnLabels={columnLabels}
-                onDelete={handleDelete}
+                onDelete={canEdit ? handleDelete : undefined}
                 onEdit={openEditModal}
             />
         </div>

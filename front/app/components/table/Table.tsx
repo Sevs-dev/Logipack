@@ -1,6 +1,5 @@
 import React, { useState } from "react";
-import { FaArrowUp, FaArrowDown, FaSort } from "react-icons/fa";
-import PermissionInputs from "../permissionCheck/PermissionInputs";
+import { FaArrowUp, FaArrowDown, FaSort } from "react-icons/fa"; 
 import Button from "../buttons/buttons"
 import Mini from "../loader/MiniLoader"
 
@@ -9,7 +8,7 @@ interface TableProps {
     columns: string[];
     columnLabels?: { [key: string]: string };
     onEdit: (id: any) => void;
-    onDelete: (id: any) => void;
+    onDelete?: (id: any) => void | Promise<void>;
     showDeleteButton?: boolean;
     showEditButton?: boolean;
 }
@@ -170,9 +169,13 @@ export const Table: React.FC<TableProps> = ({ rows, columns, columnLabels = {}, 
                                                     variant="edit"
                                                 />
                                             )}
-                                            {showDeleteButton && (
+                                            {showDeleteButton && onDelete && (
                                                 <Button
-                                                    onClick={() => { onDelete(row.id) }}
+                                                    onClick={() => {
+                                                        if (window.confirm("¿Estás seguro de eliminar este cliente?")) {
+                                                            onDelete(row.id);
+                                                        }
+                                                    }}
                                                     variant="delete"
                                                 />
                                             )}
@@ -193,18 +196,22 @@ export const Table: React.FC<TableProps> = ({ rows, columns, columnLabels = {}, 
                                         <span className="text-gray-300">{row[column]}</span>
                                     </div>
                                 ))}
-                                <PermissionInputs requiredPermission="gestionar_usuarios">
-                                    <div className="flex justify-end gap-3 mt-3">
+                                <div className="flex justify-end gap-3 mt-3">
+                                    <Button
+                                        onClick={() => { onEdit(row.id); }}
+                                        variant="edit"
+                                    />
+                                    {showDeleteButton && onDelete && (
                                         <Button
-                                            onClick={() => { onEdit(row.id); }}
-                                            variant="edit"
-                                        />
-                                        <Button
-                                            onClick={() => { onDelete(row.id) }}
+                                            onClick={() => {
+                                                if (window.confirm("¿Estás seguro de eliminar este cliente?")) {
+                                                    onDelete(row.id);
+                                                }
+                                            }}
                                             variant="delete"
                                         />
-                                    </div>
-                                </PermissionInputs>
+                                    )}
+                                </div>
                             </div>
                         ))}
                     </div>

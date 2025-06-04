@@ -20,8 +20,13 @@ return new class extends Migration
 
         // Insertar los roles directamente en la migración
         $roles = [
-            'admin',
-            'gerente',
+            'Administrador',
+            'J_Calidad',
+            'Calidad',
+            'Operativo',
+            'Coordinador',
+            'Consulta',
+            'Visitante'
         ];
 
         foreach ($roles as $role) {

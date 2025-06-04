@@ -13,8 +13,9 @@ import { showError, showSuccess, showConfirm } from "../toastr/Toaster";
 import Button from "../buttons/buttons";
 import Table from "../table/Table";
 import { Factory, Role, User } from "@/app/interfaces/CreateUser";
+import { CreateClientProps } from "../../interfaces/CreateClientProps";
 
-function CreateUser() {
+function CreateUser({ canEdit = false, canView = false }: CreateClientProps) {
   // Estados para formulario
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -39,6 +40,7 @@ function CreateUser() {
   });
   // Carga inicial de roles, fábricas y usuarios
   useEffect(() => {
+    if (!canView) return;
     async function fetchInitialData() {
       try {
         const [rolesData, factoryData, usersData] = await Promise.all([
@@ -63,7 +65,7 @@ function CreateUser() {
       setEmail(userToEdit.email);
       setRole(userToEdit.role);
       setSignatureBPM(userToEdit.signature_bpm || "");
-      setSelectedfactory(userToEdit.factory|| []);
+      setSelectedfactory(userToEdit.factory || []);
       setPassword("");
       setIsModalOpen(true);
     }
@@ -182,6 +184,7 @@ function CreateUser() {
 
   // Eliminar usuario con confirmación
   const handleDelete = async (id: number) => {
+    if (!canEdit) return; // Verificar permisos antes de eliminar
     showConfirm("¿Seguro que quieres eliminar este usuario?", async () => {
       try {
         await deleteUser(id);
@@ -197,12 +200,12 @@ function CreateUser() {
   const handleEdit = async (id: number) => {
     try {
       const response = await getDate(id);
-      const userData: User = response.usuario; 
+      const userData: User = response.usuario;
       // Procesar factoryigual que antes...
       let factoryParsed: number[] = [];
       try {
-        const { factory} = userData;
-        if (typeof factory=== "string") {
+        const { factory } = userData;
+        if (typeof factory === "string") {
           const parsed = JSON.parse(factory);
           if (Array.isArray(parsed)) {
             factoryParsed = parsed.map(Number).filter(n => !isNaN(n));
@@ -212,7 +215,7 @@ function CreateUser() {
           }
         } else if (Array.isArray(factory)) {
           factoryParsed = factory.map(Number).filter(n => !isNaN(n));
-        } else if (typeof factory=== "number") {
+        } else if (typeof factory === "number") {
           factoryParsed = [factory];
         }
       } catch (parseError) {
@@ -232,10 +235,11 @@ function CreateUser() {
   return (
     <div>
       {/* Botón para abrir modal crear usuario (solo si no estamos editando) */}
-      <div className="flex justify-center space-x-2 mb-2">
-        <Button onClick={openModal} variant="create" label="Crear Usuario" />
-      </div>
-
+      {canEdit && !userToEdit && (
+        <div className="flex justify-center space-x-2 mb-2">
+          <Button onClick={openModal} variant="create" label="Crear Usuario" />
+        </div>
+      )}
       {/* Modal crear/editar usuario */}
       {isModalOpen && (
         <ModalSection isVisible={isModalOpen || editForm} onClose={closeModal}>
@@ -250,6 +254,7 @@ function CreateUser() {
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 className="w-full text-black border border-gray-300 rounded p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                disabled={!canEdit}
               />
             </div>
 
@@ -262,6 +267,7 @@ function CreateUser() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="w-full text-black border border-gray-300 rounded p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                disabled={!canEdit}
               />
             </div>
 
@@ -278,11 +284,13 @@ function CreateUser() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className="w-full text-black border border-gray-300 rounded p-2 pr-10 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                disabled={!canEdit}
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
                 className="absolute right-10 top-12 text-gray-500"
+                disabled={!canEdit}
               >
                 {showPassword ? <FiEyeOff size={20} /> : <FiEye size={20} />}
               </button>
@@ -290,6 +298,7 @@ function CreateUser() {
                 type="button"
                 onClick={generatePassword}
                 className="absolute right-2 top-12 bg-yellow-500 text-white p-1 rounded"
+                disabled={!canEdit}
               >
                 <BiLock size={16} />
               </button>
@@ -302,6 +311,7 @@ function CreateUser() {
                 value={role}
                 onChange={(e) => setRole(e.target.value)}
                 className="w-full text-black border border-gray-300 rounded p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                disabled={!canEdit}
               >
                 <option value="">Selecciona un rol</option>
                 {roles.map((r) => (
@@ -321,6 +331,7 @@ function CreateUser() {
                 value={signature_bpm}
                 onChange={(e) => setSignatureBPM(e.target.value)}
                 className="w-full text-black border border-gray-300 rounded p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                disabled={!canEdit}
               />
             </div>
 
@@ -328,34 +339,42 @@ function CreateUser() {
             <div className="col-span-1 md:col-span-2">
               <Text type="subtitle">Fábricas asignadas</Text>
               <div className="flex flex-wrap gap-2 mt-1">
-                {factory.map((factory) => (
-                  <motion.div
-                    key={factory.id}
-                    onClick={() => toggleFactory(factory.id)}
-                    className={`cursor-pointer select-none rounded-full px-3 py-1 flex items-center gap-2 border ${selectedfactory.includes(factory.id)
-                      ? "bg-blue-600 text-white border-blue-600"
-                      : "bg-gray-100 text-gray-700 border-gray-300"
-                      }`}
-                    whileTap={{ scale: 0.9 }}
-                    transition={{ duration: 0.2 }}
-                  >
-                    {factory.name}
-                    {selectedfactory.includes(factory.id) && <Check size={16} />}
-                  </motion.div>
-                ))}
+                {factory.map((factory) => {
+                  const isSelected = selectedfactory.includes(factory.id);
+                  return (
+                    <motion.div
+                      key={factory.id}
+                      onClick={canEdit ? () => toggleFactory(factory.id) : undefined}
+                      className={`select-none rounded-full px-3 py-1 flex items-center gap-2 border transition-all
+            ${canEdit ? 'cursor-pointer' : 'opacity-50 cursor-not-allowed'}
+            ${isSelected
+                          ? "bg-blue-600 text-white border-blue-600"
+                          : "bg-gray-100 text-gray-700 border-gray-300"
+                        }`}
+                      whileTap={canEdit ? { scale: 0.9 } : {}}
+                      transition={{ duration: 0.2 }}
+                    >
+                      {factory.name}
+                      {isSelected && <Check size={16} />}
+                    </motion.div>
+                  );
+                })}
               </div>
             </div>
+
           </div>
 
           {/* Botones */}
-          <div className="mt-6 flex justify-end gap-3">
+          <div className="flex justify-center gap-4 mt-6">
             <Button onClick={closeModal} variant="cancel" label="Cancelar" />
-            <Button
-              onClick={userToEdit ? handleEditUser : handleCreateUser}
-              variant="save"
-              label={loading ? "Guardando..." : userToEdit ? "Guardar cambios" : "Crear usuario"}
-              disabled={loading}
-            />
+            {canEdit && (
+              <Button
+                onClick={userToEdit ? handleEditUser : handleCreateUser}
+                variant="save"
+                label={loading ? "Guardando..." : userToEdit ? "Guardar cambios" : "Crear usuario"}
+                disabled={loading}
+              />
+            )}
           </div>
         </ModalSection>
       )}
@@ -369,7 +388,7 @@ function CreateUser() {
           email: "Email",
           role: "Rol"
         }}
-        onDelete={handleDelete}
+        onDelete={canEdit ? handleDelete : undefined}
         onEdit={handleEdit}
       />
 

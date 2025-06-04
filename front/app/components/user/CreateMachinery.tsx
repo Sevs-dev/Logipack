@@ -13,8 +13,9 @@ import ModalSection from "../modal/ModalSection";
 // 🔹 Tipos de datos
 import { Factory } from "../../interfaces/NewFactory";
 import { MachineryForm, Machine } from "../../interfaces/NewMachine";
+import { CreateClientProps } from "../../interfaces/CreateClientProps";
 
-function CreateMachinery() {
+function CreateMachinery({ canEdit = false, canView = false }: CreateClientProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
   const [machine, setMachine] = useState<Machine[]>([]);
@@ -33,20 +34,22 @@ function CreateMachinery() {
   const [description, setDescription] = useState("");
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const [machines, factories] = await Promise.all([
-          machineryService.getMachin(),
-          getFactory(),
-        ]);
-        setMachine(machines);
-        setFactory(factories);
-      } catch (error) {
-        console.error("Error inicializando datos:", error);
-      }
-    };
-    fetchData();
-  }, []);
+    if (canView) {
+      const fetchData = async () => {
+        try {
+          const [machines, factories] = await Promise.all([
+            machineryService.getMachin(),
+            getFactory(),
+          ]);
+          setMachine(machines);
+          setFactory(factories);
+        } catch (error) {
+          console.error("Error inicializando datos:", error);
+        }
+      };
+      fetchData();
+    }
+  }, [canView]);
 
   const fetchMachine = useCallback(async () => {
     try {
@@ -107,7 +110,7 @@ function CreateMachinery() {
   const handleEdit = async (id: number) => {
     try {
       const data = await machineryService.getMachinById(id);
-      console.log("Data to edit:", data);
+      // console.log("Data to edit:", data);
       setEditMachineryId(id);
       setIsEditMode(true);
       setIsOpen(true);
@@ -128,6 +131,7 @@ function CreateMachinery() {
   };
 
   const handleDelete = async (id: number) => {
+    if (!canEdit) return;
     showConfirm("¿Estás seguro de eliminar esta Maquinaria?", async () => {
       try {
         await machineryService.deleteMachin(id);
@@ -144,14 +148,9 @@ function CreateMachinery() {
   return (
     <div>
       <div className="flex justify-center space-x-2 mb-2">
-        <Button
-          onClick={() => {
-            resetForm();
-            setIsOpen(true);
-          }}
-          variant="create"
-          label="Crear Maquinaria"
-        />
+        {canEdit && (
+          <Button onClick={() => { resetForm(); setIsOpen(true); }} variant="create" label="Crear Maquinaria" />
+        )}
       </div>
 
       {isOpen && (
@@ -168,6 +167,7 @@ function CreateMachinery() {
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   className="w-full border border-gray-300 rounded px-3 py-2 text-black text-center"
+                  disabled={!canEdit}
                 />
               </div>
 
@@ -177,6 +177,7 @@ function CreateMachinery() {
                   className="w-full border border-gray-300 rounded px-3 py-2 text-black text-center"
                   value={category}
                   onChange={(e) => setCategory(e.target.value)}
+                  disabled={!canEdit}
                 >
                   <option value="">Seleccione una categoría</option>
                   <option value="Grande">Grande</option>
@@ -192,6 +193,7 @@ function CreateMachinery() {
                   value={power}
                   onChange={(e) => setPower(e.target.value)}
                   className="w-full border border-gray-300 rounded px-3 py-2 text-black text-center"
+                  disabled={!canEdit}
                 />
               </div>
 
@@ -202,6 +204,7 @@ function CreateMachinery() {
                   value={dimensions}
                   onChange={(e) => setDimensions(e.target.value)}
                   className="w-full border border-gray-300 rounded px-3 py-2 text-black text-center"
+                  disabled={!canEdit}
                 />
               </div>
               <div>
@@ -211,6 +214,7 @@ function CreateMachinery() {
                   onChange={(e) => setDescription(e.target.value)}
                   className="w-full border border-gray-300 rounded px-3 py-2 text-black"
                   rows={4}
+                  disabled={!canEdit}
                 />
               </div>
             </div>
@@ -223,6 +227,7 @@ function CreateMachinery() {
                   className="w-full border border-gray-300 rounded px-3 py-2 text-black text-center"
                   value={factory_id}
                   onChange={(e) => setFactoryId(e.target.value)}
+                  disabled={!canEdit}
                 >
                   <option value="">Seleccionar Planta</option>
                   {factory.map((fac) => (
@@ -240,6 +245,7 @@ function CreateMachinery() {
                   value={type}
                   onChange={(e) => setType(e.target.value)}
                   className="w-full border border-gray-300 rounded px-3 py-2 text-black text-center"
+                  disabled={!canEdit}
                 />
               </div>
 
@@ -252,6 +258,7 @@ function CreateMachinery() {
                   value={capacity}
                   onChange={(e) => setCapacity(e.target.value)}
                   className="w-full border border-gray-300 rounded px-3 py-2 text-black text-center"
+                  disabled={!canEdit}
                 />
               </div>
 
@@ -262,6 +269,7 @@ function CreateMachinery() {
                   value={weight}
                   onChange={(e) => setWeight(e.target.value)}
                   className="w-full border border-gray-300 rounded px-3 py-2 text-black text-center"
+                  disabled={!canEdit}
                 />
               </div>
 
@@ -272,6 +280,7 @@ function CreateMachinery() {
                   checked={is_mobile}
                   onChange={(e) => setIsMobile(e.target.checked)}
                   className="h-5 w-5 text-blue-600 mt-2"
+                  disabled={!canEdit}
                 />
               </div>
 
@@ -287,7 +296,9 @@ function CreateMachinery() {
               variant="cancel"
               label="Cancelar"
             />
-            <Button onClick={handleSubmit} variant="save" label="Guardar" />
+            {canEdit && (
+              <Button onClick={handleSubmit} variant="save" label="Guardar" />
+            )}
           </div>
         </ModalSection>
       )}
@@ -301,7 +312,7 @@ function CreateMachinery() {
           type: "Tipo",
           power: "Potencia",
         }}
-        onDelete={handleDelete}
+        onDelete={canEdit ? handleDelete : undefined}
         onEdit={handleEdit}
       />
     </div>

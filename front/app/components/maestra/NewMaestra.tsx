@@ -10,8 +10,7 @@ import { getStage as listTipoAcondicionamiento, getStageById as lisTipoacondicio
 import Button from "../buttons/buttons";
 import { showSuccess, showError, showConfirm } from "../toastr/Toaster";
 import Text from "../text/Text";
-import Table from "../table/Table";
-import PermissionCheck from "..//permissionCheck/PermissionCheck";
+import Table from "../table/Table"; 
 import ModalSection from "../modal/ModalSection";
 import { InfoPopover } from "../buttons/InfoPopover";
 // ------------------------- 5. Tipos de datos e interfaces -------------------------
@@ -447,10 +446,8 @@ const Maestra = () => {
     return (
         <div>
             {/* Botón para abrir el modal de creación */}
-            <div className="flex justify-center space-x-2 mb-2">
-                <PermissionCheck requiredPermission="crear_maestras">
-                    <Button onClick={openCreateModal} variant="create" label="Crear Maestra" />
-                </PermissionCheck>
+            <div className="flex justify-center space-x-2 mb-2"> 
+                    <Button onClick={openCreateModal} variant="create" label="Crear Maestra" /> 
             </div>
 
             {/* Modal de creación/edición */}
