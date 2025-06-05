@@ -347,7 +347,7 @@ function NewAdaptation({ canEdit = false, canView = false }: CreateClientProps) 
     };
 
     // Manejo del envío del formulario
-    const handleSubmit = async () => { 
+    const handleSubmit = async () => {
         if (!selectedClient) return showError("Por favor, selecciona un Cliente.");
         if (!planta) return showError("Por favor, selecciona una Planta.");
         if (!selectedArticles.length) return showError("Por favor, selecciona al menos un artículo.");
@@ -442,21 +442,32 @@ function NewAdaptation({ canEdit = false, canView = false }: CreateClientProps) 
             const { adaptations } = await getAdaptations();
             setAdaptation(adaptations);
             fetchAdaptations();
-        } catch (error: any) {
+        } catch (error: unknown) {
             showError("Error al guardar.");
             console.error("🔥 Error completo:", error);
-            if (error?.response) {
-                console.error("🧠 Respuesta del servidor:", error.response.data);
-                const details = error.response.data?.details;
-                if (details && typeof details === "object") {
-                    Object.entries(details).forEach(([key, value]) => {
-                        console.error(`❌ Error en "${key}":`, value);
-                    });
+
+            if (typeof error === "object" && error !== null) {
+                // Reutilizamos el casting solo una vez
+                const err = error as { response?: { data?: any }; message?: string };
+
+                if (err.response && typeof err.response === "object") {
+                    console.error("🧠 Respuesta del servidor:", err.response.data);
+                    const details = err.response.data?.details;
+                    if (details && typeof details === "object") {
+                        Object.entries(details).forEach(([key, value]) => {
+                            console.error(`❌ Error en "${key}":`, value);
+                        });
+                    }
+                } else if (typeof err.message === "string") {
+                    console.error("💥 Error sin respuesta del servidor:", err.message);
+                } else {
+                    console.error("💥 Error desconocido dentro del objeto:", err);
                 }
             } else {
-                console.error("💥 Error sin respuesta del servidor:", error.message);
+                console.error("💥 Error desconocido:", error);
             }
-        } finally {
+        }
+        finally {
             setIsLoading(false);
         }
     };

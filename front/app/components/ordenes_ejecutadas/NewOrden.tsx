@@ -6,7 +6,7 @@ import Button from "../buttons/buttons";
 import { BadgeCheck } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Acondicionamiento, ListData, Plan } from "../../interfaces/NewOrden";
-import { getOrdenesEjecutadas, postOrdenesEjecutadas } from "../../services/ordenes_ejecutadas/ordenesEjecutadaServices"
+import { getOrdenesEjecutadas, postOrdenesEjecutadas, getOrdenEjecutadaById } from "../../services/ordenes_ejecutadas/ordenesEjecutadaServices"
 
 // Hook para obtener datos
 const useFetchData = () => {
@@ -18,6 +18,8 @@ const useFetchData = () => {
     try {
       const plan: Plan = JSON.parse(localStorage.getItem("ejecutar") || "{}");
       const data = await getOrdenesEjecutadas(Number(plan.adaptation_id));
+      const orden = await getOrdenEjecutadaById(Number(plan.adaptation_id));
+      console.log("datos", orden)
       setListData(data);
       setError(null);
     } catch (e: any) {
@@ -115,7 +117,6 @@ function NewOrden() {
             animate={{ x: 0, opacity: 1 }}
             exit={{ x: -300, opacity: 0 }}
             transition={{ duration: 0.4 }}
-            className="max-w-3xl mx-auto"
           >
             <TipoAcom
               proms={list_data.maestra_tipo_acondicionamiento_fk}
@@ -134,7 +135,6 @@ function NewOrden() {
             animate={{ x: 0, opacity: 1 }}
             exit={{ x: -300, opacity: 0 }}
             transition={{ duration: 0.4 }}
-            className="relative bg-white rounded-2xl shadow-2xl w-full max-w-6xl max-h-[90vh] overflow-y-auto p-6 scroll-smooth custom-scroll outline-none"
           >
             <Fases
               proms={list_data.maestra_fases_fk}

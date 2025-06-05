@@ -21,3 +21,13 @@ export interface Plan {
   adaptation_id?: number | string;
   [key: string]: any;
 }
+
+export interface ActividadEjecutada {
+  tipo_acon: number;
+  stage: number;
+  [key: string]: any;
+}
+
+export interface OrdenActualizada extends Acondicionamiento {
+  actividades: ActividadEjecutada[];
+}

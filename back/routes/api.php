@@ -200,4 +200,5 @@ Route::controller(OrdenesEjecutadasController::class)->group(function () {
     Route::get('/getOrdenesEjecutadas', 'getAll'); // Obtener todas las lineas   
     Route::get('/getOrdenesEjecutadas/{id}', 'getAllByAdaptationId'); // Obtener una lineas específica
     Route::post('/newOrdenesEjecutadas', 'newOrdnesEjecutadas'); // Crear una nueva lineas 
+    Route::get('/newOrdenes/{id}', 'getByAdaptationId'); // Actualizar una orden existente
 });
