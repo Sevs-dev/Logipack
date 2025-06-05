@@ -11,6 +11,7 @@ import Button from "../buttons/buttons";
 import Text from "../text/Text";
 import { Manu, Factory, Product } from "../../interfaces/Products"
 import { CreateClientProps } from "../../interfaces/CreateClientProps";
+import SelectorDual from "../SelectorDual/SelectorDual"
 
 function CreateManufacturing({ canEdit = false, canView = false }: CreateClientProps) {
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -171,40 +172,25 @@ function CreateManufacturing({ canEdit = false, canView = false }: CreateClientP
                             </select>
                         </div>
 
-                        <div className="mb-4">
-                            <div className="flex gap-4">
-                                <div className="w-1/2 border p-2 h-80 overflow-y-auto">
-                                    <Text type="subtitle">Productos Disponibles</Text>
-                                    {products
-                                        .filter((product) => !formData.products.includes(product.id))
-                                        .map((product) => (
-                                            <div
-                                                key={product.id}
-                                                className={`text-black p-1 ${canEdit ? 'cursor-pointer hover:bg-gray-200' : 'opacity-50 cursor-not-allowed'}`}
-                                                onClick={canEdit ? () => handleSelectChange(product.id) : undefined}
-                                            >
-                                                {product.name}
-                                            </div>
-                                        ))}
-                                </div>
-
-                                <div className="w-1/2 border p-2 h-80 overflow-y-auto">
-                                    <Text type="subtitle">Productos Seleccionados</Text>
-                                    {formData.products.map((productId) => {
-                                        const product = products.find((p) => p.id === productId);
-                                        return (
-                                            <div
-                                                key={productId}
-                                                className="cursor-pointer p-1 text-black bg-blue-200 hover:bg-red-200"
-                                                onClick={canEdit ? () => handleSelectChange(productId) : undefined}
-                                            >
-                                                {product?.name || `Producto ID ${productId}`}
-                                            </div>
-                                        );
-                                    })}
-                                </div>
-                            </div>
-                        </div>
+                        <SelectorDual
+                            titulo="Productos"
+                            disponibles={products}
+                            seleccionados={products.filter((p) => formData.products.includes(p.id))}
+                            onAgregar={(item) => {
+                                if (!formData.products.includes(item.id)) {
+                                    setFormData((prev) => ({
+                                        ...prev,
+                                        products: [...prev.products, item.id],
+                                    }));
+                                }
+                            }}
+                            onQuitar={(id) => {
+                                setFormData((prev) => ({
+                                    ...prev,
+                                    products: prev.products.filter((pid) => pid !== id),
+                                }));
+                            }}
+                        />
 
                         <div className="flex justify-center gap-2 mt-2">
                             <Button onClick={closeModal} variant="cancel" />
