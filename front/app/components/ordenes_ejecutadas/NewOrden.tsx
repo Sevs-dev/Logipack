@@ -6,6 +6,7 @@ import Button from "../buttons/buttons";
 import { BadgeCheck } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Acondicionamiento, ListData, Plan } from "../../interfaces/NewOrden";
+import { getOrdenesEjecutadas, postOrdenesEjecutadas } from "../../services/ordenes_ejecutadas/ordenesEjecutadaServices"
 
 // Hook para obtener datos
 const useFetchData = () => {
@@ -16,10 +17,9 @@ const useFetchData = () => {
   const fetchData = async () => {
     try {
       const plan: Plan = JSON.parse(localStorage.getItem("ejecutar") || "{}");
-      const response = await fetch(`http://127.0.0.1:8000/api/getOrdenesEjecutadas/${plan.adaptation_id}`);
-      if (!response.ok) throw new Error('Error al obtener los datos');
-      const data = await response.json();
+      const data = await getOrdenesEjecutadas(Number(plan.adaptation_id));
       setListData(data);
+      setError(null);
     } catch (e: any) {
       setError(e.message);
     } finally {
@@ -42,12 +42,7 @@ const useEnviarData = () => {
   const enviarData = async (data: any) => {
     try {
       setLoading(true);
-      const response = await fetch('http://127.0.0.1:8000/api/newOrdenesEjecutadas', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-      });
-      if (!response.ok) throw new Error('Error al enviar los datos');
+      await postOrdenesEjecutadas(data);
       localStorage.removeItem("ejecutar");
       window.close();
       window.location.reload();

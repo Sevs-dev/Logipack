@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect, ChangeEvent, FormEvent } from 'react';
 import Text from "../text/Text";
 import Button from "../buttons/buttons";
-import { ActividadConfig, Actividad, Lista, TipoAcomProps} from "../../interfaces/TipoAcon"
+import { ActividadConfig, Actividad, Lista, TipoAcomProps } from "../../interfaces/TipoAcon"
 
 // Hook para enviar datos
 const useEnviardata = () => {
