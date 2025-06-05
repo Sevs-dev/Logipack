@@ -132,15 +132,12 @@ const TipoAcom: React.FC<TipoAcomProps> = ({
     <div className="text-black w-full py-8 px-6 bg-white">
       <form ref={formRef} onSubmit={handleSubmit}>
         {lista && (
-          <div className="text-black bg-white shadow-md rounded-lg mb-6 overflow-hidden">
+          <div className="text-black bg-white rounded-lg mb-6 overflow-hidden">
             <div className="bg-blue-50 w-full py-8 px-6 border-b border-gray-200 flex items-center justify-between">
               <Text type="title">Tipo de Acondicionamiento #{lineaIndex + 1} de {listas.length}</Text>
             </div>
-            <div className="card-body" style={{ display: estado_form ? 'none' : 'block' }}>
-              <Text type="subtitle">Fase: {lista.fases_fk + " | " + lista.descripcion_fase}</Text>
-              <Text type="subtitle">Actividades - Grupo {actividadIndex + 1} de {actividades.length}</Text>
-
-              {/* Mapeo de actividades */}
+            {/* Mapeo de actividades en dos columnas */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {actividadGrupo.map((tarea: Actividad, j: number) => {
                 const config: ActividadConfig = typeof tarea.config === 'string'
                   ? JSON.parse(tarea.config)
@@ -230,12 +227,10 @@ const TipoAcom: React.FC<TipoAcomProps> = ({
                   </div>
                 );
               })}
-
-              {/* Botones */}
-              <div className="text-black flex justify-center space-x-4 mt-4">
+            </div>
+              <div className="text-black flex justify-center space-x-4 mb-2">
                 {renderBoton()}
               </div>
-            </div>
           </div>
         )}
       </form>
