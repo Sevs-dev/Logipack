@@ -17,4 +17,9 @@ export interface Machine {
   name: string;
   status: boolean;
 }
+
+export interface MachinePlanning {
+  id: number;
+  name: string; 
+}
   

@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use App\Models\User;
+use Illuminate\Support\Facades\Log;
 
 class AuthController extends Controller
 {
@@ -170,7 +171,7 @@ class AuthController extends Controller
             'password' => 'required|string|min:6',
             'role' => 'required',
             'signature_bpm' => 'required|string|max:255',
-            'factory' => 'required|json',
+            'factory' => 'required|array',
         ]);
 
         // Verificar si el correo ya existe
@@ -189,7 +190,7 @@ class AuthController extends Controller
             'password' => Hash::make($request->password),
             'role' => $request->role,
             'signature_bpm' => $request->signature_bpm,
-            'factory' => $request->factories,
+            'factory' => $request->factory,
         ]);
 
         // Respuesta exitosa

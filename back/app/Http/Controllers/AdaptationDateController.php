@@ -77,7 +77,8 @@ class AdaptationDateController extends Controller
             'line' => 'nullable|array',
             'activities' => 'nullable|array',
             'resource' => 'nullable|string',
-            'machine' => 'nullable|string',
+            'machine' => 'nullable|array',
+            'users' => 'nullable|array',
             'color' => 'nullable|string',
             'icon' => 'nullable|string',
             'duration' => 'nullable|string',
@@ -89,6 +90,14 @@ class AdaptationDateController extends Controller
         if (isset($validated['line']) && is_array($validated['line'])) {
             $validated['line'] = array_map(fn($item) => trim($item), $validated['line']);
         }
+        if (isset($validated['machine']) && is_array($validated['machine'])) {
+            $validated['machine'] = array_map(fn($item) => trim($item), $validated['machine']);
+        }
+
+        if (isset($validated['users']) && is_array($validated['users'])) {
+            $validated['users'] = array_map(fn($item) => trim($item), $validated['users']);
+        }
+
         $record = AdaptationDate::findOrFail($id);
 
         // Actualizamos el registro con ambos campos bien separados

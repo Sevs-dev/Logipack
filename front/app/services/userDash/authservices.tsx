@@ -89,12 +89,8 @@ export const uploadUserImage = async (imageFile: File) => {
 
 export const post = async (datosUsuario: any) => { 
   console.log('Antes de enviar:', datosUsuario);
-
   try {
-    const response = await authUser.post('/users', {
-      ...datosUsuario,
-      factory: JSON.stringify(datosUsuario.factories),
-    });
+    const response = await authUser.post('/users',datosUsuario);
 
     return response.data;
   } catch (error) {

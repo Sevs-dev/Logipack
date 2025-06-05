@@ -132,7 +132,7 @@ function CreateUser({ canEdit = false, canView = false }: CreateClientProps) {
         password,
         role,
         signature_bpm,
-        factory: JSON.stringify(selectedfactory),
+        factory: selectedfactory,
       });
       showSuccess("Usuario creado exitosamente");
       setIsModalOpen(false);

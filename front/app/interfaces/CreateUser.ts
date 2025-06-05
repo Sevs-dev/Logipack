@@ -16,3 +16,8 @@ export interface User {
   signature_bpm: string;
   factory: number[];
 }
+
+export interface UserPlaning {
+  id: number;
+  name: string;
+}

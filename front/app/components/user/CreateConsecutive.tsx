@@ -10,7 +10,7 @@ function CreateConsecutive() {
     const fetchData = async () => {
       try {
         const data = await getConsecutives();
-        console.log("Consecutivos:", data);
+        // console.log("Consecutivos:", data);
         setConsecutives(data.consecutives);
       } catch (error) {
         console.error("Error cargando consecutivos:", error);

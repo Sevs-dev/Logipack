@@ -21,7 +21,8 @@ export interface Plan {
   ingredients: string;
   line: number[];
   lot: string;
-  machine: string | null;
+  machine: number[];
+  users: number[];
   master: string;
   orderNumber: string;
   number_order: string;

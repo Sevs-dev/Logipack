@@ -9,6 +9,9 @@ import { IconSelector } from "../dinamicSelect/IconSelector";
 import ModalSection from "../modal/ModalSection";
 import { InfoPopover } from "../buttons/InfoPopover";
 import { CreateClientProps } from "../../interfaces/CreateClientProps";
+import { MachinePlanning } from "../../interfaces/NewMachine"
+import { UserPlaning } from "../../interfaces/CreateUser"
+import SelectorDual from "../SelectorDual/SelectorDual"
 // 🔹 Servicios 
 import { getPlanning, updatePlanning, getActivitiesByPlanning, getPlanningById } from "../../services/planing/planingServices";
 import { getActivitieId } from "../../services/maestras/activityServices"
@@ -17,6 +20,7 @@ import { getFactory } from "@/app/services/userDash/factoryServices";
 import { getManu } from "@/app/services/userDash/manufacturingServices";
 import { getMachin } from "@/app/services/userDash/machineryServices";
 import { getManuId } from "@/app/services/userDash/manufacturingServices";
+import { getUsers } from "@/app/services/userDash/authservices"
 // 🔹 Interfaces
 import { Plan, ActivityDetail, sanitizePlan } from "@/app/interfaces/EditPlanning";
 
@@ -27,19 +31,23 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
     const [factories, setFactories] = useState<{ id: number, name: string }[]>([]);
     const [manu, setManu] = useState<{ id: number, name: string }[]>([]);
     const [machine, setMachine] = useState<{ id: number, name: string }[]>([]);
+    const [user, setUser] = useState<{ id: number, name: string }[]>([]);
     const [activitiesDetails, setActivitiesDetails] = useState<ActivityDetail[]>([]);
     const [lineActivities, setLineActivities] = useState<Record<number, number[]>>({});
     const [draggedActivityId, setDraggedActivityId] = useState<number | null>(null);
     const [lineDetails, setLineDetails] = useState<Record<number, { name: string }>>({});
+    const [selectedMachines, setSelectedMachines] = useState<MachinePlanning[]>([]);
+    const [selectedUsers, setSelectedUsers] = useState<UserPlaning[]>([]);
 
     // Extraer fetchAll para poder reutilizarlo
     const fetchAll = useCallback(async () => {
         try {
-            const [planningData, factoriesData, manuData, machineData] = await Promise.all([
+            const [planningData, factoriesData, manuData, machineData, userData] = await Promise.all([
                 getPlanning(),
                 getFactory(),
                 getManu(),
                 getMachin(),
+                getUsers(),
             ]);
 
             const updatedPlanning = await Promise.all(
@@ -53,6 +61,7 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
             setFactories(factoriesData);
             setManu(manuData);
             setMachine(machineData);
+            setUser(userData)
         } catch (error) {
             showError("Error cargando datos iniciales");
             console.error(error);
@@ -187,8 +196,9 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
                 line: lines,
                 activities: safeActivities,
                 duration: updatedPlan.duration?.toString() ?? null,
+                machine: selectedMachines.map(m => m.id),
+                users: selectedUsers.map(u => u.id),
             };
-
             await updatePlanning(updatedPlan.id, planToSave);
 
             // Refrescar la data desde el servidor después de guardar
@@ -242,6 +252,12 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
             setLineActivities(newLineActivities);
 
             setActivitiesDetails(matchedPlan.activitiesDetails);
+            setSelectedMachines(
+                machine.filter(m => (selectedPlan.machine || []).includes(m.id))
+            );
+            setSelectedUsers(
+                user.filter(u => (selectedPlan.users || []).includes(u.id))
+            );
 
             setCurrentPlan({
                 ...selectedPlan,
@@ -263,6 +279,8 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
         setLineActivities({});
         setActivitiesDetails([]);
         setDraggedActivityId(null);
+        setSelectedMachines([]);
+        setSelectedUsers([]);
     }, []);
 
     const handleDelete = useCallback(() => {
@@ -362,13 +380,33 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
         return serverPlansWithDetails;
     }
 
-
     const handleTerciario = useCallback(async (id: number) => {
-        const {plan} = await getPlanningById(id);
+        const { plan } = await getPlanningById(id);
         // console.log("Terciario", JSON.stringify(plan));
         localStorage.setItem("ejecutar", JSON.stringify(plan));
         window.open("/pages/ordenes_ejecutadas", "_blank");
     }, []);
+
+    //Componente SelectorDual
+    const agregarMaquina = (machine: MachinePlanning) => {
+        if (!selectedMachines.find(m => m.id === machine.id)) {
+            setSelectedMachines([...selectedMachines, machine]);
+        }
+    };
+
+    const removerMaquina = (id: number) => {
+        setSelectedMachines(selectedMachines.filter(m => m.id !== id));
+    };
+
+    const agregarUser = (user: UserPlaning) => {
+        if (!selectedUsers.find(m => m.id === user.id)) {
+            setSelectedUsers([...selectedUsers, user]);
+        }
+    };
+
+    const removerUser = (id: number) => {
+        setSelectedUsers(selectedUsers.filter(m => m.id !== id));
+    };
 
     return (
         <div>
@@ -686,29 +724,22 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
 
 
                         {/* 🔹 Maquinaria */}
-                        <div>
-                            <Text type="subtitle">Maquinaria</Text>
-                            <select
-                                className="w-full border p-3 rounded-lg text-gray-800 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500 text-center"
-                                value={currentPlan.machine || ""}
-                                onChange={(e) =>
-                                    setCurrentPlan({ ...currentPlan, machine: e.target.value })
-                                }
-                            >
-                                <option value="">Seleccione una Maquina</option>
-                                {machine.length > 0 ? (
-                                    machine.map((machine) => (
-                                        <option key={machine.id} value={machine.id}>
-                                            {machine.name} {/* Mostrar el nombre */}
-                                        </option>
-                                    ))
-                                ) : (
-                                    <option value="" disabled>
-                                        No hay maquinas disponibles
-                                    </option>
-                                )}
-                            </select>
-                        </div>
+                        <SelectorDual
+                            titulo="Maquinaria"
+                            disponibles={machine}
+                            seleccionados={selectedMachines}
+                            onAgregar={agregarMaquina}
+                            onQuitar={removerMaquina}
+                        />
+
+                        <SelectorDual
+                            titulo="Usuarios"
+                            disponibles={user}
+                            seleccionados={selectedUsers}
+                            onAgregar={agregarUser}
+                            onQuitar={removerUser}
+                        />
+
                         {/* 🔹 Recursos */}
                         <div>
                             <Text type="subtitle">Recursos</Text>

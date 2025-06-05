@@ -33,7 +33,8 @@ return new class extends Migration
             $table->json('line')->nullable();
             $table->json('activities')->nullable();
             $table->string('resource')->nullable();
-            $table->string('machine')->nullable();
+            $table->json('machine')->nullable();
+            $table->json('users')->nullable();
             $table->string('color')->nullable();
             $table->string('icon')->nullable();
             $table->string('duration')->nullable();
