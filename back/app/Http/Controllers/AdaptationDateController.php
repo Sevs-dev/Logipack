@@ -86,16 +86,17 @@ class AdaptationDateController extends Controller
             'start_date' => 'nullable|date',
             'end_date' => 'nullable|date',
         ]);
-        // Limpiamos espacios en blanco en cada elemento de 'line', si existe
-        if (isset($validated['line']) && is_array($validated['line'])) {
-            $validated['line'] = array_map(fn($item) => trim($item), $validated['line']);
-        }
+        // Limpiamos espacios en blanco en cada elemento
         if (isset($validated['machine']) && is_array($validated['machine'])) {
-            $validated['machine'] = array_map(fn($item) => trim($item), $validated['machine']);
+            $validated['machine'] = array_map(fn($item) => intval($item), $validated['machine']);
+        }
+
+        if (isset($validated['line']) && is_array($validated['line'])) {
+            $validated['line'] = array_map(fn($item) => intval($item), $validated['line']);
         }
 
         if (isset($validated['users']) && is_array($validated['users'])) {
-            $validated['users'] = array_map(fn($item) => trim($item), $validated['users']);
+            $validated['users'] = array_map(fn($item) => intval($item), $validated['users']);
         }
 
         $record = AdaptationDate::findOrFail($id);

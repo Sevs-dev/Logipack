@@ -34,7 +34,7 @@ class MaestrasController extends Controller
         ]);
         // Limpiamos espacios en cada elemento de type_stage
         if (isset($validatedData['type_stage']) && is_array($validatedData['type_stage'])) {
-            $validatedData['type_stage'] = array_map(fn($item) => trim($item), $validatedData['type_stage']);
+            $validatedData['type_stage'] = array_map(fn($item) => intval(trim($item)), $validatedData['type_stage']);
         }
         // Generar código autoincremental manualmente
         $lastCode = Maestra::max('code') ?? 0;
