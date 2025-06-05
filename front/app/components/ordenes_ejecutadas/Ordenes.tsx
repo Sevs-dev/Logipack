@@ -1,6 +1,6 @@
 import React from "react";
 import WindowManager from "../windowManager/WindowManager";
-import Ordenes from "../ordenes_ejecutadas/App"
+import Ordenes from "../ordenes_ejecutadas/NewOrden"
 import useUserData from '../../hooks/useUserData';
 import PermissionWrapper from "../PermissionWrapper/PermissionWrapper";
 import NonePermission from "../loader/NonePermission";

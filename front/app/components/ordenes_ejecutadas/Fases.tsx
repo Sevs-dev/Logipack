@@ -1,45 +1,38 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, ChangeEvent, FormEvent } from 'react';
 import Text from "../text/Text";
 import Button from "../buttons/buttons";
+import { ConfigType, Actividad, Lista, FasesProps } from "../../interfaces/FasesAcon";
 
 // Hook para enviar datos
 const useEnviardata = () => {
-  const enviarData = (data) => {
+  const enviarData = (data: any) => {
     console.log("confirmar datos fases", data);
   };
   return { enviarData };
 };
 
-const Fases = ({
-  proms,
-  setMemoria,
-  memoria,
-  estado_form,
-  setEstado_form,
-  finalizado_form,
-  setFinalizado_form
-}) => {
-  const [info, setInfo] = useState({});
-  const [lineaIndex, setLineaIndex] = useState(0);
-  const [actividadIndex, setActividadIndex] = useState(0);
-  const formRef = useRef();
+function Fases({ proms, setMemoria, memoria, estado_form, setEstado_form, finalizado_form, setFinalizado_form }: FasesProps) {
+  const [info, setInfo] = useState<Record<string, any>>({});
+  const [lineaIndex, setLineaIndex] = useState<number>(0);
+  const [actividadIndex, setActividadIndex] = useState<number>(0);
+  const formRef = useRef<HTMLFormElement>(null);
   const { enviarData } = useEnviardata();
 
-  const inputChange = (e) => {
-    const { name, type, value, checked, files } = e.target;
+  const inputChange = (e: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+    const { name, type, value, checked, files } = e.target as HTMLInputElement;
 
     setInfo((prev) => {
       if (type === 'checkbox') {
         const current = prev[name] || [];
         return {
           ...prev,
-          [name]: checked ? [...current, value] : current.filter((v) => v !== value),
+          [name]: checked ? [...current, value] : current.filter((v: string) => v !== value),
         };
       }
       if (type === 'file') {
         return {
           ...prev,
-          [name]: files.length > 1 ? Array.from(files) : files[0],
+          [name]: files && files.length > 1 ? Array.from(files) : files && files[0],
         };
       }
       return {
@@ -49,12 +42,13 @@ const Fases = ({
     });
   };
 
-  const almacenarDatos = (callback) => {
-    if (!formRef.current.checkValidity()) {
-      formRef.current.reportValidity();
+  const almacenarDatos = (callback?: () => void) => {
+    if (!formRef.current?.checkValidity()) {
+      formRef.current?.reportValidity();
       return;
     }
 
+    const lista = listas[lineaIndex];
     const datosConStage = {
       ...info,
       tipo_acon: lista.tipo_acondicionamiento_id,
@@ -64,7 +58,7 @@ const Fases = ({
     const nuevaMemoria = [...memoria, datosConStage];
     setMemoria(nuevaMemoria);
 
-    formRef.current.reset();
+    formRef.current?.reset();
     setInfo({});
 
     if (typeof callback === 'function') callback();
@@ -89,9 +83,9 @@ const Fases = ({
     });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
-    formRef.current.reset();
+    formRef.current?.reset();
   };
 
   const listas = proms || [];
@@ -103,6 +97,7 @@ const Fases = ({
     if (actividadGrupo.length < 1) {
       setFinalizado_form(true);
     }
+    // eslint-disable-next-line
   }, []);
 
   return (
@@ -120,7 +115,7 @@ const Fases = ({
               {/* Aquí está el grid de dos columnas */}
               <div className=" text-black grid grid-cols-1 md:grid-cols-2 gap-4">
                 {actividadGrupo.map((tarea, j) => {
-                  const config = typeof tarea.config === 'string' ? JSON.parse(tarea.config) : tarea.config;
+                  const config: ConfigType = typeof tarea.config === 'string' ? JSON.parse(tarea.config) : tarea.config;
 
                   return (
                     <div
@@ -136,7 +131,7 @@ const Fases = ({
                           className=" text-black w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                         >
                           <option value="">Seleccione</option>
-                          {config.options.map((opt, k) => (
+                          {config.options?.map((opt, k) => (
                             <option key={`opt-${k}`} value={opt}>
                               {opt}
                             </option>
@@ -145,7 +140,7 @@ const Fases = ({
                       )}
 
                       {['checkbox', 'radio'].includes(config.type) &&
-                        config.options.map((opt, k) => (
+                        config.options?.map((opt, k) => (
                           <label
                             key={`opt-${k}`}
                             className=" text-black inline-flex items-center mr-4 cursor-pointer"
@@ -244,7 +239,6 @@ const Fases = ({
         )}
       </form>
     </div>
-
   );
 };
 
