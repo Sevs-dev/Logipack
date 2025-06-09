@@ -42,4 +42,5 @@ export interface DataService {
   paralelo: boolean;
   duration: string;
   duration_user: string;
+  user?: string;
 }

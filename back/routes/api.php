@@ -20,6 +20,7 @@ use App\Http\Controllers\MachineryController;
 use App\Http\Controllers\TipoAcondicionamientoController;
 use App\Http\Controllers\LineaTipoAcondicionamientoController;
 use App\Http\Controllers\OrdenesEjecutadasController;
+use App\Http\Controllers\HistoryAuditController;
 
 Route::controller(AuthController::class)->group(function () {
     Route::post('login', 'login');
@@ -201,4 +202,10 @@ Route::controller(OrdenesEjecutadasController::class)->group(function () {
     Route::get('/getOrdenesEjecutadas/{id}', 'getAllByAdaptationId'); // Obtener una lineas específica
     Route::post('/newOrdenesEjecutadas', 'newOrdnesEjecutadas'); // Crear una nueva lineas 
     Route::get('/newOrdenes/{id}', 'getByAdaptationId'); // Actualizar una orden existente
+});
+
+//Rutas Historial de Audits
+Route::controller(HistoryAuditController::class)->group(function () {
+    Route::get('/getAudit', 'index'); // Obtener todas las lineas   
+    Route::get('/{model}/{id}', 'byModel'); // Obtener una lineas específica
 });

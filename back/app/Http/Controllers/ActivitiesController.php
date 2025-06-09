@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\Activitie;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
+
 
 class ActivitiesController extends Controller
 {
@@ -12,7 +14,16 @@ class ActivitiesController extends Controller
      */
     public function getActividad()
     {
-        return response()->json(Activitie::all(), 200);
+        // Traer sólo las actividades activas que sean la última versión por reference_id
+        $activities = Activitie::where('active', true)
+            ->whereIn('version', function ($query) {
+                $query->selectRaw('MAX(version)')
+                    ->from('activities as a2')
+                    ->whereColumn('a2.reference_id', 'activities.reference_id');
+            })
+            ->get();
+
+        return response()->json($activities, 200);
     }
 
     /**
@@ -24,25 +35,24 @@ class ActivitiesController extends Controller
             'description' => 'required|string',
             'config' => 'required|json',
             'binding' => 'boolean',
-            'has_time' => 'boolean', // Campo para indicar si se desea agregar tiempo
-            'duration' => 'nullable', // Formato para el tiempo HH:MM
+            'has_time' => 'boolean',
+            'duration' => 'nullable',
+            'user' => 'string|nullable',
         ]);
 
-        // Obtener el último código y sumarle 1
-        $lastCode = Activitie::max('code') ?? 0;
-        $newCode = $lastCode + 1;
+        $validatedData['version'] = '1';
+        $validatedData['reference_id'] = (string) Str::uuid();
 
-        // Agregar el nuevo código al array de datos validados
-        $validatedData['code'] = $newCode;
-
-        // Crear la actividad con el código generado
         $Actividad = Activitie::create($validatedData);
+
+        // Aquí NO necesitas hacer nada con 'user'
 
         return response()->json([
             'message' => 'Fase creada exitosamente',
             'Fase' => $Actividad
         ], 201);
     }
+
 
     /**
      * Mostrar una actividad específica.
@@ -63,31 +73,49 @@ class ActivitiesController extends Controller
      */
     public function updateActividad(Request $request, $id)
     {
-        $Activitie = Activitie::find($id);
+        $original = Activitie::find($id);
 
-        if (!$Activitie) {
+        if (!$original) {
             return response()->json(['message' => 'Actividad no encontrada'], 404);
         }
 
         $request->validate([
-            'code' => 'integer|unique:activities,code,' . $id,
             'description' => 'string',
             'config' => 'json',
             'binding' => 'boolean',
-            'has_time' => 'boolean', // Validar el campo has_time
-            'duration' => 'nullable|', // Validar el campo duration
+            'has_time' => 'boolean',
+            'duration' => 'nullable',
+            'user' => 'string|nullable',
         ]);
 
-        $Activitie->update([
-            'code' => $request->code ?? $Activitie->code,
-            'description' => $request->description ?? $Activitie->description,
-            'config' => $request->config ? json_decode($request->config, true) : $Activitie->config,
-            'binding' => $request->binding ? 1 : 0, // Convertir a 0 o 1
-            'has_time' => $request->has_time ?? $Activitie->has_time, // Actualizar has_time si está presente
-            'duration' => $request->duration ?? $Activitie->duration, // Actualizar duration si está presente
-        ]);
+        // Clonar el registro original
+        $newActividad = $original->replicate();
 
-        return response()->json(['message' => 'Actividad actualizada', 'data' => $Activitie], 200);
+        // Mantener el mismo reference_id para vincular versiones
+        $newActividad->reference_id = $original->reference_id;
+
+        // Incrementar la versión
+        $newActividad->version = (int)$original->version + 1;
+
+        // Actualizar con los valores nuevos si vienen, si no, dejar el original
+        $newActividad->description = $request->description ?? $original->description;
+        $newActividad->config = $request->config ? json_decode($request->config, true) : $original->config;
+        $newActividad->binding = $request->binding ?? $original->binding;
+        $newActividad->has_time = $request->has_time ?? $original->has_time;
+        $newActividad->duration = $request->duration ?? $original->duration;
+        $newActividad->user = $request->user ?? $original->user;
+
+        // Guardar la nueva versión
+        $newActividad->save();
+
+        // Opcional: Podés marcar la versión anterior como inactive
+        $original->active = false;
+        $original->save();
+
+        return response()->json([
+            'message' => 'Actividad actualizada. Nueva versión creada.',
+            'data' => $newActividad
+        ], 200);
     }
 
     /**
@@ -101,8 +129,9 @@ class ActivitiesController extends Controller
             return response()->json(['message' => 'Actividad no encontrada'], 404);
         }
 
-        $Activitie->delete();
+        $Activitie->active = false;
+        $Activitie->save();
 
-        return response()->json(['message' => 'Actividad eliminada'], 200);
+        return response()->json(['message' => 'Actividad desactivada'], 200);
     }
 }

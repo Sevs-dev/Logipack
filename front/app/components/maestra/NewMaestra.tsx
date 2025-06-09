@@ -6,6 +6,7 @@ import { Search, X, Clock } from "lucide-react";
 import { createMaestra, getMaestra, deleteMaestra, getMaestraId, updateMaestra, getTipo } from "../../services/maestras/maestraServices";
 import { getStage } from "../../services/maestras/stageServices";
 import { getStage as listTipoAcondicionamiento, getStageById as lisTipoacondicionamientoId } from "@/app/services/maestras/TipoAcondicionamientoService";
+import { getAuditsByModel } from "../../services/history/historyAuditServices";
 // ------------------------- 3. Importaciones de componentes de la UI -------------------------
 import Button from "../buttons/buttons";
 import { showSuccess, showError, showConfirm } from "../toastr/Toaster";
@@ -14,6 +15,7 @@ import Table from "../table/Table";
 import ModalSection from "../modal/ModalSection";
 import { InfoPopover } from "../buttons/InfoPopover";
 import { CreateClientProps } from "../../interfaces/CreateClientProps";
+import AuditModal from "../history/AuditModal";
 // ------------------------- 5. Tipos de datos e interfaces -------------------------
 import { Stage, Data } from "../../interfaces/NewMaestra";
 import { DataTipoAcondicionamiento, DataLineaTipoAcondicionamiento } from "@/app/interfaces/NewTipoAcondicionamiento";
@@ -43,6 +45,8 @@ const Maestra = ({ canEdit = false, canView = false }: CreateClientProps) => {
     const [detalleAcondicionamiento, setDetalleAcondicionamiento] = useState<any[]>([]);
     const [searchTipoAcom, setSearchTipoAcom] = useState("");
     const [draggedIndex, setDraggedIndex] = React.useState<number | null>(null);
+    const [auditList, setAuditList] = useState<any[]>([]);
+    const [, setSelectedAudit] = useState<any | null>(null);
 
     const handleSelectTipoAcondicionamiento = async (tipoId: number) => {
         try {
@@ -447,6 +451,18 @@ const Maestra = ({ canEdit = false, canView = false }: CreateClientProps) => {
 
     const selectedId = (tipoSeleccionadoAcon ?? [])[0]; // solo toma uno
 
+    const handleHistory = async (id: number) => {
+        const model = "Maestra";
+        try {
+            const data = await getAuditsByModel(model, id);
+            console.log(data)
+            setAuditList(data);
+            if (data.length > 0) setSelectedAudit(data[0]); // opción: mostrar la primera al abrir
+        } catch (error) {
+            console.error("Error al obtener la auditoría:", error);
+        }
+    };
+
     return (
         <div>
             {/* Botón para abrir el modal de creación */}
@@ -747,7 +763,11 @@ const Maestra = ({ canEdit = false, canView = false }: CreateClientProps) => {
                 }}
                 onDelete={canEdit ? handleDelete : undefined}
                 onEdit={handleEdit}
+                onHistory={handleHistory}
             />
+            {auditList.length > 0 && (
+                <AuditModal audit={auditList} onClose={() => setAuditList([])} />
+            )}
         </div >
     );
 };

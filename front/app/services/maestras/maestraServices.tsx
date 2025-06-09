@@ -12,6 +12,14 @@ const Maestras = axios.create({
 // Crear una nueva Maestra
 export const createMaestra = async (data: DataService): Promise<any> => {
     try {
+         const name = document.cookie
+            .split('; ')
+            .find(row => row.startsWith('name='))
+            ?.split('=')[1];
+
+        if (name) {
+            data.user = decodeURIComponent(name);
+        }
         const response = await Maestras.post('/newMaestra', data);
         return response.data;
     } catch (error) {

@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from "react";
 import { createStage, getStageId, updateStage, deleteStage, getStage } from "../../services/maestras/stageServices";
 import { getActivitie } from "../../services/maestras/activityServices";
+import { getAuditsByModel } from "../../services/history/historyAuditServices";
 import { showError, showSuccess, showConfirm } from "../toastr/Toaster";
 import Table from "../table/Table";
 import Button from "../buttons/buttons";
@@ -13,6 +14,7 @@ import { motion } from "framer-motion";
 const phases = ["Planeación", "Conciliación", "Control", "Actividades", "Procesos"];
 import { CreateClientProps } from "../../interfaces/CreateClientProps";
 import ModalSection from "../modal/ModalSection";
+import AuditModal from "../history/AuditModal";
 
 function NewStage({ canEdit = false, canView = false }: CreateClientProps) {
     const [isOpen, setIsOpen] = useState(false);
@@ -33,6 +35,8 @@ function NewStage({ canEdit = false, canView = false }: CreateClientProps) {
     const [availableActivities, setAvailableActivities] = useState<{ id: number; description: string; binding: number, duration: number }[]>([]);
     const [selectedActivities, setSelectedActivities] = useState<{ id: number; description: string, duration: number }[]>([]);
     const [searchTerm, setSearchTerm] = useState("");
+    const [auditList, setAuditList] = useState<any[]>([]);
+    const [, setSelectedAudit] = useState<any | null>(null);
 
     // Función para obtener las fases
     const fetchStage = async () => {
@@ -200,13 +204,10 @@ function NewStage({ canEdit = false, canView = false }: CreateClientProps) {
             duration_user: durationUser ?? "",
             duration,
         };
-
-        console.log("Datos a enviar al actualizar la fase:", updatedStage);
-
+        // console.log("Datos a enviar al actualizar la fase:", updatedStage);
         try {
             const response = await updateStage(editingStage.id, updatedStage);
-            console.log("Respuesta del servidor al actualizar la fase:", response);
-
+            // console.log("Respuesta del servidor al actualizar la fase:", response);
             showSuccess("Fase actualizada con éxito");
             setIsEditOpen(false);
             fetchStage();
@@ -256,6 +257,18 @@ function NewStage({ canEdit = false, canView = false }: CreateClientProps) {
         if (hours > 0) parts.push(`${hours} hora${hours > 1 ? 's' : ''}`);
         if (remainingMinutes > 0) parts.push(`${remainingMinutes} min`);
         return parts.join(' ');
+    };
+
+    const handleHistory = async (id: number) => {
+        const model = "Stage";
+        try {
+            const data = await getAuditsByModel(model, id);
+            console.log(data)
+            setAuditList(data);
+            if (data.length > 0) setSelectedAudit(data[0]); // opción: mostrar la primera al abrir
+        } catch (error) {
+            console.error("Error al obtener la auditoría:", error);
+        }
     };
 
     return (
@@ -538,9 +551,13 @@ function NewStage({ canEdit = false, canView = false }: CreateClientProps) {
                 description: "Descripción",
                 phase_type: "Tipo de Fase",
                 status: "Estado",
-            }} 
-            onDelete={canEdit ?  handleDelete : undefined} 
-            onEdit={handleEdit} />
+            }}
+                onDelete={canEdit ? handleDelete : undefined}
+                onEdit={handleEdit} onHistory={handleHistory}
+            />
+            {auditList.length > 0 && (
+                <AuditModal audit={auditList} onClose={() => setAuditList([])} />
+            )}
         </div>
     );
 }

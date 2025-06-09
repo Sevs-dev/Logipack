@@ -13,7 +13,6 @@ return new class extends Migration
     {
         Schema::create('maestras', function (Blueprint $table) {
             $table->id();
-            $table->string('code')->unique();
             $table->text('descripcion');
             $table->boolean('requiere_bom')->default(false);
             $table->string('type_product')->nullable(); 
@@ -24,6 +23,10 @@ return new class extends Migration
             $table->boolean('paralelo')->default(false);
             $table->string('duration')->nullable();
             $table->string('duration_user')->nullable(); 
+            $table->string('version'); // Guarda el tiempo en formato HH:MM:SS
+            $table->boolean('active')->default(true); // Indica si tiene 
+            $table->uuid('reference_id');
+            $table->string('user');
             $table->timestamps();
         });
     }

@@ -7,6 +7,7 @@ import { BadgeCheck } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Acondicionamiento, ListData, Plan } from "../../interfaces/NewOrden";
 import { getOrdenesEjecutadas, postOrdenesEjecutadas, getOrdenEjecutadaById } from "../../services/ordenes_ejecutadas/ordenesEjecutadaServices"
+import { getManuId } from "../../services/userDash/manufacturingServices"
 
 // Hook para obtener datos
 const useFetchData = () => {
@@ -98,8 +99,8 @@ function NewOrden() {
           </div>
 
           <div className="px-6 py-4 text-sm text-gray-700 grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2">
-            <div><span className="font-medium text-gray-600">Adaptation ID:</span> {acon.adaptation_id}</div>
-            <div><span className="font-medium text-gray-600">Maestra ID:</span> {acon.maestra_id}</div>
+            {/* <div><span className="font-medium text-gray-600">Adaptation ID:</span> {acon.adaptation_id}</div> */}
+            {/* <div><span className="font-medium text-gray-600">Maestra ID:</span> {acon.maestra_id}</div> */}
             <div className="sm:col-span-2"><span className="font-medium text-gray-600">Descripción Maestra:</span> {acon.descripcion_maestra}</div>
             <div><span className="font-medium text-gray-600">Línea Producción:</span> {acon.linea_produccion}</div>
             <div><span className="font-medium text-gray-600">Tipo Acond. FK:</span> {acon.maestra_tipo_acondicionamiento_fk}</div>

@@ -14,6 +14,14 @@ const Stage = axios.create({
 // Envía una solicitud POST a la ruta '/newStage' con los datos proporcionados.
 export const createStage = async (data: Data): Promise<{ status: number; message?: string }> => {
     try {
+        const name = document.cookie
+            .split('; ')
+            .find(row => row.startsWith('name='))
+            ?.split('=')[1];
+
+        if (name) {
+            data.user = decodeURIComponent(name);
+        }
         const response = await Stage.post('/newFase', data);
         return {
             status: response.status,

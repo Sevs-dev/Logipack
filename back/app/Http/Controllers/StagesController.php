@@ -5,21 +5,29 @@ namespace App\Http\Controllers;
 use App\Models\Stage;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 
 class StagesController extends Controller
 {
     // Obtener todas las Fases
     public function getFase(): JsonResponse
     {
-        $Fases = Stage::all();
-        return response()->json($Fases);
+        $Fases = Stage::where('active', true)
+            ->whereIn('version', function ($query) {
+                $query->selectRaw('MAX(version)')
+                    ->from('stages as a2')
+                    ->whereColumn('a2.reference_id', 'stages.reference_id');
+            })
+            ->get();
+
+        return response()->json($Fases, 200);
     }
 
     // Crear una nueva Fase
     public function newFase(Request $request): JsonResponse
     {
         $validatedData = $request->validate([
-             'description' => 'required|string',
+            'description' => 'required|string',
             'phase_type' => 'required|string',
             'repeat' => 'boolean',
             'repeat_line' => 'boolean',
@@ -28,14 +36,14 @@ class StagesController extends Controller
             'can_pause' => 'boolean',
             'status' => 'boolean',
             'multi' => 'boolean',
-            'activities' => 'required|array', 
+            'activities' => 'required|array',
             'duration' => 'nullable|string',
             'duration_user' => 'nullable|string',
+            'user' => 'string|nullable',
         ]);
 
-        // Generar código autoincremental manualmente
-        $lastCode = Stage::max('code') ?? 0;
-        $validatedData['code'] = $lastCode + 1;
+        $validatedData['version'] = '1';
+        $validatedData['reference_id'] = (string) Str::uuid();
 
         // Crear la nueva Fase
         $Fase = Stage::create($validatedData);
@@ -74,17 +82,29 @@ class StagesController extends Controller
             'can_pause' => 'boolean',
             'status' => 'boolean',
             'multi' => 'boolean',
-            'activities' => 'required|array', 
+            'activities' => 'required|array',
             'duration' => 'nullable|string',
             'duration_user' => 'nullable|string',
+            'user' => 'string|nullable',
         ]);
 
+        // Desactivar la versión anterior
+        $Fase->active = false;
+        $Fase->save();
 
-        $Fase->update($validatedData);
+        // Crear nueva versión
+        $newVersion = (int) $Fase->version + 1;
+
+        $newFase = $Fase->replicate(); // duplica todos los atributos excepto la PK
+        $newFase->version = $newVersion;
+        $newFase->fill($validatedData);
+        $newFase->reference_id = $Fase->reference_id ?? (string) Str::uuid();
+        $newFase->active = true; // activamos la nueva versión
+        $newFase->save();
 
         return response()->json([
-            'message' => 'Fase actualizada correctamente',
-            'Fase' => $Fase
+            'message' => 'Fase actualizada como nueva versión correctamente',
+            'Fase' => $newFase
         ]);
     }
 

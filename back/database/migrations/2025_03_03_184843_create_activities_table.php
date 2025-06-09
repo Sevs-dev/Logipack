@@ -13,12 +13,15 @@ return new class extends Migration
     {
         Schema::create('activities', function (Blueprint $table) {
             $table->id();
-            $table->integer('code')->unique(); // Código autoincrementado manualmente
             $table->string('description'); // Descripción de la fase
             $table->json('config')->nullable(); // Almacena tipo y opciones en JSON
             $table->boolean('binding')->default(false); // Indica si tiene 
             $table->boolean('has_time')->default(false); // Indica si requiere tiempo
             $table->string('duration')->nullable(); // Guarda el tiempo en formato HH:MM:SS
+            $table->string('version'); // Guarda el tiempo en formato HH:MM:SS
+            $table->boolean('active')->default(true); // Indica si tiene 
+            $table->uuid('reference_id');
+            $table->string('user');
             $table->timestamps();
         });
     }

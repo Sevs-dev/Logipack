@@ -12,8 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('stages', function (Blueprint $table) {
-            $table->id();
-            $table->integer('code')->unique(); // Código autoincrementado manualmente
+            $table->id(); 
             $table->string('description'); // Descripción de la fase
             $table->string('phase_type'); // Tipo de fase
             $table->json('activities')->nullable();
@@ -26,6 +25,10 @@ return new class extends Migration
             $table->boolean('repeat_line')->default(false); // Indica si se puede pausar
             $table->string('duration')->nullable();
             $table->string('duration_user')->nullable();
+            $table->string('version'); // Guarda el tiempo en formato HH:MM:SS
+            $table->boolean('active')->default(true); // Indica si tiene 
+            $table->uuid('reference_id');
+            $table->string('user');
             $table->timestamps(); // Fechas de creación y actualización
         });
     }

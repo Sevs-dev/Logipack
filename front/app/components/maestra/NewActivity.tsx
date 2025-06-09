@@ -1,6 +1,7 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import { createActivitie, deleteActivitie, getActivitie, getActivitieId, updateActivitie } from "../../services/maestras/activityServices";
+import { getAuditsByModel } from "../../services/history/historyAuditServices";
 import { showError, showSuccess, showConfirm } from "../toastr/Toaster";
 import Button from "../buttons/buttons";
 import Table from "../table/Table";
@@ -9,6 +10,7 @@ import Text from "../text/Text";
 import { Clock } from "lucide-react";
 import { CreateClientProps } from "../../interfaces/CreateClientProps";
 import ModalSection from "../modal/ModalSection";
+import AuditModal from "../history/AuditModal";
 
 export default function NewActivity({ canEdit = false, canView = false }: CreateClientProps) {
     const [modalOpen, setModalOpen] = useState(false);
@@ -28,6 +30,9 @@ export default function NewActivity({ canEdit = false, canView = false }: Create
     const INPUT_TYPES_WITH_OPTIONS = ["select", "radio", "checkbox"];
     const getDefaultConfig = (type: string) =>
         JSON.stringify(activityTypes[type] || activityTypes["Texto corto"], null, 2);
+    const [auditData, setAuditData] = useState<any>(null);
+    const [auditList, setAuditList] = useState<any[]>([]);
+    const [selectedAudit, setSelectedAudit] = useState<any | null>(null);
 
     // ────────────────────────────── HELPERS ──────────────────────────────
 
@@ -252,6 +257,20 @@ export default function NewActivity({ canEdit = false, canView = false }: Create
         resetModalData();
     };
 
+    const handleHistory = async (id: number) => {
+        const model = "Activitie";
+        try {
+            const data = await getAuditsByModel(model, id);
+            setAuditList(data);
+            if (data.length > 0) setSelectedAudit(data[0]); // opción: mostrar la primera al abrir
+        } catch (error) {
+            console.error("Error al obtener la auditoría:", error);
+        }
+    };
+
+    const closeModal = () => {
+        setAuditData(null);
+    };
     return (
         <div>
             {/* Botón para abrir el modal de creación */}
@@ -377,7 +396,7 @@ export default function NewActivity({ canEdit = false, canView = false }: Create
                     {/* Botones */}
                     <div className="flex justify-center gap-4 mt-6">
                         <Button onClick={handleModalClose} variant="cancel" label="Cancelar" />
-                        {canEdit  && (
+                        {canEdit && (
                             <Button onClick={handleSubmit} variant="create" label={isEditing ? "Guardar" : "Crear"} />
                         )}
                     </div>
@@ -389,8 +408,14 @@ export default function NewActivity({ canEdit = false, canView = false }: Create
                 columnLabels={{
                     description: "Descripción",
                     binding: "Obligatorio",
-                }} onDelete={canEdit ? handleDelete : undefined}
-                onEdit={handleEdit} />
+                }}
+                onDelete={canEdit ? handleDelete : undefined}
+                onEdit={handleEdit}
+                onHistory={handleHistory}
+            />
+            {auditList.length > 0 && (
+                <AuditModal audit={auditList} onClose={() => setAuditList([])} />
+            )}
         </div>
     );
 }

@@ -15,13 +15,24 @@ export interface Data {
     binding: boolean;
     has_time: boolean;
     duration: number;
+    user?: string;
 }
 
 // Función para crear un nuevo Activitie.
 // Envía una solicitud POST a la ruta '/newActivitie' con los datos proporcionados.
-export const createActivitie = async (data: Data): Promise<{ status: number; message?: string }> => { 
+export const createActivitie = async ( data: Data ): Promise<{ status: number; message?: string }> => {
     try {
+        const name = document.cookie
+            .split('; ')
+            .find(row => row.startsWith('name='))
+            ?.split('=')[1];
+
+        if (name) {
+            data.user = decodeURIComponent(name);
+        }
+
         const response = await Activitie.post('/newActividad', data);
+        // console.log("Datos", response)
         return {
             status: response.status,
             message: response.data.message || "Actividad creada exitosamente",
@@ -30,7 +41,7 @@ export const createActivitie = async (data: Data): Promise<{ status: number; mes
         let errorMessage = "Error desconocido";
 
         if (typeof error === "object" && error !== null && "response" in error) {
-            const axiosError = error as { response?: { data: unknown } }; 
+            const axiosError = error as { response?: { data: unknown } };
             console.error("Detalles del error del backend:", axiosError.response?.data);
         } else if (error instanceof Error) {
             errorMessage = error.message;
@@ -40,6 +51,7 @@ export const createActivitie = async (data: Data): Promise<{ status: number; mes
         throw new Error(errorMessage);
     }
 };
+
 
 // Función para obtener todos los Activitie.
 // Realiza una solicitud GET a la ruta '/getActivitie' y retorna los datos recibidos.
@@ -94,7 +106,7 @@ export const getActivitieName = async (name: string) => {
 // Función para actualizar un Activitie existente.
 // Envía una solicitud PUT a la ruta `/updateActivitie/${id}` con los nuevos datos del Activitie. 
 export const updateActivitie = async (id: number, data: Data) => {
-    
+
     try {
         const response = await Activitie.put(`/updateActividad/${id}`, data);
         return response.data;
