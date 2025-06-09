@@ -30,9 +30,8 @@ export default function NewActivity({ canEdit = false, canView = false }: Create
     const INPUT_TYPES_WITH_OPTIONS = ["select", "radio", "checkbox"];
     const getDefaultConfig = (type: string) =>
         JSON.stringify(activityTypes[type] || activityTypes["Texto corto"], null, 2);
-    const [auditData, setAuditData] = useState<any>(null);
     const [auditList, setAuditList] = useState<any[]>([]);
-    const [selectedAudit, setSelectedAudit] = useState<any | null>(null);
+       const [, setSelectedAudit] = useState<any | null>(null);
 
     // ────────────────────────────── HELPERS ──────────────────────────────
 
@@ -267,10 +266,7 @@ export default function NewActivity({ canEdit = false, canView = false }: Create
             console.error("Error al obtener la auditoría:", error);
         }
     };
-
-    const closeModal = () => {
-        setAuditData(null);
-    };
+ 
     return (
         <div>
             {/* Botón para abrir el modal de creación */}

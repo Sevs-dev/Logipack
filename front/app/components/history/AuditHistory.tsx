@@ -1,23 +1,8 @@
 import React from "react";
 import Text from "../text/Text";
-import Button from "../buttons/buttons";
 import { getStageId } from "../../services/maestras/stageServices";
 import { getStageById as lisTipoacondicionamientoId } from "@/app/services/maestras/TipoAcondicionamientoService";
-
-interface AuditValues {
-    [key: string]: unknown;
-}
-
-interface AuditHistoryProps {
-    audit: {
-        user: string;
-        action: string;
-        created_at: string;
-        old_values?: AuditValues;
-        new_values?: AuditValues;
-    } | null;
-    onClose: () => void;
-}
+import { AuditHistoryProps } from "../../interfaces/Audit";
 
 const stageCache: Record<number, string> = {};
 const acondCache: Record<number, string> = {};
@@ -80,6 +65,9 @@ const translateKey = (key: string): string => {
         requiere_bom: "Requiere BOM",
         type_stage: "Fases",
         type_acondicionamiento: "Tipo de Acondicionamiento",
+        base_quantity: "Cantidad Base",
+        ingredients: "Ingredientes",
+        code_ingredients: "Codart",
     };
     return map[key.toLowerCase()] || capitalize(key);
 };
@@ -221,6 +209,7 @@ const AuditHistory: React.FC<AuditHistoryProps> = ({ audit, onClose }) => {
                                     "reference_id",
                                     "active",
                                     "status_type",
+                                    "code_details"
                                 ].includes(key)
                         )
                         .sort(([aKey], [bKey]) => {

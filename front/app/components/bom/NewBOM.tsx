@@ -1,6 +1,5 @@
 // React y librerías externas
 import React, { useState, useEffect, useMemo } from "react";
-import { motion } from "framer-motion";
 // Componentes locales
 import Button from "../buttons/buttons";
 import Text from "../text/Text";
@@ -8,11 +7,14 @@ import Table from "../table/Table";
 import { showSuccess, showError, showConfirm } from "../toastr/Toaster";
 import ModalSection from "../modal/ModalSection";
 import { CreateClientProps } from "../../interfaces/CreateClientProps";
+import AuditModal from "../history/AuditModal";
 // Servicios 
 import { getClients, getClientsId } from "@/app/services/userDash/clientServices";
 import { getArticleByCode, newArticle, getArticlesId, deleteArticle, updateArticle, getBoms } from "@/app/services/bom/articleServices";
+import { getAuditsByModel } from "../../services/history/historyAuditServices";
 // Tipos e interfaces
-import { Client, Article, Ingredient, Bom, BomView } from "@/app/interfaces/BOM";
+import { Client, Article, Ingredient, Bom, BomView, BomPayload } from "@/app/interfaces/BOM";
+import { Audit } from "../../interfaces/Audit";
 
 function BOMManager({ canEdit = false, canView = false }: CreateClientProps) {
     // Estados
@@ -30,6 +32,8 @@ function BOMManager({ canEdit = false, canView = false }: CreateClientProps) {
     const [isSaving, setIsSaving] = useState(false);
     const [allArticles, setAllArticles] = useState<Article[]>([]);
     const [searchTerm, setSearchTerm] = useState("");
+    const [auditList, setAuditList] = useState<Audit[]>([]);
+    const [, setSelectedAudit] = useState<Audit | null>(null);
     const filteredArticles = useMemo(() => {
         if (!searchTerm.trim()) return articles;
         return articles.filter(
@@ -57,7 +61,8 @@ function BOMManager({ canEdit = false, canView = false }: CreateClientProps) {
     const fetchBOMs = async () => {
         try {
             const data = await getBoms(); // Obtener todos los BOMs
-            const bomsData: Bom[] = data.boms;
+            // console.log(data);
+            const bomsData: Bom[] = Array.isArray(data) ? data : [];// o [] si quieres fallback vacío
             // Enriquecer cada BOM con datos del cliente y artículo
             const bomsWithExtra: BomView[] = await Promise.all(
                 bomsData.map(async (bom) => {
@@ -211,12 +216,12 @@ function BOMManager({ canEdit = false, canView = false }: CreateClientProps) {
         setIsSaving(true);
 
         try {
-            const code_details = JSON.stringify({ codart: selectedArticle.codart }); // Código rápido para búsqueda
+            const code_details = JSON.stringify({ codart: selectedArticle.codart });
             const code_ingredients = JSON.stringify(
                 ingredients.map((ing) => ({ codart: ing.codart }))
             );
 
-            const bomData = {
+            const bomPayload: BomPayload = {
                 client_id: Number(selectedClient),
                 base_quantity: baseQuantity.toString(),
                 details: JSON.stringify({ article: selectedArticle }),
@@ -226,25 +231,25 @@ function BOMManager({ canEdit = false, canView = false }: CreateClientProps) {
                 status: bomStatus,
             };
 
-            // Si se está editando, actualizar; si no, crear nuevo
             if (currentBomId) {
-                await updateArticle(currentBomId, bomData);
+                await updateArticle(currentBomId, bomPayload);
                 showSuccess("BOM actualizado con éxito");
             } else {
-                await newArticle(bomData);
+                await newArticle(bomPayload);
                 showSuccess("BOM creado con éxito");
             }
 
             resetForm();
-            fetchBOMs(); // Recargar lista de BOMs
+            fetchBOMs();
         } catch (error) {
             showError("Error al guardar el BOM.");
             console.error("Error en handleSaveBOM:", error);
         } finally {
             setIsSaving(false);
-            setIsModalOpen(false); // Cerrar modal
+            setIsModalOpen(false);
         }
     };
+
 
     // Reiniciar todos los campos del formulario
     const resetForm = () => {
@@ -313,6 +318,17 @@ function BOMManager({ canEdit = false, canView = false }: CreateClientProps) {
                 desart: selectedArticleForIngredient.desart,
             };
             setIngredients(newIngredients);
+        }
+    };
+
+    const handleHistory = async (id: number) => {
+        const model = "Bom";
+        try {
+            const data = await getAuditsByModel(model, id);
+            setAuditList(data);
+            if (data.length > 0) setSelectedAudit(data[0]); // opción: mostrar la primera al abrir
+        } catch (error) {
+            console.error("Error al obtener la auditoría:", error);
         }
     };
 
@@ -522,7 +538,11 @@ function BOMManager({ canEdit = false, canView = false }: CreateClientProps) {
                 }}
                 onDelete={canEdit ? handleDelete : undefined}
                 onEdit={handleEdit}
+                onHistory={handleHistory}
             />
+            {auditList.length > 0 && (
+                <AuditModal audit={auditList} onClose={() => setAuditList([])} />
+            )}
 
         </div>
     );

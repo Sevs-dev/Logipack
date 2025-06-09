@@ -2,14 +2,10 @@ import React, { useState } from "react";
 import AuditHistory from "./AuditHistory";
 import Text from "../text/Text";
 import Button from "../buttons/buttons";
-
-interface AuditModalProps {
-    audit: any[];
-    onClose: () => void;
-}
+import { Audit, AuditModalProps } from "../../interfaces/Audit";
 
 const AuditModal: React.FC<AuditModalProps> = ({ audit, onClose }) => {
-    const [selectedAudit, setSelectedAudit] = useState<any | null>(
+    const [selectedAudit, setSelectedAudit] = useState<Audit | null>(
         audit.length > 0 ? audit[0] : null
     );
 
@@ -25,7 +21,9 @@ const AuditModal: React.FC<AuditModalProps> = ({ audit, onClose }) => {
             <div className="bg-white/10 backdrop-blur-md rounded-2xl p-6 w-full max-w-4xl max-h-[90vh] flex flex-col md:flex-row gap-6 shadow-lg shadow-black/30 text-gray-100 border border-white/20">
                 {/* Panel izquierdo: Lista de historial */}
                 <div className="md:w-1/3 flex flex-col h-full">
-                    <Text type="title" color="text-[#fff]">Historial</Text>
+                    <Text type="title" color="text-[#fff]">
+                        Historial
+                    </Text>
                     <ul className="flex-1 overflow-y-auto rounded-xl border border-white/20 divide-y divide-white/10 bg-black/10">
                         {audit.map((item) => (
                             <AuditItem
@@ -59,9 +57,8 @@ const AuditModal: React.FC<AuditModalProps> = ({ audit, onClose }) => {
     );
 };
 
-// Componente reutilizable para cada ítem de auditoría
 const AuditItem: React.FC<{
-    item: any;
+    item: Audit;
     isSelected: boolean;
     onSelect: () => void;
 }> = ({ item, isSelected, onSelect }) => {
