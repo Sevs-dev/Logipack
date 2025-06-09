@@ -114,7 +114,8 @@ class MaestrasController extends Controller
             return response()->json(['message' => 'Maestra no encontrada'], 404);
         }
 
-        $Maestra->delete();
+        $Maestra->active = false;
+        $Maestra->save();
 
         return response()->json(['message' => 'Maestra eliminada correctamente']);
     }

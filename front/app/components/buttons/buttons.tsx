@@ -11,14 +11,14 @@ interface ButtonProps {
 }
 
 const buttonStyles = {
-  save: "bg-green-600 hover:bg-green-700 focus:ring-green-400 shadow-green-500/50 text-white",
-  cancel: "bg-red-500 hover:bg-red-600 focus:ring-red-400 shadow-red-500/50 text-white",
-  edit: "bg-blue-600 hover:bg-blue-700 focus:ring-blue-400 shadow-blue-500/50 text-white p-1",
-  delete: "bg-red-600 hover:bg-red-700 focus:ring-red-400 shadow-red-500/50 text-white p-1",
-  create: "bg-green-500 hover:bg-green-600 focus:ring-green-400 shadow-green-500/50 text-white",
-  create2: "bg-yellow-500 hover:bg-yellow-600 focus:ring-yellow-400 shadow-yellow-500/50 text-white",
-  terciario: "bg-yellow-500 hover:bg-yellow-600 focus:ring-yellow-400 shadow-yellow-500/50 text-black",
-  history: "bg-white hover:bg-gray-100 focus:ring-yellow-400 shadow-yellow-500/50 text-black",
+  save: "bg-green-600 hover:bg-green-700 focus:ring-green-400 shadow-lg shadow-green-500/40 text-white font-semibold px-3 py-1.5 rounded transition duration-300 ease-in-out",
+  cancel: "bg-red-600 hover:bg-red-700 focus:ring-red-400 shadow-lg shadow-red-500/40 text-white font-semibold px-3 py-1.5 rounded transition duration-300 ease-in-out",
+  edit: "bg-blue-600 hover:bg-blue-700 focus:ring-blue-400 shadow-lg shadow-blue-500/40 text-white font-semibold px-3 py-1.5 rounded transition duration-300 ease-in-out",
+  delete: "bg-red-700 hover:bg-red-800 focus:ring-red-500 shadow-lg shadow-red-600/40 text-white font-semibold px-3 py-1.5 rounded transition duration-300 ease-in-out",
+  create: "bg-green-500 hover:bg-green-600 focus:ring-green-400 shadow-lg shadow-green-500/40 text-white font-semibold px-3 py-1.5 rounded transition duration-300 ease-in-out",
+  create2: "bg-yellow-500 hover:bg-yellow-600 focus:ring-yellow-400 shadow-lg shadow-yellow-500/40 text-gray-900 font-semibold px-3 py-1.5 rounded transition duration-300 ease-in-out",
+  terciario: "bg-yellow-400 hover:bg-yellow-500 focus:ring-yellow-300 shadow-lg shadow-yellow-400/40 text-gray-900 font-semibold px-3 py-1.5 rounded transition duration-300 ease-in-out",
+  history: "bg-purple-600 hover:bg-purple-700 focus:ring-purple-500 shadow-lg shadow-purple-500/50 text-white font-semibold px-3 py-1.5 rounded transition duration-300 ease-in-out",
 };
 
 const icons = {

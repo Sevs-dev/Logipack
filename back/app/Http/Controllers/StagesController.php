@@ -116,7 +116,8 @@ class StagesController extends Controller
             return response()->json(['message' => 'Fase no encontrada'], 404);
         }
 
-        $Fase->delete();
+        $Fase->active = false;
+        $Fase->save();
 
         return response()->json(['message' => 'Fase eliminada correctamente']);
     }
