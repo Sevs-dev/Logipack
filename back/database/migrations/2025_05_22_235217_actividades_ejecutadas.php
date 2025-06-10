@@ -13,12 +13,11 @@ return new class extends Migration
     {
         Schema::create('actividades_ejecutadas', function (Blueprint $table) {
             $table->id();
-            $table->string('orden_id')->nullable();
-            $table->string('adaptation_id')->nullable(); // Concatena los datos de los id
-            $table->string('number_order')->nullable();
+            $table->string('orden_ejecutada')->nullable();
+            $table->string('adaptation_id')->nullable();
             $table->string('tipo_acondicionamiento_fk')->nullable();
             $table->string('fases_fk')->nullable();
-            $table->string('datos_forms')->nullable();
+            $table->json('forms')->nullable();
             $table->timestamps();
         });
     }
