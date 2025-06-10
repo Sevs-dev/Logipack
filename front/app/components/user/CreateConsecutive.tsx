@@ -45,7 +45,7 @@ function CreateConsecutive() {
         }}
         onDelete={handleDelete}
         showDeleteButton={false}
-        onEdit={handleEdit}
+        onEdit={handleEdit} 
         showEditButton={false}
       />
     </div>

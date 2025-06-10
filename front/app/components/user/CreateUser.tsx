@@ -6,7 +6,7 @@ import { FiEye, FiEyeOff } from "react-icons/fi";
 import { BiLock } from "react-icons/bi";
 import { InfoPopover } from "../buttons/InfoPopover";
 import { post, updateUser, getRole, deleteUser, getUsers, getDate } from "../../services/userDash/authservices";
-import { getFactory, getFactoryId } from "../../services/userDash/factoryServices";
+import { getFactory } from "../../services/userDash/factoryServices";
 import Text from "../text/Text";
 import ModalSection from "../modal/ModalSection";
 import { showError, showSuccess, showConfirm } from "../toastr/Toaster";
@@ -32,7 +32,7 @@ function CreateUser({ canEdit = false, canView = false }: CreateClientProps) {
   const [roles, setRoles] = useState<Role[]>([]);
   const [factory, setfactory] = useState<Factory[]>([]);
   const [users, setUsers] = useState<User[]>([]);
-  const [editForm, setEditForm] = useState({
+  const [editForm] = useState({
     name: "",
     email: "",
     role: "", // guardamos el id del rol como string
@@ -56,7 +56,7 @@ function CreateUser({ canEdit = false, canView = false }: CreateClientProps) {
       }
     }
     fetchInitialData();
-  }, []);
+  }, [canView]);
 
   // Cargar datos en el formulario si editamos
   useEffect(() => {
@@ -389,7 +389,7 @@ function CreateUser({ canEdit = false, canView = false }: CreateClientProps) {
           role: "Rol"
         }}
         onDelete={canEdit ? handleDelete : undefined}
-        onEdit={handleEdit}
+        onEdit={handleEdit} 
       />
 
     </div>

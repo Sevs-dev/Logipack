@@ -1,6 +1,4 @@
 "use client";
-
-import Link from "next/link";
 import { motion } from "framer-motion";
 import nookies from "nookies";
 import { useRouter } from "next/navigation";

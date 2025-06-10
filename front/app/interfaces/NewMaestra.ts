@@ -44,3 +44,15 @@ export interface DataService {
   duration_user: string;
   user?: string;
 }
+
+
+export interface Tipo {
+  id: number;
+  name: string;
+}
+
+export interface MaestraResponse {
+  success: boolean;
+  data: DataService | DataService[];
+  message?: string;
+}

@@ -1,4 +1,3 @@
-import { number } from "framer-motion";
 export interface Data {
   id: number;
   clientId: number;

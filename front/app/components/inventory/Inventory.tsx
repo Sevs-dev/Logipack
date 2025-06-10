@@ -26,11 +26,6 @@ interface DataItem {
   cambioConversionRate?: number; // Cambio relativo en la tasa de conversión respecto al mes anterior
 }
 
-interface PieDataItem {
-  name: string;
-  value: number;
-}
-
 // Datos iniciales
 const initialData: DataItem[] = [
   { name: "Enero", stock: 4000, ventas: 2400 },
@@ -66,15 +61,7 @@ const calculateMetrics = (data: DataItem[]): DataItem[] =>
 
 // Datos procesados
 const data = calculateMetrics(initialData);
-
-// Datos para el gráfico de pastel
-const pieData: PieDataItem[] = [
-  { name: "Disponible", value: 6000 },
-  { name: "Vendido", value: 4000 },
-];
-
-// Colores para los gráficos
-const COLORS = ["#8884d8", "#82ca9d", "#ffc658", "#ff7300"];
+  
 
 export default function Dashboard() {
   const { userName } = useUserData();
@@ -95,7 +82,7 @@ export default function Dashboard() {
     <div className="p-6 min-h-screen text-gray-800 font-sans">
       {/* Encabezado */}
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold text-white">Dashboard</h1>
+        <h1 className="text-3xl font-bold text-white">Dashboard de {userName}</h1>
         <div className="flex gap-2">
           <button
             onClick={() => setActiveTab("Inventario")}

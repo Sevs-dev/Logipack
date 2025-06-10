@@ -3,7 +3,7 @@ import React, { ReactNode } from "react";
 interface HeadingProps {
   children: ReactNode;
   type?: "title" | "subtitle" | "error" | "alert";
-  color?: string; // Clase personalizada opcional
+  color?: string; 
 }
 
 const Heading: React.FC<HeadingProps> = ({
@@ -12,11 +12,9 @@ const Heading: React.FC<HeadingProps> = ({
   color,
 }) => {
   let headingElement;
-  let underlineStyle =
-    "border-gray-400 w-full sm:max-w-[260px] mx-auto mb-2 hover:border-blue-500 transition-colors duration-200";
+  const underlineStyle = "border-gray-400 w-full sm:max-w-[260px] mx-auto mb-2 hover:border-blue-500 transition-colors duration-200";
 
-  const getTextClass = (defaultClass: string) =>
-    color ? `${defaultClass} ${color}` : defaultClass;
+  const getTextClass = (defaultClass: string) => color ? `${defaultClass} ${color}` : defaultClass;
 
   switch (type) {
     case "title":

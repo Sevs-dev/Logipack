@@ -43,7 +43,7 @@ const Maestra = ({ canEdit = false, canView = false }: CreateClientProps) => {
     const [listTipoAcom, setListTipoAcom] = useState<DataTipoAcondicionamiento[]>([]);
     const [, setStagesAcon] = useState<DataLineaTipoAcondicionamiento[]>([]);
     const [tipoSeleccionadoAcon, setTipoSeleccionadoAcon] = useState<number[]>([]);
-    const [detalleAcondicionamiento, setDetalleAcondicionamiento] = useState<any[]>([]);
+    const [detalleAcondicionamiento, setDetalleAcondicionamiento] = useState<DataLineaTipoAcondicionamiento[]>([]);
     const [searchTipoAcom, setSearchTipoAcom] = useState("");
     const [draggedIndex, setDraggedIndex] = React.useState<number | null>(null);
     const [auditList, setAuditList] = useState<Audit[]>([]);
@@ -85,13 +85,12 @@ const Maestra = ({ canEdit = false, canView = false }: CreateClientProps) => {
                 setStagesAcon(prev => {
                     const combined = [...prev, ...dataArray];
                     return combined.filter(
-                        (item, index, self) =>
-                            index === self.findIndex(
-                                t =>
-                                    t.id === item.id &&
-                                    t.tipo_acondicionamiento_id === item.tipo_acondicionamiento_id
-                            )
+                        (item, _, self) =>
+                            self.findIndex(
+                                t => t.id === item.id && t.tipo_acondicionamiento_id === item.tipo_acondicionamiento_id
+                            ) === self.indexOf(item)
                     );
+
                 });
                 const detalle = await getLineaTipoAcomById(tipoId);
                 const detalleArray = Array.isArray(detalle) ? detalle : detalle.data || [];
@@ -122,8 +121,8 @@ const Maestra = ({ canEdit = false, canView = false }: CreateClientProps) => {
                 setDetalleAcondicionamiento([]);
                 setSelectedStages([]);
             }
-        } catch (error) {
-            console.error("Error al obtener fases o detalles:", error);
+        } catch {
+            console.error("Error al obtener fases o detalles:");
             setStages([]);
             setSelectedStages([]);
         }
@@ -134,8 +133,8 @@ const Maestra = ({ canEdit = false, canView = false }: CreateClientProps) => {
             try {
                 const response = await listTipoAcondicionamiento();
                 setListTipoAcom(response);
-            } catch (error) {
-                console.error("Error al cargar los tipos de acondicionamiento", error);
+            } catch {
+                console.error("Error al cargar los tipos de acondicionamiento");
             }
         };
 
@@ -148,8 +147,8 @@ const Maestra = ({ canEdit = false, canView = false }: CreateClientProps) => {
             try {
                 const stages = await getStage(); // Cargar todas las fases
                 setStages(stages);
-            } catch (error) {
-                console.error("Error fetching stages:", error);
+            } catch {
+                console.error("Error fetching stages:");
             }
         };
         fetchStages();
@@ -160,8 +159,8 @@ const Maestra = ({ canEdit = false, canView = false }: CreateClientProps) => {
         try {
             const datas = await getMaestra();
             setMaestra(datas);
-        } catch (error) {
-            console.error("Error fetching maestras:", error);
+        } catch {
+            console.error("Error fetching maestras:");
         }
     }, []);
 
@@ -177,8 +176,8 @@ const Maestra = ({ canEdit = false, canView = false }: CreateClientProps) => {
             try {
                 const tipos = await getTipo(); // Llamamos a la API para obtener los tipos
                 setTiposProducto(tipos); // Guardamos los tipos en el estado
-            } catch (error) {
-                console.error('Error al obtener los tipos', error);
+            } catch {
+                console.error('Error al obtener los tipos');
             }
         };
 
@@ -192,26 +191,27 @@ const Maestra = ({ canEdit = false, canView = false }: CreateClientProps) => {
         setSelectedStages(prev => [...prev, stage]);
     };
 
-    const handleDragStart = (index: number) => (e: React.DragEvent<HTMLDivElement>) => {
+    const handleDragStart = (e: React.DragEvent<HTMLDivElement>, index: number) => {
         setDraggedIndex(index);
         e.dataTransfer.effectAllowed = "move";
     };
 
-    const handleDragOver = (index: number) => (e: React.DragEvent<HTMLDivElement>) => {
-        e.preventDefault(); // necesario para permitir drop
-        e.dataTransfer.dropEffect = "move";
+
+    const handleDragOver = (e: React.DragEvent<HTMLDivElement>, index: number) => {
+        e.preventDefault(); // necesario para permitir el drop
+        setDraggedIndex(index);
     };
 
-    const handleDrop = (index: number) => (e: React.DragEvent<HTMLDivElement>) => {
+    const handleDrop = (e: React.DragEvent<HTMLDivElement>, index: number) => {
         e.preventDefault();
         if (draggedIndex === null || draggedIndex === index) return;
 
-        setSelectedStages((prev) => {
-            const updated = [...prev];
-            const [movedItem] = updated.splice(draggedIndex, 1);
-            updated.splice(index, 0, movedItem);
-            return updated;
-        });
+        const reorderedStages = [...selectedStages];
+        const [movedStage] = reorderedStages.splice(draggedIndex, 1);
+        reorderedStages.splice(index, 0, movedStage);
+
+        setSelectedStages(reorderedStages);
+        setDraggedIndex(null);
         setDraggedIndex(null);
     };
 
@@ -260,10 +260,8 @@ const Maestra = ({ canEdit = false, canView = false }: CreateClientProps) => {
             setIsOpen(false);
             resetForm();
             fetchMaestra();
-        } catch (error) {
-            console.group("❌ Error al crear la Maestra");
-            console.error(error);
-            console.groupEnd();
+        } catch {
+            console.log(payload);
             showError("Error al crear la maestra");
         }
     };
@@ -276,8 +274,8 @@ const Maestra = ({ canEdit = false, canView = false }: CreateClientProps) => {
                 setMaestra((prevMaestra) => prevMaestra.filter((maestra) => maestra.id !== id));
                 showSuccess("Maestra eliminada exitosamente");
                 fetchMaestra(); // Refrescar la lista
-            } catch (error) {
-                console.error("Error al eliminar maestra:", error);
+            } catch {
+                console.error("Error al eliminar maestra:");
                 showError("Error al eliminar maestra");
             }
         });
@@ -365,8 +363,8 @@ const Maestra = ({ canEdit = false, canView = false }: CreateClientProps) => {
             });
 
             setIsOpen(true);
-        } catch (error) {
-            console.error("Error obteniendo datos de la Maestra:", error);
+        } catch {
+            console.error("Error obteniendo datos de la Maestra:");
             showError("Error obteniendo datos de la Maestra");
         }
     };
@@ -408,7 +406,7 @@ const Maestra = ({ canEdit = false, canView = false }: CreateClientProps) => {
             setIsOpen(false);
             resetForm();
             fetchMaestra();
-        } catch (error) {
+        } catch {
             showError("Error al actualizar la maestra");
         }
     };
@@ -459,8 +457,8 @@ const Maestra = ({ canEdit = false, canView = false }: CreateClientProps) => {
             console.log(data)
             setAuditList(data);
             if (data.length > 0) setSelectedAudit(data[0]); // opción: mostrar la primera al abrir
-        } catch (error) {
-            console.error("Error al obtener la auditoría:", error);
+        } catch {
+            console.error("Error al obtener la auditoría:");
         }
     };
 
@@ -523,8 +521,8 @@ const Maestra = ({ canEdit = false, canView = false }: CreateClientProps) => {
                                 <option value="" disabled>
                                     -- Seleccione un tipo de producto --
                                 </option>
-                                {tiposProducto.map((tipo, index) => (
-                                    <option key={index} value={tipo}>
+                                {tiposProducto.map((tipo) => (
+                                    <option key={tipo} value={tipo}>
                                         {tipo}
                                     </option>
                                 ))}
@@ -631,34 +629,35 @@ const Maestra = ({ canEdit = false, canView = false }: CreateClientProps) => {
                             {/* Lista de fases seleccionadas */}
                             <div className="w-full md:w-1/2 p-4 rounded-xl bg-white border shadow-sm">
                                 <Text type="subtitle">Fases Seleccionadas</Text>
-                                {selectedStages.length > 0 ? (
-                                    selectedStages.map((stage, index) => {
-                                        const faseDetalle = detalleAcondicionamiento.find(d => d.fase === stage.id);
-                                        const isEditable = faseDetalle ? Boolean(Number(faseDetalle.editable)) : true;
+                                {selectedStages.map((stage, index) => {
+                                    const faseDetalle = detalleAcondicionamiento.find(d => Number(d.fase) === Number(stage.id));
+                                    const isEditable = faseDetalle ? Boolean(Number(faseDetalle.editable)) : true;
 
-                                        return (
-                                            <div
-                                                key={stage.id}
-                                                draggable={isEditable || !canEdit}  // solo si es editable permite drag
-                                                onDragStart={handleDragStart(index)}
-                                                onDragOver={handleDragOver(index)}
-                                                onDrop={handleDrop(index)}
-                                                className={`flex items-center rounded-full px-3 py-1 text-sm transition-all ${isEditable || !canEdit
-                                                    ? "bg-gray-100 text-gray-800 hover:bg-red-400 hover:text-white cursor-pointer"
-                                                    : "bg-gray-200 text-gray-500 cursor-not-allowed"}`}
-                                                onClick={() => {
-                                                    if (isEditable) handleRemoveStage(stage);
-                                                }}
-                                                style={{ userSelect: "none" }} // para que no seleccione texto al drag
-                                            >
-                                                {stage.description}
-                                                {isEditable || !canEdit && <X className="w-4 h-4 ml-2" />}
-                                            </div>
-                                        );
-                                    })
-                                ) : (
-                                    <p className="text-gray-400 text-sm text-center mt-4">No hay fases seleccionadas</p>
-                                )}
+                                    const handleStart = (e: React.DragEvent<HTMLDivElement>) => handleDragStart(e, index);
+                                    const handleOver = (e: React.DragEvent<HTMLDivElement>) => handleDragOver(e, index);
+                                    const handleDropStage = (e: React.DragEvent<HTMLDivElement>) => handleDrop(e, index);
+
+                                    return (
+                                        <div
+                                            key={stage.id}
+                                            draggable={isEditable || !canEdit}
+                                            onDragStart={handleStart}
+                                            onDragOver={handleOver}
+                                            onDrop={handleDropStage}
+                                            className={`flex items-center rounded-full px-3 py-1 text-sm transition-all ${isEditable || !canEdit
+                                                ? "bg-gray-100 text-gray-800 hover:bg-red-400 hover:text-white cursor-pointer"
+                                                : "bg-gray-200 text-gray-500 cursor-not-allowed"
+                                                }`}
+                                            onClick={() => {
+                                                if (isEditable) handleRemoveStage(stage);
+                                            }}
+                                            style={{ userSelect: "none" }}
+                                        >
+                                            {stage.description}
+                                            {(isEditable || !canEdit) && <X className="w-4 h-4 ml-2" />}
+                                        </div>
+                                    );
+                                })}
                             </div>
                         </div>
                         <div className="flex flex-col md:flex-row gap-4 mt-2">
@@ -726,9 +725,9 @@ const Maestra = ({ canEdit = false, canView = false }: CreateClientProps) => {
                                         setIsOpen(false);
                                         resetForm();
                                         fetchMaestra();
-                                    } catch (error) {
+                                    } catch {
                                         showError("Error al guardar la maestra");
-                                        console.error("Error al guardar:", error);
+                                        console.error("Error al guardar:");
                                     }
                                 }}
                                 variant="terciario"
@@ -742,7 +741,11 @@ const Maestra = ({ canEdit = false, canView = false }: CreateClientProps) => {
                                 onClick={() => {
                                     setEstado("En creación");
                                     setAprobado(false);
-                                    editingMaestra ? handleUpdate() : handleSubmit();
+                                    if (editingMaestra) {
+                                        handleUpdate();
+                                    } else {
+                                        handleSubmit();
+                                    }
                                 }}
                                 variant="create"
                                 label={editingMaestra ? "Actualizar" : "Crear"}
@@ -764,7 +767,7 @@ const Maestra = ({ canEdit = false, canView = false }: CreateClientProps) => {
                 }}
                 onDelete={canEdit ? handleDelete : undefined}
                 onEdit={handleEdit}
-                onHistory={handleHistory}
+                onHistory={handleHistory} 
             />
             {auditList.length > 0 && (
                 <AuditModal audit={auditList} onClose={() => setAuditList([])} />

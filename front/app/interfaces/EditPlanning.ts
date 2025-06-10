@@ -63,7 +63,30 @@ export interface NewActivity {
   binding?: number | number[] | null;
 }
 
-export const sanitizePlan = (plan: Plan): any => {
+export interface SanitizedPlan {
+  id: number;
+  client_id: number;
+  factory_id: number;
+  master: string;
+  bom: string | null;
+  codart: string;
+  deliveryDate: string;
+  healthRegistration: string;
+  ingredients: string;
+  line: number[];
+  lot: string;
+  machine: number[];
+  quantityToProduce: number;
+  resource: string | null;
+  start_date?: string;
+  end_date?: string;
+  duration: number;
+  duration_breakdown: string;
+  status_dates: string;
+  created_at: string;
+}
+
+export const sanitizePlan = (plan: Plan): SanitizedPlan => {
   return {
     id: plan.id,
     client_id: plan.client_id,
@@ -87,3 +110,18 @@ export const sanitizePlan = (plan: Plan): any => {
     created_at: plan.created_at,
   };
 };
+
+
+export interface ServerPlan extends Plan {
+  ID_ADAPTACION: number;
+  ID_LINEA?: number;
+  ID_LINE?: number;
+  ID_ACTIVITIES?: number[];
+}
+
+export interface DurationItem {
+  fase: string;
+  teorica_total?: number;
+  multiplicacion?: string;
+  resultado: number;
+}

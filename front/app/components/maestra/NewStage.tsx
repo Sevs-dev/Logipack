@@ -10,7 +10,7 @@ import { InfoPopover } from "../buttons/InfoPopover";
 import { Stage, Data } from "../../interfaces/NewStage";
 import Text from "../text/Text";
 import { Search, Clock } from "lucide-react";
-const phases = ["Planeación", "Conciliación", "Control", "Actividades", "Procesos"];
+const phases = ["Planificación", "Conciliación", "Control", "Actividades", "Procesos"];
 import { CreateClientProps } from "../../interfaces/CreateClientProps";
 import ModalSection from "../modal/ModalSection";
 import AuditModal from "../history/AuditModal";
@@ -24,7 +24,7 @@ function NewStage({ canEdit = false, canView = false }: CreateClientProps) {
     const [description, setDescription] = useState("");
     const [duration, setDuration] = useState("");
     const [durationUser, setDurationUser] = useState("");
-    const [phaseType, setPhaseType] = useState<string>("Planeación");
+    const [phaseType, setPhaseType] = useState<string>("");
     const [repeat, setRepeat] = useState(false);
     const [repeatLine, setRepeatLine] = useState(false);
     const [repeatMinutes, setRepeatMinutes] = useState("");
@@ -36,7 +36,7 @@ function NewStage({ canEdit = false, canView = false }: CreateClientProps) {
     const [selectedActivities, setSelectedActivities] = useState<{ id: number; description: string, duration: number }[]>([]);
     const [searchTerm, setSearchTerm] = useState("");
     const [auditList, setAuditList] = useState<Audit[]>([]);
-            const [, setSelectedAudit] = useState<Audit | null>(null);
+    const [, setSelectedAudit] = useState<Audit | null>(null);
 
     // Función para obtener las fases
     const fetchStage = async () => {
@@ -44,8 +44,8 @@ function NewStage({ canEdit = false, canView = false }: CreateClientProps) {
             const data = await getStage();
             // console.log("Datos obtenidos de las fases:", data); // 🚀 LOG
             setStage(data);
-        } catch (error) {
-            console.error("Error fetching stages:", error);
+        } catch {
+            console.error("Error fetching stages:");
         }
     };
 
@@ -60,7 +60,7 @@ function NewStage({ canEdit = false, canView = false }: CreateClientProps) {
             try {
                 const activities = await getActivitie();
                 setAvailableActivities(activities);
-            } catch (error) {
+            } catch {
                 showError("Error al cargar las actividades");
             }
         };
@@ -126,8 +126,8 @@ function NewStage({ canEdit = false, canView = false }: CreateClientProps) {
             } else {
                 showError("Error al crear la fase");
             }
-        } catch (error) {
-            console.error("Error al guardar la fase:", error);
+        } catch {
+            console.error("Error al guardar la fase:");
             showError("Ocurrió un error al guardar la fase");
         }
     };
@@ -175,8 +175,8 @@ function NewStage({ canEdit = false, canView = false }: CreateClientProps) {
             setDuration(data.duration);
             setDurationUser(data.duration_user);
             setIsEditOpen(true);
-        } catch (error) {
-            console.error("Error obteniendo datos de la fase:", error);
+        } catch {
+            console.error("Error obteniendo datos de la fase:");
             showError("Error obteniendo datos de la fase");
         }
     };
@@ -206,14 +206,14 @@ function NewStage({ canEdit = false, canView = false }: CreateClientProps) {
         };
         // console.log("Datos a enviar al actualizar la fase:", updatedStage);
         try {
-            const response = await updateStage(editingStage.id, updatedStage);
+            await updateStage(editingStage.id, updatedStage);
             // console.log("Respuesta del servidor al actualizar la fase:", response);
             showSuccess("Fase actualizada con éxito");
             setIsEditOpen(false);
             fetchStage();
             resetForm();
-        } catch (error) {
-            console.error("Error al actualizar la fase:", error);
+        } catch {
+            console.error("Error al actualizar la fase:");
             showError("Ocurrió un error al actualizar la fase");
         }
     };
@@ -225,8 +225,8 @@ function NewStage({ canEdit = false, canView = false }: CreateClientProps) {
                 await deleteStage(id);
                 setStage((prevStage) => prevStage.filter((stage) => stage.id !== id));
                 showSuccess("Fase eliminada con éxito");
-            } catch (error) {
-                console.error("Error al eliminar fase:", error);
+            } catch {
+                console.error("Error al eliminar fase:");
                 showError("Error al eliminar fase");
             }
         });
@@ -234,7 +234,7 @@ function NewStage({ canEdit = false, canView = false }: CreateClientProps) {
 
     const resetForm = () => {
         setDescription("");
-        setPhaseType("Planeación");
+        setPhaseType("");
         setRepeat(false);
         setRepeatMinutes("");
         setAlert(false);
@@ -266,8 +266,8 @@ function NewStage({ canEdit = false, canView = false }: CreateClientProps) {
             console.log(data)
             setAuditList(data);
             if (data.length > 0) setSelectedAudit(data[0]); // opción: mostrar la primera al abrir
-        } catch (error) {
-            console.error("Error al obtener la auditoría:", error);
+        } catch {
+            console.error("Error al obtener la auditoría:");
         }
     };
 
@@ -282,10 +282,13 @@ function NewStage({ canEdit = false, canView = false }: CreateClientProps) {
 
             {(isOpen || isEditOpen && editingStage) && (
                 <ModalSection isVisible={(isOpen || isEditOpen)} onClose={() => {
-                    editingStage ? setIsEditOpen(false) : setIsOpen(false);
+                    if (editingStage) {
+                        setIsEditOpen(false);
+                    } else {
+                        setIsOpen(false);
+                    }
                     resetForm();
                 }}>
-
                     <Text type="title">{editingStage ? "Editar Fase" : "Crear Fase"}</Text>
 
                     <div className="space-y-4">
@@ -307,11 +310,21 @@ function NewStage({ canEdit = false, canView = false }: CreateClientProps) {
                             <select
                                 value={phaseType}
                                 onChange={(e) =>
-                                    setPhaseType(e.target.value as "Planeación" | "Conciliación" | "Control" | "Actividades" | "Procesos")
+                                    setPhaseType(
+                                        e.target.value as
+                                        | "Planificación"
+                                        | "Conciliación"
+                                        | "Control"
+                                        | "Actividades"
+                                        | "Procesos"
+                                    )
                                 }
                                 className="mt-1 w-full text-center p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 text-black"
                                 disabled={!canEdit}
                             >
+                                <option value="" disabled>
+                                    Seleccione un tipo de Fase
+                                </option>
                                 {phases.map((phase) => (
                                     <option key={phase} value={phase}>
                                         {phase}
@@ -527,7 +540,11 @@ function NewStage({ canEdit = false, canView = false }: CreateClientProps) {
                     <div className="mt-4 flex justify-center gap-4">
                         <Button
                             onClick={() => {
-                                editingStage ? setIsEditOpen(false) : setIsOpen(false);
+                                if (editingStage) {
+                                    setIsEditOpen(false);
+                                } else {
+                                    setIsOpen(false);
+                                }
                                 resetForm();
                             }}
                             variant="cancel"

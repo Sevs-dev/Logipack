@@ -230,6 +230,7 @@ function Products({ canEdit = false, canView = false }: CreateClientProps) {
         onDelete={canEdit ? handleDelete : undefined}
         onEdit={openEditModal}
         onHistory={handleHistory}
+        onTerciario={() => { }}
       />
 
       {/* Modal de auditoría */}

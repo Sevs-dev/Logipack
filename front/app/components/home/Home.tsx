@@ -1,6 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Monitor, FileText, AlertCircle } from 'lucide-react';
+import Image from 'next/image';
 
 // Variantes de animación
 const container = {
@@ -192,7 +193,13 @@ function Home() {
                   className="w-32 md:w-40"
                   variants={fadeInUp}
                 >
-                  <img src={`/images/${logo}`} alt={`Cliente ${index + 1}`} className="w-full" />
+                  <Image
+                    src={`/images/${logo}`}
+                    alt={`Cliente ${index + 1}`}
+                    width={160} // ajusta según tu diseño
+                    height={80} // ajusta según tu diseño
+                    className="w-full h-auto object-contain"
+                  />
                 </motion.div>
               ))}
             </motion.div>

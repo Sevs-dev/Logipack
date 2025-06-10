@@ -3,6 +3,7 @@ import { useRouter, usePathname } from "next/navigation";
 import React, { useEffect, useState } from "react";
 import nookies from "nookies";
 import { motion, AnimatePresence } from "framer-motion";
+import Image from "next/image";
 
 function Navbar() {
   const router = useRouter();
@@ -66,7 +67,13 @@ function Navbar() {
           className="cursor-pointer flex items-center gap-2"
           whileHover={{ scale: 1.1 }}
         >
-          <img src="/logipack_2.png" alt="Logipack" className="h-10 w-auto" />
+          <Image
+            src="/logipack_2.png"
+            alt="Logipack"
+            width={40}
+            height={40}
+            className="h-10 w-auto"
+          />
           <span className="text-white text-lg font-semibold">Logipack</span>
         </motion.div>
 

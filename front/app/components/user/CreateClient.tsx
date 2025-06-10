@@ -284,7 +284,8 @@ function CreateClient({ canEdit = false, canView = false }: CreateClientProps) {
           phone: "Teléfono",
         }}
         onDelete={canEdit ? handleDelete : undefined}
-        onEdit={handleEdit}
+        onEdit={handleEdit} 
+
       />
     </div>
   );

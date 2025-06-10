@@ -32,7 +32,7 @@ export default function NewActivity({ canEdit = false, canView = false }: Create
     const getDefaultConfig = (type: string) =>
         JSON.stringify(activityTypes[type] || activityTypes["Texto corto"], null, 2);
     const [auditList, setAuditList] = useState<Audit[]>([]);
-        const [, setSelectedAudit] = useState<Audit | null>(null);
+    const [, setSelectedAudit] = useState<Audit | null>(null);
 
     // ────────────────────────────── HELPERS ──────────────────────────────
 
@@ -109,13 +109,13 @@ export default function NewActivity({ canEdit = false, canView = false }: Create
     // ────────────────────────────── EFFECTS ──────────────────────────────
 
     useEffect(() => {
-        { canView && fetchActivities() }
+        if (canView) fetchActivities();
     }, [canView]);
 
     useEffect(() => {
         try {
             setParsedConfig(JSON.parse(formData.config));
-        } catch (error) {
+        } catch {
             setParsedConfig(null);
         }
     }, [formData.config]);
@@ -126,7 +126,7 @@ export default function NewActivity({ canEdit = false, canView = false }: Create
         try {
             const data = await getActivitie();
             setActivities(data);
-        } catch (error) {
+        } catch {
             // handle error
         }
     };
@@ -157,7 +157,7 @@ export default function NewActivity({ canEdit = false, canView = false }: Create
             setModalOpen(false);
             fetchActivities();
             resetModalData();
-        } catch (error) {
+        } catch  {
             showError(isEditing ? "Error al actualizar actividad" : "Error al crear la actividad");
         }
     };
@@ -169,7 +169,7 @@ export default function NewActivity({ canEdit = false, canView = false }: Create
                 await deleteActivitie(id);
                 setActivities((prev) => prev.filter((a) => a.id !== id));
                 showSuccess("Actividad eliminada con éxito");
-            } catch (error) {
+            } catch {
                 showError("Error al eliminar Actividad");
             }
         });
@@ -232,7 +232,7 @@ export default function NewActivity({ canEdit = false, canView = false }: Create
             setOptions(parsed.options || []);
             setIsEditing(true);
             setModalOpen(true);
-        } catch (error) {
+        } catch {
             showError("Error obteniendo datos de la actividad");
         }
     };
@@ -263,8 +263,8 @@ export default function NewActivity({ canEdit = false, canView = false }: Create
             const data = await getAuditsByModel(model, id);
             setAuditList(data);
             if (data.length > 0) setSelectedAudit(data[0]); // opción: mostrar la primera al abrir
-        } catch (error) {
-            console.error("Error al obtener la auditoría:", error);
+        } catch {
+            console.error("Error al obtener la auditoría:");
         }
     };
 
@@ -378,7 +378,7 @@ export default function NewActivity({ canEdit = false, canView = false }: Create
                                         value={formData.duration}
                                         onChange={(e) => {
                                             const val = Number(e.target.value);
-                                            setFormData({ ...formData, duration: val >= 1 ? val : 1 });
+                                            setFormData({ ...formData, duration: Math.max(1, val) });
                                         }}
                                         placeholder="Duración (en minutos)"
                                         className="w-full max-w-[350px] border p-2 pl-9 rounded-md text-black focus:ring-2 focus:ring-blue-500"
@@ -408,7 +408,7 @@ export default function NewActivity({ canEdit = false, canView = false }: Create
                 }}
                 onDelete={canEdit ? handleDelete : undefined}
                 onEdit={handleEdit}
-                onHistory={handleHistory}
+                onHistory={handleHistory} 
             />
             {auditList.length > 0 && (
                 <AuditModal audit={auditList} onClose={() => setAuditList([])} />

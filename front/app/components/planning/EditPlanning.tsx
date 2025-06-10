@@ -22,7 +22,7 @@ import { getMachin } from "@/app/services/userDash/machineryServices";
 import { getManuId } from "@/app/services/userDash/manufacturingServices";
 import { getUsers } from "@/app/services/userDash/authservices"
 // 🔹 Interfaces
-import { Plan, ActivityDetail, sanitizePlan } from "@/app/interfaces/EditPlanning";
+import { Plan, ActivityDetail, sanitizePlan, ServerPlan, DurationItem } from "@/app/interfaces/EditPlanning";
 
 function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
     const [planning, setPlanning] = useState<Plan[]>([]);
@@ -62,9 +62,9 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
             setManu(manuData);
             setMachine(machineData);
             setUser(userData)
-        } catch (error) {
+        } catch {
             showError("Error cargando datos iniciales");
-            console.error(error);
+            console.error("Error cargando datos iniciales en fetchAll");
         }
     }, []);
 
@@ -115,7 +115,7 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
                         details[lineId] = data;
                     } catch (err) {
                         console.error(`Error cargando línea ${lineId}`, err);
-                        details[lineId] = { name: `Línea ${lineId} (error)` };
+                        details[lineId] = { name: `Línea ${lineId} ` };
                     }
                 })
             );
@@ -207,21 +207,21 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
             setIsOpen(false);
             handleClose();
             showSuccess("Planificación guardada correctamente");
-        } catch (error) {
-            console.error("Error al guardar cambios:", error);
+        } catch {
+            console.error("Error al guardar cambios:");
             showError("Error al guardar la planificación");
         }
     };
 
     const handleEdit = useCallback(async (id: number) => {
-        const selectedPlan = planning.find(plan => plan.id === id);
+        const selectedPlan = planning.find((plan: Plan) => plan.id === id);
         if (!selectedPlan) {
             showError("Planificación no encontrada localmente");
             return;
         }
 
         try {
-            const serverPlansWithDetails = await fetchAndProcessPlans(id);
+            const serverPlansWithDetails: ServerPlan[] = await fetchAndProcessPlans(id);
 
             const matchedPlan = serverPlansWithDetails.find(
                 p => p.ID_ADAPTACION === selectedPlan.id
@@ -230,17 +230,21 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
             const newLineActivities: Record<number, number[]> = {};
 
             if (selectedPlan.activities && Array.isArray(selectedPlan.activities)) {
-                selectedPlan.activities.forEach((line: any) => {
-                    const lineId = line.id;
-                    const activityIds = Array.isArray(line.activities)
-                        ? line.activities.map((a: any) => a.id)
-                        : [];
-                    if (lineId != null) {
-                        newLineActivities[lineId] = activityIds;
+                selectedPlan.activities.forEach((activityDetail: ActivityDetail) => {
+                    // En este caso, asumimos que cada actividad tiene binding (una línea)
+                    const binding = activityDetail.binding;
+                    if (Array.isArray(binding)) {
+                        binding.forEach(lineId => {
+                            if (!newLineActivities[lineId]) newLineActivities[lineId] = [];
+                            newLineActivities[lineId].push(activityDetail.id);
+                        });
+                    } else if (typeof binding === "number") {
+                        if (!newLineActivities[binding]) newLineActivities[binding] = [];
+                        newLineActivities[binding].push(activityDetail.id);
                     }
                 });
             } else if (serverPlansWithDetails && serverPlansWithDetails.length > 0) {
-                serverPlansWithDetails.forEach(line => {
+                serverPlansWithDetails.forEach((line: ServerPlan) => {
                     const lineId = line.ID_LINEA ?? line.ID_LINE ?? null;
                     const activityIds = Array.isArray(line.ID_ACTIVITIES) ? line.ID_ACTIVITIES : [];
                     if (lineId !== null) {
@@ -251,7 +255,7 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
 
             setLineActivities(newLineActivities);
 
-            setActivitiesDetails(matchedPlan.activitiesDetails);
+            setActivitiesDetails(matchedPlan.activitiesDetails || []);
             setSelectedMachines(
                 machine.filter(m => (selectedPlan.machine || []).includes(m.id))
             );
@@ -261,17 +265,18 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
 
             setCurrentPlan({
                 ...selectedPlan,
-                activitiesDetails: matchedPlan.activitiesDetails,
+                activitiesDetails: matchedPlan.activitiesDetails || [],
                 lineActivities: newLineActivities,
                 line: getLinesArray(selectedPlan.line),
             });
+
             setIsOpen(true);
 
-        } catch (error) {
-            console.error("Error fetching plan:", error);
+        } catch {
+            console.error("Error fetching plan:");
             showError("Error al cargar la planificación para edición");
         }
-    }, [planning]);
+    }, [planning, machine, user]);
 
     const handleClose = useCallback(() => {
         setIsOpen(false);
@@ -299,19 +304,17 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
         return parts.join(' ');
     };
 
-    function formatDurationBreakdown(breakdown: string | any[]): string {
-        const parsed = typeof breakdown === "string" ? JSON.parse(breakdown) : breakdown;
+    function formatDurationBreakdown(breakdown: string | DurationItem[]): string {
+        const parsed: DurationItem[] = typeof breakdown === "string" ? JSON.parse(breakdown) : breakdown;
         return parsed
-            .map((item: any) => {
+            .map((item: DurationItem) => {
                 if (item.fase === "TOTAL") {
                     return `🧮 TOTAL → ${getFormattedDuration(item.resultado)}`;
                 }
 
-                const teorica = item.teorica_total;
-                const multiplicacion = item.multiplicacion;
-                const resultado = item.resultado;
+                const { teorica_total, multiplicacion, resultado } = item;
 
-                if (multiplicacion && teorica) {
+                if (multiplicacion && teorica_total) {
                     return `${item.fase} → ${multiplicacion} = ${resultado} min`;
                 }
 
@@ -882,7 +885,7 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
                 onDelete={handleDelete}
                 showDeleteButton={false}
                 onEdit={handleEdit}
-                onTerciario={handleTerciario}
+                onTerciario={handleTerciario} 
             />
         </div>
     );

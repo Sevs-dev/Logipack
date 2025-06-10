@@ -66,15 +66,6 @@ function CreateManufacturing({ canEdit = false, canView = false }: CreateClientP
         }));
     };
 
-    const handleSelectChange = (productId: number) => {
-        setFormData((prev) => ({
-            ...prev,
-            products: prev.products.includes(productId)
-                ? prev.products.filter((id) => id !== productId)
-                : [...prev.products, productId]
-        }));
-    };
-
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!formData.name || !formData.factory_id || formData.products.length === 0) {
@@ -224,6 +215,7 @@ function CreateManufacturing({ canEdit = false, canView = false }: CreateClientP
                 onDelete={canEdit ? handleDelete : undefined}
                 onEdit={openEditModal}
                 onHistory={handleHistory}
+                onTerciario={() => {}}
             />
 
             {/* Modal de auditoría */}

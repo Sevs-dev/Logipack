@@ -4,8 +4,8 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "../context/AuthProvider";
 import Loader from "../components/loader/Loader";
 
-function withAuth<P extends {}>(Component: React.ComponentType<P>): React.FC<P> {
-  return (props: P) => {
+function withAuth<P extends object>(Component: React.ComponentType<P>): React.FC<P> {
+  const AuthComponent: React.FC<P> = (props) => {
     const { user, loading } = useAuth();
     const router = useRouter();
 
@@ -16,11 +16,14 @@ function withAuth<P extends {}>(Component: React.ComponentType<P>): React.FC<P> 
     }, [loading, user, router]);
 
     if (loading) return <Loader />;
-
-    if (!user) return null; // Para que no intente renderizar nada mientras redirige
+    if (!user) return null;
 
     return <Component {...props} />;
   };
+
+  AuthComponent.displayName = `withAuth(${Component.displayName || Component.name || "Component"})`;
+
+  return AuthComponent;
 }
 
 export default withAuth;
