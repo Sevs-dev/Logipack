@@ -47,7 +47,7 @@ const Maestra = ({ canEdit = false, canView = false }: CreateClientProps) => {
     const [searchTipoAcom, setSearchTipoAcom] = useState("");
     const [draggedIndex, setDraggedIndex] = React.useState<number | null>(null);
     const [auditList, setAuditList] = useState<Audit[]>([]);
-        const [, setSelectedAudit] = useState<Audit | null>(null);
+    const [, setSelectedAudit] = useState<Audit | null>(null);
 
     const handleSelectTipoAcondicionamiento = async (tipoId: number) => {
         try {
@@ -251,7 +251,7 @@ const Maestra = ({ canEdit = false, canView = false }: CreateClientProps) => {
         };
 
         console.log(payload);
-        console.groupCollapsed("📤 Enviando datos para crear Maestra");
+        // console.groupCollapsed("📤 Enviando datos para crear Maestra");
         console.groupEnd();
 
         try {

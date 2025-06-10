@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('admin_audits', function (Blueprint $table) {
             $table->id();
-             $table->string('user')->nullable(); // Usuario que hizo el cambio
+            $table->string('user')->nullable(); // Usuario que hizo el cambio
             $table->string('action'); // create, update, delete
             $table->string('auditable_type'); // Modelo: App\Models\Activity, etc.
             $table->unsignedBigInteger('auditable_id'); // ID del modelo
