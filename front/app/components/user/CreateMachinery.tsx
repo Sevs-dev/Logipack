@@ -3,6 +3,7 @@ import React, { useState, useEffect, useCallback } from "react";
 // 🔹 Servicios
 import * as machineryService from "../../services/userDash/machineryServices";
 import { getFactory } from "../../services/userDash/factoryServices";
+import { getAuditsByModelAdmin } from "../../services/history/historyAuditServices";
 // 🔹 Componentes
 import Button from "../buttons/buttons";
 import { showSuccess, showError, showConfirm } from "../toastr/Toaster";
@@ -10,10 +11,12 @@ import Table from "../table/Table";
 import Text from "../text/Text";
 import { InfoPopover } from "../buttons/InfoPopover";
 import ModalSection from "../modal/ModalSection";
+import AuditModal from "../history/AuditModal";
 // 🔹 Tipos de datos
 import { Factory } from "../../interfaces/NewFactory";
 import { MachineryForm, Machine } from "../../interfaces/NewMachine";
 import { CreateClientProps } from "../../interfaces/CreateClientProps";
+import { Audit } from "../../interfaces/Audit";
 
 function CreateMachinery({ canEdit = false, canView = false }: CreateClientProps) {
   const [isOpen, setIsOpen] = useState(false);
@@ -32,7 +35,10 @@ function CreateMachinery({ canEdit = false, canView = false }: CreateClientProps
   const [weight, setWeight] = useState<string>("");
   const [is_mobile, setIsMobile] = useState(false);
   const [description, setDescription] = useState("");
-
+  // Estado para la lista de auditorías
+  const [auditList, setAuditList] = useState<Audit[]>([]);
+  // Estado para la auditoría seleccionada (no se usa, pero se deja para posible ampliación)
+  const [, setSelectedAudit] = useState<Audit | null>(null);
   useEffect(() => {
     if (canView) {
       const fetchData = async () => {
@@ -143,6 +149,17 @@ function CreateMachinery({ canEdit = false, canView = false }: CreateClientProps
         showError("Error al eliminar Maquinaria");
       }
     });
+  };
+
+  const handleHistory = async (id: number) => {
+    const model = "Machinery";
+    try {
+      const data = await getAuditsByModelAdmin(model, id);
+      setAuditList(data);
+      if (data.length > 0) setSelectedAudit(data[0]);
+    } catch (error) {
+      console.error("Error al obtener la auditoría:", error);
+    }
   };
 
   return (
@@ -313,8 +330,14 @@ function CreateMachinery({ canEdit = false, canView = false }: CreateClientProps
           power: "Potencia",
         }}
         onDelete={canEdit ? handleDelete : undefined}
-        onEdit={handleEdit}
+        onEdit={handleEdit} 
+        onHistory={handleHistory}
       />
+
+      {/* Modal de auditoría */}
+      {auditList.length > 0 && (
+        <AuditModal audit={auditList} onClose={() => setAuditList([])} />
+      )}
     </div>
   );
 }

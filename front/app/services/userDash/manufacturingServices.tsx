@@ -1,9 +1,9 @@
 import axios from 'axios';
 import { API_URL } from '../../config/api'
-import { Manu, Factory, Product } from "../../interfaces/Products"
+import { Manu } from "../../interfaces/Products"
 
 // Se crea una instancia de axios con la configuración base de la API.
-const apiManu = axios.create({
+const Manufac = axios.create({
     baseURL: API_URL,
     headers: {
         'Content-Type': 'application/json',
@@ -13,7 +13,15 @@ const apiManu = axios.create({
 
 export const createManu = async (dataManuData: Manu): Promise<void> => {
     try {
-        const response = await apiManu.post('/newManu', dataManuData);
+        const name = document.cookie
+            .split('; ')
+            .find(row => row.startsWith('name='))
+            ?.split('=')[1];
+
+        if (name) {
+            dataManuData.user = decodeURIComponent(name);
+        }
+        const response = await Manufac.post('/newManu', dataManuData);
         return response.data;
     } catch (error) {
         console.error('Error al crear la fábrica:', error);
@@ -23,7 +31,7 @@ export const createManu = async (dataManuData: Manu): Promise<void> => {
 
 export const getManu = async () => {
     try {
-        const response = await apiManu.get(`/getManu`);
+        const response = await Manufac.get(`/getManu`);
         return response.data;
     } catch (error) {
         console.error('Error en getManu:', error);
@@ -33,7 +41,7 @@ export const getManu = async () => {
 
 export const deleteManu = async (id: number) => {
     try {
-        const response = await apiManu.delete(`/deleteManu/${id}`);
+        const response = await Manufac.delete(`/deleteManu/${id}`);
         return response.data;
     } catch (error) {
         console.error('Error en deleteManu:', error);
@@ -43,7 +51,7 @@ export const deleteManu = async (id: number) => {
 
 export const getManuId = async (id: number) => {
     try {
-        const response = await apiManu.get(`/ManuId/${id}`);
+        const response = await Manufac.get(`/ManuId/${id}`);
         return response.data;
     } catch (error) {
         console.error('Error en getManuId:', error);
@@ -51,9 +59,9 @@ export const getManuId = async (id: number) => {
     }
 }
 
-export const updateManu = async (id: number, data: { name: string; products: number[] }) => {
+export const updateManu = async (id: number, data: Manu) => {
     try {
-        const response = await apiManu.put(`/updateManu/${id}`, data);
+        const response = await Manufac.put(`/updateManu/${id}`, data);
         return response.data;
     } catch (error) {
         console.error('Error en updateManu:', error);

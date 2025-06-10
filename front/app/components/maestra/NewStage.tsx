@@ -10,11 +10,11 @@ import { InfoPopover } from "../buttons/InfoPopover";
 import { Stage, Data } from "../../interfaces/NewStage";
 import Text from "../text/Text";
 import { Search, Clock } from "lucide-react";
-import { motion } from "framer-motion";
 const phases = ["Planeación", "Conciliación", "Control", "Actividades", "Procesos"];
 import { CreateClientProps } from "../../interfaces/CreateClientProps";
 import ModalSection from "../modal/ModalSection";
 import AuditModal from "../history/AuditModal";
+import { Audit } from "../../interfaces/Audit";
 
 function NewStage({ canEdit = false, canView = false }: CreateClientProps) {
     const [isOpen, setIsOpen] = useState(false);
@@ -35,8 +35,8 @@ function NewStage({ canEdit = false, canView = false }: CreateClientProps) {
     const [availableActivities, setAvailableActivities] = useState<{ id: number; description: string; binding: number, duration: number }[]>([]);
     const [selectedActivities, setSelectedActivities] = useState<{ id: number; description: string, duration: number }[]>([]);
     const [searchTerm, setSearchTerm] = useState("");
-    const [auditList, setAuditList] = useState<any[]>([]);
-    const [, setSelectedAudit] = useState<any | null>(null);
+    const [auditList, setAuditList] = useState<Audit[]>([]);
+            const [, setSelectedAudit] = useState<Audit | null>(null);
 
     // Función para obtener las fases
     const fetchStage = async () => {

@@ -4,6 +4,7 @@ export interface Manu {
     products: number[];
     factory_id: number;
     factory?: string;
+    user?: string;
 }
 
 export interface Factory {
@@ -12,6 +13,20 @@ export interface Factory {
 }
 
 export interface Product {
-    id: number;
+  id: number;
+  name: string;
+}
+
+export interface AuditEntry {
+  id: number;
+  action: string;
+  modelId: number;
+  changes: Record<string, unknown>;
+  createdAt: string;
+  createdBy: string;
+}
+
+export interface Data {
     name: string;
+    user?: string;
 }

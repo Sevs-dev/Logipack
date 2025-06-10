@@ -23,6 +23,10 @@ return new class extends Migration
             $table->string('weight')->nullable();
             $table->boolean('is_mobile')->default(false);
             $table->string('description')->nullable();
+            $table->string('version'); // Guarda el tiempo en formato HH:MM:SS
+            $table->boolean('active')->default(true); // Indica si tiene 
+            $table->uuid('reference_id');
+            $table->string('user');
             $table->timestamps();
         });
         

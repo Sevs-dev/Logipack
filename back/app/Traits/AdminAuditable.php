@@ -2,11 +2,11 @@
 
 namespace App\Traits;
 
-use App\Models\AdaptationAudit;
+use App\Models\AdminAudit;
 
-trait AdaptationAuditable
+trait AdminAuditable
 {
-    public static function bootAdaptationAuditable()
+    public static function bootAdminAuditable()
     {
         static::created(function ($model) {
             self::logChange('create', $model, null, $model->toArray());
@@ -23,7 +23,7 @@ trait AdaptationAuditable
 
     protected static function logChange($action, $model, $oldValues, $newValues)
     {
-        AdaptationAudit::create([
+        AdminAudit::create([
             'user' => $model->user,
             'action' => $action,
             'auditable_type' => get_class($model),

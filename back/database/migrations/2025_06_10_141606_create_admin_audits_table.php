@@ -11,9 +11,9 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('adaptation_audit', function (Blueprint $table) {
+        Schema::create('admin_audits', function (Blueprint $table) {
             $table->id();
-            $table->string('user')->nullable(); // Usuario que hizo el cambio
+             $table->string('user')->nullable(); // Usuario que hizo el cambio
             $table->string('action'); // create, update, delete
             $table->string('auditable_type'); // Modelo: App\Models\Activity, etc.
             $table->unsignedBigInteger('auditable_id'); // ID del modelo
@@ -22,7 +22,7 @@ return new class extends Migration
             $table->integer('version')->default(1)->index(); // Versión del cambio
 
             $table->json('old_values')->nullable(); // Valores antes del cambio
-            $table->json('new_values')->nullable(); // Valores después del cambio
+            $table->json('new_values')->nullable(); // Valores después del cambio 
             $table->timestamps();
         });
     }
@@ -32,6 +32,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('adaptation_audit');
+        Schema::dropIfExists('admin_audits');
     }
 };

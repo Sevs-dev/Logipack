@@ -10,18 +10,21 @@ const Machinary = axios.create({
 });
 
 export const newMachin = async (data: MachineryForm) => {
-  try {
-    const response = await Machinary.post('/newMachin', data);
-    return response.data;
-  } catch (error: any) {
-    if (error.response) {
-      console.error("Error status:", error.response.status);
-      console.error("Error data:", error.response.data);
-    } else {
-      console.error("Error en newMachin:", error.message);
+    try {
+        const name = document.cookie
+            .split('; ')
+            .find(row => row.startsWith('name='))
+            ?.split('=')[1];
+
+        if (name) {
+            data.user = decodeURIComponent(name);
+        }
+        const response = await Machinary.post('/newMachin', data);
+        return response.data;
+    } catch (error: unknown) {
+        console.error("Error en newMachin:", error);
+        throw error;
     }
-    throw error;
-  }
 };
 
 
@@ -48,7 +51,7 @@ export const getMachinById = async (id: number) => {
 export const updateMachin = async (id: number, data: MachineryForm) => {
     try {
         const response = await Machinary.put(`/updateMachin/${id}`, data);
-        return response.data; 
+        return response.data;
     } catch (error) {
         console.error('Error en updateMachin:', error);
         throw error;

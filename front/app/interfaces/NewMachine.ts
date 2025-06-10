@@ -10,6 +10,7 @@ export interface MachineryForm {
   weight?: string;
   is_mobile: boolean;
   description?: string;
+  user?: string;
 }
 
 export interface Machine {
