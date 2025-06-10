@@ -14,7 +14,7 @@ class MaestrasController extends Controller
 {
     // Obtener todas las Maestras
     public function getMaestra(): JsonResponse
-    { 
+    {
         $Maestra = Maestra::where('active', true)
             ->whereIn('version', function ($query) {
                 $query->selectRaw('MAX(version)')
@@ -88,7 +88,7 @@ class MaestrasController extends Controller
         ]);
         // Limpiar espacios en cada elemento de type_stage
         if (isset($validatedData['type_stage']) && is_array($validatedData['type_stage'])) {
-            $validatedData['type_stage'] = array_map(fn($item) => trim($item), $validatedData['type_stage']);
+            $validatedData['type_stage'] = array_map(fn($item) => intval($item), $validatedData['type_stage']);
         }
         // Crear nueva versión
         $newVersion = (int) $Maestra->version + 1;

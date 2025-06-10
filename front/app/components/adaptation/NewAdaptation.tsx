@@ -7,6 +7,7 @@ import { getPrefix } from "@/app/services/consecutive/consecutiveServices";
 import { getArticleByCode, getArticleByClient } from "@/app/services/bom/articleServices";
 import { newAdaptation, getAdaptations, deleteAdaptation, updateAdaptation, getAdaptationsId } from "@/app/services/adaptation/adaptationServices";
 import { getMaestra } from "../../services/maestras/maestraServices";
+import { getAuditsByModelAdaptation } from "../../services/history/historyAuditServices";
 // 🔹 Componentes
 import Button from "../buttons/buttons";
 import File from "../buttons/FileButton";
@@ -15,12 +16,14 @@ import Table from "../table/Table";
 import Text from "../text/Text";
 import ModalSection from "../modal/ModalSection";
 import { CreateClientProps } from "../../interfaces/CreateClientProps";
+import AuditModal from "../history/AuditModal";
 // 🔹 Toastr
 import { showSuccess, showError } from "../toastr/Toaster";
 // 🔹 Interfaces
-import { Client, Article, Ingredient } from "@/app/interfaces/BOM";
+import { Client, Article, Ingredient, Bom } from "@/app/interfaces/BOM";
 import { Data } from "@/app/interfaces/NewMaestra";
 import { BOM, Adaptation, ArticleFormData, Plant } from "@/app/interfaces/NewAdaptation";
+import { Audit } from "../../interfaces/Audit";
 
 function NewAdaptation({ canEdit = false, canView = false }: CreateClientProps) {
     const [isOpen, setIsOpen] = useState(false);
@@ -49,6 +52,8 @@ function NewAdaptation({ canEdit = false, canView = false }: CreateClientProps) 
     const [selectedBom, setSelectedBom] = useState<number | "">("");
     const [isLoading, setIsLoading] = useState(false);
     const [articleFields, setArticleFields] = useState<Record<string, ArticleFormData>>({});
+    const [auditList, setAuditList] = useState<Audit[]>([]);
+    const [, setSelectedAudit] = useState<Audit | null>(null);
 
     // Ejecutar al montar el componente
     useEffect(() => {
@@ -58,50 +63,40 @@ function NewAdaptation({ canEdit = false, canView = false }: CreateClientProps) 
     }, [canView]);
 
     useEffect(() => {
-        // Función asincrónica para obtener los clientes
         const fetchClients = async () => {
             try {
-                // Inicia el estado de carga
                 setIsLoading(true);
-                // Obtiene los datos de los clientes
                 const clientsData = await getClients();
-                setClients(clientsData); // Almacena los clientes en el estado
+                setClients(clientsData);
             } catch (error) {
-                // Muestra un error si algo falla al cargar los clientes
                 showError("Error al cargar los clientes.");
-                console.error(error); // Muestra el error en consola para depuración
+                console.error(error);
             } finally {
-                // Finaliza el estado de carga independientemente de si hubo error o no
                 setIsLoading(false);
             }
         };
-        // Llama a la función para cargar los clientes
+
         fetchClients();
-    }, []); // Este efecto solo se ejecuta una vez cuando el componente se monta
+    }, [getClients, setClients, showError]);
 
     // Cargar plantas (factories) al montar el componente
     useEffect(() => {
-        // Función asincrónica para obtener las plantas
         const fetchFactories = async () => {
             try {
-                // Inicia el estado de carga
                 setIsLoading(true);
-                // Obtiene los datos de las plantas
-                const factoriesData: Plant[] = await getFactory(); // Asegúrate de tipar correctamente la respuesta
-                setPlantas(factoriesData); // Almacena las plantas en el estado
+                const factoriesData: Plant[] = await getFactory();
+                setPlantas(factoriesData);
             } catch (error) {
-                // Muestra un error si algo falla al cargar las plantas
                 showError("Error al cargar las plantas.");
-                console.error(error); // Muestra el error en consola para depuración
+                console.error(error);
             } finally {
-                // Finaliza el estado de carga independientemente de si hubo error o no
                 setIsLoading(false);
             }
         };
-        // Llama a la función para cargar las plantas
-        fetchFactories();
-    }, []); // Este efecto solo se ejecuta una vez cuando el componente se monta
 
+        fetchFactories();
+    }, [getFactory, setPlantas, showError]);
+    // Este efecto solo se ejecuta una vez cuando el componente se monta
     // Maneja el cambio de planta seleccionada
     const handlePlantaChange = async (value: string) => {
         // Actualiza el estado de la planta seleccionada
@@ -215,48 +210,62 @@ function NewAdaptation({ canEdit = false, canView = false }: CreateClientProps) 
     }, [articles]); // 👈 Este efecto solo depende de `articles`, elimina `selectedArticles` de las dependencias
 
     // Cargar BOM (Bill of Materials) si el cliente y las maestras son válidas
+    // Cargar BOM (Bill of Materials) si el cliente y las maestras son válidas
     useEffect(() => {
-        // Si no hay cliente seleccionado o no hay maestras, no hacer nada
         if (!selectedClient || selectedMaestras.length === 0) return;
-        // Busca la maestra seleccionada
+
         const selectedMaestraObj = maestra.find(
             (m) => m.id.toString() === selectedMaestras[0]
         );
-        // Si la maestra no requiere BOM, limpia las listas de BOM e ingredientes
+
         if (!selectedMaestraObj?.requiere_bom) {
-            setBoms([]); // Limpia los BOMs
-            setIngredients([]); // Limpia los ingredientes
+            setBoms([]);
+            setIngredients([]);
             return;
         }
-        // Función asincrónica para obtener los BOM e ingredientes
+
         const fetchBom = async () => {
             try {
-                // Obtiene los datos del cliente por su ID
                 const clientData = await getClientsId(Number(selectedClient));
-                // Obtiene los datos del BOM usando el ID del cliente
-                const bomData = await getArticleByClient(clientData.id);
-                // Si hay BOMs disponibles, los almacena en el estado
-                if (bomData?.boms?.length > 0) {
-                    setBoms(bomData.boms);
-                    // Procesa los ingredientes del primer BOM
-                    const ingredientsJSON = bomData.boms[0].ingredients;
-                    const parsedIngredients: Ingredient[] = JSON.parse(ingredientsJSON);
+                const articlesWithBom: Article[] = await getArticleByClient(clientData.id);
 
-                    setIngredients(parsedIngredients); // Almacena los ingredientes en el estado
+                // Extraer los BOMs desde cada artículo
+                const bomsExtraidos: Bom[] = articlesWithBom
+                    .map(article => article.bom)
+                    .filter((bom): bom is Bom & { ingredients?: string } => !!bom);
+
+                if (bomsExtraidos.length > 0) {
+                    // Map Bom[] to BOM[] and convert status from boolean to number
+                    setBoms(
+                        bomsExtraidos.map((bom) => ({
+                            ...bom,
+                            status: bom.status ? 1 : 0,
+                        }))
+                    );
+
+                    // Solo parsea los ingredientes si están presentes
+                    const firstBom = bomsExtraidos[0];
+                    if (firstBom.ingredients) {
+                        const parsedIngredients: Ingredient[] = JSON.parse(firstBom.ingredients);
+                        setIngredients(parsedIngredients);
+                    } else {
+                        setIngredients([]);
+                    }
                 } else {
-                    setBoms([]); // Limpia los BOMs si no hay datos
-                    setIngredients([]); // Limpia los ingredientes si no hay datos
+                    setBoms([]);
+                    setIngredients([]);
                 }
             } catch (error) {
-                // Muestra un error si algo falla al obtener los BOMs o ingredientes
                 console.error("Error al obtener los BOMs", error);
-                setBoms([]); // Limpia los BOMs en caso de error
-                setIngredients([]); // Limpia los ingredientes en caso de error
+                setBoms([]);
+                setIngredients([]);
             }
         };
-        // Llama a la función para cargar los BOMs y los ingredientes
+
         fetchBom();
-    }, [selectedClient, selectedMaestras, maestra]); // Este efecto depende de `selectedClient`, `selectedMaestras`, y `maestra`
+    }, [selectedClient, selectedMaestras, maestra]);
+
+    // Este efecto depende de `selectedClient`, `selectedMaestras`, y `maestra`
 
     // Efecto que recalcula la cantidad teórica de ingredientes cada vez que cambia `quantityToProduce`
     useEffect(() => {
@@ -322,25 +331,20 @@ function NewAdaptation({ canEdit = false, canView = false }: CreateClientProps) 
     // Función para cargar adaptaciones
     const fetchAdaptations = async () => {
         try {
-            // Obtenemos las adaptaciones del backend
-            const { adaptations }: { adaptations: Adaptation[] } = await getAdaptations();
-
-            // Procesamos cada adaptación para obtener más detalles (como el nombre del cliente)
+            const adaptations: Adaptation[] = await getAdaptations();
             const adapData: Adaptation[] = await Promise.all(
                 adaptations.map(async (adaptation) => {
-                    const clientData = await getClientsId(adaptation.client_id); // Obtenemos los datos del cliente
+                    const clientData = await getClientsId(adaptation.client_id);
                     return {
                         ...adaptation,
-                        client_name: clientData.name, // Agregamos el nombre del cliente
-                        numberOrder: clientData.number_order, // Agregamos el número de orden del cliente
+                        client_name: clientData.name,
+                        numberOrder: clientData.number_order,
                     };
                 })
             );
 
-            // Guardamos las adaptaciones procesadas en el estado
             setAdaptation(adapData);
         } catch (error) {
-            // Si ocurre un error, mostramos un mensaje de error
             showError("Error al cargar adaptaciones.");
             console.error(error);
         }
@@ -615,6 +619,16 @@ function NewAdaptation({ canEdit = false, canView = false }: CreateClientProps) 
         String(parseInt(match) + 1).padStart(7, '0')
     );
 
+    const handleHistory = async (id: number) => {
+        const model = "Adaptation";
+        try {
+            const data = await getAuditsByModelAdaptation(model, id);
+            setAuditList(data);
+            if (data.length > 0) setSelectedAudit(data[0]); // opción: mostrar la primera al abrir
+        } catch (error) {
+            console.error("Error al obtener la auditoría:", error);
+        }
+    };
     return (
         <div>
             <div className="flex justify-center space-x-2 mb-2">
@@ -1081,7 +1095,11 @@ function NewAdaptation({ canEdit = false, canView = false }: CreateClientProps) 
                 }}
                 onDelete={canEdit ? handleDelete : undefined}
                 onEdit={handleEdit}
+                onHistory={handleHistory}
             />
+            {auditList.length > 0 && (
+                <AuditModal audit={auditList} onClose={() => setAuditList([])} />
+            )}
         </div>
     );
 }

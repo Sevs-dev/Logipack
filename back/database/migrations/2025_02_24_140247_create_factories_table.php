@@ -20,6 +20,10 @@ return new class extends Migration
             $table->string('employees')->nullable(); // Número de empleados
             $table->boolean('status')->default(true); // Estado de la planta
             $table->string('prefix')->nullable(); // Estado de la planta
+            $table->string('version'); // Guarda el tiempo en formato HH:MM:SS
+            $table->boolean('active')->default(true); // Indica si tiene 
+            $table->uuid('reference_id');
+            $table->string('user');
             $table->timestamps();
         });
     }

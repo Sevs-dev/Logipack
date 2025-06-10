@@ -12,6 +12,9 @@ import Text from "../text/Text";
 import { Manu, Factory, Product } from "../../interfaces/Products"
 import { CreateClientProps } from "../../interfaces/CreateClientProps";
 import SelectorDual from "../SelectorDual/SelectorDual"
+import AuditModal from "../history/AuditModal";
+import { Audit } from "../../interfaces/Audit";
+import { getAuditsByModelAdmin } from "../../services/history/historyAuditServices";
 
 function CreateManufacturing({ canEdit = false, canView = false }: CreateClientProps) {
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -19,6 +22,10 @@ function CreateManufacturing({ canEdit = false, canView = false }: CreateClientP
     const [factories, setFactories] = useState<Factory[]>([]);
     const [products, setProducts] = useState<Product[]>([]);
     const [manu, setManu] = useState<Manu[]>([]);
+    // Estado para la lista de auditorías
+    const [auditList, setAuditList] = useState<Audit[]>([]);
+    // Estado para la auditoría seleccionada (no se usa, pero se deja para posible ampliación)
+    const [, setSelectedAudit] = useState<Audit | null>(null);
 
     const columnLabels = { name: "Nombre", factory: "Fábrica" };
     const columns = ["name", "factory"];
@@ -128,6 +135,16 @@ function CreateManufacturing({ canEdit = false, canView = false }: CreateClientP
     };
 
     const closeModal = () => setIsModalOpen(false);
+    const handleHistory = async (id: number) => {
+        const model = "Manufacturing";
+        try {
+            const data = await getAuditsByModelAdmin(model, id);
+            setAuditList(data);
+            if (data.length > 0) setSelectedAudit(data[0]);
+        } catch (error) {
+            console.error("Error al obtener la auditoría:", error);
+        }
+    };
 
     return (
         <div>
@@ -206,7 +223,13 @@ function CreateManufacturing({ canEdit = false, canView = false }: CreateClientP
                 columnLabels={columnLabels}
                 onDelete={canEdit ? handleDelete : undefined}
                 onEdit={openEditModal}
+                onHistory={handleHistory}
             />
+
+            {/* Modal de auditoría */}
+            {auditList.length > 0 && (
+                <AuditModal audit={auditList} onClose={() => setAuditList([])} />
+            )}
         </div>
     );
 }

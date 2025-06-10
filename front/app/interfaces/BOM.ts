@@ -5,6 +5,8 @@ export interface Client {
 }
 
 export interface Article {
+  bom: (Bom & { ingredients?: string }) | null;
+  data: never[];
   codart: string;
   desart: string;
   coddiv: string;
@@ -34,3 +36,19 @@ export interface BomView extends Bom {
   article_codart: string;
   article_desart: string;
 }
+
+export interface BomPayload {
+  client_id: number;
+  base_quantity: string;
+  details: string;
+  code_details: string;
+  ingredients: string;
+  code_ingredients: string;
+  status: boolean;
+  user?: string;
+}
+
+export interface Bom extends BomPayload {
+  id: number;
+}
+

@@ -45,6 +45,7 @@ return new class extends Migration
             $table->boolean('pause')->default(true);
             $table->boolean('finish_notificade')->default(true);
             $table->boolean('out')->default(true);
+            $table->string('user');
             $table->timestamps();
         });
     }

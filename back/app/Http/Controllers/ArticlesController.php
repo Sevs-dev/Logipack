@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Bom;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 
 class ArticlesController extends Controller
 {
@@ -51,13 +52,15 @@ class ArticlesController extends Controller
 
     public function getAllBoms()
     {
-        try {
-            $boms = Bom::all();
+        $boms = Bom::where('active', true)
+            ->whereIn('version', function ($query) {
+                $query->selectRaw('MAX(version)')
+                    ->from('boms as a2')
+                    ->whereColumn('a2.reference_id', 'boms.reference_id');
+            })
+            ->get();
 
-            return response()->json(['boms' => $boms], 200);
-        } catch (\Exception $e) {
-            return response()->json(['error' => 'Error al obtener los BOMs', 'details' => $e->getMessage()], 500);
-        }
+        return response()->json($boms, 200);
     }
 
     public function newArticle(Request $request)
@@ -70,9 +73,11 @@ class ArticlesController extends Controller
                 'status' => 'required|boolean',
                 'ingredients' => 'required|json',
                 'code_details' => '',
-                'code_ingredients' => 'required|json'
+                'code_ingredients' => 'required|json',
+                'user' => 'string|nullable',
             ]);
-
+            $validatedData['version'] = '1';
+            $validatedData['reference_id'] = (string) Str::uuid();
             $bom = Bom::create($validatedData);
 
             return response()->json([
@@ -116,8 +121,17 @@ class ArticlesController extends Controller
                 'code_details' => '',
                 'code_ingredients' => 'required|json'
             ]);
+            $bom->active = false;
+            $bom->save();
+            // Crear nueva versión
+            $newVersion = (int) $bom->version + 1;
 
-            $bom->update($validatedData);
+            $newBom = $bom->replicate(); // duplica todos los atributos excepto la PK
+            $newBom->version = $newVersion;
+            $newBom->fill($validatedData);
+            $newBom->reference_id = $bom->reference_id ?? (string) Str::uuid();
+            $newBom->active = true; // activamos la nueva versión
+            $newBom->save();
 
             return response()->json([
                 'message' => 'BOM actualizado exitosamente',
@@ -135,7 +149,9 @@ class ArticlesController extends Controller
     {
         try {
             $bom = Bom::findOrFail($id);
-            $bom->delete();
+
+            $bom->active = false;
+            $bom->save();
 
             return response()->json([
                 'message' => 'BOM eliminado exitosamente'

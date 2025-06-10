@@ -9,6 +9,9 @@ import Text from "../text/Text";
 import { Factory } from "../../interfaces/NewFactory"
 import ModalSection from "../modal/ModalSection";
 import { CreateClientProps } from "../../interfaces/CreateClientProps";
+import { getAuditsByModelAdmin } from "../../services/history/historyAuditServices";
+import AuditModal from "../history/AuditModal";
+import { Audit } from "../../interfaces/Audit";
 
 function CreateFactory({ canEdit = false, canView = false }: CreateClientProps) {
     const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
@@ -21,6 +24,10 @@ function CreateFactory({ canEdit = false, canView = false }: CreateClientProps) 
     const [status, setStatus] = useState<boolean>(false);
     const [factories, setFactories] = useState<Factory[]>([]);
     const [editingFactory, setEditingFactory] = useState<Factory | null>(null);
+    // Estado para la lista de auditorías
+    const [auditList, setAuditList] = useState<Audit[]>([]);
+    // Estado para la auditoría seleccionada (no se usa, pero se deja para posible ampliación)
+    const [, setSelectedAudit] = useState<Audit | null>(null);
 
     const fetchFactories = async () => {
         try {
@@ -99,7 +106,20 @@ function CreateFactory({ canEdit = false, canView = false }: CreateClientProps) 
             showError("Error obteniendo datos de la planta");
         }
     };
-
+    /**
+       * Maneja la visualización del historial de auditoría de un producto.
+       * @param id ID del producto
+       */
+    const handleHistory = async (id: number) => {
+        const model = "Factory";
+        try {
+            const data = await getAuditsByModelAdmin(model, id);
+            setAuditList(data);
+            if (data.length > 0) setSelectedAudit(data[0]);
+        } catch (error) {
+            console.error("Error al obtener la auditoría:", error);
+        }
+    };
     return (
         <div>
             <div className="flex justify-center mb-2">
@@ -208,7 +228,13 @@ function CreateFactory({ canEdit = false, canView = false }: CreateClientProps) 
                 location: "Ubicación",
                 manager: "Persona a Cargo",
                 status: "Estado",
-            }} onDelete={canEdit ? handleDelete : undefined} onEdit={handleEdit} />
+            }} onDelete={canEdit ? handleDelete : undefined} onEdit={handleEdit} onHistory={handleHistory}
+            />
+
+            {/* Modal de auditoría */}
+            {auditList.length > 0 && (
+                <AuditModal audit={auditList} onClose={() => setAuditList([])} />
+            )}
         </div>
     );
 }

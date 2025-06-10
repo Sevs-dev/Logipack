@@ -2,13 +2,14 @@
 
 namespace App\Models;
 
+use App\Traits\AdminAuditable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Factory extends Model
 {
     use HasFactory;
-
+    use AdminAuditable;
     protected $guarded = [];
 
     public function manufacturings()

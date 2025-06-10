@@ -7,20 +7,28 @@ use App\Models\Factory;
 use Illuminate\Http\JsonResponse;
 use App\Models\Consecutive;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Str;
 
 class FactoryController extends Controller
 {
     // Obtener todas las fábricas
     public function getFactories(): JsonResponse
-    {
-        $factories = Factory::with('manufacturings')->get();
-        return response()->json($factories);
+    { 
+        $factories = Factory::where('active', true)
+            ->whereIn('version', function ($query) {
+                $query->selectRaw('MAX(version)')
+                    ->from('factories as a2')
+                    ->whereColumn('a2.reference_id', 'factories.reference_id');
+            })
+            ->get();
+
+        return response()->json($factories, 200);
     }
 
     // Crear una nueva fábrica
     public function newFactory(Request $request): JsonResponse
     {
-        $request->validate([
+        $validatedData = $request->validate([
             'name' => 'required|string|max:255',
             'location' => 'required|string|max:255',
             'capacity' => 'required|string|min:1',
@@ -28,9 +36,11 @@ class FactoryController extends Controller
             'employees' => 'required',
             'status' => 'required|boolean',
             'prefix' => 'required|string',
+            'user' => 'string|nullable',
         ]);
-
-        $factory = Factory::create($request->all());
+        $validatedData['version'] = '1';
+        $validatedData['reference_id'] = (string) Str::uuid();
+        $factory = Factory::create($validatedData);
 
         // Obtener fecha actual
         $now = Carbon::now();
@@ -84,7 +94,7 @@ class FactoryController extends Controller
             return response()->json(['message' => 'Fábrica no encontrada'], 404);
         }
 
-        $request->validate([
+        $validatedData = $request->validate([
             'name' => 'sometimes|string|max:255',
             'location' => 'sometimes|string|max:255',
             'capacity' => 'sometimes|string|min:1',
@@ -92,6 +102,7 @@ class FactoryController extends Controller
             'employees' => 'sometimes|string|min:0',
             'status' => 'sometimes|boolean',
             'prefix' => 'sometimes|string',
+            'user' => 'string|nullable'
         ]);
 
         // Verifica si se envió un nuevo prefijo
@@ -105,7 +116,16 @@ class FactoryController extends Controller
             ]);
         }
 
-        $factory->update($request->all());
+        // Crear nueva versión
+        $newVersion = (int) $factory->version + 1;
+
+        $new = $factory->replicate(); // duplica todos los atributos excepto la PK
+        $new->version = $newVersion;
+        $new->fill($validatedData);
+        $new->reference_id = $factory->reference_id ?? (string) Str::uuid();
+        $new->active = true; // activamos la nueva versión
+        $new->save();
+
 
         return response()->json([
             'message' => 'Fábrica actualizada correctamente',
@@ -120,7 +140,8 @@ class FactoryController extends Controller
         if (!$factory) {
             return response()->json(['message' => 'Fábrica no encontrada'], 404);
         }
-
+        $factory->active = false;
+        $factory->save();
         $factory->delete();
 
         return response()->json(['message' => 'Fábrica eliminada correctamente']);

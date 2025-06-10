@@ -20,6 +20,7 @@ import AuditModal from "../history/AuditModal";
 import { Stage, Data } from "../../interfaces/NewMaestra";
 import { DataTipoAcondicionamiento, DataLineaTipoAcondicionamiento } from "@/app/interfaces/NewTipoAcondicionamiento";
 import { getLineaTipoAcondicionamientoById as getLineaTipoAcomById } from "@/app/services/maestras/LineaTipoAcondicionamientoService";
+import { Audit } from "../../interfaces/Audit";
 // importaciones de interfaces
 
 const Maestra = ({ canEdit = false, canView = false }: CreateClientProps) => {
@@ -45,8 +46,8 @@ const Maestra = ({ canEdit = false, canView = false }: CreateClientProps) => {
     const [detalleAcondicionamiento, setDetalleAcondicionamiento] = useState<any[]>([]);
     const [searchTipoAcom, setSearchTipoAcom] = useState("");
     const [draggedIndex, setDraggedIndex] = React.useState<number | null>(null);
-    const [auditList, setAuditList] = useState<any[]>([]);
-    const [, setSelectedAudit] = useState<any | null>(null);
+    const [auditList, setAuditList] = useState<Audit[]>([]);
+    const [, setSelectedAudit] = useState<Audit | null>(null);
 
     const handleSelectTipoAcondicionamiento = async (tipoId: number) => {
         try {
@@ -250,7 +251,7 @@ const Maestra = ({ canEdit = false, canView = false }: CreateClientProps) => {
         };
 
         console.log(payload);
-        console.groupCollapsed("📤 Enviando datos para crear Maestra");
+        // console.groupCollapsed("📤 Enviando datos para crear Maestra");
         console.groupEnd();
 
         try {

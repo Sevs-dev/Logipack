@@ -11,6 +11,7 @@ import { Clock } from "lucide-react";
 import { CreateClientProps } from "../../interfaces/CreateClientProps";
 import ModalSection from "../modal/ModalSection";
 import AuditModal from "../history/AuditModal";
+import { Audit } from "../../interfaces/Audit";
 
 export default function NewActivity({ canEdit = false, canView = false }: CreateClientProps) {
     const [modalOpen, setModalOpen] = useState(false);
@@ -30,9 +31,8 @@ export default function NewActivity({ canEdit = false, canView = false }: Create
     const INPUT_TYPES_WITH_OPTIONS = ["select", "radio", "checkbox"];
     const getDefaultConfig = (type: string) =>
         JSON.stringify(activityTypes[type] || activityTypes["Texto corto"], null, 2);
-    const [auditData, setAuditData] = useState<any>(null);
-    const [auditList, setAuditList] = useState<any[]>([]);
-    const [selectedAudit, setSelectedAudit] = useState<any | null>(null);
+    const [auditList, setAuditList] = useState<Audit[]>([]);
+        const [, setSelectedAudit] = useState<Audit | null>(null);
 
     // ────────────────────────────── HELPERS ──────────────────────────────
 
@@ -268,9 +268,6 @@ export default function NewActivity({ canEdit = false, canView = false }: Create
         }
     };
 
-    const closeModal = () => {
-        setAuditData(null);
-    };
     return (
         <div>
             {/* Botón para abrir el modal de creación */}

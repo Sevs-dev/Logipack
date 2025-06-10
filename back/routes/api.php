@@ -184,7 +184,6 @@ Route::controller(TipoAcondicionamientoController::class)->group(function () {
     Route::delete('/deleteTipoAcondicionamiento/{id}', 'deleteTipoAcondicionamiento'); // Eliminar una lineas
 });
 
-
 //Rutas Lineas Tipo de Acondicionamiento
 Route::controller(LineaTipoAcondicionamientoController::class)->group(function () {
     Route::get('/getLineaTipoAcondicionamiento', 'getAll'); // Obtener todas las lineas   
@@ -208,5 +207,9 @@ Route::controller(OrdenesEjecutadasController::class)->group(function () {
 //Rutas Historial de Audits
 Route::controller(HistoryAuditController::class)->group(function () {
     Route::get('/getAudit', 'index'); // Obtener todas las lineas   
+    Route::get('/getAuditAdaptation', 'indexAdaptation'); // Obtener todas las lineas   
+    Route::get('/getAuditAdmin', 'indexAdmin'); // Obtener todas las lineas   
     Route::get('/{model}/{id}', 'byModel'); // Obtener una lineas específica
+    Route::get('/audit/{model}/{id}', 'byModelAdaptation'); // Obtener una lineas específica
+    Route::get('/audit/admin/{model}/{id}', 'byModelAdmin'); // Obtener una lineas específica
 });

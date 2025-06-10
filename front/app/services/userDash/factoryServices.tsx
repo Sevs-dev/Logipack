@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { API_URL } from '../../config/api'
+import { FactoryData } from "../../interfaces/NewFactory"
 
 // Se crea una instancia de axios con la configuración base de la API.
 const apiFactory = axios.create({
@@ -10,23 +11,22 @@ const apiFactory = axios.create({
 });
 
 // Interfaz para definir la estructura de los datos de la fábrica
-export interface FactoryData {
-    name: string;
-    location: string;
-    capacity: string;
-    manager: string;
-    employees: string;
-    status: boolean;
-    prefix: string;
-}
+
 
 // Función para crear una nueva fábrica
 export const createFactory = async (dataFactory: FactoryData): Promise<void> => {
     try {
+        const name = document.cookie
+            .split('; ')
+            .find(row => row.startsWith('name='))
+            ?.split('=')[1];
+
+        if (name) {
+            dataFactory.user = decodeURIComponent(name);
+        }
         const response = await apiFactory.post('/newFactory', dataFactory);
         return response.data;
     } catch (error: unknown) {
-        let errorMessage = "Error desconocido";
         if (typeof error === "object" && error !== null && "response" in error) {
             const axiosError = error as { response?: { data: unknown } };
             console.error("Detalles del error del backend:", axiosError.response?.data);
@@ -57,7 +57,7 @@ export const deleteFactory = async (id: number) => {
 }
 
 export const getFactoryId = async (id: number) => {
-    try { 
+    try {
         const response = await apiFactory.get(`/factoryId/${id}`);
         return response.data;
     } catch (error) {

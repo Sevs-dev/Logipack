@@ -1,36 +1,59 @@
 import React, { useState, useEffect } from "react";
-import { getProduct, getProductId, createProduct, updateProduct, deleteProduct, } from "../../services/userDash/productServices";
+import {
+  getProduct,
+  getProductId,
+  createProduct,
+  updateProduct,
+  deleteProduct,
+} from "../../services/userDash/productServices";
 import Table from "../table/Table";
 import { showSuccess, showError, showConfirm } from "../toastr/Toaster";
-import Button from "../buttons/buttons"
+import Button from "../buttons/buttons";
 import { CreateClientProps } from "../../interfaces/CreateClientProps";
 import ModalSection from "../modal/ModalSection";
 import Text from "../text/Text";
-// Definición de la interfaz para un producto
-interface Product {
-  id: number;
-  name: string;
-}
+import { getAuditsByModelAdmin } from "../../services/history/historyAuditServices";
+import AuditModal from "../history/AuditModal";
+import { Audit } from "../../interfaces/Audit";
+import { Product } from "../../interfaces/Products";
 
+/**
+ * Componente principal para gestionar productos.
+ * Permite crear, editar, eliminar y ver historial de productos.
+ */
 function Products({ canEdit = false, canView = false }: CreateClientProps) {
+  // Estado para la lista de productos
   const [products, setProducts] = useState<Product[]>([]);
+  // Estado para mostrar/ocultar modal de creación/edición
   const [showModal, setShowModal] = useState(false);
+  // Estado para el nombre del producto en el formulario
   const [name, setName] = useState("");
+  // Estado para mostrar errores en el formulario
   const [error, setError] = useState("");
+  // Estado para saber si se está editando un producto
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  // Estado para la lista de auditorías
+  const [auditList, setAuditList] = useState<Audit[]>([]);
+  // Estado para la auditoría seleccionada (no se usa, pero se deja para posible ampliación)
+  const [, setSelectedAudit] = useState<Audit | null>(null);
 
+  // Etiquetas de las columnas de la tabla
   const columnLabels: { [key: string]: string } = {
     name: "Nombre",
   };
+  // Columnas a mostrar en la tabla
   const columns = ["name"];
 
+  // Efecto para cargar productos si el usuario puede verlos
   useEffect(() => {
     if (canView) {
       fetchProducts();
     }
   }, [canView]);
 
-  // Obtener la lista de productos
+  /**
+   * Obtiene la lista de productos desde el servicio.
+   */
   const fetchProducts = async () => {
     try {
       const data = await getProduct();
@@ -40,6 +63,9 @@ function Products({ canEdit = false, canView = false }: CreateClientProps) {
     }
   };
 
+  /**
+   * Abre el modal para crear un nuevo producto.
+   */
   const openCreateModal = () => {
     setEditingProduct(null);
     setName("");
@@ -47,7 +73,10 @@ function Products({ canEdit = false, canView = false }: CreateClientProps) {
     setShowModal(true);
   };
 
-
+  /**
+   * Abre el modal para editar un producto existente.
+   * @param productId ID del producto a editar
+   */
   const openEditModal = async (productId: number) => {
     try {
       const productData = await getProductId(productId);
@@ -63,7 +92,10 @@ function Products({ canEdit = false, canView = false }: CreateClientProps) {
     }
   };
 
-  // Crear un producto
+  /**
+   * Maneja la creación de un producto.
+   * @param e Evento de formulario
+   */
   const handleCreate = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!name) {
@@ -77,11 +109,11 @@ function Products({ canEdit = false, canView = false }: CreateClientProps) {
         throw new Error("Error: Producto no creado correctamente");
       }
 
-      setProducts((prev) => [...prev, newProduct]); // Actualiza la tabla con el nuevo producto
-      await fetchProducts(); // Recargar la lista completa por seguridad
+      setProducts((prev) => [...prev, newProduct]);
+      await fetchProducts(); // Refresca la lista completa
       showSuccess("Producto creado exitosamente");
 
-      // Resetear estado
+      // Resetea el estado del formulario
       setShowModal(false);
       setName("");
       setError("");
@@ -92,7 +124,10 @@ function Products({ canEdit = false, canView = false }: CreateClientProps) {
     }
   };
 
-  // Actualizar un producto
+  /**
+   * Maneja la actualización de un producto existente.
+   * @param e Evento de formulario
+   */
   const handleUpdate = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!name || !editingProduct) {
@@ -106,7 +141,7 @@ function Products({ canEdit = false, canView = false }: CreateClientProps) {
       );
       showSuccess("Producto actualizado correctamente");
 
-      // Resetear estado
+      // Resetea el estado del formulario
       setShowModal(false);
       setName("");
       setError("");
@@ -118,7 +153,10 @@ function Products({ canEdit = false, canView = false }: CreateClientProps) {
     }
   };
 
-  // Eliminar un producto
+  /**
+   * Maneja la eliminación de un producto.
+   * @param id ID del producto a eliminar
+   */
   const handleDelete = async (id: number) => {
     try {
       showConfirm("¿Estás seguro de eliminar este producto?", async () => {
@@ -132,9 +170,25 @@ function Products({ canEdit = false, canView = false }: CreateClientProps) {
     }
   };
 
+  /**
+   * Maneja la visualización del historial de auditoría de un producto.
+   * @param id ID del producto
+   */
+  const handleHistory = async (id: number) => {
+    const model = "Products";
+    try {
+      const data = await getAuditsByModelAdmin(model, id);
+      setAuditList(data);
+      if (data.length > 0) setSelectedAudit(data[0]);
+    } catch (error) {
+      console.error("Error al obtener la auditoría:", error);
+    }
+  };
 
+  // Renderizado del componente
   return (
     <div>
+      {/* Botón para crear producto, solo si tiene permisos de edición */}
       {canEdit && (
         <div className="flex justify-center mb-2">
           <Button onClick={openCreateModal} variant="create" label="Crear Producto" />
@@ -175,7 +229,13 @@ function Products({ canEdit = false, canView = false }: CreateClientProps) {
         columnLabels={columnLabels}
         onDelete={canEdit ? handleDelete : undefined}
         onEdit={openEditModal}
+        onHistory={handleHistory}
       />
+
+      {/* Modal de auditoría */}
+      {auditList.length > 0 && (
+        <AuditModal audit={auditList} onClose={() => setAuditList([])} />
+      )}
     </div>
   );
 }

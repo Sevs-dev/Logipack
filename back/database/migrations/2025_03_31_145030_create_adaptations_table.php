@@ -25,6 +25,10 @@ return new class extends Migration
             $table->foreign('factory_id')->references('id')->on('factories')->onDelete('cascade');
             $table->foreign('master')->references('id')->on('maestras')->onDelete('cascade');
             $table->foreign('bom')->references('id')->on('boms')->onDelete('cascade');
+            $table->string('version'); // Guarda el tiempo en formato HH:MM:SS
+            $table->boolean('active')->default(true); // Indica si tiene 
+            $table->uuid('reference_id');
+            $table->string('user');
             $table->timestamps();
         });
         

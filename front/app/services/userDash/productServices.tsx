@@ -1,25 +1,28 @@
 import axios from 'axios';
 import { API_URL } from '../../config/api';
+import { Data } from "../../interfaces/Products"
 
 // Se crea una instancia de axios configurada con la URL base de la API y encabezados predeterminados.
-const apiProducts = axios.create({
+const Product = axios.create({
     baseURL: API_URL,
     headers: {
         'Content-Type': 'application/json',
     },
 });
 
-// Interfaz que define la estructura de los datos para crear o actualizar un Product.
-// En este caso, solo se requiere el campo "name".
-export interface Data {
-    name: string;
-}
-
 // Función para crear un nuevo Product.
 // Envía una solicitud POST a la ruta '/newProduct' con los datos proporcionados.
-export const createProduct = async (data: { name: string }) => {
+export const createProduct = async (data: Data) => {
     try {
-        const response = await apiProducts.post('/newProduct', data);
+        const name = document.cookie
+            .split('; ')
+            .find(row => row.startsWith('name='))
+            ?.split('=')[1];
+
+        if (name) {
+            data.user = decodeURIComponent(name);
+        }
+        const response = await Product.post('/newProduct', data);
         if (!response.data || !response.data.product || !response.data.product.id) {
             throw new Error("Respuesta inválida del servidor");
         }
@@ -33,7 +36,7 @@ export const createProduct = async (data: { name: string }) => {
 // Realiza una solicitud GET a la ruta '/getProduct' y retorna los datos recibidos.
 export const getProduct = async () => {
     try {
-        const response = await apiProducts.get(`/getProduct`);
+        const response = await Product.get(`/getProduct`); 
         return response.data;
     } catch (error) {
         console.error('Error en getProduct:', error);
@@ -45,7 +48,7 @@ export const getProduct = async () => {
 // Realiza una solicitud DELETE a la ruta `/deleteProduct/${id}`.
 export const deleteProduct = async (id: number) => {
     try {
-        const response = await apiProducts.delete(`/deleteProduct/${id}`);
+        const response = await Product.delete(`/deleteProduct/${id}`);
         return response.data;
     } catch (error) {
         console.error('Error en deleteProduct:', error);
@@ -58,7 +61,7 @@ export const deleteProduct = async (id: number) => {
 // Es posible que se deba revisar si la ruta o el método es el correcto.
 export const getProductId = async (id: number) => {
     try {
-        const response = await apiProducts.get(`/ProductId/${id}`);
+        const response = await Product.get(`/ProductId/${id}`);
         return response.data;
     } catch (error) {
         console.error('Error en getProductId:', error);
@@ -71,7 +74,7 @@ export const getProductId = async (id: number) => {
 // Es posible que se deba revisar si la ruta o el método es el correcto.
 export const getProductName = async (name: string) => {
     try {
-        const response = await apiProducts.get(`/ProductName/${name}`);
+        const response = await Product.get(`/ProductName/${name}`);
         return response.data;
     } catch (error) {
         console.error('Error en getProductId:', error);
@@ -81,9 +84,9 @@ export const getProductName = async (name: string) => {
 
 // Función para actualizar un Product existente.
 // Envía una solicitud PUT a la ruta `/updateProduct/${id}` con los nuevos datos del Product. 
-export const updateProduct = async (id: number, data: { name: string }) => {
+export const updateProduct = async (id: number, data: Data) => {
     try {
-        const response = await apiProducts.put(`/updateProduct/${id}`, data);
+        const response = await Product.put(`/updateProduct/${id}`, data);
         return response.data;
     } catch (error) {
         console.error('Error en updateProduct:', error);
