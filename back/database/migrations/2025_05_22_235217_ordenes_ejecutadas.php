@@ -20,6 +20,8 @@ return new class extends Migration
             $table->string('maestra_fases_fk')->nullable();
             $table->string('maestra_tipo_acondicionamiento_fk')->nullable();
             $table->string('linea_produccion')->nullable();
+            $table->string('proceso')->nullable()->default('eject');
+            $table->string('estado')->nullable()->default('100');
             $table->timestamps();
         });
     }
