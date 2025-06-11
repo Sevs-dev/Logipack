@@ -306,6 +306,7 @@ class OrdenesEjecutadasController extends Controller
                 'atc.adaptation_id',
                 'atc.tipo_acondicionamiento_fk',
                 'atc.fases_fk',
+                'atc.descripcion_maestra',
                 'atc.forms'
             )
             ->get();
