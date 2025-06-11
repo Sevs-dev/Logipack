@@ -306,7 +306,6 @@ class OrdenesEjecutadasController extends Controller
                 'atc.adaptation_id',
                 'atc.tipo_acondicionamiento_fk',
                 'atc.fases_fk',
-                'atc.descripcion_maestra',
                 'atc.forms'
             )
             ->get();
@@ -321,6 +320,7 @@ class OrdenesEjecutadasController extends Controller
                     ) > 0
                 ");
             })
+            ->Join('stages as std', 'std.id', '=', 'atc.fases_fk')
             ->where('orden.id', '=', $acondicionamiento_id)
             ->where('atc.tipo_acondicionamiento_fk','=', 0)
             ->select(
@@ -329,9 +329,9 @@ class OrdenesEjecutadasController extends Controller
                 'atc.adaptation_id',
                 'atc.tipo_acondicionamiento_fk',
                 'atc.fases_fk',
-                'atc.forms'
-            )
-            ->get();
+                'std.description as description_fase',
+                'atc.forms',
+            )->get();
       
 
             return response()->json([
@@ -372,7 +372,7 @@ class OrdenesEjecutadasController extends Controller
             )->get()), $ordenes);
 
             // obtener actividades de la fase
-            $actividades = $this->getActividades((
+            $fases = $this->getActividades((
             DB::table('adaptations as ada')
             ->join('ordenes_ejecutadas as mae', 'mae.adaptation_id', '=', 'ada.id')
             ->leftJoin('stages as std', function ($join) {
@@ -384,19 +384,20 @@ class OrdenesEjecutadasController extends Controller
                 NULL as descripcion_tipo_acondicionamiento,
                 NULL as descripcion_linea_tipo_acondicionamiento,
                 std.id as fases_fk,
-                std.description AS 'descripcion_fase', 
+                std.description AS 'description_fase', 
+                std.phase_type,
                 std.repeat_line
             ")->get()), $ordenes);
 
             // insertar actividades de la orden ejecutada
-            $this->crearActividadesOrden($tipo_acondicionamiento, $actividades);
+            $this->crearActividadesOrden($tipo_acondicionamiento, $fases);
 
             // retornar estructra de respuesta
             return response()->json([
                 'message' => 'Orden procesada',
                 'acondicionamiento' => json_decode($ordenes, true),
                 'maestra_tipo_acondicionamiento_fk' => $tipo_acondicionamiento,
-                'maestra_fases_fk' => $actividades,
+                'maestra_fases_fk' => $fases,
             ]);
         }
 
@@ -473,8 +474,9 @@ class OrdenesEjecutadasController extends Controller
                             $value['adaptation_id'] = $ordenes->adaptation_id;
                             $value['tipo_acondicionamiento_fk'] = $fase['tipo_acondicionamiento_id'];
                             $value['fases_fk'] = $fase['fases_fk'];
+                            $value['description_fase'] = $fase['description_fase'];
+                            $value['phase_type'] = $fase['phase_type'];
                             $value['actividad_fk'] = $value['id_activitie'];
-                            $value['descripcion_actividad'] = $value['descripcion_activitie'];
                             $value['secuencia'] = $count;
                             $value['clave'] = $clave;
                             $value['valor'] = "";
@@ -498,8 +500,9 @@ class OrdenesEjecutadasController extends Controller
                     $value['adaptation_id'] = $ordenes->adaptation_id;
                     $value['tipo_acondicionamiento_fk'] = $fase['tipo_acondicionamiento_id'];
                     $value['fases_fk'] = $fase['fases_fk'];
+                    $value['description_fase'] = $fase['description_fase'];
+                    $value['phase_type'] = $fase['phase_type'];
                     $value['actividad_fk'] = $value['id_activitie'];
-                    $value['descripcion_actividad'] = $value['descripcion_activitie'];
                     $value['secuencia'] = $count;
                     $value['clave'] = $clave;
                     $value['valor'] = "";
@@ -565,6 +568,8 @@ class OrdenesEjecutadasController extends Controller
                 "adaptation_id" => $tipo[0]['adaptation_id'],
                 "tipo_acondicionamiento_fk" => $tipo[0]['tipo_acondicionamiento_fk'],
                 "fases_fk" => $tipo[0]['fases_fk'],
+                "description_fase" => $tipo[0]['description_fase'],
+                "phase_type" => $tipo[0]['phase_type'],
                 "forms" => json_encode($tipo)
             ]);
         }
@@ -576,6 +581,8 @@ class OrdenesEjecutadasController extends Controller
                 "adaptation_id" => $fase[0]['adaptation_id'],
                 "tipo_acondicionamiento_fk" => $fase[0]['tipo_acondicionamiento_fk'],
                 "fases_fk" => $fase[0]['fases_fk'],
+                "description_fase" => $fase[0]['description_fase'],
+                "phase_type" => $fase[0]['phase_type'],
                 "forms" => json_encode($fase)
             ]);
         }

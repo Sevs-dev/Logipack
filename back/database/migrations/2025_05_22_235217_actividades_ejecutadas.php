@@ -17,6 +17,8 @@ return new class extends Migration
             $table->string('adaptation_id')->nullable();
             $table->string('tipo_acondicionamiento_fk')->nullable();
             $table->string('fases_fk')->nullable();
+            $table->string('description_fase')->nullable();
+            $table->string('phase_type')->nullable();
             $table->json('forms')->nullable();
             $table->timestamps();
         });
