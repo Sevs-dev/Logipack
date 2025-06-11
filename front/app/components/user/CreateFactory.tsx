@@ -33,8 +33,8 @@ function CreateFactory({ canEdit = false, canView = false }: CreateClientProps) 
         try {
             const data: Factory[] = await getFactory();
             setFactories(data);
-        } catch (error) {
-            console.error("Error fetching factories:", error);
+        } catch {
+            console.error("Error fetching factories:");
         }
     };
 
@@ -72,7 +72,7 @@ function CreateFactory({ canEdit = false, canView = false }: CreateClientProps) 
             fetchFactories();
             setIsModalOpen(false);
             resetForm();
-        } catch (error) {
+        } catch {
             showError("Error al guardar la planta");
         }
     };
@@ -84,7 +84,7 @@ function CreateFactory({ canEdit = false, canView = false }: CreateClientProps) 
                 await deleteFactory(id);
                 setFactories((prevFactories) => prevFactories.filter((factory) => factory.id !== id));
                 showSuccess("Planta eliminada con éxito");
-            } catch (error) {
+            } catch {
                 showError("Error al eliminar la planta");
             }
         });
@@ -102,7 +102,7 @@ function CreateFactory({ canEdit = false, canView = false }: CreateClientProps) 
             setEmployees(factoryData.employees);
             setStatus(factoryData.status);
             setIsModalOpen(true);
-        } catch (error) {
+        } catch {
             showError("Error obteniendo datos de la planta");
         }
     };
@@ -116,8 +116,8 @@ function CreateFactory({ canEdit = false, canView = false }: CreateClientProps) 
             const data = await getAuditsByModelAdmin(model, id);
             setAuditList(data);
             if (data.length > 0) setSelectedAudit(data[0]);
-        } catch (error) {
-            console.error("Error al obtener la auditoría:", error);
+        } catch {
+            console.error("Error al obtener la auditoría:");
         }
     };
     return (

@@ -17,10 +17,18 @@ export interface Lista {
   actividades: Actividad[][];
 }
 
+// Tipo definido para los valores de memoria (puede ajustarse si se requiere más detalle)
+export interface MemoriaItem {
+  actividad_id: string;
+  value: string | number | boolean | null | Array<string | number | boolean>;
+  binding?: boolean;
+  config?: ConfigType | string;
+}
+
 export interface FasesProps {
   proms: Lista[];
-  setMemoria: React.Dispatch<React.SetStateAction<any[]>>;
-  memoria: any[];
+  setMemoria: React.Dispatch<React.SetStateAction<MemoriaItem[]>>;
+  memoria: MemoriaItem[];
   estado_form: boolean;
   setEstado_form: React.Dispatch<React.SetStateAction<boolean>>;
   finalizado_form: boolean;

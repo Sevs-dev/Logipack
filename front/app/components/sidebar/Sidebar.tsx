@@ -1,11 +1,12 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { FaHome, FaVials, FaCog, FaFileInvoice, FaAngleDown, FaSignOutAlt, FaCheckDouble, FaChartLine, FaArrowLeft, FaBars, FaBookmark, FaIoxhost, FaBook, FaBorderAll, FaDolly, FaCalendarAlt } from "react-icons/fa";
+import { FaHome, FaVials, FaCog, FaFileInvoice, FaAngleDown, FaSignOutAlt, FaChartLine, FaArrowLeft, FaBars, FaBookmark, FaIoxhost, FaBook, FaBorderAll, FaDolly, FaCalendarAlt } from "react-icons/fa";
 import nookies from "nookies";
 import { useRouter, usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { getUserByEmail } from "../../services/userDash/authservices";
+import Image from 'next/image';
 
 interface SidebarProps {
   sidebarOpen: boolean;
@@ -126,7 +127,7 @@ const Sidebar: React.FC<SidebarProps> = ({ sidebarOpen, setSidebarOpen }) => {
     if (isAuthenticated) {
       fetchUserData();
     }
-  }, []);
+  }, [isAuthenticated]);
 
   const handleLogout = () => {
     if (isMobile) setSidebarOpen(false);
@@ -160,7 +161,13 @@ const Sidebar: React.FC<SidebarProps> = ({ sidebarOpen, setSidebarOpen }) => {
             } p-4 border-b border-white/20`}
         >
           {sidebarOpen && (
-            <img src="/logipack_2.png" alt="Logipack" className="h-10 w-auto" />
+            <Image
+              src="/logipack_2.png"
+              alt="Logipack"
+              width={160}
+              height={40}
+              className="h-10 w-auto"
+            />
           )}
           <button
             onClick={() => setSidebarOpen((prev) => !prev)}
@@ -280,10 +287,12 @@ const Sidebar: React.FC<SidebarProps> = ({ sidebarOpen, setSidebarOpen }) => {
         {/* Footer */}
         <div className="mt-auto p-3 border-t border-white/20">
           <div className="mb-2 flex items-center">
-            <img
+            <Image
               src="/user.jpg"
               alt={userName}
-              className="h-10 w-10 rounded-full object-cover cursor-pointer"
+              width={40}
+              height={40}
+              className="rounded-full object-cover cursor-pointer"
               onClick={() => router.push("/pages/perfil")}
             />
             {sidebarOpen && (

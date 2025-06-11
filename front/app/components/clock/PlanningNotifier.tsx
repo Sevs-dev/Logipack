@@ -31,19 +31,13 @@ export default function PlanningNotifier() {
   const notifiedIds = useRef<Set<number>>(new Set());
   const [notificationCount, setNotificationCount] = useState(0);
 
-  useEffect(() => {
-    if ("Notification" in window && Notification.permission === "default") {
-      Notification.requestPermission();
-    }
-  }, []);
-
   const fetchActivities = async () => {
     try {
-      const data: any[] = await getPlanning(); // asumiendo que este servicio devuelve cualquier cosa 
-      // Normalizamos los datos para que siempre tengan la estructura que espera el componente
+      const data: Planning[] = await getPlanning();
+
       const normalizedData: Planning[] = data.map((item) => ({
         id: item.id,
-        number_order: item.number_order || `Orden #${item.id}`, // si no hay número, ponemos un fallback
+        number_order: item.number_order || `Orden #${item.id}`,
         clock: !!item.clock,
         start_date: item.start_date || null,
         end_date: item.end_date || null,
@@ -52,6 +46,19 @@ export default function PlanningNotifier() {
         out: false,
       }));
 
+      const newNotifs = normalizedData.filter(
+        (item) =>
+          !item.paused &&
+          item.finish_notificade &&
+          !notifiedIds.current.has(item.id)
+      );
+
+      if (newNotifs.length > 0) {
+        playMessengerSound();
+        newNotifs.forEach((item) => notifiedIds.current.add(item.id));
+      }
+
+      setNotificationCount(newNotifs.length);
       setActivities(normalizedData);
     } catch (error) {
       console.error("Error fetching planning:", error);
@@ -59,15 +66,10 @@ export default function PlanningNotifier() {
   };
 
   useEffect(() => {
-    fetchActivities();
-  }, []); 
- 
-
-  useEffect(() => {
-    if (showModal && notificationCount > 0) {
-      playMessengerSound();
-    }
-  }, [showModal, notificationCount]);
+    fetchActivities(); // inicial
+    const interval = setInterval(fetchActivities, 10000); // cada 10 seg
+    return () => clearInterval(interval);
+  }, []);
 
   const topActivity = activities.length > 0 ? activities[0] : null;
 
@@ -95,7 +97,6 @@ export default function PlanningNotifier() {
   };
 
   const handleCloseSingle = () => {
-    playMessengerSound();
     setShowSingle(false);
   };
 

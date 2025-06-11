@@ -332,6 +332,7 @@ function CreateMachinery({ canEdit = false, canView = false }: CreateClientProps
         onDelete={canEdit ? handleDelete : undefined}
         onEdit={handleEdit} 
         onHistory={handleHistory}
+        onTerciario={() => { }}
       />
 
       {/* Modal de auditoría */}

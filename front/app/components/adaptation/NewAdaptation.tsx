@@ -77,7 +77,7 @@ function NewAdaptation({ canEdit = false, canView = false }: CreateClientProps) 
         };
 
         fetchClients();
-    }, [getClients, setClients, showError]);
+    }, []);
 
     // Cargar plantas (factories) al montar el componente
     useEffect(() => {
@@ -95,7 +95,7 @@ function NewAdaptation({ canEdit = false, canView = false }: CreateClientProps) 
         };
 
         fetchFactories();
-    }, [getFactory, setPlantas, showError]);
+    }, []);
     // Este efecto solo se ejecuta una vez cuando el componente se monta
     // Maneja el cambio de planta seleccionada
     const handlePlantaChange = async (value: string) => {
@@ -207,7 +207,7 @@ function NewAdaptation({ canEdit = false, canView = false }: CreateClientProps) 
                     : prev
             );
         }
-    }, [articles]); // 👈 Este efecto solo depende de `articles`, elimina `selectedArticles` de las dependencias
+    }, [articles, selectedArticles]); // 👈 Ahora depende de `articles` y `selectedArticles`
 
     // Cargar BOM (Bill of Materials) si el cliente y las maestras son válidas
     // Cargar BOM (Bill of Materials) si el cliente y las maestras son válidas
@@ -269,31 +269,24 @@ function NewAdaptation({ canEdit = false, canView = false }: CreateClientProps) 
 
     // Efecto que recalcula la cantidad teórica de ingredientes cada vez que cambia `quantityToProduce`
     useEffect(() => {
-
-        // Si no hay cantidad a producir o si los ingredientes están vacíos, salimos del efecto
-        if (quantityToProduce != "") {
-            // Convierte la cantidad a producir a un número
+        if (quantityToProduce !== "") {
             const quantityToProduceNumber = Number(quantityToProduce);
-
-            // Si no hay ingredientes o la cantidad no es un número válido, no se hace nada
             if (!ingredients.length || isNaN(quantityToProduceNumber)) return;
-            // Recalcular la cantidad teórica de cada ingrediente
+
             const recalculated = ingredients.map((ing) => {
-                const merma = parseFloat(ing.merma); // Convierte la merma a un número decimal
-                // Calcula la cantidad teórica por unidad, considerando la merma
+                const merma = parseFloat(ing.merma);
                 const teoricaPorUnidad = quantityToProduceNumber + quantityToProduceNumber * merma;
-                // Redondea a 4 decimales
-                const teoricaCalculada = (teoricaPorUnidad).toFixed(4);
-                // Devuelve el ingrediente con la cantidad teórica recalculada
+                const teoricaCalculada = teoricaPorUnidad.toFixed(4);
                 return {
                     ...ing,
                     teorica: teoricaCalculada,
                 };
             });
-            // Actualiza el estado de los ingredientes con los valores recalculados
+
             setIngredients(recalculated);
         }
-    }, [quantityToProduce]); // Este efecto se ejecuta cada vez que cambia `quantityToProduce`
+    }, [quantityToProduce, ingredients]); // ← importante
+    // Este efecto se ejecuta cada vez que cambia `quantityToProduce`
 
     // UseMemo para obtener la maestra seleccionada, solo se recalcula si cambian `selectedMaestras` o `maestra`
     const maestraSeleccionada = useMemo(() => {
@@ -452,16 +445,10 @@ function NewAdaptation({ canEdit = false, canView = false }: CreateClientProps) 
 
             if (typeof error === "object" && error !== null) {
                 // Reutilizamos el casting solo una vez
-                const err = error as { response?: { data?: any }; message?: string };
+                const err = error as { response?: { data?: unknown }; message?: string };
 
                 if (err.response && typeof err.response === "object") {
                     console.error("🧠 Respuesta del servidor:", err.response.data);
-                    const details = err.response.data?.details;
-                    if (details && typeof details === "object") {
-                        Object.entries(details).forEach(([key, value]) => {
-                            console.error(`❌ Error en "${key}":`, value);
-                        });
-                    }
                 } else if (typeof err.message === "string") {
                     console.error("💥 Error sin respuesta del servidor:", err.message);
                 } else {
@@ -475,7 +462,6 @@ function NewAdaptation({ canEdit = false, canView = false }: CreateClientProps) 
             setIsLoading(false);
         }
     };
-
 
     // Función para cargar los datos de una adaptación para editarla
     const handleEdit = async (id: number) => {
@@ -517,7 +503,7 @@ function NewAdaptation({ canEdit = false, canView = false }: CreateClientProps) 
             const parsedArticles = adaptation.article_code
                 ? JSON.parse(adaptation.article_code)
                 : [];
-            setSelectedArticles(parsedArticles.map((a: any) => ({ codart: a.codart })));
+            setSelectedArticles(parsedArticles.map((a: { codart: string }) => ({ codart: a.codart })));
 
             // Procesamos los campos específicos del artículo si es necesario
             setClientOrder(adaptation.number_order || "");
@@ -537,12 +523,12 @@ function NewAdaptation({ canEdit = false, canView = false }: CreateClientProps) 
                 setArticleFields({});
             } else {
                 const fieldsMap: Record<string, ArticleFormData> = {};
-                parsedArticles.forEach((a: any) => {
+                parsedArticles.forEach((a: { codart: string; orderNumber?: string; client_order?: string; deliveryDate?: string; quantityToProduce?: string; lot?: string; healthRegistration?: string; attachment?: File; }) => {
                     fieldsMap[a.codart] = {
                         orderNumber: a.orderNumber ?? "",
                         numberOrder: a.client_order ?? "",
                         deliveryDate: formatDate(a.deliveryDate ?? ""),
-                        quantityToProduce: a.quantityToProduce ?? "",
+                        quantityToProduce: Number(a.quantityToProduce) ?? "",
                         lot: a.lot ?? "",
                         healthRegistration: a.healthRegistration ?? "",
                         attachment: a.attachment,
@@ -554,17 +540,18 @@ function NewAdaptation({ canEdit = false, canView = false }: CreateClientProps) 
             // Procesamos los ingredientes si existen
             if (adaptation.ingredients) {
                 try {
-                    const parsedIng = JSON.parse(adaptation.ingredients).map((ing: any) => ({
-                        ...ing,
-                        teorica: (Number(ing.quantity || "0") * (1 + Number(ing.merma || "0"))).toFixed(4),
-                        validar: ing.validar ?? "",
-                    }));
+                    const parsedIng = (JSON.parse(adaptation.ingredients) as Ingredient[])
+                        .map((ing) => ({
+                            ...ing,
+                            teorica: (Number(ing.quantity || "0") * (1 + Number(ing.merma || "0"))).toFixed(4),
+                        }));
                     setIngredients(parsedIng);
                 } catch (e) {
-                    setIngredients([]); // Si ocurre un error al parsear los ingredientes, los dejamos vacíos
+                    console.error("❌ Error al parsear ingredientes:", e);
+                    setIngredients([]);
                 }
             } else {
-                setIngredients([]); // Si no hay ingredientes, lo dejamos vacío
+                setIngredients([]);
             }
 
             setIsOpen(true); // Abrimos el modal para edición
@@ -796,7 +783,7 @@ function NewAdaptation({ canEdit = false, canView = false }: CreateClientProps) 
                                         {Array.isArray(boms) && boms.length > 0 ? (
                                             boms.map((bom) => (
                                                 <option key={bom.id} value={bom.id}>
-                                                    {JSON.parse(bom.code_details)?.codart ?? "Sin código"}
+                                                    {JSON.parse(bom.code_details || "{}")?.codart ?? "Sin código"}
                                                 </option>
                                             ))
                                         ) : (
@@ -960,10 +947,10 @@ function NewAdaptation({ canEdit = false, canView = false }: CreateClientProps) 
                                                 <div className="col-span-1">
                                                     <Text type="subtitle">N° Orden del Cliente:</Text>
                                                     <input
-                                                        type="text"
+                                                        type="number"
                                                         className="border border-gray-300 rounded-md px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-500 text-center text-black"
                                                         value={articleFields[article.codart]?.orderNumber || ""}
-                                                        onChange={(e) => handleFieldChange(article.codart, "orderNumber", e.target.value)}
+                                                        onChange={(e) => handleFieldChange(article.codart, "orderNumber", e.target.value)} // <-- aquí
                                                         disabled={!canEdit}
                                                     />
                                                 </div>

@@ -27,3 +27,12 @@ export interface Data {
   duration_user: string;
   user?: string;
 }
+
+export interface StageResponse {
+  status: number;
+  message?: string;
+}
+
+export interface ErrorResponse {
+  message?: string;
+}

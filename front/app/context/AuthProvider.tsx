@@ -1,5 +1,5 @@
 "use client";
-import { createContext, useContext, useEffect, useState, ReactNode } from "react";
+import { createContext, useContext, useEffect, useState, ReactNode, useCallback } from "react";
 import nookies from "nookies";
 import { useRouter } from "next/navigation";
 import { getUserByEmail } from "../services/userDash/authservices";
@@ -27,14 +27,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const router = useRouter();
 
-  const logout = () => {
+  const logout = useCallback(() => {
     nookies.destroy(null, "token");
     nookies.destroy(null, "email");
     nookies.destroy(null, "role");
     setUser(null);
     setRole(null);
     router.push("/pages/login");
-  };
+  }, [router]);
 
   const parseJwt = (token: string) => {
     try {
@@ -47,32 +47,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           .join("")
       );
       return JSON.parse(jsonPayload);
-    } catch (err) {
+    } catch {
       return null;
     }
   };
-
-  // const refreshToken = async (token: string) => {
-  //   try {
-  //     const decoded = parseJwt(token);
-  //     const expiresIn = decoded?.exp - Date.now() / 1000;
-  //     if (expiresIn < 300) {
-  //       const res = await fetch("/api/refresh-token", {
-  //         method: "POST",
-  //         headers: {
-  //           Authorization: `Bearer ${token}`,
-  //         },
-  //       });
-  //       const data = await res.json();
-  //       nookies.set(null, "token", data.newToken, {
-  //         maxAge: 7200,
-  //         path: "/",
-  //       });
-  //     }
-  //   } catch (err) {
-  //     console.error("Error al renovar token", err);
-  //   }
-  // };
 
   useEffect(() => {
     const cookies = nookies.get();
@@ -93,7 +71,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
 
     const decodedEmail = decodeURIComponent(email);
-    // refreshToken(token);
 
     getUserByEmail(decodedEmail)
       .then((res) => {
@@ -107,15 +84,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setLoading(false);
       });
 
-    // const keepAlive = () => refreshToken(token);
-    // window.addEventListener("mousemove", keepAlive);
-    // window.addEventListener("keydown", keepAlive);
-
-    // return () => {
-    //   window.removeEventListener("mousemove", keepAlive);
-    //   window.removeEventListener("keydown", keepAlive);
-    // };
-  }, [router]);
+  }, [router, logout]);
 
   if (loading) {
     return (

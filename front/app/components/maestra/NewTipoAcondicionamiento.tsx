@@ -1,6 +1,6 @@
 "use client"
 // importaciones de react y framer motion
-import { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 // importaciones de componentes
 import Table from "../table/Table";
 import Button from "../buttons/buttons";
@@ -14,8 +14,7 @@ import { TipoAcondicionamiento, DataTipoAcondicionamiento, LineaTipoAcondicionam
 import { Stage } from "@/app/interfaces/NewStage";
 // importaciones de servicios
 import { createStage as createTipoAcom, getStage as listTipoAcondicionamiento, deleteStage as deleteTipoAcom, updateTipoAcondicionamiento as updateTipoAcom } from "@/app/services/maestras/TipoAcondicionamientoService";
-import { createStage as createLineaTipoAcom, getStage as listLineaTipoAcondicionamiento, deleteStage as deleteLineaTipoAcom, updateLineaTipoAcondicionamiento as updateLineaTipoAcom, getLineaTipoAcondicionamientoById as getLineaTipoAcomById, getListTipoyLineas as getListTipoyLineas, getSelectStagesControls as getSelectStagesControls } from "@/app/services/maestras/LineaTipoAcondicionamientoService";
-import { getStageId } from "@/app/services/maestras/stageServices";
+import { createStage as createLineaTipoAcom, deleteStage as deleteLineaTipoAcom, getLineaTipoAcondicionamientoById as getLineaTipoAcomById, getListTipoyLineas as getListTipoyLineas, getSelectStagesControls as getSelectStagesControls } from "@/app/services/maestras/LineaTipoAcondicionamientoService";
 
 // función principal del componente
 export default function NewTipoAcondicionamiento({ canEdit = false, canView = false }: CreateClientProps) {
@@ -142,16 +141,16 @@ export default function NewTipoAcondicionamiento({ canEdit = false, canView = fa
     }
 
     // función para listar los tipos de acondicionamiento
-    const getListTipoAcom = async () => {
+    const getListTipoAcom = useCallback(async () => {
         const response = await listTipoAcondicionamiento();
         setListTipoAcom(response);
-    }
+    }, []);
 
     // función para listar las lineas de tipo de acondicionamiento
-    const getListLineaTipoAcom = async () => {
+    const getListLineaTipoAcom = useCallback(async () => {
         const response = await getLineaTipoAcomById(unknown.tipo_acondicionamiento_id);
         setLineaTipoAcom(response);
-    }
+    }, [unknown.tipo_acondicionamiento_id]);
 
     // función para listar los tipos de acondicionamiento y las lineas de tipo de acondicionamiento
     const getListTipoAcomyLineas = async (id: number) => {
@@ -174,11 +173,11 @@ export default function NewTipoAcondicionamiento({ canEdit = false, canView = fa
     };
 
     // función para obtener las fases y los controles
-    const getSelectStages = async () => {
+    const getSelectStages = useCallback(async () => {
         const response = await getSelectStagesControls();
         setListStages(response.fases);
         setListStagesControls(response.controles);
-    }
+    }, []);
 
     // función para resetear los datos
     const handleReset = () => {
@@ -215,12 +214,12 @@ export default function NewTipoAcondicionamiento({ canEdit = false, canView = fa
     // Instancia del componente
     useEffect(() => {
         if (canView) {
-            // listar los tipos de acondicionamiento
             getListTipoAcom();
             getListLineaTipoAcom();
             getSelectStages();
         }
-    }, [canView]);
+    }, [canView, getListTipoAcom, getListLineaTipoAcom, getSelectStages]);
+
 
     // Cambio de estado del checkbox control
     useEffect(() => {
@@ -249,7 +248,7 @@ export default function NewTipoAcondicionamiento({ canEdit = false, canView = fa
                         status: "Estado",
                     }}
                     onDelete={canEdit ? handleDelete : undefined}
-                    onEdit={handleOpenEdit} />
+                    onEdit={handleOpenEdit}  />
             </div>
 
             {/* Bloque del componente 2 */}
@@ -375,10 +374,7 @@ export default function NewTipoAcondicionamiento({ canEdit = false, canView = fa
                                                             {unknown.fase &&
                                                                 !listStages.find((item) => item.id === Number(unknown.fase)) && (
                                                                     <option value={unknown.fase}>
-                                                                        {
-                                                                            getStageId(unknown.fase)?.description ||
-                                                                            'Fase desconocida'
-                                                                        }
+                                                                        {getStageId(unknown.fase)?.description || 'Fase desconocida'}
                                                                     </option>
                                                                 )}
                                                             {listStages
@@ -460,7 +456,14 @@ export default function NewTipoAcondicionamiento({ canEdit = false, canView = fa
                         <div className="flex justify-center space-x-4 mt-4">
                             <Button onClick={() => { handleReset(); }} variant="cancel" label={"Cerrar"} />
                             {canEdit && (
-                                <Button onClick={() => { (isOpenEdit ? handleBtnAplicarEdit() : handleBtnAplicar()) }} variant="create" label={isOpenEdit ? "Actualizar" : "Aplicar"} />
+                                <Button onClick={() => {
+                                    if (isOpenEdit) {
+                                        handleBtnAplicarEdit();
+                                    } else {
+                                        handleBtnAplicar();
+                                    }
+                                }
+                                } variant="create" label={isOpenEdit ? "Actualizar" : "Aplicar"} />
                             )}
                         </div>
                     </ModalSection>

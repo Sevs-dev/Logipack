@@ -3,29 +3,7 @@ import { FaArrowUp, FaArrowDown, FaSort } from "react-icons/fa";
 import Button from "../buttons/buttons";
 import Mini from "../loader/MiniLoader";
 
-interface TableProps {
-    rows: Record<string, any>[];
-    columns: string[];
-    columnLabels?: { [key: string]: string };
-    onEdit: (id: any) => void;
-    onDelete?: (id: any) => void | Promise<void>;
-    onTerciario?: (id: any) => void | Promise<void>;
-    onHistory?: (id: any) => void | Promise<void>;
-    showDeleteButton?: boolean;
-    showEditButton?: boolean;
-    showTerciarioButton?: boolean;
-    showHistory?: boolean;
-}
-
-interface HeaderProps {
-    column: string;
-    label: string;
-    onSort: (column: string) => void;
-    sortOrder: "asc" | "desc";
-    sortColumn: string;
-}
-
-const Header: React.FC<HeaderProps> = ({
+const Header = ({
     column,
     label,
     onSort,
@@ -37,10 +15,7 @@ const Header: React.FC<HeaderProps> = ({
     return (
         <th
             className={`px-6 py-3 text-center font-semibold text-gray-300 tracking-wide cursor-pointer transition-all 
-            ${isActive
-                    ? "text-white bg-gray-700 shadow-md"
-                    : "hover:bg-gray-800"
-                }`}
+            ${isActive ? "text-white bg-gray-700 shadow-md" : "hover:bg-gray-800"}`}
             onClick={() => onSort(column)}
             title="Click para ordenar"
         >
@@ -60,23 +35,23 @@ const Header: React.FC<HeaderProps> = ({
     );
 };
 
-export const Table: React.FC<TableProps> = ({
+export const Table = ({
     rows,
     columns,
     columnLabels = {},
-    onEdit,
-    onDelete,
-    onTerciario,
-    onHistory,
+    onEdit = null,
+    onDelete = null,
+    onTerciario = null,
+    onHistory = null,
     showDeleteButton = true,
     showEditButton = true,
     showTerciarioButton = true,
     showHistory = true,
 }) => {
-    const [sortColumn, setSortColumn] = useState<string>(columns[0]);
-    const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
-    const [searchTerm, setSearchTerm] = useState<string>("");
-    const [currentPage, setCurrentPage] = useState<number>(1);
+    const [sortColumn, setSortColumn] = useState(columns[0]);
+    const [sortOrder, setSortOrder] = useState("asc");
+    const [searchTerm, setSearchTerm] = useState("");
+    const [currentPage, setCurrentPage] = useState(1);
 
     const booleanColumns = ["binding", "status", "aprobado", "paralelo"];
     const itemsPerPage = 10;
@@ -110,7 +85,6 @@ export const Table: React.FC<TableProps> = ({
 
     const totalPages = Math.ceil(sortedRows.length / itemsPerPage);
 
-    // Ajusta currentPage si queda fuera de rango cuando cambia el filtrado o paginado
     useEffect(() => {
         if (currentPage > totalPages) {
             setCurrentPage(totalPages || 1);
@@ -122,7 +96,7 @@ export const Table: React.FC<TableProps> = ({
         currentPage * itemsPerPage
     );
 
-    const handleSort = (column: string) => {
+    const handleSort = (column) => {
         setSortColumn(column);
         setSortOrder(sortColumn === column ? (sortOrder === "asc" ? "desc" : "asc") : "asc");
     };
@@ -138,7 +112,6 @@ export const Table: React.FC<TableProps> = ({
 
     return (
         <div className="w-full overflow-hidden rounded-xl shadow-lg p-3 sm:p-4 bg-gray-900 transition-all duration-300">
-            {/* Input de búsqueda con reset de página */}
             <div className="flex justify-end mb-3">
                 <input
                     type="text"
@@ -149,10 +122,10 @@ export const Table: React.FC<TableProps> = ({
                         setCurrentPage(1);
                     }}
                     className="px-4 py-2 text-gray-300 bg-gray-800 border border-gray-700 rounded-md 
-            transition-all duration-300 ease-in-out 
-            focus:outline-none focus:ring-2 focus:ring-blue-500 
-            focus:bg-gray-850 focus:border-blue-400 
-            focus:shadow-md hover:shadow-lg"
+                    transition-all duration-300 ease-in-out 
+                    focus:outline-none focus:ring-2 focus:ring-blue-500 
+                    focus:bg-gray-850 focus:border-blue-400 
+                    focus:shadow-md hover:shadow-lg"
                 />
             </div>
 
@@ -163,7 +136,6 @@ export const Table: React.FC<TableProps> = ({
                 </div>
             ) : (
                 <>
-                    {/* Tabla para pantallas grandes */}
                     <div className="hidden md:block overflow-x-auto">
                         <table className="w-full border-collapse bg-gray-900 text-gray-300 text-center">
                             <thead>
@@ -192,15 +164,12 @@ export const Table: React.FC<TableProps> = ({
                                         {columns.map((column) => {
                                             const value = row[column];
                                             if (booleanColumns.includes(column)) {
-                                                const isBoolean = typeof value === "boolean";
-                                                const isNumericBoolean =
-                                                    typeof value === "number" && (value === 0 || value === 1);
                                                 return (
                                                     <td key={column} className="px-4 py-2 text-gray-300">
                                                         <span
                                                             className={`inline-flex items-center px-3 py-1 rounded-full text-white ${value === true || value === 1
-                                                                    ? "bg-green-600"
-                                                                    : "bg-red-600"
+                                                                ? "bg-green-600"
+                                                                : "bg-red-600"
                                                                 }`}
                                                         >
                                                             {(value === true || value === 1) && (
@@ -219,30 +188,20 @@ export const Table: React.FC<TableProps> = ({
                                             }
                                         })}
                                         <td className="px-6 py-3 flex justify-center gap-3">
-                                            {showEditButton && (
+                                            {showEditButton && onEdit && (
                                                 <Button onClick={() => onEdit(row.id)} variant="edit" />
                                             )}
+
                                             {showDeleteButton && onDelete && (
-                                                <Button
-                                                    onClick={() => {
-                                                        onDelete(row.id);
-                                                    }}
-                                                    variant="delete"
-                                                />
+                                                <Button onClick={() => onDelete(row.id)} variant="delete" />
                                             )}
+
                                             {showTerciarioButton && onTerciario && (
-                                                <Button
-                                                    onClick={() => {
-                                                        onTerciario(row.id);
-                                                    }}
-                                                    variant="create2"
-                                                />
+                                                <Button onClick={() => onTerciario(row.id)} variant="create2" />
                                             )}
+
                                             {showHistory && onHistory && (
-                                                <Button
-                                                    onClick={() => onHistory(row.id)}
-                                                    variant="history"
-                                                />
+                                                <Button onClick={() => onHistory(row.id)} variant="history" />
                                             )}
                                         </td>
                                     </tr>
@@ -251,7 +210,6 @@ export const Table: React.FC<TableProps> = ({
                         </table>
                     </div>
 
-                    {/* Tarjetas para pantallas pequeñas */}
                     <div className="md:hidden space-y-4">
                         {paginatedRows.map((row, index) => (
                             <div
@@ -270,30 +228,34 @@ export const Table: React.FC<TableProps> = ({
                                     </div>
                                 ))}
                                 <div className="flex justify-end gap-3 mt-3">
-                                    <Button onClick={() => onEdit(row.id)} variant="edit" />
+                                    {showEditButton && onEdit && (
+                                        <Button onClick={() => onEdit(row.id)} variant="edit" />
+                                    )}
+
                                     {showDeleteButton && onDelete && (
-                                        <Button
-                                            onClick={() => {
-                                                onDelete(row.id);
-                                            }}
-                                            variant="delete"
-                                        />
+                                        <Button onClick={() => onDelete(row.id)} variant="delete" />
+                                    )}
+
+                                    {showTerciarioButton && onTerciario && (
+                                        <Button onClick={() => onTerciario(row.id)} variant="create2" />
+                                    )}
+
+                                    {showHistory && onHistory && (
+                                        <Button onClick={() => onHistory(row.id)} variant="history" />
                                     )}
                                 </div>
                             </div>
                         ))}
                     </div>
 
-                    {/* Paginación */}
                     <div className="relative flex items-center w-full mt-4">
-                        {/* Controles compactos */}
                         <div className="absolute left-1/2 transform -translate-x-1/2 flex gap-x-2">
                             <button
                                 onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
                                 disabled={currentPage === 1}
                                 className="px-2 py-1 bg-gray-700 text-gray-300 rounded-md 
-                hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed 
-                transition-all duration-200 active:scale-95"
+                                hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed 
+                                transition-all duration-200 active:scale-95"
                             >
                                 ‹
                             </button>
@@ -303,27 +265,23 @@ export const Table: React.FC<TableProps> = ({
                             </span>
 
                             <button
-                                onClick={() =>
-                                    setCurrentPage((prev) => Math.min(prev + 1, totalPages))
-                                }
+                                onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
                                 disabled={currentPage === totalPages}
                                 className="px-2 py-1 bg-gray-700 text-gray-300 rounded-md 
-                hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed 
-                transition-all duration-200 active:scale-95"
+                                hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed 
+                                transition-all duration-200 active:scale-95"
                             >
                                 ›
                             </button>
                         </div>
 
-                        {/* Números de página */}
                         <div className="ml-auto flex gap-x-1">
                             {pages.map((page) => (
                                 <button
                                     key={page}
                                     onClick={() => setCurrentPage(page)}
                                     className={`px-2 py-1 text-sm rounded-md transition-all duration-200 ease-out 
-                hover:scale-105
-                ${page === currentPage
+                                        hover:scale-105 ${page === currentPage
                                             ? "bg-blue-600 text-white scale-105"
                                             : "bg-gray-700 text-gray-300 hover:bg-gray-600"
                                         }`}

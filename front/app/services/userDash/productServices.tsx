@@ -27,7 +27,7 @@ export const createProduct = async (data: Data) => {
             throw new Error("Respuesta inválida del servidor");
         }
         return response.data.product; // 🔥 Ahora devuelve el objeto correcto
-    } catch (error) {
+    } catch {
         throw new Error("No se pudo crear el producto");
     }
 };
@@ -36,11 +36,10 @@ export const createProduct = async (data: Data) => {
 // Realiza una solicitud GET a la ruta '/getProduct' y retorna los datos recibidos.
 export const getProduct = async () => {
     try {
-        const response = await Product.get(`/getProduct`); 
+        const response = await Product.get(`/getProduct`);
         return response.data;
-    } catch (error) {
-        console.error('Error en getProduct:', error);
-        throw error;
+    } catch {
+        console.error('Error en getProduct:');
     }
 };
 
@@ -50,9 +49,8 @@ export const deleteProduct = async (id: number) => {
     try {
         const response = await Product.delete(`/deleteProduct/${id}`);
         return response.data;
-    } catch (error) {
-        console.error('Error en deleteProduct:', error);
-        throw error;
+    } catch {
+        console.error('Error en deleteProduct:');
     }
 };
 
@@ -63,9 +61,8 @@ export const getProductId = async (id: number) => {
     try {
         const response = await Product.get(`/ProductId/${id}`);
         return response.data;
-    } catch (error) {
-        console.error('Error en getProductId:', error);
-        throw error;
+    } catch {
+        console.error('Error en getProductId:');
     }
 };
 
@@ -76,9 +73,8 @@ export const getProductName = async (name: string) => {
     try {
         const response = await Product.get(`/ProductName/${name}`);
         return response.data;
-    } catch (error) {
-        console.error('Error en getProductId:', error);
-        throw error;
+    } catch {
+        console.error('Error en getProductId:');
     }
 };
 
@@ -88,8 +84,7 @@ export const updateProduct = async (id: number, data: Data) => {
     try {
         const response = await Product.put(`/updateProduct/${id}`, data);
         return response.data;
-    } catch (error) {
-        console.error('Error en updateProduct:', error);
-        throw error;
+    } catch {
+        console.error('Error en updateProduct:');
     }
 };

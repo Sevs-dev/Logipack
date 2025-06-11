@@ -1,7 +1,8 @@
-import axios from 'axios';
+import axios, { AxiosError } from 'axios';
 import { API_URL } from '../../config/api';
+import { Client, ClientInput, ApiError } from "../../interfaces/Client"
 
-// Se crea una instancia de axios configurada con la URL base de la API y los encabezados necesarios.
+// Axios Instance
 const apiClients = axios.create({
     baseURL: API_URL,
     headers: {
@@ -9,62 +10,67 @@ const apiClients = axios.create({
     },
 });
 
-// Función para crear un nuevo cliente.
-export const createClients = async (dataClientsData: Record<string, any>): Promise<any> => {
+// Create
+export const createClients = async (dataClientsData: ClientInput): Promise<Client> => {
     try {
-        const response = await apiClients.post('/newClients', dataClientsData);
+        const response = await apiClients.post<Client>('/newClients', dataClientsData);
         return response.data;
-    } catch (error: any) {
-        console.error('Error al crear el cliente:', error.response?.data || error.message);
-        throw new Error(error.response?.data?.message || 'Error al crear el cliente');
+    } catch (error: unknown) {
+        handleClientError(error, 'crear el cliente');
     }
 };
 
-// Función para obtener la lista de clientes.
-export const getClients = async (): Promise<any[]> => {
+// Get All
+export const getClients = async (): Promise<Client[]> => {
     try {
-        const response = await apiClients.get('/getClients');
+        const response = await apiClients.get<Client[]>('/getClients');
         return response.data;
-    } catch (error: any) {
-        console.error('Error en getClients:', error.response?.data || error.message);
-        throw new Error(error.response?.data?.message || 'Error al obtener clientes');
+    } catch (error: unknown) {
+        handleClientError(error, 'obtener clientes');
     }
 };
 
-// Función para eliminar un cliente por su ID.
-export const deleteClients = async (id: number): Promise<any> => {
+// Delete
+export const deleteClients = async (id: number): Promise<{ message: string }> => {
     try {
-        const response = await apiClients.delete(`/deleteClients/${id}`);
+        const response = await apiClients.delete<{ message: string }>(`/deleteClients/${id}`);
         return response.data;
-    } catch (error: any) {
-        console.error('Error en deleteClients:', error.response?.data || error.message);
-        throw new Error(error.response?.data?.message || 'Error al eliminar cliente');
+    } catch (error: unknown) {
+        handleClientError(error, 'eliminar cliente');
     }
 };
 
-// Función para obtener los datos de un cliente por su ID.
-export const getClientsId = async (id: number): Promise<any> => {
+// Get by ID
+export const getClientsId = async (id: number): Promise<Client> => {
     try {
-        const response = await apiClients.get(`/ClientsId/${id}`);
+        const response = await apiClients.get<Client>(`/ClientsId/${id}`);
         return response.data;
-    } catch (error: any) {
-        console.error('Error en getClientsId:', error.response?.data || error.message);
-        throw new Error(error.response?.data?.message || 'Error al obtener cliente por ID');
+    } catch (error: unknown) {
+        handleClientError(error, 'obtener cliente por ID');
     }
 };
 
-// Función para actualizar la información de un cliente existente.
-export const updateClients = async (id: number, data: Record<string, any>): Promise<any> => {
+// Update
+export const updateClients = async (id: number, data: Partial<ClientInput>): Promise<Client> => {
     try {
         const payload = {
             ...data,
             responsible_person: data.responsible_person ?? [],
         };
-
-        const response = await apiClients.put(`/updateClients/${id}`, payload);
+        const response = await apiClients.put<Client>(`/updateClients/${id}`, payload);
         return response.data;
-    } catch (error: any) {
-        console.error('Error en updateClients:', error.response?.data || error.message);
-        throw new Error(error.response?.data?.message || 'Error al actualizar cliente');
+    } catch (error: unknown) {
+        handleClientError(error, 'actualizar cliente');
     }
 };
+
+// Manejador de errores
+function handleClientError(error: unknown, contexto: string): never {
+    if (axios.isAxiosError(error)) {
+        const err = error as AxiosError<ApiError>;
+        const msg = err.response?.data?.message || err.message;
+        console.error(`Error al ${contexto}:`, msg);
+        throw new Error(msg);
+    }
+    throw new Error(`Error desconocido al ${contexto}`);
+}

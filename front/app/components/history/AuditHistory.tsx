@@ -17,57 +17,22 @@ const translateAction = (action: string): string => {
 };
 
 const customOrder = [
-    "description",
-    "descripcion",
-    "type_product",
-    "type_stage",
-    "type_acondicionamiento",
-    "repeat",
-    "repeat_minutes",
-    "can_pause",
-    "multi",
-    "alert",
-    "paralelo",
-    "requiere_bom",
-    "version",
-    "config",
-    "binding",
-    "aprobado",
-    "has_time",
-    "phase_type",
-    "activities",
-    "duration",
-    "duration_user",
-    "user",
+    "description", "descripcion", "type_product", "type_stage", "type_acondicionamiento",
+    "repeat", "repeat_minutes", "can_pause", "multi", "alert", "paralelo", "requiere_bom",
+    "version", "config", "binding", "aprobado", "has_time", "phase_type", "activities",
+    "duration", "duration_user", "user",
 ];
 
 const translateKey = (key: string): string => {
     const map: Record<string, string> = {
-        user: "Usuario",
-        config: "Configuración",
-        binding: "Obligatorio",
-        version: "Versión",
-        duration: "Duración (min)",
-        has_time: "Tiene tiempo",
-        description: "Descripción",
-        descripcion: "Descripción",
-        status: "Estado",
-        repeat: "Repetir",
-        can_pause: "¿Se puede pausar?",
-        phase_type: "Tipo de Fases",
-        activities: "Actividades",
-        duration_user: "Duración indicada Usuario (min)",
-        alert: "Alerta",
-        multi: "Multiarticulo",
-        repeat_line: "Repetir Línea",
-        repeat_minutes: "Repetir Cada (Min)",
-        type_product: "Tipo de Producto",
-        requiere_bom: "Requiere BOM",
-        type_stage: "Fases",
-        type_acondicionamiento: "Tipo de Acondicionamiento",
-        base_quantity: "Cantidad Base",
-        ingredients: "Ingredientes",
-        code_ingredients: "Codart",
+        user: "Usuario", config: "Configuración", binding: "Obligatorio", version: "Versión",
+        duration: "Duración (min)", has_time: "Tiene tiempo", description: "Descripción",
+        descripcion: "Descripción", status: "Estado", repeat: "Repetir",
+        can_pause: "¿Se puede pausar?", phase_type: "Tipo de Fases", activities: "Actividades",
+        duration_user: "Duración indicada Usuario (min)", alert: "Alerta", multi: "Multiarticulo",
+        repeat_line: "Repetir Línea", repeat_minutes: "Repetir Cada (Min)", type_product: "Tipo de Producto",
+        requiere_bom: "Requiere BOM", type_stage: "Fases", type_acondicionamiento: "Tipo de Acondicionamiento",
+        base_quantity: "Cantidad Base", ingredients: "Ingredientes", code_ingredients: "Codart",
     };
     return map[key.toLowerCase()] || capitalize(key);
 };
@@ -75,19 +40,22 @@ const translateKey = (key: string): string => {
 const capitalize = (text: string): string =>
     text.charAt(0).toUpperCase() + text.slice(1);
 
-const AuditHistory: React.FC<AuditHistoryProps> = ({ audit, onClose }) => {
-    if (!audit) return null;
+const AuditHistory: React.FC<AuditHistoryProps> = ({ audit }) => {
+    const newValues = audit?.new_values || {};
 
-    const newValues = audit.new_values || {};
     const [stageNames, setStageNames] = React.useState<Record<number, string>>({});
     const [acondNames, setAcondNames] = React.useState<Record<number, string>>({});
 
     React.useEffect(() => {
+        if (!audit) return;
+
+        const idsStage = audit.new_values?.type_stage;
+        const idsAcond = audit.new_values?.type_acondicionamiento;
+
         const fetchStageNames = async () => {
-            const ids = newValues.type_stage;
-            if (Array.isArray(ids)) {
+            if (Array.isArray(idsStage)) {
                 const nameMap: Record<number, string> = {};
-                const fetches = ids.map(async (id) => {
+                const fetches = idsStage.map(async (id) => {
                     if (stageCache[id]) {
                         nameMap[id] = stageCache[id];
                     } else {
@@ -107,10 +75,9 @@ const AuditHistory: React.FC<AuditHistoryProps> = ({ audit, onClose }) => {
         };
 
         const fetchAcondNames = async () => {
-            const ids = newValues.type_acondicionamiento;
-            if (Array.isArray(ids)) {
+            if (Array.isArray(idsAcond)) {
                 const nameMap: Record<number, string> = {};
-                const fetches = ids.map(async (id) => {
+                const fetches = idsAcond.map(async (id) => {
                     if (acondCache[id]) {
                         nameMap[id] = acondCache[id];
                     } else {
@@ -138,12 +105,11 @@ const AuditHistory: React.FC<AuditHistoryProps> = ({ audit, onClose }) => {
 
         if (key === "activities" && Array.isArray(value)) {
             const descriptions = value
-                .map((item) => {
-                    if (typeof item === "object" && item !== null && "description" in item) {
-                        return `• ${(item as Record<string, unknown>).description}`;
-                    }
-                    return null;
-                })
+                .map((item) =>
+                    typeof item === "object" && item !== null && "description" in item
+                        ? `• ${(item as Record<string, unknown>).description}`
+                        : null
+                )
                 .filter(Boolean)
                 .join("\n");
             return descriptions || "Sin actividades";
@@ -175,43 +141,24 @@ const AuditHistory: React.FC<AuditHistoryProps> = ({ audit, onClose }) => {
         return "Desconocido";
     };
 
+    if (!audit) return null;
+
     return (
         <div className="rounded-lg max-h-[70vh]">
             <Text type="title" color="text-[#fff]">Detalle de Historia</Text>
 
             <div className="space-y-2 text-sm">
-                <p>
-                    <span className="font-semibold text-white">Usuario: </span>
-                    <span className="text-white">{audit.user}</span>
-                </p>
-                <p>
-                    <span className="font-semibold text-white">Acción: </span>
-                    <span className="text-white">{translateAction(audit.action)}</span>
-                </p>
-                <p>
-                    <span className="font-semibold text-white">Fecha: </span>
-                    <span className="text-white">{new Date(audit.created_at).toLocaleString()}</span>
-                </p>
+                <p><span className="font-semibold text-white">Usuario: </span><span className="text-white">{audit.user}</span></p>
+                <p><span className="font-semibold text-white">Acción: </span><span className="text-white">{translateAction(audit.action)}</span></p>
+                <p><span className="font-semibold text-white">Fecha: </span><span className="text-white">{new Date(audit.created_at).toLocaleString()}</span></p>
             </div>
 
             <Text type="subtitle" color="text-[#fff]">Cambios</Text>
 
             <div className="text-sm overflow-y-auto mt-2 flex-grow max-h-[40vh] pr-4 custom-scroll">
-
                 {Object.keys(newValues).length > 0 ? (
                     Object.entries(newValues)
-                        .filter(
-                            ([key]) =>
-                                ![
-                                    "id",
-                                    "created_at",
-                                    "updated_at",
-                                    "reference_id",
-                                    "active",
-                                    "status_type",
-                                    "code_details"
-                                ].includes(key)
-                        )
+                        .filter(([key]) => !["id", "created_at", "updated_at", "reference_id", "active", "status_type", "code_details"].includes(key))
                         .sort(([aKey], [bKey]) => {
                             const aIndex = customOrder.indexOf(aKey.toLowerCase());
                             const bIndex = customOrder.indexOf(bKey.toLowerCase());
@@ -228,11 +175,6 @@ const AuditHistory: React.FC<AuditHistoryProps> = ({ audit, onClose }) => {
                 ) : (
                     <Text type="subtitle">No hay cambios registrados.</Text>
                 )}
-
-            </div>
-
-            <div className="flex justify-center gap-4 mt-6">
-                {/* <Button onClick={onClose} variant="cancel" label="Cerrar" /> */}
             </div>
 
             <style>{`
