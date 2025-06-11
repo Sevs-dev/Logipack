@@ -9,16 +9,21 @@ const TipoAcom = ({ proms, setTipoAcomSave, tipo_acom_save }) => {
     adaptation_id: '',
     tipo_acondicionamiento_fk: '',
     fases_fk: '',
+    description_fase: '',
+    phase_type: '',
     forms: []
   });
 
   const [memoria_tipo_acom, setMemoriaTipoAcom] = useState(() => {
     const dataGuardada = localStorage.getItem('memoria_tipo_acom');
-    try {
-      return dataGuardada ? JSON.parse(dataGuardada) : {};
-    } catch {
-      return {};
+    if (dataGuardada) {
+      try {
+        return JSON.parse(dataGuardada);
+      } catch {
+        return {};
+      }
     }
+    return {};
   });
 
   const listas = proms || [];
@@ -30,8 +35,8 @@ const TipoAcom = ({ proms, setTipoAcomSave, tipo_acom_save }) => {
       let formsParsed = [];
       try {
         formsParsed = JSON.parse(lista.forms);
-      } catch {
-        console.warn('Error al parsear forms');
+      } catch (e) {
+        console.warn('Error al parsear forms:', e);
       }
 
       setFase({
@@ -40,16 +45,22 @@ const TipoAcom = ({ proms, setTipoAcomSave, tipo_acom_save }) => {
         adaptation_id: lista.adaptation_id || '',
         tipo_acondicionamiento_fk: lista.tipo_acondicionamiento_fk || '',
         fases_fk: lista.fases_fk || '',
+        description_fase: lista.description_fase || '',
+        phase_type: lista.phase_type || '',
         forms: formsParsed
       });
 
+      // Solo inicializar si no existe ya
       if (!memoria_tipo_acom[lineaIndex]) {
         const initialValues = {};
         formsParsed.forEach((item) => {
           initialValues[item.clave] = item.valor || '';
         });
         setMemoriaTipoAcom((prev) => {
-          const actualizado = { ...prev, [lineaIndex]: initialValues };
+          const actualizado = {
+            ...prev,
+            [lineaIndex]: initialValues
+          };
           localStorage.setItem('memoria_tipo_acom', JSON.stringify(actualizado));
           return actualizado;
         });
@@ -74,8 +85,8 @@ const TipoAcom = ({ proms, setTipoAcomSave, tipo_acom_save }) => {
 
   const handleAnteriorLine = (e) => {
     e.preventDefault();
-    if (formRef.current.checkValidity() && lineaIndex > 0) {
-      setLineaIndex((prev) => prev - 1);
+    if (formRef.current.checkValidity()) {
+      if (lineaIndex > 0) setLineaIndex((prev) => prev - 1);
     } else {
       formRef.current.reportValidity();
     }
@@ -83,8 +94,8 @@ const TipoAcom = ({ proms, setTipoAcomSave, tipo_acom_save }) => {
 
   const handleNextLine = (e) => {
     e.preventDefault();
-    if (formRef.current.checkValidity() && lineaIndex < listas.length - 1) {
-      setLineaIndex((prev) => prev + 1);
+    if (formRef.current.checkValidity()) {
+      if (lineaIndex < listas.length - 1) setLineaIndex((prev) => prev + 1);
     } else {
       formRef.current.reportValidity();
     }
@@ -103,6 +114,8 @@ const TipoAcom = ({ proms, setTipoAcomSave, tipo_acom_save }) => {
       adaptation_id: String(item.adaptation_id),
       tipo_acondicionamiento_fk: String(item.tipo_acondicionamiento_fk),
       fases_fk: String(item.fases_fk),
+      description_fase: String(item.description_fase),
+      phase_type: String(item.phase_type),
       forms: JSON.stringify(
         JSON.parse(item.forms).map((form) => ({
           ...form,
@@ -113,37 +126,36 @@ const TipoAcom = ({ proms, setTipoAcomSave, tipo_acom_save }) => {
 
     const estructura = { maestra_tipo_acom_fk: datosFinales };
     localStorage.setItem('memoria_tipo_acom', JSON.stringify(memoria_tipo_acom));
-    console.log('Guardado final:', estructura);
+    localStorage.setItem('memoria_tipo_acom_save', JSON.stringify(estructura));
     setTipoAcomSave(false);
     localStorage.setItem('tipo_acom_save', "guardado");
   };
+
 
   if (tipo_acom_save === false) {
     if (proms.length === 0) {
       localStorage.setItem('tipo_acom_save', "guardado");
     }
-
     return (
-      <div className="max-w-xl mx-auto p-6">
-        <div className="bg-white shadow-md rounded-lg p-6 border">
-          <div className="text-lg font-semibold text-white bg-green-600 p-3 rounded-md">
-            {proms.length === 0 ? (
-              "TIPO ACONDICIONAMIENTO: No hay datos por procesar"
-            ) : (
-              <>
-                <button
-                  type="button"
-                  className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mr-3"
-                  disabled={localStorage.getItem('tipo_acom_save') === "guardado"}
-                  onClick={() => setTipoAcomSave(true)}
-                >
-                  Iniciar
-                </button>
-                {localStorage.getItem('tipo_acom_save') === "guardado"
-                  ? "TIPO ACONDICIONAMIENTO: Guardado"
-                  : "TIPO ACONDICIONAMIENTO"}
-              </>
-            )}
+      <div className="max-w-2xl mx-auto my-4">
+        <div className="bg-white rounded-lg shadow-md overflow-hidden border border-gray-200">
+          <div className="bg-gradient-to-r from-green-500 to-green-600 px-4 py-3">
+            <div className="flex items-center justify-between">
+              <span className="text-white font-medium">
+                {localStorage.getItem('tipo_acom_save') === "guardado" ? "TIPO ACONDICIONAMIENTO : Guardado" : "Iniciar Tipo Acondicionamiento"}
+              </span>
+              <button
+                type="button"
+                className={`px-4 py-2 rounded text-sm font-medium shadow-sm ${localStorage.getItem('tipo_acom_save') === "guardado"
+                  ? 'bg-gray-300 text-gray-600 cursor-not-allowed'
+                  : 'bg-blue-600 text-white hover:bg-blue-700'
+                  }`}
+                disabled={localStorage.getItem('tipo_acom_save') === "guardado"}
+                onClick={() => { setTipoAcomSave(true); }}
+              >
+                {localStorage.getItem('tipo_acom_save') === "guardado" ? "Completado" : "Iniciar"}
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -151,70 +163,108 @@ const TipoAcom = ({ proms, setTipoAcomSave, tipo_acom_save }) => {
   }
 
   return (
-    <div className="max-w-xl mx-auto p-6">
-      <div className="bg-white shadow-md rounded-lg p-6 border mb-6">
-        <h2 className="text-lg font-bold text-blue-700 mb-4">Información General</h2>
-        <ul className="space-y-1 text-sm">
-          <li><strong>ID:</strong> {fase.id}</li>
-          <li><strong>Orden Ejecutada:</strong> {fase.orden_ejecutada}</li>
-          <li><strong>Adaptation ID:</strong> {fase.adaptation_id}</li>
-          <li><strong>Tipo Acondicionamiento:</strong> {fase.tipo_acondicionamiento_fk}</li>
-          <li><strong>Fases FK:</strong> {fase.fases_fk}</li>
-        </ul>
+    <div className="max-w-2xl mx-auto my-4 space-y-4">
+      {/* Información General */}
+      <div className="bg-white rounded-lg shadow-md overflow-hidden border border-gray-200">
+        <div className="bg-gradient-to-r from-blue-500 to-blue-600 px-4 py-3">
+          <h3 className="text-white font-medium">Información General del tipo de acondicionamiento</h3>
+        </div>
+        <div className="p-4">
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+            <div>
+              <p className="text-sm text-gray-500">ID</p>
+              <p className="font-medium">{fase.id}</p>
+            </div>
+            <div>
+              <p className="text-sm text-gray-500">Orden Ejecutada</p>
+              <p className="font-medium">{fase.orden_ejecutada}</p>
+            </div>
+            <div>
+              <p className="text-sm text-gray-500">Adaptation ID</p>
+              <p className="font-medium">{fase.adaptation_id}</p>
+            </div>
+            <div>
+              <p className="text-sm text-gray-500">Tipo Acondicionamiento</p>
+              <p className="font-medium">{fase.tipo_acondicionamiento_fk}</p>
+            </div>
+            <div>
+              <p className="text-sm text-gray-500">Fases FK</p>
+              <p className="font-medium">{fase.fases_fk}</p>
+            </div>
+            <div>
+              <p className="text-sm text-gray-500">Fase Descripción</p>
+              <p className="font-medium">{fase.description_fase}</p>
+            </div>
+            <div className="sm:col-span-2">
+              <p className="text-sm text-gray-500">Tipo de Fase</p>
+              <p className="font-medium">{fase.phase_type}</p>
+            </div>
+          </div>
+        </div>
       </div>
 
-      <form ref={formRef} onSubmit={handleFinalSubmit} className="space-y-6">
-        <div className="bg-white shadow-md rounded-lg p-6 border">
-          {fase.forms.map((item, index) => {
-            let config = typeof item.config === 'string' ? JSON.parse(item.config || '{}') : item.config;
+      {/* Formulario */}
+      <form ref={formRef} onSubmit={handleFinalSubmit}>
+        <div className="bg-white rounded-lg shadow-md overflow-hidden border border-gray-200">
+          <div className="p-4 space-y-4">
+            {fase.forms.map((item, index) => {
+              let config = item.config;
+              if (typeof config === 'string') {
+                try {
+                  config = JSON.parse(config);
+                } catch {
+                  config = {};
+                }
+              }
 
-            return (
-              <div className="mb-4" key={`item-${index}`}>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  {item.descripcion_actividad}
-                </label>
-
-                {config.type === "select" ? (
-                  <select
-                    required={item.binding}
-                    name={item.clave}
-                    value={info[item.clave] || ''}
-                    onChange={inputChange}
-                    className="w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
-                  >
-                    <option value="">Seleccione</option>
-                    {config.options?.map((opt, i) => (
-                      <option key={`opt-${index}-${i}`} value={opt}>{opt}</option>
-                    ))}
-                  </select>
-                ) : (
-                  <input
-                    type={config.type || 'text'}
-                    required={item.binding}
-                    name={item.clave}
-                    value={info[item.clave] || ''}
-                    placeholder={item.descripcion_actividad}
-                    onChange={inputChange}
-                    className="w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
-                  />
-                )}
-              </div>
-            );
-          })}
+              return (
+                <div key={`item-${index}`} className="space-y-1">
+                  <label className="block text-sm font-medium text-gray-700">
+                    {item.descripcion_activitie}
+                  </label>
+                  {config.type === "select" ? (
+                    <select
+                      className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-gray-700" // Añadido text-gray-700
+                      required={item.binding}
+                      name={item.clave}
+                      value={info[item.clave] ?? ''}
+                      onChange={inputChange}
+                    >
+                      <option value="">Seleccione</option>
+                      {config.options?.map((opt, k) => (
+                        <option key={`opt-${index}-${k}`} value={opt}>{opt}</option>
+                      ))}
+                    </select>
+                  ) : (
+                    <input
+                      className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-gray-700" // Añadido text-gray-700
+                      type={config.type || "text"}
+                      required={item.binding}
+                      name={item.clave}
+                      value={info[item.clave] ?? ''}
+                      placeholder={item.descripcion_activitie}
+                      onChange={inputChange}
+                    />
+                  )}
+                </div>
+              );
+            })}
+          </div>
         </div>
 
-        <div className="flex justify-between items-center">
+        {/* Botones de navegación */}
+        <div className="flex justify-between mt-4">
           <button
+            className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
             onClick={handleAnteriorLine}
-            className="bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-2 px-4 rounded disabled:opacity-50"
             disabled={lineaIndex === 0}
           >
             ← Anterior
           </button>
 
           <button
+            className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
             onClick={handleNextLine}
-            className="bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-4 rounded disabled:opacity-50"
             disabled={lineaIndex >= listas.length - 1}
           >
             Siguiente →
@@ -222,7 +272,7 @@ const TipoAcom = ({ proms, setTipoAcomSave, tipo_acom_save }) => {
 
           <button
             type="submit"
-            className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded disabled:opacity-50"
+            className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed"
             disabled={lineaIndex !== listas.length - 1}
           >
             Finalizar

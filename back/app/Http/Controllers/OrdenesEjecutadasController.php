@@ -298,6 +298,7 @@ class OrdenesEjecutadasController extends Controller
                     ) > 0
                 ");
             })
+            ->Join('stages as std', 'std.id', '=', 'atc.fases_fk')
             ->where('orden.id', '=', $acondicionamiento_id)
             ->where('atc.tipo_acondicionamiento_fk', '!=', 0)
             ->select(
@@ -306,10 +307,11 @@ class OrdenesEjecutadasController extends Controller
                 'atc.adaptation_id',
                 'atc.tipo_acondicionamiento_fk',
                 'atc.fases_fk',
+                'std.description as description_fase',
+                'std.phase_type',
                 'atc.forms'
             )
             ->get();
-
 
             // Consultar fases 
             $maestra_fases_fk = DB::table('ordenes_ejecutadas as orden')
@@ -330,6 +332,7 @@ class OrdenesEjecutadasController extends Controller
                 'atc.tipo_acondicionamiento_fk',
                 'atc.fases_fk',
                 'std.description as description_fase',
+                'atc.phase_type',
                 'atc.forms',
             )->get();
       
@@ -367,7 +370,8 @@ class OrdenesEjecutadasController extends Controller
                 'tipo_acon.descripcion as descripcion_tipo_acondicionamiento',
                 'lin_tipo_acon.descripcion as descripcion_linea_tipo_acondicionamiento',
                 'lin_tipo_acon.fase AS fases_fk', 
-                'std.description AS descripcion_fase',
+                'std.description AS description_fase',
+                'std.phase_type',
                 'std.repeat_line'
             )->get()), $ordenes);
 
@@ -422,6 +426,8 @@ class OrdenesEjecutadasController extends Controller
                 $tipo_acondicionamiento = array_merge($tipo_acondicionamiento, $this->getActividades(json_encode([
                     [
                         "fases_fk" => $fase->fases_fk,
+                        "description_fase" => $fase->description_fase ?? "",
+                        "phase_type" => $fase->phase_type ?? "",
                         "repeat_line" => $fase->repeat_line,
                         "tipo_acondicionamiento_id" => $fase->tipo_acondicionamiento_id,
                     ]
@@ -474,8 +480,8 @@ class OrdenesEjecutadasController extends Controller
                             $value['adaptation_id'] = $ordenes->adaptation_id;
                             $value['tipo_acondicionamiento_fk'] = $fase['tipo_acondicionamiento_id'];
                             $value['fases_fk'] = $fase['fases_fk'];
-                            $value['description_fase'] = $fase['description_fase'];
-                            $value['phase_type'] = $fase['phase_type'];
+                            $value['description_fase'] = $fase['description_fase'] ?? "";
+                            $value['phase_type'] = $fase['phase_type'] ?? "";
                             $value['actividad_fk'] = $value['id_activitie'];
                             $value['secuencia'] = $count;
                             $value['clave'] = $clave;
@@ -500,8 +506,8 @@ class OrdenesEjecutadasController extends Controller
                     $value['adaptation_id'] = $ordenes->adaptation_id;
                     $value['tipo_acondicionamiento_fk'] = $fase['tipo_acondicionamiento_id'];
                     $value['fases_fk'] = $fase['fases_fk'];
-                    $value['description_fase'] = $fase['description_fase'];
-                    $value['phase_type'] = $fase['phase_type'];
+                    $value['description_fase'] = $fase['description_fase'] ?? "";
+                    $value['phase_type'] = $fase['phase_type'] ?? "";
                     $value['actividad_fk'] = $value['id_activitie'];
                     $value['secuencia'] = $count;
                     $value['clave'] = $clave;
@@ -568,8 +574,8 @@ class OrdenesEjecutadasController extends Controller
                 "adaptation_id" => $tipo[0]['adaptation_id'],
                 "tipo_acondicionamiento_fk" => $tipo[0]['tipo_acondicionamiento_fk'],
                 "fases_fk" => $tipo[0]['fases_fk'],
-                "description_fase" => $tipo[0]['description_fase'],
-                "phase_type" => $tipo[0]['phase_type'],
+                "description_fase" => $tipo[0]['description_fase'] ?? "",
+                "phase_type" => $tipo[0]['phase_type'] ?? "",
                 "forms" => json_encode($tipo)
             ]);
         }
@@ -581,8 +587,8 @@ class OrdenesEjecutadasController extends Controller
                 "adaptation_id" => $fase[0]['adaptation_id'],
                 "tipo_acondicionamiento_fk" => $fase[0]['tipo_acondicionamiento_fk'],
                 "fases_fk" => $fase[0]['fases_fk'],
-                "description_fase" => $fase[0]['description_fase'],
-                "phase_type" => $fase[0]['phase_type'],
+                "description_fase" => $fase[0]['description_fase'] ?? "",
+                "phase_type" => $fase[0]['phase_type'] ?? "",
                 "forms" => json_encode($fase)
             ]);
         }
