@@ -173,31 +173,31 @@ const Fases = ({ proms, setFaseSave, fase_save }) => {
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
             <div>
               <p className="text-sm text-gray-500">ID</p>
-              <p className="font-medium">{fase.id}</p>
+              <p className="block text-sm font-medium text-gray-700">{fase.id}</p>
             </div>
             <div>
               <p className="text-sm text-gray-500">Orden Ejecutada</p>
-              <p className="font-medium">{fase.orden_ejecutada}</p>
+              <p className="block text-sm font-medium text-gray-700">{fase.orden_ejecutada}</p>
             </div>
             <div>
               <p className="text-sm text-gray-500">Adaptation ID</p>
-              <p className="font-medium">{fase.adaptation_id}</p>
+              <p className="block text-sm font-medium text-gray-700">{fase.adaptation_id}</p>
             </div>
             <div>
               <p className="text-sm text-gray-500">Tipo Acondicionamiento</p>
-              <p className="font-medium">{fase.tipo_acondicionamiento_fk}</p>
+              <p className="block text-sm font-medium text-gray-700">{fase.tipo_acondicionamiento_fk}</p>
             </div>
             <div>
               <p className="text-sm text-gray-500">Fases FK</p>
-              <p className="font-medium">{fase.fases_fk}</p>
+              <p className="block text-sm font-medium text-gray-700">{fase.fases_fk}</p>
             </div>
             <div>
               <p className="text-sm text-gray-500">Fase Descripción</p>
-              <p className="font-medium">{fase.description_fase}</p>
+              <p className="block text-sm font-medium text-gray-700">{fase.description_fase}</p>
             </div>
             <div className="sm:col-span-2">
               <p className="text-sm text-gray-500">Tipo de Fase</p>
-              <p className="font-medium">{fase.phase_type}</p>
+              <p className="block text-sm font-medium text-gray-700">{fase.phase_type}</p>
             </div>
           </div>
         </div>
@@ -208,44 +208,192 @@ const Fases = ({ proms, setFaseSave, fase_save }) => {
         <div className="bg-white rounded-lg shadow-md overflow-hidden border border-gray-200">
           <div className="p-4 space-y-4">
             {fase.forms.map((item, index) => {
+
+              // Formatear y obtener valores de los campos del componete
               let config = item.config;
-              if (typeof config === 'string') {
-                try {
-                  config = JSON.parse(config);
-                } catch {
-                  config = {};
+              try {
+                if (typeof config === "string") {
+                  config = JSON.parse(config); // 1er parseo
                 }
+
+                if (typeof config === "string") {
+                  config = JSON.parse(config); // 2do parseo (solo si aún es string)
+                }
+              } catch (error) {
+                // console.error("Error al parsear config en index", index, item.config, error);
+                config = {}; // o null según lo que prefieras
               }
+              const { type, options } = config;
 
               return (
                 <div key={`item-${index}`} className="space-y-1">
                   <label className="block text-sm font-medium text-gray-700">
                     {item.descripcion_activitie}
                   </label>
-                  {config.type === "select" ? (
+                  {/* Componentes */}
+                  {type === "select" && (
                     <select
-                      className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-gray-700" // Añadido text-gray-700
-                      required={item.binding}
-                      name={item.clave}
+                      className="block w-full px-3 py-2 border border-gray-300 
+                        rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-gray-700"
+                      name={item.clave} // misma name para radio group
                       value={info[item.clave] ?? ''}
-                      onChange={inputChange}
-                    >
+                      required={item.binding}
+                      onChange={inputChange}>
                       <option value="">Seleccione</option>
-                      {config.options?.map((opt, k) => (
-                        <option key={`opt-${index}-${k}`} value={opt}>{opt}</option>
+                      {options.map((opt, k) => (
+                        <option key={`opt-${k}`} value={opt}>{opt}</option>
                       ))}
                     </select>
-                  ) : (
+                  )}
+                  {type === "file" && (
                     <input
-                      className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-gray-700" // Añadido text-gray-700
-                      type={config.type || "text"}
+                      className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-gray-700"
+                      type="file"
+                      accept="application/pdf"
                       required={item.binding}
                       name={item.clave}
-                      value={info[item.clave] ?? ''}
+                      onChange={(e) => {
+                        const file = e.target.files[0];
+                        if (file) {
+                          const reader = new FileReader();
+                          reader.onloadend = () => {
+                            const base64 = reader.result; // contiene data:<tipo>;base64,<contenido>
+                            setMemoriaFase((prev) => {
+                              const actualizado = {
+                                ...prev,
+                                [lineaIndex]: {
+                                  ...prev[lineaIndex],
+                                  [item.clave]: base64
+                                }
+                              };
+                              localStorage.setItem('memoria_fase', JSON.stringify(actualizado));
+                              return actualizado;
+                            });
+                          };
+                          reader.readAsDataURL(file); // convierte a base64
+                        }
+                      }}
+                    />
+                  )}
+                  {type === "image" && (
+                    <input
+                      className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-gray-700"
+                      type="file"
+                      accept="image/*"
+                      required={item.binding}
+                      name={item.clave}
+                      onChange={(e) => {
+                        const file = e.target.files[0];
+                        if (file) {
+                          const reader = new FileReader();
+                          reader.onloadend = () => {
+                            const base64 = reader.result; // contiene data:<tipo>;base64,<contenido>
+                            setMemoriaFase((prev) => {
+                              const actualizado = {
+                                ...prev,
+                                [lineaIndex]: {
+                                  ...prev[lineaIndex],
+                                  [item.clave]: base64
+                                }
+                              };
+                              localStorage.setItem('memoria_fase', JSON.stringify(actualizado));
+                              return actualizado;
+                            });
+                          };
+                          reader.readAsDataURL(file); // convierte a base64
+                        }
+                      }}
+                    />
+                  )}
+                  {type === "number" && (
+                    <input
+                      type="number"
+                      className="block w-full px-3 py-2 border border-gray-300 
+                        rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-gray-700"
                       placeholder={item.descripcion_activitie}
+                      name={item.clave} // misma name para radio group
+                      value={info[item.clave] ?? ''}
+                      required={item.binding}
                       onChange={inputChange}
                     />
                   )}
+
+                  {type === "text" && (
+                    <input
+                      type="text"
+                      className="block w-full px-3 py-2 border border-gray-300 
+                        rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-gray-700"
+                      placeholder={item.descripcion_activitie}
+                      name={item.clave}
+                      value={info[item.clave] ?? ''}
+                      required={item.binding}
+                      onChange={inputChange}
+                    />
+                  )}
+                  {type === "radio" && (
+                    options.map((option, idx) => (
+                      <label key={idx} className="inline-flex items-center gap-2">
+                        <input
+                          type="radio"
+                          name={item.clave}
+                          value={option}
+                          checked={info[item.clave] === option}
+                          onChange={(e) => {
+                            const { value } = e.target;
+                            setMemoriaFase((prev) => {
+                              const actualizado = {
+                                ...prev,
+                                [lineaIndex]: {
+                                  ...prev[lineaIndex],
+                                  [item.clave]: value
+                                }
+                              };
+                              localStorage.setItem('memoria_fase', JSON.stringify(actualizado));
+                              return actualizado;
+                            });
+                          }}
+                          className="h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500"
+                        />
+                        <span className="block text-sm font-medium text-gray-700">{option}</span>
+                      </label>
+                    ))
+                  )}
+                  {type === "checkbox" && (
+                    options.map((option, idx) => (
+                      <label key={idx} className="inline-flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          name={item.clave}
+                          checked={Array.isArray(info[item.clave]) && info[item.clave].includes(option)}
+                          onChange={(e) => {
+                            const { checked } = e.target;
+                            setMemoriaFase((prev) => {
+                              const prevArr = Array.isArray(prev[lineaIndex]?.[item.clave])
+                                ? prev[lineaIndex][item.clave]
+                                : [];
+                              const newArr = checked
+                                ? [...prevArr, option]
+                                : prevArr.filter(val => val !== option);
+
+                              const actualizado = {
+                                ...prev,
+                                [lineaIndex]: {
+                                  ...prev[lineaIndex],
+                                  [item.clave]: newArr
+                                }
+                              };
+
+                              localStorage.setItem('memoria_fase', JSON.stringify(actualizado));
+                              return actualizado;
+                            });
+                          }}
+                          className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                        />
+                        <span className="block text-sm font-medium text-gray-700">{option}</span>
+                      </label>
+                    ))
+                  )}
+
                 </div>
               );
             })}
