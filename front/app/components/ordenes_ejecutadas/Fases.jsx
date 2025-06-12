@@ -9,16 +9,21 @@ const Fases = ({ proms, setFaseSave, fase_save }) => {
     adaptation_id: '',
     tipo_acondicionamiento_fk: '',
     fases_fk: '',
+    description_fase: '',
+    phase_type: '',
     forms: []
   });
 
   const [memoria_fase, setMemoriaFase] = useState(() => {
     const dataGuardada = localStorage.getItem('memoria_fase');
-    try {
-      return dataGuardada ? JSON.parse(dataGuardada) : {};
-    } catch {
-      return {};
+    if (dataGuardada) {
+      try {
+        return JSON.parse(dataGuardada);
+      } catch {
+        return {};
+      }
     }
+    return {};
   });
 
   const listas = proms || [];
@@ -40,41 +45,48 @@ const Fases = ({ proms, setFaseSave, fase_save }) => {
         adaptation_id: lista.adaptation_id || '',
         tipo_acondicionamiento_fk: lista.tipo_acondicionamiento_fk || '',
         fases_fk: lista.fases_fk || '',
+        description_fase: lista.description_fase || '',
+        phase_type: lista.phase_type || '',
         forms: formsParsed
       });
 
+      // Solo inicializar si no existe ya
       if (!memoria_fase[lineaIndex]) {
         const initialValues = {};
-        formsParsed.forEach(item => {
+        formsParsed.forEach((item) => {
           initialValues[item.clave] = item.valor || '';
         });
-        const actualizado = {
-          ...memoria_fase,
-          [lineaIndex]: initialValues
-        };
-        localStorage.setItem('memoria_fase', JSON.stringify(actualizado));
-        setMemoriaFase(actualizado);
+        setMemoriaFase((prev) => {
+          const actualizado = {
+            ...prev,
+            [lineaIndex]: initialValues
+          };
+          localStorage.setItem('memoria_fase', JSON.stringify(actualizado));
+          return actualizado;
+        });
       }
     }
   }, [lineaIndex, lista]);
 
   const inputChange = (e) => {
     const { name, value } = e.target;
-    const actualizado = {
-      ...memoria_fase,
-      [lineaIndex]: {
-        ...memoria_fase[lineaIndex],
-        [name]: value
-      }
-    };
-    localStorage.setItem('memoria_fase', JSON.stringify(actualizado));
-    setMemoriaFase(actualizado);
+    setMemoriaFase((prev) => {
+      const actualizado = {
+        ...prev,
+        [lineaIndex]: {
+          ...prev[lineaIndex],
+          [name]: value
+        }
+      };
+      localStorage.setItem('memoria_fase', JSON.stringify(actualizado));
+      return actualizado;
+    });
   };
 
   const handleAnteriorLine = (e) => {
     e.preventDefault();
     if (formRef.current.checkValidity()) {
-      if (lineaIndex > 0) setLineaIndex(prev => prev - 1);
+      if (lineaIndex > 0) setLineaIndex((prev) => prev - 1);
     } else {
       formRef.current.reportValidity();
     }
@@ -83,7 +95,7 @@ const Fases = ({ proms, setFaseSave, fase_save }) => {
   const handleNextLine = (e) => {
     e.preventDefault();
     if (formRef.current.checkValidity()) {
-      if (lineaIndex < listas.length - 1) setLineaIndex(prev => prev + 1);
+      if (lineaIndex < listas.length - 1) setLineaIndex((prev) => prev + 1);
     } else {
       formRef.current.reportValidity();
     }
@@ -102,124 +114,166 @@ const Fases = ({ proms, setFaseSave, fase_save }) => {
       adaptation_id: String(item.adaptation_id),
       tipo_acondicionamiento_fk: String(item.tipo_acondicionamiento_fk),
       fases_fk: String(item.fases_fk),
+      description_fase: String(item.description_fase),
+      phase_type: String(item.phase_type),
       forms: JSON.stringify(
-        JSON.parse(item.forms).map(form => ({
+        JSON.parse(item.forms).map((form) => ({
           ...form,
           valor: memoria_fase[index]?.[form.clave] || ''
         }))
       )
     }));
 
+    const estructura = { maestra_fases_fk: datosFinales };
     localStorage.setItem('memoria_fase', JSON.stringify(memoria_fase));
+    localStorage.setItem('memoria_fase_save', JSON.stringify(estructura));
     setFaseSave(false);
     localStorage.setItem('fase_save', "guardado");
-    console.log('Guardado final:', { maestra_fases_fk: datosFinales });
   };
+
 
   if (fase_save === false) {
     if (proms.length === 0) {
       localStorage.setItem('fase_save', "guardado");
     }
     return (
-      <div className="max-w-xl mx-auto mt-8 p-4 bg-white rounded-xl shadow">
-        <div className="flex items-center justify-between mb-2">
-          <h2 className="text-lg font-semibold text-green-700">Fase Inicial</h2>
-          <button
-            className="px-4 py-2 text-white bg-blue-600 hover:bg-blue-700 rounded disabled:opacity-50"
-            disabled={localStorage.getItem('fase_save') === "guardado"}
-            onClick={() => setFaseSave(true)}
-          >
-            Iniciar
-          </button>
+      <div className="max-w-2xl mx-auto my-4">
+        <div className="bg-white rounded-lg shadow-md overflow-hidden border border-gray-200">
+          <div className="bg-gradient-to-r from-green-500 to-green-600 px-4 py-3">
+            <div className="flex items-center justify-between">
+              <span className="text-white font-medium">
+                {localStorage.getItem('fase_save') === "guardado" ? "FASE : Guardado" : "Iniciar Fase"}
+              </span>
+              <button
+                type="button"
+                className={`px-4 py-2 rounded text-sm font-medium shadow-sm ${localStorage.getItem('fase_save') === "guardado"
+                  ? 'bg-gray-300 text-gray-600 cursor-not-allowed'
+                  : 'bg-blue-600 text-white hover:bg-blue-700'
+                  }`}
+                disabled={localStorage.getItem('fase_save') === "guardado"}
+                onClick={() => { setFaseSave(true); }}
+              >
+                {localStorage.getItem('fase_save') === "guardado" ? "Completado" : "Iniciar"}
+              </button>
+            </div>
+          </div>
         </div>
-        <p className="text-sm text-gray-700">
-          {localStorage.getItem('fase_save') === "guardado" ? "Fase Guardada" : "Iniciar Fase"}
-        </p>
       </div>
     );
   }
 
   return (
-    <div className="max-w-xl mx-auto mt-8">
-      {/* Información general */}
-      <div className="bg-blue-600 text-white p-4 rounded-t-lg font-semibold">
-        Información General de la Fase
-      </div>
-      <div className="bg-white p-4 rounded-b-lg shadow mb-6 space-y-2 text-sm text-gray-700">
-        <p><strong>ID:</strong> {fase.id}</p>
-        <p><strong>Orden Ejecutada:</strong> {fase.orden_ejecutada}</p>
-        <p><strong>Adaptation ID:</strong> {fase.adaptation_id}</p>
-        <p><strong>Tipo Acondicionamiento:</strong> {fase.tipo_acondicionamiento_fk}</p>
-        <p><strong>Fases FK:</strong> {fase.fases_fk}</p>
+    <div className="max-w-2xl mx-auto my-4 space-y-4">
+      {/* Información General */}
+      <div className="bg-white rounded-lg shadow-md overflow-hidden border border-gray-200">
+        <div className="bg-gradient-to-r from-blue-500 to-blue-600 px-4 py-3">
+          <h3 className="text-white font-medium">Información General de la Fase</h3>
+        </div>
+        <div className="p-4">
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+            <div>
+              <p className="text-sm text-gray-500">ID</p>
+              <p className="font-medium">{fase.id}</p>
+            </div>
+            <div>
+              <p className="text-sm text-gray-500">Orden Ejecutada</p>
+              <p className="font-medium">{fase.orden_ejecutada}</p>
+            </div>
+            <div>
+              <p className="text-sm text-gray-500">Adaptation ID</p>
+              <p className="font-medium">{fase.adaptation_id}</p>
+            </div>
+            <div>
+              <p className="text-sm text-gray-500">Tipo Acondicionamiento</p>
+              <p className="font-medium">{fase.tipo_acondicionamiento_fk}</p>
+            </div>
+            <div>
+              <p className="text-sm text-gray-500">Fases FK</p>
+              <p className="font-medium">{fase.fases_fk}</p>
+            </div>
+            <div>
+              <p className="text-sm text-gray-500">Fase Descripción</p>
+              <p className="font-medium">{fase.description_fase}</p>
+            </div>
+            <div className="sm:col-span-2">
+              <p className="text-sm text-gray-500">Tipo de Fase</p>
+              <p className="font-medium">{fase.phase_type}</p>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Formulario */}
-      <form ref={formRef} onSubmit={handleFinalSubmit} className="space-y-6">
-        <div className="bg-white p-6 rounded-lg shadow">
-          {fase.forms.map((item, index) => {
-            let config = item.config;
-            if (typeof config === 'string') {
-              try {
-                config = JSON.parse(config);
-              } catch {
-                config = {};
+      <form ref={formRef} onSubmit={handleFinalSubmit}>
+        <div className="bg-white rounded-lg shadow-md overflow-hidden border border-gray-200">
+          <div className="p-4 space-y-4">
+            {fase.forms.map((item, index) => {
+              let config = item.config;
+              if (typeof config === 'string') {
+                try {
+                  config = JSON.parse(config);
+                } catch {
+                  config = {};
+                }
               }
-            }
 
-            return (
-              <div className="mb-4" key={`item-${index}`}>
-                <label className="block mb-1 font-medium text-gray-800">{item.descripcion_actividad}</label>
-                {config.type === "select" ? (
-                  <select
-                    name={item.clave}
-                    required={item.binding}
-                    value={info[item.clave] || ''}
-                    onChange={inputChange}
-                    className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring focus:ring-blue-400"
-                  >
-                    <option value="">Seleccione</option>
-                    {config.options?.map((opt, k) => (
-                      <option key={`opt-${index}-${k}`} value={opt}>{opt}</option>
-                    ))}
-                  </select>
-                ) : (
-                  <input
-                    type={config.type || "text"}
-                    name={item.clave}
-                    required={item.binding}
-                    value={info[item.clave] || ''}
-                    placeholder={item.descripcion_actividad}
-                    onChange={inputChange}
-                    className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring focus:ring-blue-400"
-                  />
-                )}
-              </div>
-            );
-          })}
+              return (
+                <div key={`item-${index}`} className="space-y-1">
+                  <label className="block text-sm font-medium text-gray-700">
+                    {item.descripcion_activitie}
+                  </label>
+                  {config.type === "select" ? (
+                    <select
+                      className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-gray-700" // Añadido text-gray-700
+                      required={item.binding}
+                      name={item.clave}
+                      value={info[item.clave] ?? ''}
+                      onChange={inputChange}
+                    >
+                      <option value="">Seleccione</option>
+                      {config.options?.map((opt, k) => (
+                        <option key={`opt-${index}-${k}`} value={opt}>{opt}</option>
+                      ))}
+                    </select>
+                  ) : (
+                    <input
+                      className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-gray-700" // Añadido text-gray-700
+                      type={config.type || "text"}
+                      required={item.binding}
+                      name={item.clave}
+                      value={info[item.clave] ?? ''}
+                      placeholder={item.descripcion_activitie}
+                      onChange={inputChange}
+                    />
+                  )}
+                </div>
+              );
+            })}
+          </div>
         </div>
 
         {/* Botones de navegación */}
-        <div className="flex justify-between items-center">
+        <div className="flex justify-between mt-4">
           <button
+            className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
             onClick={handleAnteriorLine}
             disabled={lineaIndex === 0}
-            className="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 rounded disabled:opacity-50"
           >
             ← Anterior
           </button>
 
           <button
+            className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
             onClick={handleNextLine}
             disabled={lineaIndex >= listas.length - 1}
-            className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded disabled:opacity-50"
           >
             Siguiente →
           </button>
 
           <button
             type="submit"
+            className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed"
             disabled={lineaIndex !== listas.length - 1}
-            className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded disabled:opacity-50"
           >
             Finalizar
           </button>
