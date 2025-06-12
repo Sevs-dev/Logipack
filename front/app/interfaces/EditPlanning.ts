@@ -43,6 +43,40 @@ export interface Plan {
   lineActivities?: Record<number, number[]>;
 }
 
+export interface PlanServ {
+  id: number;
+  adaptation_id: number;
+  bom: string | null;
+  client_id: number;
+  factory_id: number;
+  codart: string;
+  created_at: string;
+  deliveryDate: string;
+  factory: string | null;
+  healthRegistration: string;
+  ingredients: string;
+  line: number[];
+  lot: string;
+  machine: number[];
+  users: number[];
+  master: string;
+  orderNumber: string;
+  number_order: string;
+  quantityToProduce: number;
+  resource: string | null;
+  status_dates: string;
+  client_name?: string;
+  color?: string;
+  icon?: string;
+  start_date?: string;
+  end_date?: string;
+  duration?: number | string; // Puede venir como string también
+  duration_breakdown: string;
+  activities?: { id: number; activities: { id: number }[] }[];
+  activitiesDetails?: ActivityDetail[]; // si estás usando este nombre aún
+  lineActivities?: Record<number, number[]>;
+}
+
 export interface Planning {
   id: number;
   number_order: string;
@@ -110,7 +144,6 @@ export const sanitizePlan = (plan: Plan): SanitizedPlan => {
     created_at: plan.created_at,
   };
 };
-
 
 export interface ServerPlan extends Plan {
   ID_ADAPTACION: number;

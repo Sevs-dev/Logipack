@@ -24,7 +24,7 @@ function Register() {
       setEmail('');
       setPassword('');
     } else {
-      setErrorMessage(response.message);
+      setErrorMessage(response.message ?? 'Ocurrió un error desconocido');
     }
     setLoading(false);
   };

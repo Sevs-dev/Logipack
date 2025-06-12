@@ -248,7 +248,7 @@ export default function NewTipoAcondicionamiento({ canEdit = false, canView = fa
                         status: "Estado",
                     }}
                     onDelete={canEdit ? handleDelete : undefined}
-                    onEdit={handleOpenEdit}  />
+                    onEdit={handleOpenEdit} />
             </div>
 
             {/* Bloque del componente 2 */}
@@ -267,7 +267,7 @@ export default function NewTipoAcondicionamiento({ canEdit = false, canView = fa
                         <Text type="title" >{isOpenEdit ? "Editar Tipo de Orden de Acondicionamiento" : "Crear Nuevo Tipo de Acondicionamiento"}</Text>
                         {/* Formulario principal */}
                         <div className="mb-8">
-                            <Text type="subtitle">Descripción</Text>
+                            <Text type="subtitle" color="text-[#000]">Descripción</Text>
                             <input
                                 id="descripcion"
                                 type="text"

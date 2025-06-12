@@ -1,9 +1,4 @@
-import {
-  useEffect,
-  useState,
-  useCallback,
-  useMemo
-} from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import dayjs from 'dayjs';
 import 'dayjs/locale/es';
 import isBetween from 'dayjs/plugin/isBetween';
@@ -189,7 +184,7 @@ const CalendarGantt: React.FC = () => {
   }
 
   // Renderizado de celdas
-  const renderCell = useCallback((dayIndex: number, hour: number): JSX.Element => {
+  const renderCell = useCallback((dayIndex: number, hour: number): React.ReactNode => {
     const baseTime = currentWeek.add(dayIndex, 'day').hour(hour).minute(0);
     const events = assignLanes(getEventsForCell(dayIndex, hour));
     const laneHeight = 24;

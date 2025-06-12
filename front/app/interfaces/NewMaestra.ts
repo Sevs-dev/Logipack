@@ -6,9 +6,8 @@ export interface Stage {
   duration_user: number;
 }
 
-export interface Data {
+export interface MaestraBase {
   id: number;
-  code: number;
   descripcion: string;
   requiere_bom: boolean;
   type_product: string;
@@ -19,16 +18,21 @@ export interface Data {
   duration: string;
   duration_user: string;
   paralelo: boolean;
+  user?: string;
 }
 
-export interface Maestras {
+export interface MaestrasServ {
   descripcion: string;
   requiere_bom: boolean;
   type_product: string;
-  type_stage: string;
+  type_acondicionamiento?: number[];
+  type_stage: number[];
   status_type: string;
   aprobado: boolean;
+  duration: string;
+  duration_user: string;
   paralelo: boolean;
+  user?: string;
 }
 
 export interface DataService {
@@ -43,12 +47,6 @@ export interface DataService {
   duration: string;
   duration_user: string;
   user?: string;
-}
-
-
-export interface Tipo {
-  id: number;
-  name: string;
 }
 
 export interface MaestraResponse {

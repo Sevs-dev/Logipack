@@ -9,7 +9,7 @@ import Table from "../table/Table";
 import { showSuccess, showError, showConfirm } from "../toastr/Toaster";
 import Button from "../buttons/buttons";
 import Text from "../text/Text";
-import { Manu, Factory, Product } from "../../interfaces/Products"
+import { Manu, Factory, Product, ManuServ } from "../../interfaces/Products"
 import { CreateClientProps } from "../../interfaces/CreateClientProps";
 import SelectorDual from "../SelectorDual/SelectorDual"
 import AuditModal from "../history/AuditModal";
@@ -21,14 +21,11 @@ function CreateManufacturing({ canEdit = false, canView = false }: CreateClientP
     const [formData, setFormData] = useState<Manu>({ name: "", products: [], factory_id: 0 });
     const [factories, setFactories] = useState<Factory[]>([]);
     const [products, setProducts] = useState<Product[]>([]);
-    const [manu, setManu] = useState<Manu[]>([]);
+    const [manu, setManu] = useState<ManuServ[]>([]);
     // Estado para la lista de auditorías
     const [auditList, setAuditList] = useState<Audit[]>([]);
     // Estado para la auditoría seleccionada (no se usa, pero se deja para posible ampliación)
     const [, setSelectedAudit] = useState<Audit | null>(null);
-
-    const columnLabels = { name: "Nombre", factory: "Fábrica" };
-    const columns = ["name", "factory"];
 
     const fetchData = async () => {
         try {
@@ -150,7 +147,7 @@ function CreateManufacturing({ canEdit = false, canView = false }: CreateClientP
                     <Text type="title">{formData.id ? "Editar" : "Crear"} Línea</Text>
                     <form onSubmit={handleSubmit}>
                         <div className="mb-4">
-                            <Text type="subtitle">Nombre de Línea</Text>
+                            <Text type="subtitle" color="text-[#000]" >Nombre de Línea</Text>
                             <input
                                 type="text"
                                 name="name"
@@ -163,7 +160,7 @@ function CreateManufacturing({ canEdit = false, canView = false }: CreateClientP
                         </div>
 
                         <div className="mb-4">
-                            <Text type="subtitle">Seleccionar Fábrica</Text>
+                            <Text type="subtitle" color="text-[#000]" >Seleccionar Fábrica</Text>
                             <select
                                 name="factory_id"
                                 value={formData.factory_id}
@@ -206,23 +203,26 @@ function CreateManufacturing({ canEdit = false, canView = false }: CreateClientP
                         </div>
                     </form>
                 </ModalSection>
-            )}
+            )
+            }
 
             <Table
-                columns={columns}
+                columns={["name", "factory"]}
                 rows={manu}
-                columnLabels={columnLabels}
+                columnLabels={{ name: "Nombre", factory: "Fábrica" }}
                 onDelete={canEdit ? handleDelete : undefined}
                 onEdit={openEditModal}
                 onHistory={handleHistory}
-                onTerciario={() => {}}
+                onTerciario={() => { }}
             />
 
             {/* Modal de auditoría */}
-            {auditList.length > 0 && (
-                <AuditModal audit={auditList} onClose={() => setAuditList([])} />
-            )}
-        </div>
+            {
+                auditList.length > 0 && (
+                    <AuditModal audit={auditList} onClose={() => setAuditList([])} />
+                )
+            }
+        </div >
     );
 }
 

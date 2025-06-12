@@ -9,6 +9,9 @@ export interface UserData {
   name: string;
   email: string;
   password: string;
+  role: string;
+  signature_bpm: string;
+  factory: number[];
 }
 
 export interface LoginResponse {
@@ -29,6 +32,7 @@ export interface User {
   createdAt: string;
   updatedAt: string;
   [key: string]: unknown;
+  user?: string;
 }
 
 export interface Role {
@@ -42,4 +46,16 @@ export interface UpdateUserData {
   password?: string;
   role?: string;
   [key: string]: unknown;
+}
+
+export interface LoginData {
+  autorización: {
+    token: string;
+  };
+  usuario: {
+    id: number;
+    name: string;
+    email: string;
+    role: string;
+  };
 }

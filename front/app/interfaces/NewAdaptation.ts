@@ -35,6 +35,7 @@ export interface Adaptation {
   article_code: string;
   client_name?: string;
   numberOrder?: string;
+  number_order?: string;
 }
 
 export interface ArticleFormData {

@@ -3,12 +3,35 @@ import { FaArrowUp, FaArrowDown, FaSort } from "react-icons/fa";
 import Button from "../buttons/buttons";
 import Mini from "../loader/MiniLoader";
 
+type BooleanColumns = "binding" | "status" | "aprobado" | "paralelo";
+
+type TableProps<T extends { id: number }> = {
+    rows: T[];
+    columns: (keyof T)[];
+    columnLabels?: Partial<Record<keyof T, string>>;
+    onEdit?: (id: number) => void;
+    onDelete?: (id: number) => void;
+    onTerciario?: (id: number) => void;
+    onHistory?: (id: number) => void;
+    showDeleteButton?: boolean;
+    showEditButton?: boolean;
+    showTerciarioButton?: boolean;
+    showHistory?: boolean;
+};
+
+
 const Header = ({
     column,
     label,
     onSort,
     sortOrder,
     sortColumn,
+}: {
+    column: string;
+    label: string;
+    onSort: (column: string) => void;
+    sortOrder: "asc" | "desc";
+    sortColumn: string;
 }) => {
     const isActive = column === sortColumn;
 
@@ -34,50 +57,45 @@ const Header = ({
         </th>
     );
 };
-
-export const Table = ({
+function Table<T extends { id: number }>({
     rows,
     columns,
     columnLabels = {},
-    onEdit = null,
-    onDelete = null,
-    onTerciario = null,
-    onHistory = null,
+    onEdit,
+    onDelete,
+    onTerciario,
+    onHistory,
     showDeleteButton = true,
     showEditButton = true,
     showTerciarioButton = true,
     showHistory = true,
-}) => {
-    const [sortColumn, setSortColumn] = useState(columns[0]);
-    const [sortOrder, setSortOrder] = useState("asc");
+}: TableProps<T>) {
+    const [sortColumn, setSortColumn] = useState(columns[0] as string);
+    const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
     const [searchTerm, setSearchTerm] = useState("");
     const [currentPage, setCurrentPage] = useState(1);
 
-    const booleanColumns = ["binding", "status", "aprobado", "paralelo"];
+    const booleanColumns: BooleanColumns[] = ["binding", "status", "aprobado", "paralelo"];
     const itemsPerPage = 10;
     const maxButtons = 4;
 
-    const filteredRows = Array.isArray(rows)
-        ? rows.filter((row) =>
-            columns.some((column) => {
-                const val = row[column];
-                return (
-                    val !== null &&
-                    val !== undefined &&
-                    val.toString().toLowerCase().includes(searchTerm.toLowerCase())
-                );
-            })
-        )
-        : [];
+    const filteredRows = rows.filter((row) =>
+        columns.some((column) => {
+            const val = row[column];
+            return (
+                val !== null &&
+                val !== undefined &&
+                val.toString().toLowerCase().includes(searchTerm.toLowerCase())
+            );
+        })
+    );
 
     const sortedRows = [...filteredRows].sort((a, b) => {
-        const valA = a[sortColumn] ?? "";
-        const valB = b[sortColumn] ?? "";
+        const valA = a[sortColumn as keyof T] ?? "";
+        const valB = b[sortColumn as keyof T] ?? "";
 
         if (typeof valA === "string" && typeof valB === "string") {
-            return sortOrder === "asc"
-                ? valA.localeCompare(valB)
-                : valB.localeCompare(valA);
+            return sortOrder === "asc" ? valA.localeCompare(valB) : valB.localeCompare(valA);
         } else {
             return sortOrder === "asc" ? (valA > valB ? 1 : -1) : valA < valB ? 1 : -1;
         }
@@ -96,13 +114,13 @@ export const Table = ({
         currentPage * itemsPerPage
     );
 
-    const handleSort = (column) => {
+    const handleSort = (column: string) => {
         setSortColumn(column);
         setSortOrder(sortColumn === column ? (sortOrder === "asc" ? "desc" : "asc") : "asc");
     };
 
     let startPage = Math.max(1, currentPage - Math.floor(maxButtons / 2));
-    let endPage = Math.min(totalPages, startPage + maxButtons - 1);
+    const endPage = Math.min(totalPages, startPage + maxButtons - 1);
 
     if (endPage - startPage < maxButtons - 1) {
         startPage = Math.max(1, endPage - maxButtons + 1);
@@ -142,9 +160,9 @@ export const Table = ({
                                 <tr className="bg-gradient-to-r from-gray-800 to-gray-700 text-sm">
                                     {columns.map((column) => (
                                         <Header
-                                            key={column}
-                                            column={column}
-                                            label={columnLabels[column] || column}
+                                            key={String(column)}
+                                            column={String(column)}
+                                            label={columnLabels[column] ?? String(column)}
                                             onSort={handleSort}
                                             sortColumn={sortColumn}
                                             sortOrder={sortOrder}
@@ -163,9 +181,9 @@ export const Table = ({
                                     >
                                         {columns.map((column) => {
                                             const value = row[column];
-                                            if (booleanColumns.includes(column)) {
+                                            if (booleanColumns.includes(String(column) as BooleanColumns)) {
                                                 return (
-                                                    <td key={column} className="px-4 py-2 text-gray-300">
+                                                    <td key={String(column)} className="px-4 py-2 text-gray-300">
                                                         <span
                                                             className={`inline-flex items-center px-3 py-1 rounded-full text-white ${value === true || value === 1
                                                                 ? "bg-green-600"
@@ -181,8 +199,8 @@ export const Table = ({
                                                 );
                                             } else {
                                                 return (
-                                                    <td key={column} className="px-4 py-2 text-gray-300">
-                                                        {value}
+                                                    <td key={String(column)} className="px-4 py-2 text-gray-300">
+                                                        {value !== null && value !== undefined ? String(value) : ""}
                                                     </td>
                                                 );
                                             }
@@ -218,13 +236,13 @@ export const Table = ({
                             >
                                 {columns.map((column) => (
                                     <div
-                                        key={column}
+                                        key={String(column)}
                                         className="flex justify-between py-1 border-b border-gray-700 last:border-none"
                                     >
                                         <span className="font-semibold text-gray-400">
-                                            {columnLabels[column] || column}:
+                                            {columnLabels[column] ?? String(column)}:
                                         </span>
-                                        <span className="text-gray-300">{row[column]}</span>
+                                        <span className="text-gray-300">{row[column] !== null && row[column] !== undefined ? String(row[column]) : ""}</span>
                                     </div>
                                 ))}
                                 <div className="flex justify-end gap-3 mt-3">

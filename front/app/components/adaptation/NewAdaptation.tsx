@@ -20,14 +20,15 @@ import AuditModal from "../history/AuditModal";
 // 🔹 Toastr
 import { showSuccess, showError } from "../toastr/Toaster";
 // 🔹 Interfaces
-import { Client, Article, Ingredient, Bom } from "@/app/interfaces/BOM";
-import { Data } from "@/app/interfaces/NewMaestra";
+import { Client } from "@/app/interfaces/Client";
+import { Article, Ingredient, Bom } from "@/app/interfaces/BOM";
+import { MaestraBase } from "@/app/interfaces/NewMaestra";
 import { BOM, Adaptation, ArticleFormData, Plant } from "@/app/interfaces/NewAdaptation";
 import { Audit } from "../../interfaces/Audit";
 
 function NewAdaptation({ canEdit = false, canView = false }: CreateClientProps) {
     const [isOpen, setIsOpen] = useState(false);
-    const [selectedClient, setSelectedClient] = useState<string>("");
+    const [selectedClient, setSelectedClient] = useState<number | "">("");
     const [plantas, setPlantas] = useState<Plant[]>([]);
     const [planta, setPlanta] = useState<string>('');
     const [, setConsecutivo] = useState<string | null>(null);
@@ -41,7 +42,7 @@ function NewAdaptation({ canEdit = false, canView = false }: CreateClientProps) 
     const [attachment, setAttachment] = useState<File | null>(null);
     const [, setAttachmentUrl] = useState<string | null>(null);
     const [clients, setClients] = useState<Client[]>([]);
-    const [maestra, setMaestra] = useState<Data[]>([]);
+    const [maestra, setMaestra] = useState<MaestraBase[]>([]);
     const [articles, setArticles] = useState<Article[]>([]);
     const [adaptation, setAdaptation] = useState<Adaptation[]>([]);
     const [ingredients, setIngredients] = useState<Ingredient[]>([]);
@@ -159,38 +160,41 @@ function NewAdaptation({ canEdit = false, canView = false }: CreateClientProps) 
 
     // Cargar artículos disponibles basados en el cliente seleccionado
     useEffect(() => {
-        // Si no se ha seleccionado un cliente, no hacer nada
         if (!selectedClient) return;
 
-        // Función asincrónica para obtener los artículos basados en el cliente
+        let isMounted = true;
+
         const fetchArticles = async () => {
             try {
-                // Inicia el estado de carga
                 setIsLoading(true);
 
-                // 1. Obtener datos del cliente por su ID
                 const clientData = await getClientsId(Number(selectedClient));
-                if (!clientData || !clientData.code) {
+                if (!clientData?.code) {
                     showError("Código de cliente no disponible.");
                     console.error("Error: clientData o clientData.code es inválido", clientData);
                     return;
                 }
 
-                // 2. Obtener artículos usando el código del cliente
-                const articlesData = await getArticleByCode(clientData.code);
-                setArticles(articlesData.data); // Almacena los artículos en el estado
+                const articlesData = await getArticleByCode(clientData.code as string);
+                if (isMounted) setArticles(articlesData.data || []);
+
             } catch (error) {
-                // Muestra un error si algo falla al cargar los artículos
-                showError("Error al cargar los artículos.");
-                console.error("Error en fetchArticles:", error); // Muestra el error en consola para depuración
+                if (isMounted) {
+                    showError("Error al cargar los artículos.");
+                    console.error("Error en fetchArticles:", error);
+                }
             } finally {
-                // Finaliza el estado de carga independientemente de si hubo error o no
-                setIsLoading(false);
+                if (isMounted) setIsLoading(false);
             }
         };
-        // Llama a la función para cargar los artículos
+
         fetchArticles();
-    }, [selectedClient]); // Este efecto depende de `selectedClient`, se ejecuta cada vez que cambia
+
+        return () => {
+            isMounted = false;
+        };
+    }, [selectedClient]);
+    // Este efecto depende de `selectedClient`, se ejecuta cada vez que cambia
 
     // Nuevo useEffect para asignar los artículos seleccionados cuando `articles` esté listo
     useEffect(() => {
@@ -325,18 +329,18 @@ function NewAdaptation({ canEdit = false, canView = false }: CreateClientProps) 
     const fetchAdaptations = async () => {
         try {
             const adaptations: Adaptation[] = await getAdaptations();
-            const adapData: Adaptation[] = await Promise.all(
+            const adapData = await Promise.all(
                 adaptations.map(async (adaptation) => {
                     const clientData = await getClientsId(adaptation.client_id);
                     return {
                         ...adaptation,
                         client_name: clientData.name,
-                        numberOrder: clientData.number_order,
+                        numberOrder: clientData.number_order as string | undefined,
                     };
                 })
             );
 
-            setAdaptation(adapData);
+            setAdaptation(adapData as Adaptation[]);
         } catch (error) {
             showError("Error al cargar adaptaciones.");
             console.error(error);
@@ -646,7 +650,7 @@ function NewAdaptation({ canEdit = false, canView = false }: CreateClientProps) 
                         <div className="col-span-full">
                             <div className="flex gap-4">
                                 <div className="w-1/2">
-                                    <Text type="subtitle">Planta:</Text>
+                                    <Text type="subtitle" color="text-[#000]">Planta:</Text>
                                     <select
                                         className="w-full border p-3 rounded-lg text-gray-800 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500 text-center"
                                         value={planta}
@@ -663,12 +667,12 @@ function NewAdaptation({ canEdit = false, canView = false }: CreateClientProps) 
                                 </div>
 
                                 <div className="w-1/2">
-                                    <Text type="subtitle">Cliente:</Text>
+                                    <Text type="subtitle" color="text-[#000]">Cliente:</Text>
                                     <select
                                         className="w-full border p-3 rounded-lg text-gray-800 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500 text-center"
                                         value={selectedClient}
                                         onChange={e => {
-                                            setSelectedClient(e.target.value);
+                                            setSelectedClient(Number(e.target.value));
                                             setIngredients([]);
                                         }}
                                         disabled={!canEdit}
@@ -683,7 +687,7 @@ function NewAdaptation({ canEdit = false, canView = false }: CreateClientProps) 
                                 </div>
                                 <div className="w-1/2 relative group">
                                     {/* Label con mejor espaciado */}
-                                    <Text type="subtitle">Orden:</Text>
+                                    <Text type="subtitle" color="text-[#000]">Orden:</Text>
                                     {/* Contenedor para input y botón */}
                                     <div className="relative">
                                         {/* Input mejorado */}
@@ -731,11 +735,11 @@ function NewAdaptation({ canEdit = false, canView = false }: CreateClientProps) 
                         >
                             {/* Select de Maestras */}
                             <div>
-                                <Text type="subtitle">Maestras:</Text>
+                                <Text type="subtitle" color="text-[#000]">Maestras:</Text>
                                 <select
                                     className="w-full border p-3 rounded-lg text-gray-800 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500  text-center"
                                     value={selectedMaestras.length > 0 ? selectedMaestras[0] : ""}
-                                    onChange={(e) => setSelectedMaestras([e.target.value])}
+                                    onChange={(e) => setSelectedClient(Number(e.target.value))}
                                     disabled={!canEdit}
                                 >
                                     <option value="">Seleccione...</option>
@@ -754,7 +758,7 @@ function NewAdaptation({ canEdit = false, canView = false }: CreateClientProps) 
                             {/* Select de BOM solo si se requiere */}
                             {maestraRequiereBOM && (
                                 <div>
-                                    <Text type="subtitle">BOM:</Text>
+                                    <Text type="subtitle" color="text-[#000]">BOM:</Text>
                                     <select
                                         className="w-full border p-3 rounded-lg text-gray-800 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500 text-center"
                                         onChange={(e) => {
@@ -794,7 +798,7 @@ function NewAdaptation({ canEdit = false, canView = false }: CreateClientProps) 
                             )}
                             {/* MultiSelect Articulos*/}
                             <div>
-                                <Text type="subtitle">Artículos:</Text>
+                                <Text type="subtitle" color="text-[#000]">Artículos:</Text>
                                 {maestraRequiereBOM ? (
                                     <select
                                         className="w-full border p-3 rounded-lg text-gray-800 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500 text-center"
@@ -871,7 +875,7 @@ function NewAdaptation({ canEdit = false, canView = false }: CreateClientProps) 
                                 <div className="flex-1 min-w-[250px] border-2 border-dashed border-blue-300 rounded-lg p-4 bg-blue-50 transition-colors">
                                     {/* Número de Orden */}
                                     <div>
-                                        <Text type="subtitle">N° Orden del Cliente:</Text>
+                                        <Text type="subtitle" color="text-[#000]">N° Orden del Cliente:</Text>
                                         <input
                                             type="text"
                                             className="w-full border p-3 rounded-lg text-gray-800 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500 text-center"
@@ -883,7 +887,7 @@ function NewAdaptation({ canEdit = false, canView = false }: CreateClientProps) 
 
                                     {/* Fecha Entrega */}
                                     <div>
-                                        <Text type="subtitle">Fecha Entrega:</Text>
+                                        <Text type="subtitle" color="text-[#000]">Fecha Entrega:</Text>
                                         <input
                                             type="date"
                                             className="w-full border p-3 rounded-lg text-gray-800 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500 text-center"
@@ -895,7 +899,7 @@ function NewAdaptation({ canEdit = false, canView = false }: CreateClientProps) 
 
                                     {/* Cantidad a producir */}
                                     <div>
-                                        <Text type="subtitle">Cantidad a Producir:</Text>
+                                        <Text type="subtitle" color="text-[#000]">Cantidad a Producir:</Text>
                                         <input
                                             type="number"
                                             className="w-full border p-3 rounded-lg text-gray-800 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500 text-center"
@@ -908,7 +912,7 @@ function NewAdaptation({ canEdit = false, canView = false }: CreateClientProps) 
                                     {/* Lote */}
 
                                     <div>
-                                        <Text type="subtitle">Lote:</Text>
+                                        <Text type="subtitle" color="text-[#000]">Lote:</Text>
                                         <input
                                             type="text"
                                             className="w-full border p-3 rounded-lg text-gray-800 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500 text-center"
@@ -920,7 +924,7 @@ function NewAdaptation({ canEdit = false, canView = false }: CreateClientProps) 
 
                                     {/* Registro Sanitario */}
                                     <div>
-                                        <Text type="subtitle">Registro Sanitario:</Text>
+                                        <Text type="subtitle" color="text-[#000]">Registro Sanitario:</Text>
                                         <input
                                             type="text"
                                             className="w-full border p-3 rounded-lg text-gray-800 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500 text-center"
@@ -932,7 +936,7 @@ function NewAdaptation({ canEdit = false, canView = false }: CreateClientProps) 
 
                                     {/* Adjunto */}
                                     <div className="flex flex-col">
-                                        <Text type="subtitle">Adjuntar:</Text>
+                                        <Text type="subtitle" color="text-[#000]">Adjuntar:</Text>
                                         {canEdit && (
                                             <File onChange={setAttachment} />
                                         )}
@@ -945,7 +949,7 @@ function NewAdaptation({ canEdit = false, canView = false }: CreateClientProps) 
                                             <Text type="title">Artículo: {article.codart}</Text>
                                             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                                                 <div className="col-span-1">
-                                                    <Text type="subtitle">N° Orden del Cliente:</Text>
+                                                    <Text type="subtitle" color="text-[#000]">N° Orden del Cliente:</Text>
                                                     <input
                                                         type="number"
                                                         className="border border-gray-300 rounded-md px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-500 text-center text-black"
@@ -955,7 +959,7 @@ function NewAdaptation({ canEdit = false, canView = false }: CreateClientProps) 
                                                     />
                                                 </div>
                                                 <div className="col-span-1">
-                                                    <Text type="subtitle">Fecha Entrega:</Text>
+                                                    <Text type="subtitle" color="text-[#000]">Fecha Entrega:</Text>
                                                     <input
                                                         type="date"
                                                         className="border border-gray-300 rounded-md px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-500 text-center text-black"
@@ -965,7 +969,7 @@ function NewAdaptation({ canEdit = false, canView = false }: CreateClientProps) 
                                                     />
                                                 </div>
                                                 <div className="col-span-1">
-                                                    <Text type="subtitle">Cant. a Teorica:</Text>
+                                                    <Text type="subtitle" color="text-[#000]">Cant. a Teorica:</Text>
                                                     <input
                                                         type="number"
                                                         className="border border-gray-300 rounded-md px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-500 text-center text-black"
@@ -975,7 +979,7 @@ function NewAdaptation({ canEdit = false, canView = false }: CreateClientProps) 
                                                     />
                                                 </div>
                                                 <div className="col-span-1">
-                                                    <Text type="subtitle">Lote:</Text>
+                                                    <Text type="subtitle" color="text-[#000]">Lote:</Text>
                                                     <input
                                                         type="text"
                                                         className="border border-gray-300 rounded-md px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-500 text-center text-black"
@@ -985,7 +989,7 @@ function NewAdaptation({ canEdit = false, canView = false }: CreateClientProps) 
                                                     />
                                                 </div>
                                                 <div className="col-span-1">
-                                                    <Text type="subtitle">R. Sanitario:</Text>
+                                                    <Text type="subtitle" color="text-[#000]">R. Sanitario:</Text>
                                                     <input
                                                         type="text"
                                                         className="border border-gray-300 rounded-md px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-500 text-center text-black"
@@ -995,7 +999,7 @@ function NewAdaptation({ canEdit = false, canView = false }: CreateClientProps) 
                                                     />
                                                 </div>
                                                 <div className="col-span-1 flex flex-col">
-                                                    <Text type="subtitle">Adjuntar:</Text>
+                                                    <Text type="subtitle" color="text-[#000]">Adjuntar:</Text>
                                                     {canEdit && (
                                                         <File
                                                             onChange={(file) => handleFieldChange(article.codart, "attachment", file)}
@@ -1012,7 +1016,7 @@ function NewAdaptation({ canEdit = false, canView = false }: CreateClientProps) 
                         {/* Materiales */}
                         {maestraRequiereBOM ? (
                             <div className="col-span-full">
-                                <Text type="subtitle">Materiales:</Text>
+                                <Text type="subtitle" color="text-[#000]">Materiales:</Text>
                                 <div>
                                     <table className="w-full border-collapse border border-black text-black">
                                         <thead>
@@ -1075,14 +1079,14 @@ function NewAdaptation({ canEdit = false, canView = false }: CreateClientProps) 
 
             <Table
                 columns={["client_name", "number_order"]}
-                rows={adaptation}
+                rows={adaptation.map(a => ({ ...a }))}
                 columnLabels={{
                     client_name: "Cliente",
                     number_order: "N° Orden",
                 }}
-                onDelete={canEdit ? handleDelete : undefined}
-                onEdit={handleEdit}
-                onHistory={handleHistory}
+                onDelete={canEdit ? ((id: number) => { handleDelete(id); }) : undefined}
+                onEdit={(id: number) => { handleEdit(id); }}
+                onHistory={(id: number) => { handleHistory(id); }}
             />
             {auditList.length > 0 && (
                 <AuditModal audit={auditList} onClose={() => setAuditList([])} />

@@ -157,7 +157,7 @@ export default function NewActivity({ canEdit = false, canView = false }: Create
             setModalOpen(false);
             fetchActivities();
             resetModalData();
-        } catch  {
+        } catch {
             showError(isEditing ? "Error al actualizar actividad" : "Error al crear la actividad");
         }
     };
@@ -285,7 +285,7 @@ export default function NewActivity({ canEdit = false, canView = false }: Create
                     </div>
                     {/* Campo de descripción */}
                     <div>
-                        <Text type="subtitle">Descripción</Text>
+                        <Text type="subtitle" color="text-[#000]">Descripción</Text>
                         <input
                             type="text"
                             name="description"
@@ -300,7 +300,7 @@ export default function NewActivity({ canEdit = false, canView = false }: Create
 
                     {/* Selector de tipo de actividad */}
                     <div>
-                        <Text type="subtitle">Tipo de Actividad</Text>
+                        <Text type="subtitle" color="text-[#000]">Tipo de Actividad</Text>
                         <select
                             value={selectedType}
                             onChange={(e) => handleTypeChange(e.target.value)}
@@ -401,14 +401,15 @@ export default function NewActivity({ canEdit = false, canView = false }: Create
             )}
 
             {/* Tabla de actividades */}
-            <Table columns={["description", "binding"]} rows={activities}
+            <Table columns={["description", "binding"]}
+                rows={activities.map(a => ({ ...a }))}
                 columnLabels={{
                     description: "Descripción",
                     binding: "Obligatorio",
                 }}
                 onDelete={canEdit ? handleDelete : undefined}
                 onEdit={handleEdit}
-                onHistory={handleHistory} 
+                onHistory={handleHistory}
             />
             {auditList.length > 0 && (
                 <AuditModal audit={auditList} onClose={() => setAuditList([])} />

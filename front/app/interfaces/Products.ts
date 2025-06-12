@@ -7,6 +7,15 @@ export interface Manu {
     user?: string;
 }
 
+export interface ManuServ {
+    id: number;
+    name: string;
+    products: number[];
+    factory_id: number;
+    factory?: string;
+    user?: string;
+}
+
 export interface Factory {
     id: number;
     name: string;

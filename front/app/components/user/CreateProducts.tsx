@@ -35,14 +35,7 @@ function Products({ canEdit = false, canView = false }: CreateClientProps) {
   // Estado para la lista de auditorías
   const [auditList, setAuditList] = useState<Audit[]>([]);
   // Estado para la auditoría seleccionada (no se usa, pero se deja para posible ampliación)
-  const [, setSelectedAudit] = useState<Audit | null>(null);
-
-  // Etiquetas de las columnas de la tabla
-  const columnLabels: { [key: string]: string } = {
-    name: "Nombre",
-  };
-  // Columnas a mostrar en la tabla
-  const columns = ["name"];
+  const [, setSelectedAudit] = useState<Audit | null>(null); 
 
   // Efecto para cargar productos si el usuario puede verlos
   useEffect(() => {
@@ -201,7 +194,7 @@ function Products({ canEdit = false, canView = false }: CreateClientProps) {
           <Text type="title">{editingProduct ? "Editar Tipo de Producto" : "Crear Tipo de Producto"}</Text>
           <form onSubmit={editingProduct ? handleUpdate : handleCreate}>
             <div className="mb-4">
-              <Text type="subtitle">Nombre del Tipo</Text>
+              <Text type="subtitle" color="text-[#000]" >Nombre del Tipo</Text>
               <input
                 type="text"
                 id="name"
@@ -224,9 +217,9 @@ function Products({ canEdit = false, canView = false }: CreateClientProps) {
 
       {/* Tabla de productos */}
       <Table
-        columns={columns}
-        rows={products}
-        columnLabels={columnLabels}
+        columns={["name"]}
+        rows={products.map(a => ({ ...a }))}
+        columnLabels={{name: "Nombre"}}
         onDelete={canEdit ? handleDelete : undefined}
         onEdit={openEditModal}
         onHistory={handleHistory}

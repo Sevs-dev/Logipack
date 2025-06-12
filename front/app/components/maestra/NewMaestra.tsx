@@ -17,7 +17,8 @@ import { InfoPopover } from "../buttons/InfoPopover";
 import { CreateClientProps } from "../../interfaces/CreateClientProps";
 import AuditModal from "../history/AuditModal";
 // ------------------------- 5. Tipos de datos e interfaces -------------------------
-import { Stage, Data } from "../../interfaces/NewMaestra";
+import { MaestraBase } from "../../interfaces/NewMaestra";
+import { Stage } from "../../interfaces/NewStage";
 import { DataTipoAcondicionamiento, DataLineaTipoAcondicionamiento } from "@/app/interfaces/NewTipoAcondicionamiento";
 import { getLineaTipoAcondicionamientoById as getLineaTipoAcomById } from "@/app/services/maestras/LineaTipoAcondicionamientoService";
 import { Audit } from "../../interfaces/Audit";
@@ -26,8 +27,8 @@ import { Audit } from "../../interfaces/Audit";
 const Maestra = ({ canEdit = false, canView = false }: CreateClientProps) => {
     // Estados del componente
     const [isOpen, setIsOpen] = useState(false);
-    const [maestra, setMaestra] = useState<Data[]>([]);
-    const [editingMaestra, setEditingMaestra] = useState<Data | null>(null);
+    const [maestra, setMaestra] = useState<MaestraBase[]>([]);
+    const [editingMaestra, setEditingMaestra] = useState<MaestraBase | null>(null);
     const [descripcion, setDescripcion] = useState("");
     const [requiereBOM, setRequiereBOM] = useState(false);
     const [estado, setEstado] = useState("");
@@ -174,14 +175,15 @@ const Maestra = ({ canEdit = false, canView = false }: CreateClientProps) => {
     useEffect(() => {
         const fetchTipos = async () => {
             try {
-                const tipos = await getTipo(); // Llamamos a la API para obtener los tipos
-                setTiposProducto(tipos); // Guardamos los tipos en el estado
+                const tipos = await getTipo(); // TipoAcondicionamiento[]
+                const descripciones = tipos.map(t => t.descripcion); // string[]
+                setTiposProducto(descripciones); // ✅ ahora sí
             } catch {
                 console.error('Error al obtener los tipos');
             }
         };
 
-        fetchTipos(); // Ejecutamos la función
+        fetchTipos();
     }, []);
 
     // Manejo de selección/deselección de fases
@@ -477,7 +479,7 @@ const Maestra = ({ canEdit = false, canView = false }: CreateClientProps) => {
                     <Text type="title">{editingMaestra ? "Editar Maestra" : "Crear Maestra"}</Text>
                     {/* Descripción */}
                     <div className="mt-4">
-                        <Text type="subtitle">Descripción</Text>
+                        <Text type="subtitle" color="text-[#000]">Descripción</Text>
                         <input
                             type="text"
                             placeholder="Descripción"
@@ -491,7 +493,7 @@ const Maestra = ({ canEdit = false, canView = false }: CreateClientProps) => {
                     {/* Requiere BOM y Aprobado */}
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mt-4 mb-2">
                         <div className="flex flex-col items-center">
-                            <Text type="subtitle">Requiere BOM</Text>
+                            <Text type="subtitle" color="text-[#000]">Requiere BOM</Text>
                             <input
                                 type="checkbox"
                                 checked={requiereBOM}
@@ -501,7 +503,7 @@ const Maestra = ({ canEdit = false, canView = false }: CreateClientProps) => {
                             />
                         </div>
                         <div className="flex flex-col items-center">
-                            <Text type="subtitle">Paralelo</Text>
+                            <Text type="subtitle" color="text-[#000]">Paralelo</Text>
                             <input
                                 type="checkbox"
                                 checked={paralelo}
@@ -511,7 +513,7 @@ const Maestra = ({ canEdit = false, canView = false }: CreateClientProps) => {
                             />
                         </div>
                         <div className="flex flex-col items-center">
-                            <Text type="subtitle">Seleccione Tipo de Producto</Text>
+                            <Text type="subtitle" color="text-[#000]">Seleccione Tipo de Producto</Text>
                             <select
                                 className="w-full p-2 border mb-2 min-w-0 text-black text-center"
                                 value={tipoSeleccionado}
@@ -532,12 +534,12 @@ const Maestra = ({ canEdit = false, canView = false }: CreateClientProps) => {
 
                     {/* Selección de Fases */}
                     <div className="mt-4">
-                        <Text type="subtitle">Seleccione las Fases
+                        <Text type="subtitle" color="text-[#000]">Seleccione las Fases
                             <InfoPopover content="Al seleccionar un acondicionamiento, si se tienen las mismas fases se determinara la primera seleccionada con su funcion" />
                         </Text>
                         <div className="flex flex-col md:flex-row space-y-4 md:space-y-0 md:space-x-4">
                             <div className="w-full md:w-1/2 border p-4 max-h-60 overflow-y-auto rounded-xl bg-white shadow-sm">
-                                <Text type="subtitle">Acondicionamientos Disponibles</Text>
+                                <Text type="subtitle" color="text-[#000]">Acondicionamientos Disponibles</Text>
 
                                 <div className="relative mb-3">
                                     <Search className="absolute left-3 top-2.5 w-4 h-4 text-gray-500" />
@@ -582,7 +584,7 @@ const Maestra = ({ canEdit = false, canView = false }: CreateClientProps) => {
 
                             {/* Lista de fases disponibles */}
                             <div className="w-full md:w-1/2 border p-4 max-h-60 overflow-y-auto rounded-xl bg-white shadow-sm">
-                                <Text type="subtitle">Fases Disponibles</Text>
+                                <Text type="subtitle" color="text-[#000]">Fases Disponibles</Text>
 
                                 <div className="relative mb-3">
                                     <Search className="absolute left-3 top-2.5 w-4 h-4 text-gray-500" />
@@ -598,7 +600,7 @@ const Maestra = ({ canEdit = false, canView = false }: CreateClientProps) => {
 
                                 {stages.length > 0 ? (
                                     stages
-                                        .filter((stage) => stage.status !== 0) // solo activos
+                                        .filter((stage) => stage.status) // solo activos
                                         .filter((stage) =>
                                             stage.description.toLowerCase().includes(searchStage.toLowerCase())
                                         )
@@ -628,7 +630,7 @@ const Maestra = ({ canEdit = false, canView = false }: CreateClientProps) => {
 
                             {/* Lista de fases seleccionadas */}
                             <div className="w-full md:w-1/2 p-4 rounded-xl bg-white border shadow-sm">
-                                <Text type="subtitle">Fases Seleccionadas</Text>
+                                <Text type="subtitle" color="text-[#000]">Fases Seleccionadas</Text>
                                 {selectedStages.map((stage, index) => {
                                     const faseDetalle = detalleAcondicionamiento.find(d => Number(d.fase) === Number(stage.id));
                                     const isEditable = faseDetalle ? Boolean(Number(faseDetalle.editable)) : true;
@@ -663,7 +665,7 @@ const Maestra = ({ canEdit = false, canView = false }: CreateClientProps) => {
                         <div className="flex flex-col md:flex-row gap-4 mt-2">
                             {/* Tiempo estimado por sistema */}
                             <div className="w-full md:w-1/2">
-                                <Text type="subtitle">Tiempo Estimado Sistema</Text>
+                                <Text type="subtitle" color="text-[#000]">Tiempo Estimado Sistema</Text>
                                 <div className="mt-2 relative">
                                     <Clock className="absolute left-3 top-2.5 w-4 h-4 text-gray-500" />
                                     <input
@@ -678,7 +680,7 @@ const Maestra = ({ canEdit = false, canView = false }: CreateClientProps) => {
 
                             {/* Tiempo estimado por usuario */}
                             <div className="w-full md:w-1/2">
-                                <Text type="subtitle">Tiempo Por Usuario</Text>
+                                <Text type="subtitle" color="text-[#000]">Tiempo Por Usuario</Text>
                                 <div className="mt-2 relative">
                                     <Clock className="absolute left-3 top-2.5 w-4 h-4 text-gray-500" />
                                     <input
@@ -767,7 +769,7 @@ const Maestra = ({ canEdit = false, canView = false }: CreateClientProps) => {
                 }}
                 onDelete={canEdit ? handleDelete : undefined}
                 onEdit={handleEdit}
-                onHistory={handleHistory} 
+                onHistory={handleHistory}
             />
             {auditList.length > 0 && (
                 <AuditModal audit={auditList} onClose={() => setAuditList([])} />

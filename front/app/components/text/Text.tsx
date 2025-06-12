@@ -19,7 +19,7 @@ const Heading: React.FC<HeadingProps> = ({
   switch (type) {
     case "title":
       headingElement = (
-        <h1 className={getTextClass("text-2xl font-bold text-black")}>
+        <h1 className={getTextClass("text-2xl font-bold")}>
           {children}
         </h1>
       );

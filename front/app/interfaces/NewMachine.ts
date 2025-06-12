@@ -17,6 +17,10 @@ export interface Machine {
   id: number;
   name: string;
   status: boolean;
+  category: string;
+  type: string;
+  power: string;
+
 }
 
 export interface MachinePlanning {

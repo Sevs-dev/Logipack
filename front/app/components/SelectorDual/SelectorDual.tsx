@@ -45,7 +45,7 @@ const SelectorDual: React.FC<SelectorDualProps> = ({
 
     return (
         <div>
-            <Text type="subtitle">{titulo}</Text>
+            <Text type="subtitle" color="text-[#000]">{titulo}</Text>
             <div className="relative mb-3">
                 <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-500">
                     <FaSearch />
@@ -63,7 +63,7 @@ const SelectorDual: React.FC<SelectorDualProps> = ({
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-2">
                 {/* Disponibles */}
                 <div className="border rounded-lg p-4 flex flex-col">
-                    <Text type="subtitle">Disponibles</Text>
+                    <Text type="subtitle" color="text-[#000]">Disponibles</Text>
                     <div
                         className="overflow-y-auto"
                         style={{
@@ -94,7 +94,7 @@ const SelectorDual: React.FC<SelectorDualProps> = ({
 
                 {/* Seleccionadas */}
                 <div className="border rounded-lg p-4 flex flex-col">
-                    <Text type="subtitle">Seleccionadas</Text>
+                    <Text type="subtitle" color="text-[#000]">Seleccionadas</Text>
                     <div
                         className="overflow-y-auto"
                         style={{

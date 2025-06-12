@@ -178,7 +178,7 @@ function CreateMachinery({ canEdit = false, canView = false }: CreateClientProps
             {/* Columna 1 */}
             <div className="space-y-4">
               <div>
-                <Text type="subtitle">Nombre</Text>
+                <Text type="subtitle" color="text-[#000]" >Nombre</Text>
                 <input
                   type="text"
                   value={name}
@@ -189,7 +189,7 @@ function CreateMachinery({ canEdit = false, canView = false }: CreateClientProps
               </div>
 
               <div>
-                <Text type="subtitle">Categoría</Text>
+                <Text type="subtitle" color="text-[#000]" >Categoría</Text>
                 <select
                   className="w-full border border-gray-300 rounded px-3 py-2 text-black text-center"
                   value={category}
@@ -204,7 +204,7 @@ function CreateMachinery({ canEdit = false, canView = false }: CreateClientProps
               </div>
 
               <div>
-                <Text type="subtitle">Potencia</Text>
+                <Text type="subtitle" color="text-[#000]" >Potencia</Text>
                 <input
                   type="number"
                   value={power}
@@ -215,7 +215,7 @@ function CreateMachinery({ canEdit = false, canView = false }: CreateClientProps
               </div>
 
               <div>
-                <Text type="subtitle">Dimensiones</Text>
+                <Text type="subtitle" color="text-[#000]" >Dimensiones</Text>
                 <input
                   type="text"
                   value={dimensions}
@@ -225,7 +225,7 @@ function CreateMachinery({ canEdit = false, canView = false }: CreateClientProps
                 />
               </div>
               <div>
-                <Text type="subtitle">Descripción</Text>
+                <Text type="subtitle" color="text-[#000]" >Descripción</Text>
                 <textarea
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
@@ -239,7 +239,7 @@ function CreateMachinery({ canEdit = false, canView = false }: CreateClientProps
             {/* Columna 2 */}
             <div className="space-y-4">
               <div>
-                <Text type="subtitle">Plantas</Text>
+                <Text type="subtitle" color="text-[#000]" >Plantas</Text>
                 <select
                   className="w-full border border-gray-300 rounded px-3 py-2 text-black text-center"
                   value={factory_id}
@@ -256,7 +256,7 @@ function CreateMachinery({ canEdit = false, canView = false }: CreateClientProps
               </div>
 
               <div>
-                <Text type="subtitle">Tipo</Text>
+                <Text type="subtitle" color="text-[#000]" >Tipo</Text>
                 <input
                   type="text"
                   value={type}
@@ -267,7 +267,7 @@ function CreateMachinery({ canEdit = false, canView = false }: CreateClientProps
               </div>
 
               <div>
-                <Text type="subtitle">Capacidad
+                <Text type="subtitle" color="text-[#000]" >Capacidad
                   <InfoPopover content="La capidad que la maquina puede producir por dia" />
                 </Text>
                 <input
@@ -280,7 +280,7 @@ function CreateMachinery({ canEdit = false, canView = false }: CreateClientProps
               </div>
 
               <div>
-                <Text type="subtitle">Peso</Text>
+                <Text type="subtitle" color="text-[#000]" >Peso</Text>
                 <input
                   type="text"
                   value={weight}
@@ -291,7 +291,7 @@ function CreateMachinery({ canEdit = false, canView = false }: CreateClientProps
               </div>
 
               <div className="flex flex-col items-center">
-                <Text type="subtitle">Movíl</Text>
+                <Text type="subtitle" color="text-[#000]" >Movíl</Text>
                 <input
                   type="checkbox"
                   checked={is_mobile}
@@ -302,7 +302,7 @@ function CreateMachinery({ canEdit = false, canView = false }: CreateClientProps
               </div>
 
             </div>
-          </form>
+          </form >
 
           <div className="flex justify-end space-x-4 mt-4">
             <Button
@@ -317,8 +317,9 @@ function CreateMachinery({ canEdit = false, canView = false }: CreateClientProps
               <Button onClick={handleSubmit} variant="save" label="Guardar" />
             )}
           </div>
-        </ModalSection>
-      )}
+        </ModalSection >
+      )
+      }
 
       <Table
         columns={["name", "category", "type", "power"]}
@@ -330,16 +331,18 @@ function CreateMachinery({ canEdit = false, canView = false }: CreateClientProps
           power: "Potencia",
         }}
         onDelete={canEdit ? handleDelete : undefined}
-        onEdit={handleEdit} 
+        onEdit={handleEdit}
         onHistory={handleHistory}
         onTerciario={() => { }}
       />
 
       {/* Modal de auditoría */}
-      {auditList.length > 0 && (
-        <AuditModal audit={auditList} onClose={() => setAuditList([])} />
-      )}
-    </div>
+      {
+        auditList.length > 0 && (
+          <AuditModal audit={auditList} onClose={() => setAuditList([])} />
+        )
+      }
+    </div >
   );
 }
 

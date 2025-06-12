@@ -1,7 +1,7 @@
 import axios, { AxiosError } from "axios";
 import { API_URL } from "../../config/api";
-import { Data, StageResponse, ErrorResponse } from "../../interfaces/NewStage"; 
-const Stage = axios.create({
+import { Data, StageResponse, ErrorResponse, Stage } from "../../interfaces/NewStage"; 
+const StageServ = axios.create({
   baseURL: API_URL,
   headers: {
     "Content-Type": "application/json",
@@ -21,7 +21,7 @@ export const createStage = async (data: Data): Promise<StageResponse> => {
     if (name) {
       data.user = decodeURIComponent(name);
     }
-    const response = await Stage.post("/newFase", data);
+    const response = await StageServ.post("/newFase", data);
     return {
       status: response.status,
       message: response.data?.message,
@@ -32,9 +32,9 @@ export const createStage = async (data: Data): Promise<StageResponse> => {
   }
 };
 
-export const getStage = async (): Promise<Data[]> => {
+export const getStage = async (): Promise<Stage[]> => {
   try {
-    const response = await Stage.get("/getFase");
+    const response = await StageServ.get("/getFase");
     return response.data;
   } catch (error: unknown) {
     handleAxiosError("getStage", error);
@@ -44,7 +44,7 @@ export const getStage = async (): Promise<Data[]> => {
 
 export const deleteStage = async (id: number): Promise<{ success: boolean; message?: string }> => {
   try {
-    const response = await Stage.delete(`/deleteFase/${id}`);
+    const response = await StageServ.delete(`/deleteFase/${id}`);
     return response.data;
   } catch (error: unknown) {
     handleAxiosError("deleteStage", error);
@@ -52,9 +52,9 @@ export const deleteStage = async (id: number): Promise<{ success: boolean; messa
   }
 };
 
-export const getStageId = async (id: number): Promise<Data> => {
+export const getStageId = async (id: number): Promise<Stage> => {
   try {
-    const response = await Stage.get(`/FaseId/${id}`);
+    const response = await StageServ.get(`/FaseId/${id}`);
     return response.data;
   } catch (error: unknown) {
     handleAxiosError("getStageId", error);
@@ -64,7 +64,7 @@ export const getStageId = async (id: number): Promise<Data> => {
 
 export const getStageName = async (name: string): Promise<Data[]> => {
   try {
-    const response = await Stage.get(`/FaseName/${name}`);
+    const response = await StageServ.get(`/FaseName/${name}`);
     return response.data;
   } catch (error: unknown) {
     handleAxiosError("getStageName", error);
@@ -74,7 +74,7 @@ export const getStageName = async (name: string): Promise<Data[]> => {
 
 export const updateStage = async (id: number, data: Data): Promise<StageResponse> => {
   try {
-    const response = await Stage.put(`/updateFase/${id}`, data);
+    const response = await StageServ.put(`/updateFase/${id}`, data);
     return {
       status: response.status,
       message: response.data?.message,

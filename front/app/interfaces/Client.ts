@@ -1,14 +1,16 @@
 export interface Client {
-    id: number;
-    name: string;
-    email: string;
-    phone?: string;
-    address?: string;
-    responsible_person?: string[]; // O el tipo que corresponda
-    createdAt?: string;
-    updatedAt?: string;
-    [key: string]: unknown; // Para extender si hay props dinámicas
+  id: number;
+  code: string; // 👈 Esto es lo que te falta
+  name: string;
+  email: string;
+  phone?: string;
+  address?: string;
+  responsible_person?: string[];
+  createdAt?: string;
+  updatedAt?: string;
+  [key: string]: unknown; // Podés mantenerlo si esperás más props dinámicas
 }
+
 
 export interface ClientInput {
     name: string;

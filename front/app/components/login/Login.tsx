@@ -28,8 +28,12 @@ export default function Login() {
       const response = await login(email, password);
 
       if (response.success) {
-        const { token } = response.data.autorización;
-        const { email, role, name } = response.data.usuario;
+        const data = response.data as {
+          autorización: { token: string };
+          usuario: { email: string; role: string; name: string };
+        };
+        const { token } = data.autorización;
+        const { email, role, name } = data.usuario;
 
         nookies.set(null, 'token', token, cookieOptions);
         nookies.set(null, 'email', email, cookieOptions);

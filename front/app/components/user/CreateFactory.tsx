@@ -139,7 +139,7 @@ function CreateFactory({ canEdit = false, canView = false }: CreateClientProps) 
 
                     <div className="grid grid-cols-2 gap-4 text-center mt-4">
                         <div>
-                            <Text type="subtitle">Nombre</Text>
+                            <Text type="subtitle" color="text-[#000]" >Nombre</Text>
                             <input
                                 type="text"
                                 value={name}
@@ -149,7 +149,7 @@ function CreateFactory({ canEdit = false, canView = false }: CreateClientProps) 
                             />
                         </div>
                         <div>
-                            <Text type="subtitle">Prefijo</Text>
+                            <Text type="subtitle" color="text-[#000]" >Prefijo</Text>
                             <input
                                 type="text"
                                 value={prefix}
@@ -159,7 +159,7 @@ function CreateFactory({ canEdit = false, canView = false }: CreateClientProps) 
                             />
                         </div>
                         <div>
-                            <Text type="subtitle">Ubicación</Text>
+                            <Text type="subtitle" color="text-[#000]" >Ubicación</Text>
                             <input
                                 type="text"
                                 value={location}
@@ -169,7 +169,7 @@ function CreateFactory({ canEdit = false, canView = false }: CreateClientProps) 
                             />
                         </div>
                         <div>
-                            <Text type="subtitle">Capacidad</Text>
+                            <Text type="subtitle" color="text-[#000]" >Capacidad</Text>
                             <input
                                 type="text"
                                 value={capacity}
@@ -179,7 +179,7 @@ function CreateFactory({ canEdit = false, canView = false }: CreateClientProps) 
                             />
                         </div>
                         <div>
-                            <Text type="subtitle">Persona a Cargo</Text>
+                            <Text type="subtitle" color="text-[#000]" >Persona a Cargo</Text>
                             <input
                                 type="text"
                                 value={manager}
@@ -189,7 +189,7 @@ function CreateFactory({ canEdit = false, canView = false }: CreateClientProps) 
                             />
                         </div>
                         <div>
-                            <Text type="subtitle">Empleados</Text>
+                            <Text type="subtitle" color="text-[#000]" >Empleados</Text>
                             <input
                                 type="number"
                                 value={employees}
@@ -199,7 +199,7 @@ function CreateFactory({ canEdit = false, canView = false }: CreateClientProps) 
                             />
                         </div>
                         <div>
-                            <Text type="subtitle">Estado</Text>
+                            <Text type="subtitle" color="text-[#000]" >Estado</Text>
                             <select
                                 value={status ? '1' : '0'}  // Convierte el booleano a '1' o '0'
                                 onChange={(e) => setStatus(e.target.value === '1')}  // Convierte '1' a true y '0' a false
@@ -220,7 +220,8 @@ function CreateFactory({ canEdit = false, canView = false }: CreateClientProps) 
                         )}
                     </div>
                 </ModalSection>
-            )}
+            )
+            }
             <Table columns={["name", "prefix", "location", "manager", "status"
             ]} rows={factories} columnLabels={{
                 name: "Nombre de Planta",
@@ -232,10 +233,12 @@ function CreateFactory({ canEdit = false, canView = false }: CreateClientProps) 
             />
 
             {/* Modal de auditoría */}
-            {auditList.length > 0 && (
-                <AuditModal audit={auditList} onClose={() => setAuditList([])} />
-            )}
-        </div>
+            {
+                auditList.length > 0 && (
+                    <AuditModal audit={auditList} onClose={() => setAuditList([])} />
+                )
+            }
+        </div >
     );
 }
 

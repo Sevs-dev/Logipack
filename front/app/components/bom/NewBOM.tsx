@@ -13,8 +13,9 @@ import { getClients, getClientsId } from "@/app/services/userDash/clientServices
 import { getArticleByCode, newArticle, getArticlesId, deleteArticle, updateArticle, getBoms } from "@/app/services/bom/articleServices";
 import { getAuditsByModel } from "../../services/history/historyAuditServices";
 // Tipos e interfaces
-import { Client, Article, Ingredient, Bom, BomView, BomPayload } from "@/app/interfaces/BOM";
+import { Article, Ingredient, Bom, BomView, BomPayload } from "@/app/interfaces/BOM";
 import { Audit } from "../../interfaces/Audit";
+import { Client } from "@/app/interfaces/Client";
 
 function BOMManager({ canEdit = false, canView = false }: CreateClientProps) {
     // Estados
@@ -109,6 +110,10 @@ function BOMManager({ canEdit = false, canView = false }: CreateClientProps) {
                 try {
                     const data = await getArticlesId(currentBomId); // Obtener BOM específico
                     const bom = data.bom;
+                    if (!bom) {
+                        showError("No se encontró el BOM para edición.");
+                        return;
+                    }
                     const clientData = await getClientsId(bom.client_id);
                     // Llenar formulario con datos existentes
                     setSelectedClient(clientData.id.toString());
@@ -140,7 +145,7 @@ function BOMManager({ canEdit = false, canView = false }: CreateClientProps) {
         const loadData = async () => {
             setLoadingArticles(true);
             try {
-                const articlesData = await getArticleByCode(client.code); // Obtener artículos por código cliente
+                const articlesData = await getArticleByCode(client.code as string); // 👈 forzado (con cuidado) // Obtener artículos por código cliente
                 let fetchedArticles: Article[] = articlesData?.data || [];
                 setAllArticles(fetchedArticles); // Guardar todos para futuras búsquedas
                 // Filtrar el artículo principal para no repetirlo
@@ -266,25 +271,29 @@ function BOMManager({ canEdit = false, canView = false }: CreateClientProps) {
         try {
             const data = await getArticlesId(id);
             const bom = data.bom;
+
+            if (!bom) {
+                showError("No se encontró una BOM válida para este artículo.");
+                return;
+            }
+
             const clientData = await getClientsId(bom.client_id);
 
-            // Cargar todos los campos en el formulario
             setSelectedClient(clientData.id.toString());
             setCurrentBomId(bom.id);
             setBaseQuantity(Number(bom.base_quantity));
             setBomStatus(bom.status);
 
-            const articleData =
-                bom.details && bom.details !== "undefined" && bom.details !== null
-                    ? JSON.parse(bom.details).article
-                    : null;
+            const articleData = bom.details && bom.details !== "undefined"
+                ? JSON.parse(bom.details).article
+                : null;
             setSelectedArticle(articleData);
 
-            const ingr =
-                bom.ingredients && bom.ingredients !== "undefined" && bom.ingredients !== null
-                    ? JSON.parse(bom.ingredients)
-                    : [];
+            const ingr = bom.ingredients && bom.ingredients !== "undefined"
+                ? JSON.parse(bom.ingredients)
+                : [];
             setIngredients(ingr);
+
             setIsModalOpen(true);
         } catch (error) {
             console.error("Error obteniendo datos de la BOM:", error);
@@ -354,7 +363,7 @@ function BOMManager({ canEdit = false, canView = false }: CreateClientProps) {
                     </Text>
 
                     <div className="mb-4">
-                        <Text type="subtitle">Selecciona un Cliente:</Text>
+                        <Text type="subtitle" color="text-[#000]">Selecciona un Cliente:</Text>
                         <select
                             className="w-full border p-2 rounded text-black text-center"
                             value={selectedClient}
@@ -373,7 +382,7 @@ function BOMManager({ canEdit = false, canView = false }: CreateClientProps) {
                     {(selectedClient || currentBomId) && (
                         <div className="mt-4 grid grid-cols-2 gap-4">
                             <div>
-                                <Text type="subtitle">Artículos Disponibles:</Text>
+                                <Text type="subtitle" color="text-[#000]">Artículos Disponibles:</Text>
                                 <div className="mb-2">
                                     <input
                                         type="text"
@@ -409,7 +418,7 @@ function BOMManager({ canEdit = false, canView = false }: CreateClientProps) {
                             </div>
 
                             <div>
-                                <Text type="subtitle">Artículo Seleccionado:</Text>
+                                <Text type="subtitle" color="text-[#000]">Artículo Seleccionado:</Text>
                                 {selectedArticle ? (
                                     <div className="border p-2 rounded bg-gray-100 flex justify-between items-center">
                                         <span className="text-black">
@@ -432,7 +441,7 @@ function BOMManager({ canEdit = false, canView = false }: CreateClientProps) {
 
                     <div className="flex justify-center space-x-2">
                         <div className="mt-4">
-                            <Text type="subtitle">Cantidad Base:</Text>
+                            <Text type="subtitle" color="text-[#000]">Cantidad Base:</Text>
                             <input
                                 type="number"
                                 min="0"
@@ -444,7 +453,7 @@ function BOMManager({ canEdit = false, canView = false }: CreateClientProps) {
                         </div>
 
                         <div className="mt-4">
-                            <Text type="subtitle">Estado:</Text>
+                            <Text type="subtitle" color="text-[#000]">Estado:</Text>
                             <select
                                 className="w-full border p-2 rounded text-black text-center"
                                 value={bomStatus ? "activo" : "inactivo"}
@@ -459,7 +468,7 @@ function BOMManager({ canEdit = false, canView = false }: CreateClientProps) {
 
                     {selectedArticle && (
                         <div className="mt-4">
-                            <Text type="subtitle">Materiales:</Text>
+                            <Text type="subtitle" color="text-[#000]">Materiales:</Text>
                             <div className="border p-4 rounded bg-gray-50 space-y-4">
                                 {ingredients.length > 0 ? (
                                     ingredients.map((ing, index) => (
@@ -529,7 +538,7 @@ function BOMManager({ canEdit = false, canView = false }: CreateClientProps) {
 
             <Table
                 columns={["client_name", "article_codart", "article_desart", "status"]}
-                rows={boms}
+                rows={boms.map(a => ({ ...a }))}
                 columnLabels={{
                     client_name: "Cliente",
                     article_codart: "Código Artículo",

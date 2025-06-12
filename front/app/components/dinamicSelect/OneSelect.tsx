@@ -41,7 +41,7 @@ const MaestrasSelect = <T extends MaestraBase>({
 
   return (
     <div className="mb-6">
-      <Text type="subtitle">{label}</Text>
+      <Text type="subtitle" color="text-[#000]" >{label}</Text>
 
       {maestras.length === 0 ? (
         <div className="p-4 bg-yellow-50 border border-yellow-300 rounded">
@@ -51,7 +51,7 @@ const MaestrasSelect = <T extends MaestraBase>({
         <div className="flex gap-6 flex-col md:flex-row">
           {/* Lista de disponibles */}
           <div className="flex-1">
-            <Text type="subtitle">Disponibles:</Text>
+            <Text type="subtitle" color="text-[#000]" >Disponibles:</Text>
             <ul className="border border-gray-200 rounded-lg divide-y divide-gray-200 max-h-64 overflow-y-auto">
               {disponibles.map((maestra) => (
                 <li key={maestra.id}>
@@ -69,7 +69,7 @@ const MaestrasSelect = <T extends MaestraBase>({
 
           {/* Lista seleccionada */}
           <div className="flex-1 mt-4 md:mt-0">
-            <Text type="subtitle">Seleccionada:</Text>
+            <Text type="subtitle" color="text-[#000]" >Seleccionada:</Text>
             <ul className="border border-blue-200 rounded-lg divide-y divide-blue-200 max-h-64 overflow-y-auto">
               {selectedMaestra ? (
                 maestraMap.has(selectedMaestra) ? (
@@ -91,10 +91,10 @@ const MaestrasSelect = <T extends MaestraBase>({
                 <li className="px-4 py-2 text-gray-500 italic">Ninguna seleccionada</li>
               )}
             </ul>
-          </div>
-        </div>
+          </div >
+        </div >
       )}
-    </div>
+    </div >
   );
 };
 

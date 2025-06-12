@@ -12,7 +12,8 @@ import ModalSection from "../modal/ModalSection";
 import { showError, showSuccess, showConfirm } from "../toastr/Toaster";
 import Button from "../buttons/buttons";
 import Table from "../table/Table";
-import { Factory, Role, User } from "@/app/interfaces/CreateUser";
+import { Factory, Role } from "@/app/interfaces/CreateUser";
+import { User } from "@/app/interfaces/Auth";
 import { CreateClientProps } from "../../interfaces/CreateClientProps";
 
 function CreateUser({ canEdit = false, canView = false }: CreateClientProps) {
@@ -64,8 +65,8 @@ function CreateUser({ canEdit = false, canView = false }: CreateClientProps) {
       setName(userToEdit.name);
       setEmail(userToEdit.email);
       setRole(userToEdit.role);
-      setSignatureBPM(userToEdit.signature_bpm || "");
-      setSelectedfactory(userToEdit.factory || []);
+      setSignatureBPM(typeof userToEdit.signature_bpm === "string" ? userToEdit.signature_bpm : "");
+      setSelectedfactory(Array.isArray(userToEdit.factory) ? userToEdit.factory : []);
       setPassword("");
       setIsModalOpen(true);
     }
@@ -247,7 +248,7 @@ function CreateUser({ canEdit = false, canView = false }: CreateClientProps) {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
             {/* Nombre */}
             <div>
-              <Text type="subtitle">Nombre de Usuario</Text>
+              <Text type="subtitle" color="text-[#000]">Nombre de Usuario</Text>
               <input
                 type="text"
                 placeholder="Nombre"
@@ -260,7 +261,7 @@ function CreateUser({ canEdit = false, canView = false }: CreateClientProps) {
 
             {/* Email */}
             <div>
-              <Text type="subtitle">Correo Electrónico</Text>
+              <Text type="subtitle" color="text-[#000]">Correo Electrónico</Text>
               <input
                 type="email"
                 placeholder="email@dominio.com"
@@ -273,7 +274,7 @@ function CreateUser({ canEdit = false, canView = false }: CreateClientProps) {
 
             {/* Contraseña */}
             <div className="relative">
-              <Text type="subtitle">
+              <Text type="subtitle" color="text-[#000]">
                 Contraseña
                 {userToEdit && <InfoPopover content="Para no cambiar la contraseña dejar el campo en blanco" />}
               </Text>
@@ -306,7 +307,7 @@ function CreateUser({ canEdit = false, canView = false }: CreateClientProps) {
 
             {/* Rol */}
             <div>
-              <Text type="subtitle">Rol</Text>
+              <Text type="subtitle" color="text-[#000]">Rol</Text>
               <select
                 value={role}
                 onChange={(e) => setRole(e.target.value)}
@@ -324,7 +325,7 @@ function CreateUser({ canEdit = false, canView = false }: CreateClientProps) {
 
             {/* Firma BPM */}
             <div>
-              <Text type="subtitle">Firma BPM</Text>
+              <Text type="subtitle" color="text-[#000]">Firma BPM</Text>
               <input
                 type="text"
                 placeholder="Firma BPM"
@@ -337,7 +338,7 @@ function CreateUser({ canEdit = false, canView = false }: CreateClientProps) {
 
             {/* Fábricas */}
             <div className="col-span-1 md:col-span-2">
-              <Text type="subtitle">Fábricas asignadas</Text>
+              <Text type="subtitle" color="text-[#000]">Fábricas asignadas</Text>
               <div className="flex flex-wrap gap-2 mt-1">
                 {factory.map((factory) => {
                   const isSelected = selectedfactory.includes(factory.id);
@@ -382,7 +383,7 @@ function CreateUser({ canEdit = false, canView = false }: CreateClientProps) {
       {/* Tabla de usuarios */}
       <Table
         columns={["name", "email", "role"]}
-        rows={users}
+        rows={users.map(a => ({ ...a }))}
         columnLabels={{
           name: "Nombre",
           email: "Email",

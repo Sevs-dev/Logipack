@@ -1,6 +1,6 @@
 import axios, { AxiosError } from 'axios';
 import { API_URL } from '../../config/api';
-import { AuthResponse, UserData, LoginResponse, User, Role, UpdateUserData } from "../../interfaces/Auth"
+import { AuthResponse, UserData, LoginData, User, Role, UpdateUserData } from "../../interfaces/Auth"
 
 // Axios Instance
 const authUser = axios.create({
@@ -11,14 +11,18 @@ const authUser = axios.create({
 });
 
 // Login
-export const login = async (email: string, password: string): Promise<AuthResponse> => {
+export const login = async (
+  email: string,
+  password: string
+): Promise<AuthResponse> => {
   try {
-    const response = await authUser.post<LoginResponse>('/login', { email, password });
+    const response = await authUser.post<LoginData>('/login', { email, password });
     return { success: true, data: response.data };
   } catch (error: unknown) {
     return handleError(error);
   }
 };
+
 
 // Register
 export const register = async (name: string, email: string, password: string): Promise<AuthResponse> => {
@@ -103,14 +107,9 @@ export const deleteUser = async (id: number): Promise<{ message: string }> => {
 };
 
 // Get user registration date
-export const getDate = async (id: number): Promise<{ date: string }> => {
-  try {
-    const response = await authUser.get(`/date/${id}`);
-    return response.data;
-  } catch (error: unknown) {
-    console.error('Error en getDate:', error);
-    throw error;
-  }
+export const getDate = async (id: number): Promise<{ date: string; usuario: User }> => {
+  const response = await authUser.get(`/date/${id}`);
+  return response.data;
 };
 
 // Update user

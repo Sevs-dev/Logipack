@@ -74,7 +74,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     getUserByEmail(decodedEmail)
       .then((res) => {
-        setUser(res.usuario);
+        setUser(res.usuario as User);
         setRole(res.role || storedRole);
       })
       .catch(() => {

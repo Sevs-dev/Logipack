@@ -1,4 +1,4 @@
-export interface Client {
+export interface ClientBom {
   id: string;
   code: string;
   name: string;
@@ -25,6 +25,9 @@ export interface Ingredient {
 
 export interface Bom {
   id: number;
+  client_name: string;
+  article_codart: string;
+  article_desart: string;
   client_id: number;
   base_quantity: string;
   details: string;
@@ -51,4 +54,3 @@ export interface BomPayload {
 export interface Bom extends BomPayload {
   id: number;
 }
-

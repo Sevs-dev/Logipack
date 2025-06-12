@@ -115,8 +115,8 @@ const Sidebar: React.FC<SidebarProps> = ({ sidebarOpen, setSidebarOpen }) => {
         if (email) {
           const decodedEmail = decodeURIComponent(email);
           const user = await getUserByEmail(decodedEmail);
-          if (user.usuario) {
-            setUserName(user.usuario.name);
+          if (user.usuario && typeof user.usuario === "object" && "name" in user.usuario) {
+            setUserName((user.usuario as { name?: string }).name || "");
           }
         }
       } catch (error) {

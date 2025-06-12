@@ -1,6 +1,7 @@
 import axios from 'axios';
 import { API_URL } from '../../config/api';
-import { DataService, Tipo, MaestraResponse } from '../../interfaces/NewMaestra';
+import { MaestraBase, DataService, MaestraResponse, MaestrasServ } from '../../interfaces/NewMaestra';
+import { TipoAcondicionamiento } from "@/app/interfaces/NewTipoAcondicionamiento";
 
 const Maestras = axios.create({
   baseURL: API_URL,
@@ -9,7 +10,7 @@ const Maestras = axios.create({
   },
 });
 
-export const createMaestra = async (data: DataService): Promise<MaestraResponse> => {
+export const createMaestra = async (data: MaestrasServ): Promise<MaestraResponse> => {
   try {
     const name = document.cookie
       .split('; ')
@@ -27,7 +28,7 @@ export const createMaestra = async (data: DataService): Promise<MaestraResponse>
   }
 };
 
-export const getMaestra = async (): Promise<DataService[]> => {
+export const getMaestra = async (): Promise<MaestraBase[]> => {
   try {
     const response = await Maestras.get("/getMaestra");
     return response.data;
@@ -37,7 +38,7 @@ export const getMaestra = async (): Promise<DataService[]> => {
   }
 };
 
-export const getTipo = async (): Promise<Tipo[]> => {
+export const getTipo = async (): Promise<TipoAcondicionamiento[]> => {
   try {
     const response = await Maestras.get("/getTipo");
     return response.data;
@@ -57,7 +58,7 @@ export const deleteMaestra = async (id: number): Promise<{ success: boolean; mes
   }
 };
 
-export const getMaestraId = async (id: number): Promise<DataService> => {
+export const getMaestraId = async (id: number): Promise<MaestraBase> => {
   try {
     const response = await Maestras.get(`/MaestraId/${id}`);
     return response.data;
@@ -67,7 +68,7 @@ export const getMaestraId = async (id: number): Promise<DataService> => {
   }
 };
 
-export const getMaestraName = async (name: string): Promise<DataService[]> => {
+export const getMaestraName = async (name: string): Promise<MaestraBase[]> => {
   try {
     const response = await Maestras.get(`/MaestraName/${name}`);
     return response.data;
