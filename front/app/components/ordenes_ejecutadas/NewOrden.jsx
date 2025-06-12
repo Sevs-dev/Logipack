@@ -106,12 +106,12 @@ const App = () => {
             <dl className="sm:divide-y sm:divide-gray-200">
               {[
                 { label: 'Adaptation ID', value: acondicionamiento.adaptation_id },
-                { label: 'Maestra ID', value: acondicionamiento.maestra_id },
+                // { label: 'Maestra ID', value: acondicionamiento.maestra_id },
                 { label: 'Descripción Maestra', value: acondicionamiento.descripcion_maestra },
-                { label: 'Línea Producción', value: acondicionamiento.linea_produccion },
-                { label: 'Tipo Acondicionamiento', value: acondicionamiento.maestra_tipo_acondicionamiento_fk },
-                { label: 'Fase', value: acondicionamiento.maestra_fases_fk },
-                { label: 'Estado', value: acondicionamiento.estado },
+                // { label: 'Línea Producción', value: acondicionamiento.linea_produccion },
+                // { label: 'Tipo Acondicionamiento', value: acondicionamiento.maestra_tipo_acondicionamiento_fk },
+                // { label: 'Fase', value: acondicionamiento.maestra_fases_fk },
+                // { label: 'Estado', value: acondicionamiento.estado },
               ].map((item, index) => (
                 <div key={index} className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
                   <dt className="text-sm font-medium text-gray-500">

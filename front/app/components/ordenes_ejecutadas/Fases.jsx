@@ -173,31 +173,31 @@ const Fases = ({ proms, setFaseSave, fase_save }) => {
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
             <div>
               <p className="text-sm text-gray-500">ID</p>
-              <p className="font-medium">{fase.id}</p>
+              <p className="block text-sm font-medium text-gray-700">{fase.id}</p>
             </div>
             <div>
               <p className="text-sm text-gray-500">Orden Ejecutada</p>
-              <p className="font-medium">{fase.orden_ejecutada}</p>
+              <p className="block text-sm font-medium text-gray-700">{fase.orden_ejecutada}</p>
             </div>
             <div>
               <p className="text-sm text-gray-500">Adaptation ID</p>
-              <p className="font-medium">{fase.adaptation_id}</p>
+              <p className="block text-sm font-medium text-gray-700">{fase.adaptation_id}</p>
             </div>
             <div>
               <p className="text-sm text-gray-500">Tipo Acondicionamiento</p>
-              <p className="font-medium">{fase.tipo_acondicionamiento_fk}</p>
+              <p className="block text-sm font-medium text-gray-700">{fase.tipo_acondicionamiento_fk}</p>
             </div>
             <div>
               <p className="text-sm text-gray-500">Fases FK</p>
-              <p className="font-medium">{fase.fases_fk}</p>
+              <p className="block text-sm font-medium text-gray-700">{fase.fases_fk}</p>
             </div>
             <div>
               <p className="text-sm text-gray-500">Fase Descripción</p>
-              <p className="font-medium">{fase.description_fase}</p>
+              <p className="block text-sm font-medium text-gray-700">{fase.description_fase}</p>
             </div>
             <div className="sm:col-span-2">
               <p className="text-sm text-gray-500">Tipo de Fase</p>
-              <p className="font-medium">{fase.phase_type}</p>
+              <p className="block text-sm font-medium text-gray-700">{fase.phase_type}</p>
             </div>
           </div>
         </div>
@@ -305,8 +305,6 @@ const Fases = ({ proms, setFaseSave, fase_save }) => {
                       }}
                     />
                   )}
-
-                  <p  className="block text-sm font-medium text-gray-700">{JSON.parse(item.config)}</p>
                   {type === "number" && (
                     <input
                       type="number"
@@ -319,7 +317,7 @@ const Fases = ({ proms, setFaseSave, fase_save }) => {
                       onChange={inputChange}
                     />
                   )}
-                  
+
                   {type === "text" && (
                     <input
                       type="text"
@@ -365,18 +363,26 @@ const Fases = ({ proms, setFaseSave, fase_save }) => {
                       <label key={idx} className="inline-flex items-center gap-2">
                         <input
                           type="checkbox"
-                          name={`${item.clave}_${option}`}
-                          checked={!!info[`${item.clave}_${option}`]}
+                          name={item.clave}
+                          checked={Array.isArray(info[item.clave]) && info[item.clave].includes(option)}
                           onChange={(e) => {
                             const { checked } = e.target;
                             setMemoriaFase((prev) => {
+                              const prevArr = Array.isArray(prev[lineaIndex]?.[item.clave])
+                                ? prev[lineaIndex][item.clave]
+                                : [];
+                              const newArr = checked
+                                ? [...prevArr, option]
+                                : prevArr.filter(val => val !== option);
+
                               const actualizado = {
                                 ...prev,
                                 [lineaIndex]: {
                                   ...prev[lineaIndex],
-                                  [`${item.clave}_${option}`]: checked
+                                  [item.clave]: newArr
                                 }
                               };
+
                               localStorage.setItem('memoria_fase', JSON.stringify(actualizado));
                               return actualizado;
                             });
@@ -387,6 +393,7 @@ const Fases = ({ proms, setFaseSave, fase_save }) => {
                       </label>
                     ))
                   )}
+
                 </div>
               );
             })}
