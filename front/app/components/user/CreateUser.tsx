@@ -1,7 +1,5 @@
 "use client";
 import { useState, useEffect } from "react";
-import { motion } from "framer-motion";
-import { Check } from "lucide-react";
 import { FiEye, FiEyeOff } from "react-icons/fi";
 import { BiLock } from "react-icons/bi";
 import { InfoPopover } from "../buttons/InfoPopover";
@@ -15,6 +13,7 @@ import Table from "../table/Table";
 import { Factory, Role } from "@/app/interfaces/CreateUser";
 import { User } from "@/app/interfaces/Auth";
 import { CreateClientProps } from "../../interfaces/CreateClientProps";
+import SelectorDual from "../SelectorDual/SelectorDual"
 
 function CreateUser({ canEdit = false, canView = false }: CreateClientProps) {
   // Estados para formulario
@@ -22,16 +21,16 @@ function CreateUser({ canEdit = false, canView = false }: CreateClientProps) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [signature_bpm, setSignatureBPM] = useState("");
-  const [selectedfactory, setSelectedfactory] = useState<number[]>([]);
   const [role, setRole] = useState("");
   // Otros estados
   const [loading, setLoading] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [userToEdit, setUserToEdit] = useState<User | null>(null);
+  const [selectedFactorys, setSelectedFactorys] = useState<Factory[]>([]);
+  const [factory, setfactory] = useState<Factory[]>([]);
   // Datos de API
   const [roles, setRoles] = useState<Role[]>([]);
-  const [factory, setfactory] = useState<Factory[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [editForm] = useState({
     name: "",
@@ -66,7 +65,7 @@ function CreateUser({ canEdit = false, canView = false }: CreateClientProps) {
       setEmail(userToEdit.email);
       setRole(userToEdit.role);
       setSignatureBPM(typeof userToEdit.signature_bpm === "string" ? userToEdit.signature_bpm : "");
-      setSelectedfactory(Array.isArray(userToEdit.factory) ? userToEdit.factory : []);
+      setSelectedFactorys(Array.isArray(userToEdit.factory) ? userToEdit.factory : []);
       setPassword("");
       setIsModalOpen(true);
     }
@@ -78,7 +77,7 @@ function CreateUser({ canEdit = false, canView = false }: CreateClientProps) {
     setEmail("");
     setPassword("");
     setSignatureBPM("");
-    setSelectedfactory([]);
+    setSelectedFactorys([]);
     setRole("");
     setShowPassword(false);
   };
@@ -93,13 +92,6 @@ function CreateUser({ canEdit = false, canView = false }: CreateClientProps) {
       newPassword += chars.charAt(Math.floor(Math.random() * chars.length));
     }
     setPassword(newPassword);
-  };
-
-  // Añade o quita fábrica seleccionada
-  const toggleFactory = (id: number) => {
-    setSelectedfactory((prev) =>
-      prev.includes(id) ? prev.filter((fid) => fid !== id) : [...prev, id]
-    );
   };
 
   // Validar campos antes de crear o editar
@@ -133,7 +125,7 @@ function CreateUser({ canEdit = false, canView = false }: CreateClientProps) {
         password,
         role,
         signature_bpm,
-        factory: selectedfactory,
+        factory: selectedFactorys.map(f => f.id),
       });
       showSuccess("Usuario creado exitosamente");
       setIsModalOpen(false);
@@ -157,7 +149,7 @@ function CreateUser({ canEdit = false, canView = false }: CreateClientProps) {
         password: password || undefined,
         role,
         signature_bpm,
-        factory: JSON.stringify(selectedfactory),
+        factory: selectedFactorys,
       });
       showSuccess("Usuario actualizado exitosamente");
       setIsModalOpen(false);
@@ -202,35 +194,55 @@ function CreateUser({ canEdit = false, canView = false }: CreateClientProps) {
     try {
       const response = await getDate(id);
       const userData: User = response.usuario;
-      // Procesar factoryigual que antes...
+
       let factoryParsed: number[] = [];
+
       try {
-        const { factory } = userData;
-        if (typeof factory === "string") {
-          const parsed = JSON.parse(factory);
+        const { factory: userFactory } = userData;
+        if (typeof userFactory === "string") {
+          const parsed = JSON.parse(userFactory);
           if (Array.isArray(parsed)) {
             factoryParsed = parsed.map(Number).filter(n => !isNaN(n));
           } else {
             const singleNumber = Number(parsed);
             if (!isNaN(singleNumber)) factoryParsed = [singleNumber];
           }
-        } else if (Array.isArray(factory)) {
-          factoryParsed = factory.map(Number).filter(n => !isNaN(n));
-        } else if (typeof factory === "number") {
-          factoryParsed = [factory];
+        } else if (Array.isArray(userFactory)) {
+          factoryParsed = userFactory.map(Number).filter(n => !isNaN(n));
+        } else if (typeof userFactory === "number") {
+          factoryParsed = [userFactory];
         }
       } catch (parseError) {
         console.error("Error al parsear fábricas:", parseError);
       }
-      // Setear userToEdit, no editingUser
+
+      // Obtener los objetos completos de fábrica a partir de sus IDs
+      const selectedFactoryObjects = factory.filter(f => factoryParsed.includes(f.id));
+
+      // Setear usuario a editar con factories como objetos completos
       setUserToEdit({
         ...userData,
-        factory: factoryParsed,
+        factory: selectedFactoryObjects, // <-- aquí el cambio
       });
+
+      setSelectedFactorys(selectedFactoryObjects);
+
+      setIsModalOpen(true);
+
     } catch (error) {
       console.error("Error obteniendo datos del usuario:", error);
       showError("Error obteniendo datos del usuario");
     }
+  };
+
+  const agregarMaquina = (Factory: Factory) => {
+    if (!selectedFactorys.find(m => m.id === Factory.id)) {
+      setSelectedFactorys([...selectedFactorys, Factory]);
+    }
+  };
+
+  const removerMaquina = (id: number) => {
+    setSelectedFactorys(selectedFactorys.filter(m => m.id !== id));
   };
 
   return (
@@ -244,7 +256,7 @@ function CreateUser({ canEdit = false, canView = false }: CreateClientProps) {
       {/* Modal crear/editar usuario */}
       {isModalOpen && (
         <ModalSection isVisible={isModalOpen || editForm} onClose={closeModal}>
-          <Text type="title">{userToEdit ? "Editar Usuario" : "Crear Usuario"}</Text>
+          <Text type="title" color="text-[#000]">{userToEdit ? "Editar Usuario" : "Crear Usuario"}</Text>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
             {/* Nombre */}
             <div>
@@ -339,28 +351,13 @@ function CreateUser({ canEdit = false, canView = false }: CreateClientProps) {
             {/* Fábricas */}
             <div className="col-span-1 md:col-span-2">
               <Text type="subtitle" color="text-[#000]">Fábricas asignadas</Text>
-              <div className="flex flex-wrap gap-2 mt-1">
-                {factory.map((factory) => {
-                  const isSelected = selectedfactory.includes(factory.id);
-                  return (
-                    <motion.div
-                      key={factory.id}
-                      onClick={canEdit ? () => toggleFactory(factory.id) : undefined}
-                      className={`select-none rounded-full px-3 py-1 flex items-center gap-2 border transition-all
-            ${canEdit ? 'cursor-pointer' : 'opacity-50 cursor-not-allowed'}
-            ${isSelected
-                          ? "bg-blue-600 text-white border-blue-600"
-                          : "bg-gray-100 text-gray-700 border-gray-300"
-                        }`}
-                      whileTap={canEdit ? { scale: 0.9 } : {}}
-                      transition={{ duration: 0.2 }}
-                    >
-                      {factory.name}
-                      {isSelected && <Check size={16} />}
-                    </motion.div>
-                  );
-                })}
-              </div>
+              <SelectorDual
+                titulo="Maquinaria"
+                disponibles={factory}
+                seleccionados={selectedFactorys}
+                onAgregar={agregarMaquina}
+                onQuitar={removerMaquina}
+              />
             </div>
 
           </div>

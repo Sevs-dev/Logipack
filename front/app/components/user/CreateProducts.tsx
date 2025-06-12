@@ -191,7 +191,7 @@ function Products({ canEdit = false, canView = false }: CreateClientProps) {
       {/* Modal para crear o editar producto */}
       {showModal && (
         <ModalSection isVisible={showModal} onClose={() => setShowModal(false)}>
-          <Text type="title">{editingProduct ? "Editar Tipo de Producto" : "Crear Tipo de Producto"}</Text>
+          <Text type="title" color="text-[#000]">{editingProduct ? "Editar Tipo de Producto" : "Crear Tipo de Producto"}</Text>
           <form onSubmit={editingProduct ? handleUpdate : handleCreate}>
             <div className="mb-4">
               <Text type="subtitle" color="text-[#000]" >Nombre del Tipo</Text>
@@ -223,7 +223,6 @@ function Products({ canEdit = false, canView = false }: CreateClientProps) {
         onDelete={canEdit ? handleDelete : undefined}
         onEdit={openEditModal}
         onHistory={handleHistory}
-        onTerciario={() => { }}
       />
 
       {/* Modal de auditoría */}

@@ -289,7 +289,7 @@ function NewStage({ canEdit = false, canView = false }: CreateClientProps) {
                     }
                     resetForm();
                 }}>
-                    <Text type="title">{editingStage ? "Editar Fase" : "Crear Fase"}</Text>
+                    <Text type="title" color="text-[#000]">{editingStage ? "Editar Fase" : "Crear Fase"}</Text>
 
                     <div className="space-y-4">
                         {/* Descripción */}

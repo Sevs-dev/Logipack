@@ -281,7 +281,7 @@ export default function NewActivity({ canEdit = false, canView = false }: Create
             {modalOpen && (
                 <ModalSection isVisible={modalOpen} onClose={handleModalClose}>
                     <div className="text-center">
-                        <Text type="title">{isEditing ? "Editar Actividad" : "Crear Actividad"}</Text>
+                        <Text type="title" color="text-[#000]">{isEditing ? "Editar Actividad" : "Crear Actividad"}</Text>
                     </div>
                     {/* Campo de descripción */}
                     <div>

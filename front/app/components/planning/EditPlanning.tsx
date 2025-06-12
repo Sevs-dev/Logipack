@@ -427,7 +427,7 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
         <div>
             {isOpen && currentPlan && (
                 <ModalSection isVisible={isOpen} onClose={() => { setIsOpen(false) }}>
-                    <Text type="title">Editar Acondicionamiento</Text>
+                    <Text type="title" color="text-[#000]">Editar Acondicionamiento</Text>
                     <h2 className="text-xl font-bold mb-6">Editar planificación</h2>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

@@ -172,13 +172,13 @@ function CreateMachinery({ canEdit = false, canView = false }: CreateClientProps
 
       {isOpen && (
         <ModalSection isVisible={isOpen} onClose={() => { setIsOpen(false) }}>
-          <Text type="title">{isEditMode ? "Editar" : "Crear"} Maquinaria</Text>
+          <Text type="title" color="text-[#000]">{isEditMode ? "Editar" : "Crear"} Maquinaria</Text>
 
           <form className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Columna 1 */}
             <div className="space-y-4">
               <div>
-                <Text type="subtitle" color="text-[#000]" >Nombre</Text>
+                <Text type="subtitle" color="text-[#000]">Nombre</Text>
                 <input
                   type="text"
                   value={name}
@@ -333,7 +333,7 @@ function CreateMachinery({ canEdit = false, canView = false }: CreateClientProps
         onDelete={canEdit ? handleDelete : undefined}
         onEdit={handleEdit}
         onHistory={handleHistory}
-        onTerciario={() => { }}
+
       />
 
       {/* Modal de auditoría */}

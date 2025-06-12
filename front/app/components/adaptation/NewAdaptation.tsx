@@ -626,7 +626,7 @@ function NewAdaptation({ canEdit = false, canView = false }: CreateClientProps) 
 
             {isOpen && (
                 <ModalSection isVisible={isOpen} onClose={() => (resetForm(), setIsOpen(false))} >
-                    <Text type="title">
+                    <Text type="title" color="text-[#000]">
                         {isEditMode ? "Editar" : "Crear"} Acondicionamiento
                     </Text>
 
@@ -861,7 +861,6 @@ function NewAdaptation({ canEdit = false, canView = false }: CreateClientProps) 
                                 )}
                             </div>
                         </div>
-
 
                         {/* Campos en grid responsivo */}
                         {maestraRequiereBOM ? (

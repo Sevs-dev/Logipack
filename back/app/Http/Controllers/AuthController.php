@@ -147,12 +147,12 @@ class AuthController extends Controller
         $request->validate([
             'image' => 'required|image|mimes:jpg,png,jpeg,gif|max:2048',
         ]);
-    
+
         $imagePath = $request->file('image')->store('images', 'public');
-    
+
         // Genera la URL manualmente
         $imageUrl = env('APP_URL') . '/storage/' . $imagePath;
-    
+
         return response()->json([
             'estado' => 'éxito',
             'mensaje' => 'Imagen subida correctamente',
@@ -161,44 +161,66 @@ class AuthController extends Controller
         ]);
     }
 
-
     public function create(Request $request)
     {
+        // Log de datos entrantes
+        Log::info('Datos recibidos para crear usuario:', $request->all());
+
         // Validación de los datos de entrada
-        $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255',
-            'password' => 'required|string|min:6',
-            'role' => 'required',
-            'signature_bpm' => 'required|string|max:255',
-            'factory' => 'required|array',
-        ]);
+        try {
+            $request->validate([
+                'name' => 'required|string|max:255',
+                'email' => 'required|string|email|max:255',
+                'password' => 'required|string|min:6',
+                'role' => 'required',
+                'signature_bpm' => 'required|string|max:255',
+                'factory' => 'required|array',
+            ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            Log::error('Error de validación al crear usuario:', $e->errors());
+            return response()->json([
+                'estado' => 'error',
+                'mensaje' => 'Error de validación',
+                'errores' => $e->errors(),
+            ], 400);
+        }
 
         // Verificar si el correo ya existe
         $existingUser = User::where('email', $request->email)->first();
         if ($existingUser) {
+            Log::warning("Intento de crear usuario con correo ya registrado: {$request->email}");
             return response()->json([
                 'estado' => 'error',
                 'mensaje' => 'El correo electrónico ya está registrado.',
             ], 400);
         }
 
-        // Crear el nuevo usuario
-        $usuario = User::create([
-            'name' => $request->name,
-            'email' => $request->email,
-            'password' => Hash::make($request->password),
-            'role' => $request->role,
-            'signature_bpm' => $request->signature_bpm,
-            'factory' => $request->factory,
-        ]);
+        try {
+            // Crear el nuevo usuario
+            $usuario = User::create([
+                'name' => $request->name,
+                'email' => $request->email,
+                'password' => Hash::make($request->password),
+                'role' => $request->role,
+                'signature_bpm' => $request->signature_bpm,
+                'factory' => $request->factory,
+            ]);
 
-        // Respuesta exitosa
-        return response()->json([
-            'estado' => 'éxito',
-            'mensaje' => 'Usuario creado con éxito',
-            'usuario' => $usuario,
-        ]);
+            Log::info("Usuario creado con éxito: ID {$usuario->id}");
+
+            // Respuesta exitosa
+            return response()->json([
+                'estado' => 'éxito',
+                'mensaje' => 'Usuario creado con éxito',
+                'usuario' => $usuario,
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error al crear usuario:', ['message' => $e->getMessage()]);
+            return response()->json([
+                'estado' => 'error',
+                'mensaje' => 'Error al crear el usuario',
+            ], 500);
+        }
     }
 
     public function role()
@@ -241,7 +263,7 @@ class AuthController extends Controller
             'estado' => 'éxito',
             'usuario' => $user,
         ]);
-    } 
+    }
 
     public function getUserUpdate(Request $request, $id)
     {
@@ -252,18 +274,21 @@ class AuthController extends Controller
                 'mensaje' => 'Usuario no encontrado',
             ], 404);
         }
+
         $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255',
             'role' => 'required',
-            'factory' => 'required|json',
+            'factory' => 'required|array', 
         ]);
+
         $user->name = $request->name;
         $user->email = $request->email;
         $user->role = $request->role;
         $user->factory = $request->factory;
 
         $user->save();
+
         return response()->json([
             'estado' => 'éxito',
             'mensaje' => 'Usuario actualizado con éxito',

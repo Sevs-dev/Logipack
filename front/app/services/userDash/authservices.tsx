@@ -64,6 +64,7 @@ export const uploadUserImage = async (imageFile: File): Promise<AuthResponse> =>
 
 // Crear usuario (POST general)
 export const post = async (datosUsuario: UserData): Promise<User> => {
+  console.log(datosUsuario)
   try {
     const response = await authUser.post<User>('/users', datosUsuario);
     return response.data;

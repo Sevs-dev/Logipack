@@ -38,7 +38,6 @@ const Maestra = ({ canEdit = false, canView = false }: CreateClientProps) => {
     const [selectedStages, setSelectedStages] = useState<StageFase[]>([]);
     const [tipoSeleccionado, setTipoSeleccionado] = useState("");
     const [tiposProducto, setTiposProducto] = useState<string[]>([]);
-
     const [searchStage, setSearchStage] = useState("");
     const [duration, setDuration] = useState("");
     const [durationUser, setDurationUser] = useState("");
@@ -50,6 +49,7 @@ const Maestra = ({ canEdit = false, canView = false }: CreateClientProps) => {
     const [draggedIndex, setDraggedIndex] = React.useState<number | null>(null);
     const [auditList, setAuditList] = useState<Audit[]>([]);
     const [, setSelectedAudit] = useState<Audit | null>(null);
+    const [fasesBloqueadas, setFasesBloqueadas] = useState<number[]>([]);
 
     const handleSelectTipoAcondicionamiento = async (tipoId: number) => {
         try {
@@ -57,13 +57,15 @@ const Maestra = ({ canEdit = false, canView = false }: CreateClientProps) => {
             const yaSeleccionado = seleccionados.includes(tipoId);
             let nuevosSeleccionados: number[] = [];
 
-            // 👉 Si ya está seleccionado, intentar deseleccionar
+            // console.log("[🔁 Click en tipo]", { tipoId, yaSeleccionado, seleccionados });
+
             if (yaSeleccionado) {
                 const noSePuedeEliminar = detalleAcondicionamiento.some(
                     item => item.tipo_acondicionamiento_id === tipoId && item.editable === false
                 );
 
                 if (noSePuedeEliminar) {
+                    console.warn("🚫 Tipo no editable, cancelando");
                     showError("Este tipo de acondicionamiento no se puede eliminar porque contiene fases no editables.");
                     return;
                 }
@@ -74,54 +76,70 @@ const Maestra = ({ canEdit = false, canView = false }: CreateClientProps) => {
                     .filter(item => item.tipo_acondicionamiento_id === tipoId)
                     .map(item => Number(item.fase));
 
+                // console.log("🗑️ Deseleccionado:", { fasesAEliminar });
+
                 setStagesAcon(prev => prev.filter(item => item.tipo_acondicionamiento_id !== tipoId));
                 setDetalleAcondicionamiento(prev => prev.filter(item => item.tipo_acondicionamiento_id !== tipoId));
                 setSelectedStages(prev => prev.filter(stage => !fasesAEliminar.includes(stage.id)));
-            }
-
-            // 👉 Si aún no está seleccionado, cargar fases y detalles
-            else {
+                setFasesBloqueadas(prev => {
+                    const updated = prev.filter(id => !fasesAEliminar.includes(id));
+                    // console.log("🧹 Fases bloqueadas actualizadas:", updated);
+                    return updated;
+                });
+            } else {
                 nuevosSeleccionados = [...seleccionados, tipoId];
 
-                // 1. Obtener fases (stages) desde backend
+                // console.log("📥 Seleccionando nuevo tipo:", tipoId);
+
                 const response = await lisTipoacondicionamientoId(tipoId);
                 const dataArray = Array.isArray(response) ? response : response.data || [];
 
-                // Actualizar StagesAcon (relación tipo-fase)
+                // console.log("📦 Fases del backend (lisTipoacondicionamientoId):", dataArray);
+
                 setStagesAcon(prev => {
                     const combined = [...prev, ...dataArray];
-                    return combined.filter((item, index, self) =>
+                    const result = combined.filter((item, index, self) =>
                         index === self.findIndex(t =>
-                            t.id === item.id &&
-                            t.tipo_acondicionamiento_id === item.tipo_acondicionamiento_id
+                            t.id === item.id && t.tipo_acondicionamiento_id === item.tipo_acondicionamiento_id
                         )
                     );
+                    // console.log("📄 setStagesAcon =>", result);
+                    return result;
                 });
 
-                // Actualizar fases disponibles (stages)
                 setStages(prev => {
                     const combined = [...prev, ...dataArray];
                     const deduplicados = combined.filter((item, index, self) =>
                         index === self.findIndex(t => t.id === item.id)
                     );
-                    return deduplicados.sort((a, b) => a.description.localeCompare(b.description));
+                    const ordenados = deduplicados.sort((a, b) => a.description.localeCompare(b.description));
+                    // console.log("📋 setStages =>", ordenados);
+                    return ordenados;
                 });
 
-                // 2. Obtener detalle de fases asociadas al tipo
                 const detalle = await getLineaTipoAcomById(tipoId);
                 const detalleArray = Array.isArray(detalle) ? detalle : detalle.data || [];
 
+                // console.log("🔍 Detalle de fases (getLineaTipoAcomById):", detalleArray);
+
                 setDetalleAcondicionamiento(prev => {
                     const combined = [...prev, ...detalleArray];
-                    return combined.filter((item, index, self) =>
+                    const result = combined.filter((item, index, self) =>
                         index === self.findIndex(t =>
-                            t.fase === item.fase &&
-                            t.tipo_acondicionamiento_id === item.tipo_acondicionamiento_id
+                            t.fase === item.fase && t.tipo_acondicionamiento_id === item.tipo_acondicionamiento_id
                         )
                     );
+                    // console.log("📄 setDetalleAcondicionamiento =>", result);
+                    return result;
                 });
 
-                // 3. Obtener descripción y duración de cada fase vía getStageId
+                const nuevasFasesBloqueadas = detalleArray.map((d: DataLineaTipoAcondicionamiento) => Number(d.fase));
+                setFasesBloqueadas(prev => {
+                    const result = [...new Set([...prev, ...nuevasFasesBloqueadas])];
+                    // console.log("⛔ Fases bloqueadas agregadas:", result);
+                    return result;
+                });
+
                 const fasesSeleccionadas = (
                     await Promise.all(
                         detalleArray.map(async (d: DataLineaTipoAcondicionamiento) => {
@@ -138,34 +156,40 @@ const Maestra = ({ canEdit = false, canView = false }: CreateClientProps) => {
                                     duration_user: stageData.duration_user ?? "",
                                 } satisfies StageFase;
                             } catch {
+                                console.warn("❌ Error al obtener fase ID:", d.fase);
                                 return null;
                             }
                         })
                     )
                 ).filter((f): f is StageFase => f !== null);
 
-                // 4. Agregar fases seleccionadas
+                // console.log("✅ Fases seleccionadas construidas:", fasesSeleccionadas);
+
                 setSelectedStages(prev => {
                     const combined = [...prev, ...fasesSeleccionadas];
-                    return combined.filter((item, index, self) =>
+                    const unique = combined.filter((item, index, self) =>
                         index === self.findIndex(t => t.id === item.id)
                     );
+                    // console.log("🧠 setSelectedStages =>", unique);
+                    return unique;
                 });
             }
 
-            // Actualizar selección de tipo acondicionamiento
             setTipoSeleccionadoAcon(nuevosSeleccionados);
+            // console.log("🆕 tipoSeleccionadoAcon actualizado:", nuevosSeleccionados);
 
-            // Reset si no queda ninguno
             if (nuevosSeleccionados.length === 0) {
+                // console.log("🔁 Reset general de fases y detalles");
                 setStagesAcon([]);
                 setDetalleAcondicionamiento([]);
                 setSelectedStages([]);
+                setFasesBloqueadas([]);
             }
         } catch (error) {
-            console.error("Error al obtener fases o detalles:", error);
+            console.error("💥 Error al obtener fases o detalles:", error);
             setStages([]);
             setSelectedStages([]);
+            setFasesBloqueadas([]);
         }
     };
 
@@ -180,9 +204,9 @@ const Maestra = ({ canEdit = false, canView = false }: CreateClientProps) => {
         e.dataTransfer.effectAllowed = "move";
     };
 
-    const handleDragOver = (e: React.DragEvent<HTMLDivElement>, index: number) => {
-        e.preventDefault(); // necesario para permitir el drop
-        setDraggedIndex(index);
+    const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+        e.preventDefault();
+        // No toques draggedIndex aquí
     };
 
     const handleDrop = (e: React.DragEvent<HTMLDivElement>, index: number) => {
@@ -194,7 +218,6 @@ const Maestra = ({ canEdit = false, canView = false }: CreateClientProps) => {
         reorderedStages.splice(index, 0, movedStage);
 
         setSelectedStages(reorderedStages);
-        setDraggedIndex(null);
         setDraggedIndex(null);
     };
 
@@ -393,16 +416,34 @@ const Maestra = ({ canEdit = false, canView = false }: CreateClientProps) => {
                     );
                 });
 
-                const faseIds = detalleArray.map(d => Number(d.fase));
-                const fasesSeleccionadas = currentStages.filter(stage => faseIds.includes(stage.id));
+                // Aquí obtenemos las fases asociadas y las agregamos a selectedStages
+                const fasesSeleccionadas = await Promise.all(
+                    detalleArray.map(async (d) => {
+                        if (!d?.fase) return null;
+                        try {
+                            const stageData = await getStageId(Number(d.fase));
+                            const descripcion = stageData?.description?.trim();
+                            if (!descripcion) return null;
+                            return {
+                                id: Number(d.fase),
+                                description: descripcion,
+                                duration: stageData.duration ?? "",
+                                duration_user: stageData.duration_user ?? "",
+                            } as StageFase;
+                        } catch {
+                            return null;
+                        }
+                    })
+                );
 
                 setSelectedStages(prev => {
-                    const combined = [...prev, ...fasesSeleccionadas];
+                    const combined = [...prev, ...fasesSeleccionadas.filter(Boolean) as StageFase[]];
                     return combined.filter((item, index, self) =>
                         index === self.findIndex(t => t.id === item.id)
                     );
                 });
             }
+
 
             // Stages generales (no por acondicionamiento)
             const selectedStageIds = data.type_stage;
@@ -527,7 +568,7 @@ const Maestra = ({ canEdit = false, canView = false }: CreateClientProps) => {
             {/* Modal de creación/edición */}
             {isOpen && (
                 <ModalSection isVisible={isOpen} onClose={() => { setIsOpen(false) }}>
-                    <Text type="title">{editingMaestra ? "Editar Maestra" : "Crear Maestra"}</Text>
+                    <Text type="title" color="text-[#000]">{editingMaestra ? "Editar Maestra" : "Crear Maestra"}</Text>
                     {/* Descripción */}
                     <div className="mt-4">
                         <Text type="subtitle" color="text-[#000]">Descripción</Text>
@@ -648,42 +689,31 @@ const Maestra = ({ canEdit = false, canView = false }: CreateClientProps) => {
                                         disabled={!canEdit}
                                     />
                                 </div>
+
                                 {stages.length > 0 ? (
                                     stages
                                         .filter(stage => stage.status !== false)
                                         .filter(stage => {
-                                            // Bloquear si está en seleccionadas o si está en detalleAcondicionamiento
                                             const yaSeleccionada = selectedStages.some(s => s.id === stage.id);
-                                            const yaBloqueadaPorTipo = detalleAcondicionamiento.some(d => Number(d.fase) === stage.id);
-                                            return !yaSeleccionada && !yaBloqueadaPorTipo;
+                                            const estaBloqueada = fasesBloqueadas.includes(stage.id);
+                                            const coincideBusqueda = stage.description.toLowerCase().includes(searchStage.toLowerCase());
+                                            return !yaSeleccionada && !estaBloqueada && coincideBusqueda;
                                         })
-                                        .filter(stage =>
-                                            stage.description.toLowerCase().includes(searchStage.toLowerCase())
-                                        )
-                                        .map(stage => {
-                                            // Bloquear si está en seleccionadas o si está en detalleAcondicionamiento
-                                            const bloqueada =
-                                                selectedStages.some(s => s.id === stage.id) ||
-                                                detalleAcondicionamiento.some(d => Number(d.fase) === stage.id);
-                                            return (
-                                                <div key={stage.id} className="p-2 border-b">
-                                                    <button
-                                                        disabled={!canEdit || bloqueada}
-                                                        className={`w-full text-sm text-center transition ${bloqueada ? 'text-gray-400 cursor-not-allowed' : 'text-blue-500 hover:text-blue-700'
-                                                            }`}
-                                                        onClick={() => !bloqueada && handleSelectStage(stage)}
-                                                    >
-                                                        {bloqueada ? `🔒 ${stage.description}` : stage.description}
-                                                    </button>
-                                                </div>
-                                            );
-                                        })
+                                        .map(stage => (
+                                            <div key={stage.id} className="p-2 border-b">
+                                                <button
+                                                    disabled={!canEdit}
+                                                    className="w-full text-sm text-center text-blue-500 hover:text-blue-700 transition"
+                                                    onClick={() => handleSelectStage(stage)}
+                                                >
+                                                    {stage.description}
+                                                </button>
+                                            </div>
+                                        ))
                                 ) : (
                                     <p className="text-gray-500 text-center">No hay fases disponibles</p>
                                 )}
-
                             </div>
-
                             {/* Lista de fases seleccionadas */}
                             <div className="w-full md:w-1/2 p-4 rounded-xl bg-white border shadow-sm">
                                 <Text type="subtitle">Fases Seleccionadas</Text>
@@ -695,20 +725,28 @@ const Maestra = ({ canEdit = false, canView = false }: CreateClientProps) => {
                                         return (
                                             <div
                                                 key={stage.id}
-                                                draggable={isEditable || !canEdit}  // solo si es editable permite drag
-                                                onDragStart={(e) => void handleDragStart(e, index)}
-                                                onDragOver={(e) => void handleDragOver(e, index)}
-                                                onDrop={(e) => void handleDrop(e, index)}
-                                                className={`flex items-center rounded-full px-3 py-1 text-sm transition-all ${isEditable || !canEdit
-                                                    ? "bg-gray-100 text-gray-800 hover:bg-red-400 hover:text-white cursor-pointer"
-                                                    : "bg-gray-200 text-gray-500 cursor-not-allowed"}`}
-                                                onClick={() => {
-                                                    if (isEditable) handleRemoveStage(stage);
+                                                draggable={canEdit} // permitir arrastrar todos si se puede editar
+                                                onDragStart={e => {
+                                                    if (canEdit) handleDragStart(e, index);
                                                 }}
-                                                style={{ userSelect: "none" }} // para que no seleccione texto al drag
+                                                onDragOver={e => {
+                                                    if (canEdit) handleDragOver(e);
+                                                }}
+                                                onDrop={e => {
+                                                    if (canEdit) handleDrop(e, index);
+                                                }}
+                                                className={`flex items-center rounded-full px-3 py-1 text-sm transition-all mb-2 ${isEditable && canEdit
+                                                    ? "bg-gray-100 text-gray-800 hover:bg-red-400 hover:text-white cursor-move"
+                                                    : "bg-gray-200 text-gray-500"
+                                                    }`}
+                                                onClick={() => {
+                                                    if (canEdit && isEditable) handleRemoveStage(stage);
+                                                }}
+                                                style={{ userSelect: "none" }}
                                             >
+                                                <span className="mr-2 cursor-move">☰</span>
                                                 {stage.description}
-                                                {isEditable || !canEdit && <X className="w-4 h-4 ml-2" />}
+                                                {(isEditable && canEdit) && <X className="w-4 h-4 ml-2" />}
                                             </div>
                                         );
                                     })

@@ -144,7 +144,7 @@ function CreateManufacturing({ canEdit = false, canView = false }: CreateClientP
 
             {isModalOpen && (
                 <ModalSection isVisible={isModalOpen} onClose={closeModal}>
-                    <Text type="title">{formData.id ? "Editar" : "Crear"} Línea</Text>
+                    <Text type="title" color="text-[#000]">{formData.id ? "Editar" : "Crear"} Línea</Text>
                     <form onSubmit={handleSubmit}>
                         <div className="mb-4">
                             <Text type="subtitle" color="text-[#000]" >Nombre de Línea</Text>
@@ -213,7 +213,7 @@ function CreateManufacturing({ canEdit = false, canView = false }: CreateClientP
                 onDelete={canEdit ? handleDelete : undefined}
                 onEdit={openEditModal}
                 onHistory={handleHistory}
-                onTerciario={() => { }}
+
             />
 
             {/* Modal de auditoría */}

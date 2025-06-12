@@ -40,19 +40,19 @@ class ActivitiesController extends Controller
             'user' => 'string|nullable',
         ]);
 
+        // Normalizar el JSON para que quede sin espacios ni saltos de línea
+        $validatedData['config'] = json_encode(json_decode($validatedData['config']), JSON_UNESCAPED_SLASHES);
+
         $validatedData['version'] = '1';
         $validatedData['reference_id'] = (string) Str::uuid();
 
         $Actividad = Activitie::create($validatedData);
-
-        // Aquí NO necesitas hacer nada con 'user'
 
         return response()->json([
             'message' => 'Fase creada exitosamente',
             'Fase' => $Actividad
         ], 201);
     }
-
 
     /**
      * Mostrar una actividad específica.
