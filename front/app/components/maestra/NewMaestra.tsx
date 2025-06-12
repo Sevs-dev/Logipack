@@ -4,7 +4,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { Search, X, Clock } from "lucide-react";
 // ------------------------- 2. Importaciones de servicios -------------------------
 import { createMaestra, getMaestra, deleteMaestra, getMaestraId, updateMaestra, getTipo } from "../../services/maestras/maestraServices";
-import { getStage } from "../../services/maestras/stageServices";
+import { getStage, getStageId } from "../../services/maestras/stageServices";
 import { getStage as listTipoAcondicionamiento, getStageById as lisTipoacondicionamientoId } from "@/app/services/maestras/TipoAcondicionamientoService";
 import { getAuditsByModel } from "../../services/history/historyAuditServices";
 // ------------------------- 3. Importaciones de componentes de la UI -------------------------
@@ -18,7 +18,7 @@ import { CreateClientProps } from "../../interfaces/CreateClientProps";
 import AuditModal from "../history/AuditModal";
 // ------------------------- 5. Tipos de datos e interfaces -------------------------
 import { MaestraBase } from "../../interfaces/NewMaestra";
-import { Stage } from "../../interfaces/NewStage";
+import { Stage, StageFase } from "../../interfaces/NewStage";
 import { DataTipoAcondicionamiento, DataLineaTipoAcondicionamiento } from "@/app/interfaces/NewTipoAcondicionamiento";
 import { getLineaTipoAcondicionamientoById as getLineaTipoAcomById } from "@/app/services/maestras/LineaTipoAcondicionamientoService";
 import { Audit } from "../../interfaces/Audit";
@@ -35,9 +35,10 @@ const Maestra = ({ canEdit = false, canView = false }: CreateClientProps) => {
     const [aprobado, setAprobado] = useState(false);
     const [paralelo, setParalelo] = useState(false);
     const [stages, setStages] = useState<Stage[]>([]);
-    const [selectedStages, setSelectedStages] = useState<Stage[]>([]);
+    const [selectedStages, setSelectedStages] = useState<StageFase[]>([]);
     const [tipoSeleccionado, setTipoSeleccionado] = useState("");
     const [tiposProducto, setTiposProducto] = useState<string[]>([]);
+
     const [searchStage, setSearchStage] = useState("");
     const [duration, setDuration] = useState("");
     const [durationUser, setDurationUser] = useState("");
@@ -55,78 +56,150 @@ const Maestra = ({ canEdit = false, canView = false }: CreateClientProps) => {
             const seleccionados = Array.isArray(tipoSeleccionadoAcon) ? tipoSeleccionadoAcon : [];
             const yaSeleccionado = seleccionados.includes(tipoId);
             let nuevosSeleccionados: number[] = [];
+
+            // 👉 Si ya está seleccionado, intentar deseleccionar
             if (yaSeleccionado) {
                 const noSePuedeEliminar = detalleAcondicionamiento.some(
                     item => item.tipo_acondicionamiento_id === tipoId && item.editable === false
                 );
+
                 if (noSePuedeEliminar) {
                     showError("Este tipo de acondicionamiento no se puede eliminar porque contiene fases no editables.");
                     return;
                 }
-                // Eliminar tipo de acondicionamiento
+
                 nuevosSeleccionados = seleccionados.filter(id => id !== tipoId);
+
                 const fasesAEliminar = detalleAcondicionamiento
                     .filter(item => item.tipo_acondicionamiento_id === tipoId)
                     .map(item => Number(item.fase));
 
-                setStagesAcon(prev =>
-                    prev.filter(item => item.tipo_acondicionamiento_id !== tipoId)
-                );
-                setDetalleAcondicionamiento(prev =>
-                    prev.filter(item => item.tipo_acondicionamiento_id !== tipoId)
-                );
-                setSelectedStages(prev =>
-                    prev.filter(stage => !fasesAEliminar.includes(stage.id))
-                );
-            } else {
-                // Agregar tipo de acondicionamiento
+                setStagesAcon(prev => prev.filter(item => item.tipo_acondicionamiento_id !== tipoId));
+                setDetalleAcondicionamiento(prev => prev.filter(item => item.tipo_acondicionamiento_id !== tipoId));
+                setSelectedStages(prev => prev.filter(stage => !fasesAEliminar.includes(stage.id)));
+            }
+
+            // 👉 Si aún no está seleccionado, cargar fases y detalles
+            else {
                 nuevosSeleccionados = [...seleccionados, tipoId];
+
+                // 1. Obtener fases (stages) desde backend
                 const response = await lisTipoacondicionamientoId(tipoId);
                 const dataArray = Array.isArray(response) ? response : response.data || [];
+
+                // Actualizar StagesAcon (relación tipo-fase)
                 setStagesAcon(prev => {
                     const combined = [...prev, ...dataArray];
-                    return combined.filter(
-                        (item, _, self) =>
-                            self.findIndex(
-                                t => t.id === item.id && t.tipo_acondicionamiento_id === item.tipo_acondicionamiento_id
-                            ) === self.indexOf(item)
+                    return combined.filter((item, index, self) =>
+                        index === self.findIndex(t =>
+                            t.id === item.id &&
+                            t.tipo_acondicionamiento_id === item.tipo_acondicionamiento_id
+                        )
                     );
-
                 });
+
+                // Actualizar fases disponibles (stages)
+                setStages(prev => {
+                    const combined = [...prev, ...dataArray];
+                    const deduplicados = combined.filter((item, index, self) =>
+                        index === self.findIndex(t => t.id === item.id)
+                    );
+                    return deduplicados.sort((a, b) => a.description.localeCompare(b.description));
+                });
+
+                // 2. Obtener detalle de fases asociadas al tipo
                 const detalle = await getLineaTipoAcomById(tipoId);
                 const detalleArray = Array.isArray(detalle) ? detalle : detalle.data || [];
+
                 setDetalleAcondicionamiento(prev => {
                     const combined = [...prev, ...detalleArray];
-                    return combined.filter(
-                        (item, index, self) =>
-                            index === self.findIndex(
-                                t =>
-                                    t.fase === item.fase &&
-                                    t.tipo_acondicionamiento_id === item.tipo_acondicionamiento_id
-                            )
+                    return combined.filter((item, index, self) =>
+                        index === self.findIndex(t =>
+                            t.fase === item.fase &&
+                            t.tipo_acondicionamiento_id === item.tipo_acondicionamiento_id
+                        )
                     );
                 });
-                const faseIds = detalleArray.map((d: DataLineaTipoAcondicionamiento) => Number(d.fase));
-                const fasesSeleccionadas = stages.filter(stage => faseIds.includes(stage.id));
+
+                // 3. Obtener descripción y duración de cada fase vía getStageId
+                const fasesSeleccionadas = (
+                    await Promise.all(
+                        detalleArray.map(async (d: DataLineaTipoAcondicionamiento) => {
+                            if (!d?.fase) return null;
+                            try {
+                                const stageData = await getStageId(Number(d.fase));
+                                const descripcion = stageData?.description?.trim();
+                                if (!descripcion) return null;
+
+                                return {
+                                    id: Number(d.fase),
+                                    description: descripcion,
+                                    duration: stageData.duration ?? "",
+                                    duration_user: stageData.duration_user ?? "",
+                                } satisfies StageFase;
+                            } catch {
+                                return null;
+                            }
+                        })
+                    )
+                ).filter((f): f is StageFase => f !== null);
+
+                // 4. Agregar fases seleccionadas
                 setSelectedStages(prev => {
                     const combined = [...prev, ...fasesSeleccionadas];
-                    return combined.filter(
-                        (item, index, self) =>
-                            index === self.findIndex(t => t.id === item.id)
+                    return combined.filter((item, index, self) =>
+                        index === self.findIndex(t => t.id === item.id)
                     );
                 });
             }
+
+            // Actualizar selección de tipo acondicionamiento
             setTipoSeleccionadoAcon(nuevosSeleccionados);
+
+            // Reset si no queda ninguno
             if (nuevosSeleccionados.length === 0) {
                 setStagesAcon([]);
                 setDetalleAcondicionamiento([]);
                 setSelectedStages([]);
             }
-        } catch {
-            console.error("Error al obtener fases o detalles:");
+        } catch (error) {
+            console.error("Error al obtener fases o detalles:", error);
             setStages([]);
             setSelectedStages([]);
         }
+    };
+
+    const handleSelectStage = (stage: StageFase) => {
+        // Si la etapa ya está seleccionada, no hacemos nada
+        if (selectedStages.some(s => s.id === stage.id)) return;
+        setSelectedStages(prev => [...prev, stage]);
+    };
+
+    const handleDragStart = (e: React.DragEvent<HTMLDivElement>, index: number) => {
+        setDraggedIndex(index);
+        e.dataTransfer.effectAllowed = "move";
+    };
+
+    const handleDragOver = (e: React.DragEvent<HTMLDivElement>, index: number) => {
+        e.preventDefault(); // necesario para permitir el drop
+        setDraggedIndex(index);
+    };
+
+    const handleDrop = (e: React.DragEvent<HTMLDivElement>, index: number) => {
+        e.preventDefault();
+        if (draggedIndex === null || draggedIndex === index) return;
+
+        const reorderedStages = [...selectedStages];
+        const [movedStage] = reorderedStages.splice(draggedIndex, 1);
+        reorderedStages.splice(index, 0, movedStage);
+
+        setSelectedStages(reorderedStages);
+        setDraggedIndex(null);
+        setDraggedIndex(null);
+    };
+
+    const handleRemoveStage = (stage: StageFase) => {
+        setSelectedStages(prev => prev.filter(s => s.id !== stage.id));
     };
 
     useEffect(() => {
@@ -175,9 +248,9 @@ const Maestra = ({ canEdit = false, canView = false }: CreateClientProps) => {
     useEffect(() => {
         const fetchTipos = async () => {
             try {
-                const tipos = await getTipo(); // TipoAcondicionamiento[]
-                const descripciones = tipos.map(t => t.descripcion); // string[]
-                setTiposProducto(descripciones); // ✅ ahora sí
+                const tipos = await getTipo();
+                console.log(tipos);
+                setTiposProducto(tipos)
             } catch {
                 console.error('Error al obtener los tipos');
             }
@@ -185,41 +258,6 @@ const Maestra = ({ canEdit = false, canView = false }: CreateClientProps) => {
 
         fetchTipos();
     }, []);
-
-    // Manejo de selección/deselección de fases
-    const handleSelectStage = (stage: Stage) => {
-        // Si la etapa ya está seleccionada, no hacemos nada
-        if (selectedStages.some(s => s.id === stage.id)) return;
-        setSelectedStages(prev => [...prev, stage]);
-    };
-
-    const handleDragStart = (e: React.DragEvent<HTMLDivElement>, index: number) => {
-        setDraggedIndex(index);
-        e.dataTransfer.effectAllowed = "move";
-    };
-
-
-    const handleDragOver = (e: React.DragEvent<HTMLDivElement>, index: number) => {
-        e.preventDefault(); // necesario para permitir el drop
-        setDraggedIndex(index);
-    };
-
-    const handleDrop = (e: React.DragEvent<HTMLDivElement>, index: number) => {
-        e.preventDefault();
-        if (draggedIndex === null || draggedIndex === index) return;
-
-        const reorderedStages = [...selectedStages];
-        const [movedStage] = reorderedStages.splice(draggedIndex, 1);
-        reorderedStages.splice(index, 0, movedStage);
-
-        setSelectedStages(reorderedStages);
-        setDraggedIndex(null);
-        setDraggedIndex(null);
-    };
-
-    const handleRemoveStage = (stage: Stage) => {
-        setSelectedStages(prev => prev.filter(s => s.id !== stage.id));
-    };
 
     // Validación y envío del formulario
     const handleSubmit = async () => {
@@ -293,6 +331,12 @@ const Maestra = ({ canEdit = false, canView = false }: CreateClientProps) => {
     // Abrir modal de edición
     const handleEdit = async (id: number) => {
         try {
+            // Asegurarse de que las fases estén cargadas antes de continuar
+            if (stages.length === 0) {
+                const loadedStages = await getStage();
+                setStages(loadedStages);
+            }
+
             const data = await getMaestraId(id);
 
             setEditingMaestra(data);
@@ -317,6 +361,13 @@ const Maestra = ({ canEdit = false, canView = false }: CreateClientProps) => {
             setStagesAcon([]);
             setDetalleAcondicionamiento([]);
             setSelectedStages([]);
+
+            // Esperar a que las fases estén listas antes de continuar
+            let currentStages = stages;
+            if (currentStages.length === 0) {
+                currentStages = await getStage();
+                setStages(currentStages);
+            }
 
             for (const tipoId of tiposAcond) {
                 const response = await lisTipoacondicionamientoId(tipoId);
@@ -343,7 +394,7 @@ const Maestra = ({ canEdit = false, canView = false }: CreateClientProps) => {
                 });
 
                 const faseIds = detalleArray.map(d => Number(d.fase));
-                const fasesSeleccionadas = stages.filter(stage => faseIds.includes(stage.id));
+                const fasesSeleccionadas = currentStages.filter(stage => faseIds.includes(stage.id));
 
                 setSelectedStages(prev => {
                     const combined = [...prev, ...fasesSeleccionadas];
@@ -355,7 +406,7 @@ const Maestra = ({ canEdit = false, canView = false }: CreateClientProps) => {
 
             // Stages generales (no por acondicionamiento)
             const selectedStageIds = data.type_stage;
-            const selectedStagesData = stages.filter(stage => selectedStageIds.includes(stage.id));
+            const selectedStagesData = currentStages.filter(stage => selectedStageIds.includes(stage.id));
 
             setSelectedStages(prev => {
                 const combined = [...prev, ...selectedStagesData];
@@ -524,7 +575,7 @@ const Maestra = ({ canEdit = false, canView = false }: CreateClientProps) => {
                                     -- Seleccione un tipo de producto --
                                 </option>
                                 {tiposProducto.map((tipo) => (
-                                    <option key={tipo} value={tipo}>
+                                    <option key={tipo} value={tipo} className="text-black">
                                         {tipo}
                                     </option>
                                 ))}
@@ -539,7 +590,7 @@ const Maestra = ({ canEdit = false, canView = false }: CreateClientProps) => {
                         </Text>
                         <div className="flex flex-col md:flex-row space-y-4 md:space-y-0 md:space-x-4">
                             <div className="w-full md:w-1/2 border p-4 max-h-60 overflow-y-auto rounded-xl bg-white shadow-sm">
-                                <Text type="subtitle" color="text-[#000]">Acondicionamientos Disponibles</Text>
+                                <Text type="subtitle">Acondicionamientos Disponibles</Text>
 
                                 <div className="relative mb-3">
                                     <Search className="absolute left-3 top-2.5 w-4 h-4 text-gray-500" />
@@ -584,7 +635,7 @@ const Maestra = ({ canEdit = false, canView = false }: CreateClientProps) => {
 
                             {/* Lista de fases disponibles */}
                             <div className="w-full md:w-1/2 border p-4 max-h-60 overflow-y-auto rounded-xl bg-white shadow-sm">
-                                <Text type="subtitle" color="text-[#000]">Fases Disponibles</Text>
+                                <Text type="subtitle">Fases Disponibles</Text>
 
                                 <div className="relative mb-3">
                                     <Search className="absolute left-3 top-2.5 w-4 h-4 text-gray-500" />
@@ -597,28 +648,32 @@ const Maestra = ({ canEdit = false, canView = false }: CreateClientProps) => {
                                         disabled={!canEdit}
                                     />
                                 </div>
-
                                 {stages.length > 0 ? (
                                     stages
-                                        .filter((stage) => stage.status) // solo activos
-                                        .filter((stage) =>
+                                        .filter(stage => stage.status !== false)
+                                        .filter(stage => {
+                                            // Bloquear si está en seleccionadas o si está en detalleAcondicionamiento
+                                            const yaSeleccionada = selectedStages.some(s => s.id === stage.id);
+                                            const yaBloqueadaPorTipo = detalleAcondicionamiento.some(d => Number(d.fase) === stage.id);
+                                            return !yaSeleccionada && !yaBloqueadaPorTipo;
+                                        })
+                                        .filter(stage =>
                                             stage.description.toLowerCase().includes(searchStage.toLowerCase())
                                         )
-                                        .map((stage) => {
-                                            const isSelected = selectedStages.some((s) => s.id === stage.id);
+                                        .map(stage => {
+                                            // Bloquear si está en seleccionadas o si está en detalleAcondicionamiento
+                                            const bloqueada =
+                                                selectedStages.some(s => s.id === stage.id) ||
+                                                detalleAcondicionamiento.some(d => Number(d.fase) === stage.id);
                                             return (
                                                 <div key={stage.id} className="p-2 border-b">
                                                     <button
-                                                        disabled={isSelected || !canEdit}
-                                                        className={`w-full text-sm transition text-center ${isSelected
-                                                            ? "text-gray-400 cursor-not-allowed"
-                                                            : "text-blue-500 hover:text-blue-700"
+                                                        disabled={!canEdit || bloqueada}
+                                                        className={`w-full text-sm text-center transition ${bloqueada ? 'text-gray-400 cursor-not-allowed' : 'text-blue-500 hover:text-blue-700'
                                                             }`}
-                                                        onClick={() => {
-                                                            if (!isSelected) handleSelectStage(stage);
-                                                        }}
+                                                        onClick={() => !bloqueada && handleSelectStage(stage)}
                                                     >
-                                                        {stage.description}
+                                                        {bloqueada ? `🔒 ${stage.description}` : stage.description}
                                                     </button>
                                                 </div>
                                             );
@@ -626,40 +681,40 @@ const Maestra = ({ canEdit = false, canView = false }: CreateClientProps) => {
                                 ) : (
                                     <p className="text-gray-500 text-center">No hay fases disponibles</p>
                                 )}
+
                             </div>
 
                             {/* Lista de fases seleccionadas */}
                             <div className="w-full md:w-1/2 p-4 rounded-xl bg-white border shadow-sm">
-                                <Text type="subtitle" color="text-[#000]">Fases Seleccionadas</Text>
-                                {selectedStages.map((stage, index) => {
-                                    const faseDetalle = detalleAcondicionamiento.find(d => Number(d.fase) === Number(stage.id));
-                                    const isEditable = faseDetalle ? Boolean(Number(faseDetalle.editable)) : true;
+                                <Text type="subtitle">Fases Seleccionadas</Text>
+                                {selectedStages.length > 0 ? (
+                                    selectedStages.map((stage, index) => {
+                                        const faseDetalle = detalleAcondicionamiento.find(d => Number(d.fase) === stage.id);
+                                        const isEditable = faseDetalle ? Boolean(Number(faseDetalle.editable)) : true;
 
-                                    const handleStart = (e: React.DragEvent<HTMLDivElement>) => handleDragStart(e, index);
-                                    const handleOver = (e: React.DragEvent<HTMLDivElement>) => handleDragOver(e, index);
-                                    const handleDropStage = (e: React.DragEvent<HTMLDivElement>) => handleDrop(e, index);
-
-                                    return (
-                                        <div
-                                            key={stage.id}
-                                            draggable={isEditable || !canEdit}
-                                            onDragStart={handleStart}
-                                            onDragOver={handleOver}
-                                            onDrop={handleDropStage}
-                                            className={`flex items-center rounded-full px-3 py-1 text-sm transition-all ${isEditable || !canEdit
-                                                ? "bg-gray-100 text-gray-800 hover:bg-red-400 hover:text-white cursor-pointer"
-                                                : "bg-gray-200 text-gray-500 cursor-not-allowed"
-                                                }`}
-                                            onClick={() => {
-                                                if (isEditable) handleRemoveStage(stage);
-                                            }}
-                                            style={{ userSelect: "none" }}
-                                        >
-                                            {stage.description}
-                                            {(isEditable || !canEdit) && <X className="w-4 h-4 ml-2" />}
-                                        </div>
-                                    );
-                                })}
+                                        return (
+                                            <div
+                                                key={stage.id}
+                                                draggable={isEditable || !canEdit}  // solo si es editable permite drag
+                                                onDragStart={(e) => void handleDragStart(e, index)}
+                                                onDragOver={(e) => void handleDragOver(e, index)}
+                                                onDrop={(e) => void handleDrop(e, index)}
+                                                className={`flex items-center rounded-full px-3 py-1 text-sm transition-all ${isEditable || !canEdit
+                                                    ? "bg-gray-100 text-gray-800 hover:bg-red-400 hover:text-white cursor-pointer"
+                                                    : "bg-gray-200 text-gray-500 cursor-not-allowed"}`}
+                                                onClick={() => {
+                                                    if (isEditable) handleRemoveStage(stage);
+                                                }}
+                                                style={{ userSelect: "none" }} // para que no seleccione texto al drag
+                                            >
+                                                {stage.description}
+                                                {isEditable || !canEdit && <X className="w-4 h-4 ml-2" />}
+                                            </div>
+                                        );
+                                    })
+                                ) : (
+                                    <p className="text-gray-400 text-sm text-center mt-4">No hay fases seleccionadas</p>
+                                )}
                             </div>
                         </div>
                         <div className="flex flex-col md:flex-row gap-4 mt-2">

@@ -538,7 +538,7 @@ function BOMManager({ canEdit = false, canView = false }: CreateClientProps) {
 
             <Table
                 columns={["client_name", "article_codart", "article_desart", "status"]}
-                rows={boms.map(a => ({ ...a }))}
+                rows={boms}
                 columnLabels={{
                     client_name: "Cliente",
                     article_codart: "Código Artículo",

@@ -1,7 +1,6 @@
 import axios from 'axios';
 import { API_URL } from '../../config/api';
 import { MaestraBase, DataService, MaestraResponse, MaestrasServ } from '../../interfaces/NewMaestra';
-import { TipoAcondicionamiento } from "@/app/interfaces/NewTipoAcondicionamiento";
 
 const Maestras = axios.create({
   baseURL: API_URL,
@@ -38,7 +37,7 @@ export const getMaestra = async (): Promise<MaestraBase[]> => {
   }
 };
 
-export const getTipo = async (): Promise<TipoAcondicionamiento[]> => {
+export const getTipo = async (): Promise<string[]> => {
   try {
     const response = await Maestras.get("/getTipo");
     return response.data;

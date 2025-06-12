@@ -11,6 +11,10 @@ export interface DataTipoAcondicionamiento {
     status: boolean;
 };
 
+export interface Tipo { 
+    tipo: string[], 
+};
+
 
 export interface LineaTipoAcondicionamiento {
     id: number;

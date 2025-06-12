@@ -402,7 +402,7 @@ export default function NewActivity({ canEdit = false, canView = false }: Create
 
             {/* Tabla de actividades */}
             <Table columns={["description", "binding"]}
-                rows={activities.map(a => ({ ...a }))}
+                rows={activities}
                 columnLabels={{
                     description: "Descripción",
                     binding: "Obligatorio",

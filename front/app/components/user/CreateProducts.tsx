@@ -35,7 +35,7 @@ function Products({ canEdit = false, canView = false }: CreateClientProps) {
   // Estado para la lista de auditorías
   const [auditList, setAuditList] = useState<Audit[]>([]);
   // Estado para la auditoría seleccionada (no se usa, pero se deja para posible ampliación)
-  const [, setSelectedAudit] = useState<Audit | null>(null); 
+  const [, setSelectedAudit] = useState<Audit | null>(null);
 
   // Efecto para cargar productos si el usuario puede verlos
   useEffect(() => {
@@ -218,8 +218,8 @@ function Products({ canEdit = false, canView = false }: CreateClientProps) {
       {/* Tabla de productos */}
       <Table
         columns={["name"]}
-        rows={products.map(a => ({ ...a }))}
-        columnLabels={{name: "Nombre"}}
+        rows={products}
+        columnLabels={{ name: "Nombre" }}
         onDelete={canEdit ? handleDelete : undefined}
         onEdit={openEditModal}
         onHistory={handleHistory}

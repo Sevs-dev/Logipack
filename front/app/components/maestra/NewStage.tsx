@@ -565,7 +565,7 @@ function NewStage({ canEdit = false, canView = false }: CreateClientProps) {
 
             {/* Tabla de fases */}
             <Table columns={["description", "phase_type", "status"]}
-                rows={stage.map(a => ({ ...a }))}
+                rows={stage}
                 columnLabels={{
                     description: "Descripción",
                     phase_type: "Tipo de Fase",
