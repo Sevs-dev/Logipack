@@ -383,14 +383,14 @@ function CreateUser({ canEdit = false, canView = false }: CreateClientProps) {
       {/* Tabla de usuarios */}
       <Table
         columns={["name", "email", "role"]}
-        rows={users.map(a => ({ ...a }))}
+        rows={users}
         columnLabels={{
           name: "Nombre",
           email: "Email",
           role: "Rol"
         }}
         onDelete={canEdit ? handleDelete : undefined}
-        onEdit={handleEdit} 
+        onEdit={handleEdit}
       />
 
     </div>

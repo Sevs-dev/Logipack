@@ -214,58 +214,52 @@ function NewAdaptation({ canEdit = false, canView = false }: CreateClientProps) 
     }, [articles, selectedArticles]); // 👈 Ahora depende de `articles` y `selectedArticles`
 
     // Cargar BOM (Bill of Materials) si el cliente y las maestras son válidas
-    // Cargar BOM (Bill of Materials) si el cliente y las maestras son válidas
     useEffect(() => {
         if (!selectedClient || selectedMaestras.length === 0) return;
-
         const selectedMaestraObj = maestra.find(
             (m) => m.id.toString() === selectedMaestras[0]
         );
-
         if (!selectedMaestraObj?.requiere_bom) {
             setBoms([]);
             setIngredients([]);
             return;
         }
-
         const fetchBom = async () => {
             try {
                 const clientData = await getClientsId(Number(selectedClient));
                 const articlesWithBom: Article[] = await getArticleByClient(clientData.id);
-
-                // Extraer los BOMs desde cada artículo
                 const bomsExtraidos: Bom[] = articlesWithBom
                     .map(article => article.bom)
                     .filter((bom): bom is Bom & { ingredients?: string } => !!bom);
-
-                if (bomsExtraidos.length > 0) {
-                    // Map Bom[] to BOM[] and convert status from boolean to number
-                    setBoms(
-                        bomsExtraidos.map((bom) => ({
-                            ...bom,
-                            status: bom.status ? 1 : 0,
-                        }))
-                    );
-
-                    // Solo parsea los ingredientes si están presentes
-                    const firstBom = bomsExtraidos[0];
-                    if (firstBom.ingredients) {
+                if (bomsExtraidos.length === 0) {
+                    setBoms([]);
+                    setIngredients([]);
+                    return;
+                }
+                setBoms(
+                    bomsExtraidos.map((bom) => ({
+                        ...bom,
+                        status: bom.status ? 1 : 0,
+                    }))
+                );
+                const firstBom = bomsExtraidos[0];
+                if (firstBom.ingredients) {
+                    try {
                         const parsedIngredients: Ingredient[] = JSON.parse(firstBom.ingredients);
                         setIngredients(parsedIngredients);
-                    } else {
+                    } catch (err) {
+                        console.warn("Ingredientes mal formateados en el primer BOM", err);
                         setIngredients([]);
                     }
                 } else {
-                    setBoms([]);
                     setIngredients([]);
                 }
             } catch (error) {
-                console.error("Error al obtener los BOMs", error);
+                console.error("Error al obtener los BOMs o los artículos:", error);
                 setBoms([]);
                 setIngredients([]);
             }
         };
-
         fetchBom();
     }, [selectedClient, selectedMaestras, maestra]);
 
@@ -300,7 +294,6 @@ function NewAdaptation({ canEdit = false, canView = false }: CreateClientProps) 
 
     // Verifica si la maestra seleccionada requiere BOM (Bill of Materials)
     const maestraRequiereBOM = maestraSeleccionada?.requiere_bom ?? false; // Default a `false` si no está definida
-
     // Función para manejar los cambios en los campos de los ingredientes
     const handleChange = (index: number, field: keyof Ingredient, value: string): void => {
         // Crea una copia del array de ingredientes
@@ -739,7 +732,7 @@ function NewAdaptation({ canEdit = false, canView = false }: CreateClientProps) 
                                 <select
                                     className="w-full border p-3 rounded-lg text-gray-800 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500  text-center"
                                     value={selectedMaestras.length > 0 ? selectedMaestras[0] : ""}
-                                    onChange={(e) => setSelectedClient(Number(e.target.value))}
+                                    onChange={(e) => setSelectedMaestras([e.target.value])}
                                     disabled={!canEdit}
                                 >
                                     <option value="">Seleccione...</option>
@@ -869,149 +862,181 @@ function NewAdaptation({ canEdit = false, canView = false }: CreateClientProps) 
                             </div>
                         </div>
 
-                        <div className="flex-[1] flex gap-6 flex-wrap">
-                            {/* Campos en grid responsivo */}
-                            {maestraRequiereBOM ? (
-                                <div className="flex-1 min-w-[250px] border-2 border-dashed border-blue-300 rounded-lg p-4 bg-blue-50 transition-colors">
-                                    {/* Número de Orden */}
-                                    <div>
-                                        <Text type="subtitle" color="text-[#000]">N° Orden del Cliente:</Text>
-                                        <input
-                                            type="text"
-                                            className="w-full border p-3 rounded-lg text-gray-800 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500 text-center"
-                                            value={orderNumber}
-                                            onChange={e => setOrderNumber(e.target.value)}
-                                            disabled={!canEdit}
-                                        />
-                                    </div>
 
-                                    {/* Fecha Entrega */}
-                                    <div>
-                                        <Text type="subtitle" color="text-[#000]">Fecha Entrega:</Text>
-                                        <input
-                                            type="date"
-                                            className="w-full border p-3 rounded-lg text-gray-800 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500 text-center"
-                                            value={deliveryDate}
-                                            onChange={e => setDeliveryDate(e.target.value)}
-                                            disabled={!canEdit}
-                                        />
-                                    </div>
-
-                                    {/* Cantidad a producir */}
-                                    <div>
-                                        <Text type="subtitle" color="text-[#000]">Cantidad a Producir:</Text>
-                                        <input
-                                            type="number"
-                                            className="w-full border p-3 rounded-lg text-gray-800 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500 text-center"
-                                            value={quantityToProduce}
-                                            onChange={e => setQuantityToProduce(e.target.value)}
-                                            min={1}
-                                            disabled={!canEdit}
-                                        />
-                                    </div>
-                                    {/* Lote */}
-
-                                    <div>
-                                        <Text type="subtitle" color="text-[#000]">Lote:</Text>
-                                        <input
-                                            type="text"
-                                            className="w-full border p-3 rounded-lg text-gray-800 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500 text-center"
-                                            value={lot}
-                                            onChange={e => setLot(e.target.value)}
-                                            disabled={!canEdit}
-                                        />
-                                    </div>
-
-                                    {/* Registro Sanitario */}
-                                    <div>
-                                        <Text type="subtitle" color="text-[#000]">Registro Sanitario:</Text>
-                                        <input
-                                            type="text"
-                                            className="w-full border p-3 rounded-lg text-gray-800 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500 text-center"
-                                            value={healthRegistration}
-                                            onChange={e => setHealthRegistration(e.target.value)}
-                                            disabled={!canEdit}
-                                        />
-                                    </div>
-
-                                    {/* Adjunto */}
-                                    <div className="flex flex-col">
-                                        <Text type="subtitle" color="text-[#000]">Adjuntar:</Text>
-                                        {canEdit && (
-                                            <File onChange={setAttachment} />
-                                        )}
-                                    </div>
+                        {/* Campos en grid responsivo */}
+                        {maestraRequiereBOM ? (
+                            <div className="col-span-full grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 p-4 border border-gray-300 rounded-md bg-white shadow-sm hover:shadow-md transition-shadow">
+                                {/* Número de Orden */}
+                                <div>
+                                    <Text type="subtitle" color="text-[#000]">N° Orden del Cliente Con:</Text>
+                                    <input
+                                        type="text"
+                                        className="w-full border p-3 rounded-lg text-gray-800 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500 text-center"
+                                        value={orderNumber}
+                                        onChange={e => setOrderNumber(e.target.value)}
+                                        disabled={!canEdit}
+                                    />
                                 </div>
-                            ) : (
-                                <div className="border border-blue-300 p-3 mb-3 rounded-md cursor-grab bg-teal-50 shadow-sm hover:shadow-md transition-shadow flex justify-between items-center">
-                                    {selectedArticles.map((article) => (
-                                        <div key={article.codart} className="border border-gray-200 p-4 rounded-lg bg-gray-50">
-                                            <Text type="title">Artículo: {article.codart}</Text>
-                                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                                                <div className="col-span-1">
-                                                    <Text type="subtitle" color="text-[#000]">N° Orden del Cliente:</Text>
-                                                    <input
-                                                        type="number"
-                                                        className="border border-gray-300 rounded-md px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-500 text-center text-black"
-                                                        value={articleFields[article.codart]?.orderNumber || ""}
-                                                        onChange={(e) => handleFieldChange(article.codart, "orderNumber", e.target.value)} // <-- aquí
-                                                        disabled={!canEdit}
+
+                                {/* Fecha Entrega */}
+                                <div>
+                                    <Text type="subtitle" color="text-[#000]">Fecha Entrega:</Text>
+                                    <input
+                                        type="date"
+                                        className="w-full border p-3 rounded-lg text-gray-800 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500 text-center"
+                                        value={deliveryDate}
+                                        onChange={e => setDeliveryDate(e.target.value)}
+                                        disabled={!canEdit}
+                                    />
+                                </div>
+
+                                {/* Cantidad a producir */}
+                                <div>
+                                    <Text type="subtitle" color="text-[#000]">Cantidad a Producir:</Text>
+                                    <input
+                                        type="number"
+                                        className="w-full border p-3 rounded-lg text-gray-800 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500 text-center"
+                                        value={quantityToProduce}
+                                        onChange={e => setQuantityToProduce(e.target.value)}
+                                        min={1}
+                                        disabled={!canEdit}
+                                    />
+                                </div>
+                                {/* Lote */}
+
+                                <div>
+                                    <Text type="subtitle" color="text-[#000]">Lote:</Text>
+                                    <input
+                                        type="text"
+                                        className="w-full border p-3 rounded-lg text-gray-800 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500 text-center"
+                                        value={lot}
+                                        onChange={e => setLot(e.target.value)}
+                                        disabled={!canEdit}
+                                    />
+                                </div>
+
+                                {/* Registro Sanitario */}
+                                <div>
+                                    <Text type="subtitle" color="text-[#000]">Registro Sanitario:</Text>
+                                    <input
+                                        type="text"
+                                        className="w-full border p-3 rounded-lg text-gray-800 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500 text-center"
+                                        value={healthRegistration}
+                                        onChange={e => setHealthRegistration(e.target.value)}
+                                        disabled={!canEdit}
+                                    />
+                                </div>
+
+                                {/* Adjunto */}
+                                <div className="flex flex-col">
+                                    <Text type="subtitle" color="text-[#000]">Adjuntar:</Text>
+                                    {canEdit && (
+                                        <File onChange={setAttachment} />
+                                    )}
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="grid gap-4 col-span-full sm:grid-cols-2  rounded-xl p-4 bg-white shadow-sm">
+                                {selectedArticles.map((article) => (
+                                    <div
+                                        key={article.codart}
+                                        className="border rounded-lg shadow-sm hover:shadow-md transition-shadow duration-200 p-5 flex flex-col gap-4 "
+                                    >
+                                        <Text type="title" color="text-gray-800">
+                                            Artículo: {article.codart}
+                                        </Text>
+
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-3">
+                                            {/* N° Orden del Cliente */}
+                                            <div>
+                                                <Text type="subtitle" color="text-gray-700">N° Orden del Cliente:</Text>
+                                                <input
+                                                    type="number"
+                                                    className="w-full border border-gray-300 p-2 rounded-md mt-1 focus:outline-none focus:ring-2 focus:ring-blue-400 text-center text-gray-800"
+                                                    value={articleFields[article.codart]?.orderNumber || ""}
+                                                    onChange={(e) =>
+                                                        handleFieldChange(article.codart, "orderNumber", e.target.value)
+                                                    }
+                                                    disabled={!canEdit}
+                                                />
+                                            </div>
+
+                                            {/* Fecha Entrega */}
+                                            <div>
+                                                <Text type="subtitle" color="text-gray-700">Fecha Entrega:</Text>
+                                                <input
+                                                    type="date"
+                                                    className="w-full border border-gray-300 p-2 rounded-md mt-1 focus:outline-none focus:ring-2 focus:ring-blue-400 text-center text-gray-800"
+                                                    value={articleFields[article.codart]?.deliveryDate || ""}
+                                                    onChange={(e) =>
+                                                        handleFieldChange(article.codart, "deliveryDate", e.target.value)
+                                                    }
+                                                    disabled={!canEdit}
+                                                />
+                                            </div>
+
+                                            {/* Cant. Teórica */}
+                                            <div>
+                                                <Text type="subtitle" color="text-gray-700">Cant. Teórica:</Text>
+                                                <input
+                                                    type="number"
+                                                    className="w-full border border-gray-300 p-2 rounded-md mt-1 focus:outline-none focus:ring-2 focus:ring-blue-400 text-center text-gray-800"
+                                                    value={articleFields[article.codart]?.quantityToProduce || ""}
+                                                    onChange={(e) =>
+                                                        handleFieldChange(
+                                                            article.codart,
+                                                            "quantityToProduce",
+                                                            Number(e.target.value)
+                                                        )
+                                                    }
+                                                    disabled={!canEdit}
+                                                />
+                                            </div>
+
+                                            {/* Lote */}
+                                            <div>
+                                                <Text type="subtitle" color="text-gray-700">Lote:</Text>
+                                                <input
+                                                    type="text"
+                                                    className="w-full border border-gray-300 p-2 rounded-md mt-1 focus:outline-none focus:ring-2 focus:ring-blue-400 text-center text-gray-800"
+                                                    value={articleFields[article.codart]?.lot || ""}
+                                                    onChange={(e) =>
+                                                        handleFieldChange(article.codart, "lot", e.target.value)
+                                                    }
+                                                    disabled={!canEdit}
+                                                />
+                                            </div>
+
+                                            {/* R. Sanitario */}
+                                            <div>
+                                                <Text type="subtitle" color="text-gray-700">R. Sanitario:</Text>
+                                                <input
+                                                    type="text"
+                                                    className="w-full border border-gray-300 p-2 rounded-md mt-1 focus:outline-none focus:ring-2 focus:ring-blue-400 text-center text-gray-800"
+                                                    value={articleFields[article.codart]?.healthRegistration || ""}
+                                                    onChange={(e) =>
+                                                        handleFieldChange(article.codart, "healthRegistration", e.target.value)
+                                                    }
+                                                    disabled={!canEdit}
+                                                />
+                                            </div>
+
+                                            {/* Adjuntar */}
+                                            <div className="flex flex-col justify-end">
+                                                <Text type="subtitle" color="text-gray-700">Adjuntar:</Text>
+                                                {canEdit && (
+                                                    <File
+                                                        onChange={(file) =>
+                                                            handleFieldChange(article.codart, "attachment", file)
+                                                        }
                                                     />
-                                                </div>
-                                                <div className="col-span-1">
-                                                    <Text type="subtitle" color="text-[#000]">Fecha Entrega:</Text>
-                                                    <input
-                                                        type="date"
-                                                        className="border border-gray-300 rounded-md px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-500 text-center text-black"
-                                                        value={articleFields[article.codart]?.deliveryDate || ""}
-                                                        onChange={(e) => handleFieldChange(article.codart, "deliveryDate", e.target.value)}
-                                                        disabled={!canEdit}
-                                                    />
-                                                </div>
-                                                <div className="col-span-1">
-                                                    <Text type="subtitle" color="text-[#000]">Cant. a Teorica:</Text>
-                                                    <input
-                                                        type="number"
-                                                        className="border border-gray-300 rounded-md px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-500 text-center text-black"
-                                                        value={articleFields[article.codart]?.quantityToProduce || ""}
-                                                        onChange={(e) => handleFieldChange(article.codart, "quantityToProduce", Number(e.target.value))}
-                                                        disabled={!canEdit}
-                                                    />
-                                                </div>
-                                                <div className="col-span-1">
-                                                    <Text type="subtitle" color="text-[#000]">Lote:</Text>
-                                                    <input
-                                                        type="text"
-                                                        className="border border-gray-300 rounded-md px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-500 text-center text-black"
-                                                        value={articleFields[article.codart]?.lot || ""}
-                                                        onChange={(e) => handleFieldChange(article.codart, "lot", e.target.value)}
-                                                        disabled={!canEdit}
-                                                    />
-                                                </div>
-                                                <div className="col-span-1">
-                                                    <Text type="subtitle" color="text-[#000]">R. Sanitario:</Text>
-                                                    <input
-                                                        type="text"
-                                                        className="border border-gray-300 rounded-md px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-500 text-center text-black"
-                                                        value={articleFields[article.codart]?.healthRegistration || ""}
-                                                        onChange={(e) => handleFieldChange(article.codart, "healthRegistration", e.target.value)}
-                                                        disabled={!canEdit}
-                                                    />
-                                                </div>
-                                                <div className="col-span-1 flex flex-col">
-                                                    <Text type="subtitle" color="text-[#000]">Adjuntar:</Text>
-                                                    {canEdit && (
-                                                        <File
-                                                            onChange={(file) => handleFieldChange(article.codart, "attachment", file)}
-                                                        />
-                                                    )}
-                                                </div>
+                                                )}
                                             </div>
                                         </div>
-                                    ))}
-                                </div>
-                            )}
-                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
 
                         {/* Materiales */}
                         {maestraRequiereBOM ? (
@@ -1079,7 +1104,7 @@ function NewAdaptation({ canEdit = false, canView = false }: CreateClientProps) 
 
             <Table
                 columns={["client_name", "number_order"]}
-                rows={adaptation.map(a => ({ ...a }))}
+                rows={adaptation}
                 columnLabels={{
                     client_name: "Cliente",
                     number_order: "N° Orden",

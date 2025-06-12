@@ -1,6 +1,5 @@
 export interface Stage {
-  id: number;
-  code: number;
+  id: number; 
   description: string;
   phase_type: string;
   repeat: boolean;
@@ -38,4 +37,11 @@ export interface StageResponse {
 
 export interface ErrorResponse {
   message?: string;
+}
+
+export interface StageFase {
+  id: number; 
+  description: string;
+  duration: string;
+  duration_user: string;
 }
