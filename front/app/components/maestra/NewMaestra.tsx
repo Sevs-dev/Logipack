@@ -272,7 +272,7 @@ const Maestra = ({ canEdit = false, canView = false }: CreateClientProps) => {
         const fetchTipos = async () => {
             try {
                 const tipos = await getTipo();
-                console.log(tipos);
+                // console.log(tipos);
                 setTiposProducto(tipos)
             } catch {
                 console.error('Error al obtener los tipos');

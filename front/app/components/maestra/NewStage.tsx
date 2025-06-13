@@ -106,14 +106,13 @@ function NewStage({ canEdit = false, canView = false }: CreateClientProps) {
             can_pause: canPause,
             status,
             multi,
-            activities: [],
             duration_user: durationUser,
             duration,
+            activities: [], // 👈 Siempre inicializado
         };
 
-        if (phaseType === "Actividades" || phaseType === "Control" || phaseType === "Procesos") {
-            const activityIds = selectedActivities.map((activity) => activity.id);
-            newStage.activities = activityIds;  // sin stringify
+        if (["Actividades", "Control", "Procesos"].includes(phaseType)) {
+            newStage.activities = selectedActivities.map((activity) => activity.id);
         }
 
         try {
@@ -126,8 +125,8 @@ function NewStage({ canEdit = false, canView = false }: CreateClientProps) {
             } else {
                 showError("Error al crear la fase");
             }
-        } catch {
-            console.error("Error al guardar la fase:");
+        } catch (error) {
+            console.error("Error al guardar la fase:", error);
             showError("Ocurrió un error al guardar la fase");
         }
     };
@@ -148,7 +147,6 @@ function NewStage({ canEdit = false, canView = false }: CreateClientProps) {
             }
         }
     }, [availableActivities, editingStage, phaseType]);
-
 
     useEffect(() => {
         const total = selectedActivities.reduce(

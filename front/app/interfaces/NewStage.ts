@@ -1,5 +1,5 @@
 export interface Stage {
-  id: number; 
+  id: number;
   description: string;
   phase_type: string;
   repeat: boolean;
@@ -24,7 +24,7 @@ export interface Data {
   can_pause: boolean;
   status: boolean;
   multi: boolean;
-  activities: number[];
+  activities?: number[];
   duration: string;
   duration_user: string;
   user?: string;
@@ -40,7 +40,7 @@ export interface ErrorResponse {
 }
 
 export interface StageFase {
-  id: number; 
+  id: number;
   description: string;
   duration: string;
   duration_user: string;

@@ -36,7 +36,7 @@ class StagesController extends Controller
             'can_pause' => 'boolean',
             'status' => 'boolean',
             'multi' => 'boolean',
-            'activities' => 'required|array',
+            'activities' => 'nullable|array',
             'duration' => 'nullable|string',
             'duration_user' => 'nullable|string',
             'user' => 'string|nullable',
