@@ -17,14 +17,16 @@ import AuditModal from "../history/AuditModal";
 import { Audit } from "../../interfaces/Audit";
 
 function NewStage({ canEdit = false, canView = false }: CreateClientProps) {
+    // === useState (Modal & Edición) ===
     const [isOpen, setIsOpen] = useState(false);
     const [isEditOpen, setIsEditOpen] = useState(false);
-    const [stage, setStage] = useState<Stage[]>([]);
     const [editingStage, setEditingStage] = useState<Stage | null>(null);
+    // === useState (Form inputs) ===
     const [description, setDescription] = useState("");
     const [duration, setDuration] = useState("");
     const [durationUser, setDurationUser] = useState("");
     const [phaseType, setPhaseType] = useState<string>("");
+    // === useState (Flags) ===
     const [repeat, setRepeat] = useState(false);
     const [repeatLine, setRepeatLine] = useState(false);
     const [repeatMinutes, setRepeatMinutes] = useState("");
@@ -32,28 +34,26 @@ function NewStage({ canEdit = false, canView = false }: CreateClientProps) {
     const [status, setStatus] = useState(false);
     const [multi, setMulti] = useState(false);
     const [canPause, setCanPause] = useState(false);
+    // === useState (Datos y selección) ===
+    const [stage, setStage] = useState<Stage[]>([]);
     const [availableActivities, setAvailableActivities] = useState<{ id: number; description: string; binding: number, duration: number }[]>([]);
     const [selectedActivities, setSelectedActivities] = useState<{ id: number; description: string, duration: number }[]>([]);
-    const [searchTerm, setSearchTerm] = useState("");
     const [auditList, setAuditList] = useState<Audit[]>([]);
     const [, setSelectedAudit] = useState<Audit | null>(null);
-    const [isSaving, setIsSaving] = useState(false);
-
-    // Función para obtener las fases
+    const [searchTerm, setSearchTerm] = useState("");
+    const [isSaving, setIsSaving] = useState(false); // Nuevo estado
+    // === Fetchers ===
     const fetchStage = async () => {
         try {
             const data = await getStage();
-            // console.log("Datos obtenidos de las fases:", data); // 🚀 LOG
             setStage(data);
         } catch {
             console.error("Error fetching stages:");
         }
     };
-
+    // === useEffects ===
     useEffect(() => {
-        if (canView) {
-            fetchStage();
-        }
+        if (canView) fetchStage();
     }, [canView]);
 
     useEffect(() => {
@@ -65,8 +65,7 @@ function NewStage({ canEdit = false, canView = false }: CreateClientProps) {
                 showError("Error al cargar las actividades");
             }
         };
-
-        if (phaseType === "Actividades" || phaseType === "Control" || phaseType === "Procesos") {
+        if (["Actividades", "Control", "Procesos"].includes(phaseType)) {
             fetchActivities();
         } else {
             setAvailableActivities([]);
@@ -81,7 +80,6 @@ function NewStage({ canEdit = false, canView = false }: CreateClientProps) {
             availableActivities.length > 0
         ) {
             const selected = editingStage.activities;
-
             if (Array.isArray(selected) && selected.every(item => typeof item === 'object' && item.id)) {
                 setSelectedActivities(selected);
             } else {
@@ -99,6 +97,7 @@ function NewStage({ canEdit = false, canView = false }: CreateClientProps) {
         setDuration(String(total));
     }, [selectedActivities]);
 
+    // === Validación ===
     const validateForm = () => {
         if (!description.trim()) {
             showError("La descripción es obligatoria.");
@@ -112,17 +111,18 @@ function NewStage({ canEdit = false, canView = false }: CreateClientProps) {
             showError("Por favor, ingresa un valor numérico válido para 'Repetir cada (min)'.");
             return false;
         }
-        if ((phaseType === "Actividades" || phaseType === "Control" || phaseType === "Procesos") && selectedActivities.length === 0) {
+        if (["Actividades", "Control", "Procesos"].includes(phaseType) && selectedActivities.length === 0) {
             showError("Debes seleccionar al menos una actividad.");
             return false;
         }
         return true;
     };
 
+    // === Guardado ===
     const handleSave = async () => {
+        if (isSaving) return; // Evita múltiples envíos
         if (!validateForm()) return;
-        if (isSaving) return;
-
+        setIsSaving(true); // Activa loading
         const newStage: Data = {
             description,
             phase_type: phaseType,
@@ -135,13 +135,11 @@ function NewStage({ canEdit = false, canView = false }: CreateClientProps) {
             multi,
             duration_user: durationUser,
             duration,
-            activities: [], // 👈 Siempre inicializado
+            activities: [],
         };
-
         if (["Actividades", "Control", "Procesos"].includes(phaseType)) {
             newStage.activities = selectedActivities.map((activity) => activity.id);
         }
-
         try {
             const response = await createStage(newStage);
             if (response.status === 201) {
@@ -155,16 +153,15 @@ function NewStage({ canEdit = false, canView = false }: CreateClientProps) {
         } catch (error) {
             console.error("Error al guardar la fase:", error);
             showError("Ocurrió un error al guardar la fase");
-        }
-        finally {
-            setIsSaving(false);
+        } finally {
+            setIsSaving(false); // Desactiva loading
         }
     };
 
+    // === Edición ===
     const handleEdit = async (id: number) => {
         try {
             const data = await getStageId(id);
-            // console.log("Datos obtenidos para editar la fase:", data); // 🚀 LOG
             setEditingStage(data);
             setDescription(data.description);
             setPhaseType(data.phase_type);
@@ -182,19 +179,15 @@ function NewStage({ canEdit = false, canView = false }: CreateClientProps) {
             console.error("Error obteniendo datos de la fase:");
             showError("Error obteniendo datos de la fase");
         }
-        finally {
-            setIsSaving(false);
-        }
     };
 
+    // === Actualización ===
     const handleUpdate = async () => {
         if (!editingStage) return;
-        if (isSaving) return;
-        let activityIds: number[] = [];
 
-        if (["Actividades", "Control", "Procesos"].includes(phaseType)) {
-            activityIds = selectedActivities.map(a => a.id);
-        }
+        const activityIds = ["Actividades", "Control", "Procesos"].includes(phaseType)
+            ? selectedActivities.map(a => a.id)
+            : [];
 
         const updatedStage: Data = {
             description,
@@ -210,10 +203,9 @@ function NewStage({ canEdit = false, canView = false }: CreateClientProps) {
             duration_user: durationUser ?? "",
             duration,
         };
-        // console.log("Datos a enviar al actualizar la fase:", updatedStage);
+
         try {
             await updateStage(editingStage.id, updatedStage);
-            // console.log("Respuesta del servidor al actualizar la fase:", response);
             showSuccess("Fase actualizada con éxito");
             setIsEditOpen(false);
             fetchStage();
@@ -224,12 +216,13 @@ function NewStage({ canEdit = false, canView = false }: CreateClientProps) {
         }
     };
 
+    // === Eliminación ===
     const handleDelete = async (id: number) => {
         if (!canEdit) return;
         showConfirm("¿Seguro que quieres eliminar esta fase?", async () => {
             try {
                 await deleteStage(id);
-                setStage((prevStage) => prevStage.filter((stage) => stage.id !== id));
+                setStage(prev => prev.filter((stage) => stage.id !== id));
                 showSuccess("Fase eliminada con éxito");
             } catch {
                 console.error("Error al eliminar fase:");
@@ -238,6 +231,7 @@ function NewStage({ canEdit = false, canView = false }: CreateClientProps) {
         });
     };
 
+    // === Helpers ===
     const resetForm = () => {
         setDescription("");
         setPhaseType("");
@@ -254,7 +248,7 @@ function NewStage({ canEdit = false, canView = false }: CreateClientProps) {
 
     const getFormattedDuration = (minutes: number): string => {
         if (minutes <= 0) return 'menos de 1 minuto';
-        const days = Math.floor(minutes / 1440); // 1440 min = 1 día
+        const days = Math.floor(minutes / 1440);
         const remainingMinutesAfterDays = minutes % 1440;
         const hours = Math.floor(remainingMinutesAfterDays / 60);
         const remainingMinutes = remainingMinutesAfterDays % 60;
@@ -265,13 +259,14 @@ function NewStage({ canEdit = false, canView = false }: CreateClientProps) {
         return parts.join(' ');
     };
 
+    // === Auditoría ===
     const handleHistory = async (id: number) => {
         const model = "Stage";
         try {
             const data = await getAuditsByModel(model, id);
-            console.log(data)
+            console.log(data);
             setAuditList(data);
-            if (data.length > 0) setSelectedAudit(data[0]); // opción: mostrar la primera al abrir
+            if (data.length > 0) setSelectedAudit(data[0]);
         } catch {
             console.error("Error al obtener la auditoría:");
         }
@@ -565,7 +560,7 @@ function NewStage({ canEdit = false, canView = false }: CreateClientProps) {
                                     !description.trim() ||
                                     ((phaseType === "Actividades" || phaseType === "Control") && selectedActivities.length === 0)
                                 }
-                                label={isSaving ? "Guardando..." : editingStage ? "Actualizar" : "Crear"}
+                                label={editingStage ? "Actualizar" : isSaving ? "Guardando..." : "Crear"}
                             />
                         )}
                     </div>
