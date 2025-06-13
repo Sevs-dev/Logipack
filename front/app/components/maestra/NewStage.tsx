@@ -37,6 +37,7 @@ function NewStage({ canEdit = false, canView = false }: CreateClientProps) {
     const [searchTerm, setSearchTerm] = useState("");
     const [auditList, setAuditList] = useState<Audit[]>([]);
     const [, setSelectedAudit] = useState<Audit | null>(null);
+    const [isSaving, setIsSaving] = useState(false);
 
     // Función para obtener las fases
     const fetchStage = async () => {
@@ -73,6 +74,31 @@ function NewStage({ canEdit = false, canView = false }: CreateClientProps) {
         }
     }, [phaseType]);
 
+    useEffect(() => {
+        if (
+            editingStage &&
+            ["Actividades", "Control", "Procesos"].includes(phaseType) &&
+            availableActivities.length > 0
+        ) {
+            const selected = editingStage.activities;
+
+            if (Array.isArray(selected) && selected.every(item => typeof item === 'object' && item.id)) {
+                setSelectedActivities(selected);
+            } else {
+                console.warn("El campo 'activities' no es un array de objetos válidos:", selected);
+                setSelectedActivities([]);
+            }
+        }
+    }, [availableActivities, editingStage, phaseType]);
+
+    useEffect(() => {
+        const total = selectedActivities.reduce(
+            (acc, act) => acc + (Number(act.duration) || 0),
+            0
+        );
+        setDuration(String(total));
+    }, [selectedActivities]);
+
     const validateForm = () => {
         if (!description.trim()) {
             showError("La descripción es obligatoria.");
@@ -95,6 +121,7 @@ function NewStage({ canEdit = false, canView = false }: CreateClientProps) {
 
     const handleSave = async () => {
         if (!validateForm()) return;
+        if (isSaving) return;
 
         const newStage: Data = {
             description,
@@ -129,32 +156,10 @@ function NewStage({ canEdit = false, canView = false }: CreateClientProps) {
             console.error("Error al guardar la fase:", error);
             showError("Ocurrió un error al guardar la fase");
         }
-    };
-
-    useEffect(() => {
-        if (
-            editingStage &&
-            ["Actividades", "Control", "Procesos"].includes(phaseType) &&
-            availableActivities.length > 0
-        ) {
-            const selected = editingStage.activities;
-
-            if (Array.isArray(selected) && selected.every(item => typeof item === 'object' && item.id)) {
-                setSelectedActivities(selected);
-            } else {
-                console.warn("El campo 'activities' no es un array de objetos válidos:", selected);
-                setSelectedActivities([]);
-            }
+        finally {
+            setIsSaving(false);
         }
-    }, [availableActivities, editingStage, phaseType]);
-
-    useEffect(() => {
-        const total = selectedActivities.reduce(
-            (acc, act) => acc + (Number(act.duration) || 0),
-            0
-        );
-        setDuration(String(total));
-    }, [selectedActivities]);
+    };
 
     const handleEdit = async (id: number) => {
         try {
@@ -177,11 +182,14 @@ function NewStage({ canEdit = false, canView = false }: CreateClientProps) {
             console.error("Error obteniendo datos de la fase:");
             showError("Error obteniendo datos de la fase");
         }
+        finally {
+            setIsSaving(false);
+        }
     };
 
     const handleUpdate = async () => {
         if (!editingStage) return;
-
+        if (isSaving) return;
         let activityIds: number[] = [];
 
         if (["Actividades", "Control", "Procesos"].includes(phaseType)) {
@@ -552,8 +560,12 @@ function NewStage({ canEdit = false, canView = false }: CreateClientProps) {
                             <Button
                                 onClick={() => (editingStage ? handleUpdate() : handleSave())}
                                 variant="create"
-                                disabled={!description.trim() || ((phaseType === "Actividades" || phaseType === "Control") && selectedActivities.length === 0)}
-                                label={editingStage ? "Actualizar" : "Crear"}
+                                disabled={
+                                    isSaving ||
+                                    !description.trim() ||
+                                    ((phaseType === "Actividades" || phaseType === "Control") && selectedActivities.length === 0)
+                                }
+                                label={isSaving ? "Guardando..." : editingStage ? "Actualizar" : "Crear"}
                             />
                         )}
                     </div>
