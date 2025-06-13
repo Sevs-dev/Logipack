@@ -41,7 +41,7 @@ function NewStage({ canEdit = false, canView = false }: CreateClientProps) {
     const [auditList, setAuditList] = useState<Audit[]>([]);
     const [, setSelectedAudit] = useState<Audit | null>(null);
     const [searchTerm, setSearchTerm] = useState("");
-    const [isSaving, setIsSaving] = useState(false); // Nuevo estado
+    const [isSaving, setIsSaving] = useState(false);
     // === Fetchers ===
     const fetchStage = async () => {
         try {

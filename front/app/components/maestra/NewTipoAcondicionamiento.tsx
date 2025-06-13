@@ -264,7 +264,7 @@ export default function NewTipoAcondicionamiento({ canEdit = false, canView = fa
                         setIsOpenEdit(false);
                     }} >
                         {/* Título */}
-                        <Text type="title" >{isOpenEdit ? "Editar Tipo de Orden de Acondicionamiento" : "Crear Nuevo Tipo de Acondicionamiento"}</Text>
+                        <Text type="title" color="text-[#000]">{isOpenEdit ? "Editar Tipo de Orden de Acondicionamiento" : "Crear Nuevo Tipo de Acondicionamiento"}</Text>
                         {/* Formulario principal */}
                         <div className="mb-8">
                             <Text type="subtitle" color="text-[#000]">Descripción</Text>
@@ -283,29 +283,29 @@ export default function NewTipoAcondicionamiento({ canEdit = false, canView = fa
                         {/* Tabla y formulario dinámico (solo si se aplicó el tipo base) */}
                         {(btnAplicar || isOpenEdit) && (
                             <>
-                                <Text type="title" >Líneas de Acondicionamiento</Text>
+                                <Text type="title" color="text-[#000]">Líneas de Acondicionamiento</Text>
                                 <div className="overflow-x-auto rounded-lg border border-gray-200 shadow-sm">
-                                    <table className="min-w-full divide-y divide-gray-200 text-gray-700 text-center">
-                                        <thead className="bg-gray-50">
-                                            <tr>
-                                                <th className="px-4 py-3 text-xs font-medium uppercase tracking-wider text-gray-600">Orden</th>
-                                                <th className="px-4 py-3 text-xs font-medium uppercase tracking-wider text-gray-600">Descripción</th>
-                                                <th className="px-4 py-3 text-xs font-medium uppercase tracking-wider text-gray-600">Fase</th>
-                                                <th className="px-4 py-3 text-xs font-medium uppercase tracking-wider text-gray-600">Actividades en Proceso</th>
-                                                <th className="px-4 py-3 text-xs font-medium uppercase tracking-wider text-gray-600">Control</th>
-                                                <th className="px-4 py-3 text-xs font-medium uppercase tracking-wider text-gray-600">Fase Control</th>
+                                    <table className="min-w-full divide-y divide-gray-200 text-gray-700 text-center border border-gray-200">
+                                        <thead className="bg-gray-50 border-b border-gray-200">
+                                            <tr className="border-b border-gray-200">
+                                                <th className="px-4 py-3 text-xs font-medium uppercase tracking-wider text-gray-600 border-r border-gray-200">Orden</th>
+                                                <th className="px-4 py-3 text-xs font-medium uppercase tracking-wider text-gray-600 border-r border-gray-200">Descripción</th>
+                                                <th className="px-4 py-3 text-xs font-medium uppercase tracking-wider text-gray-600 border-r border-gray-200">Fase</th>
+                                                <th className="px-4 py-3 text-xs font-medium uppercase tracking-wider text-gray-600 border-r border-gray-200">Actividades en Proceso</th>
+                                                <th className="px-4 py-3 text-xs font-medium uppercase tracking-wider text-gray-600 border-r border-gray-200">Control</th>
+                                                <th className="px-4 py-3 text-xs font-medium uppercase tracking-wider text-gray-600 border-r border-gray-200">Fase Control</th>
                                                 <th className="px-4 py-3 text-xs font-medium uppercase tracking-wider text-gray-600">Acciones</th>
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-gray-200">
                                             {listLinaTipoAcom.map((item) => (
-                                                <tr key={item.id} className="hover:bg-gray-50 transition-colors">
-                                                    <td className="px-4 py-3">{item.orden}</td>
-                                                    <td className="px-4 py-3">{item.descripcion}</td>
-                                                    <td className="px-4 py-3">{item.descripcion_fase}</td>
-                                                    <td className="px-4 py-3">{item.editable ? "Sí" : "No"}</td>
-                                                    <td className="px-4 py-3">{item.control ? "Sí" : "No"}</td>
-                                                    <td className="px-4 py-3">{item.descripcion_fase_control || "-"}</td>
+                                                <tr key={item.id} className="hover:bg-gray-50 transition-colors border-b border-gray-200">
+                                                    <td className="px-4 py-3 border-r border-gray-200">{item.orden}</td>
+                                                    <td className="px-4 py-3 border-r border-gray-200">{item.descripcion}</td>
+                                                    <td className="px-4 py-3 border-r border-gray-200">{item.descripcion_fase}</td>
+                                                    <td className="px-4 py-3 border-r border-gray-200">{item.editable ? "Sí" : "No"}</td>
+                                                    <td className="px-4 py-3 border-r border-gray-200">{item.control ? "Sí" : "No"}</td>
+                                                    <td className="px-4 py-3 border-r border-gray-200">{item.descripcion_fase_control || "-"}</td>
                                                     <td className="px-4 py-3">
                                                         <button
                                                             onClick={() => handleDeleteLinea(item.id)}
@@ -320,8 +320,8 @@ export default function NewTipoAcondicionamiento({ canEdit = false, canView = fa
                                             ))}
 
                                             {/* Fila de formulario */}
-                                            <tr className="bg-white">
-                                                <td className="px-4 py-3">
+                                            <tr className="bg-white border-t border-gray-200">
+                                                <td className="px-4 py-3 border-r border-gray-200">
                                                     <div className="flex justify-center items-center">
                                                         <input
                                                             type="number"
@@ -331,8 +331,7 @@ export default function NewTipoAcondicionamiento({ canEdit = false, canView = fa
                                                             onChange={(e) => {
                                                                 const newOrden = parseInt(e.target.value);
                                                                 const isDuplicate = listLinaTipoAcom.some(
-                                                                    (item) =>
-                                                                        item.orden === newOrden && item.id !== unknown.id
+                                                                    (item) => item.orden === newOrden && item.id !== unknown.id
                                                                 );
                                                                 if (isDuplicate) {
                                                                     alert(`Ya existe una línea con orden ${newOrden}`);
@@ -340,37 +339,33 @@ export default function NewTipoAcondicionamiento({ canEdit = false, canView = fa
                                                                 }
                                                                 inputChangeObjectLineaTipoAcom(e);
                                                             }}
+                                                            placeholder="N°"
                                                             className="w-full px-3 py-2 border border-gray-300 rounded-md text-center focus:outline-none focus:ring-2 focus:ring-blue-500"
                                                             disabled={!canEdit}
                                                         />
                                                     </div>
                                                 </td>
-                                                <td className="px-4 py-3">
+                                                <td className="px-4 py-3 border-r border-gray-200">
                                                     <input
                                                         type="text"
                                                         name="descripcion"
+                                                        placeholder="Descripción"
                                                         value={unknown.descripcion}
                                                         onChange={inputChangeObjectLineaTipoAcom}
                                                         className="w-full px-3 py-2 border border-gray-300 rounded-md text-center focus:outline-none focus:ring-2 focus:ring-blue-500"
                                                         disabled={!canEdit}
                                                     />
                                                 </td>
-                                                <td className="px-4 py-3">
+                                                <td className="px-4 py-3 border-r border-gray-200">
                                                     <div className="flex justify-center items-center">
                                                         <select
                                                             name="fase"
                                                             value={unknown.fase}
-                                                            onChange={(e) =>
-                                                                setObjectLineaTipoAcom({
-                                                                    ...unknown,
-                                                                    fase: e.target.value,
-                                                                })
-                                                            }
-                                                            className="w-full px-3 py-2 border flex justify-center items-center border-gray-300 rounded-md text-center text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                            onChange={(e) => setObjectLineaTipoAcom({ ...unknown, fase: e.target.value })}
+                                                            className="w-full px-3 py-2 border border-gray-300 rounded-md text-center text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                                                             disabled={!canEdit}
                                                         >
                                                             <option value="">Seleccione una fase</option>
-                                                            {/* Mostrar la opción seleccionada al editar si ya está asignada */}
                                                             {unknown.fase &&
                                                                 !listStages.find((item) => item.id === Number(unknown.fase)) && (
                                                                     <option value={unknown.fase}>
@@ -387,7 +382,7 @@ export default function NewTipoAcondicionamiento({ canEdit = false, canView = fa
                                                         </select>
                                                     </div>
                                                 </td>
-                                                <td className="px-4 py-3">
+                                                <td className="px-4 py-3 border-r border-gray-200">
                                                     <div className="flex justify-center items-center">
                                                         <label className="inline-flex items-center justify-center cursor-pointer">
                                                             <input
@@ -402,7 +397,7 @@ export default function NewTipoAcondicionamiento({ canEdit = false, canView = fa
                                                         </label>
                                                     </div>
                                                 </td>
-                                                <td className="px-4 py-3">
+                                                <td className="px-4 py-3 border-r border-gray-200">
                                                     <div className="flex justify-center items-center">
                                                         <label className="inline-flex items-center justify-center cursor-pointer">
                                                             <input
@@ -417,15 +412,13 @@ export default function NewTipoAcondicionamiento({ canEdit = false, canView = fa
                                                         </label>
                                                     </div>
                                                 </td>
-                                                <td className="px-4 py-3">
+                                                <td className="px-4 py-3 border-r border-gray-200">
                                                     <div className="flex justify-center items-center">
                                                         {unknown.control && (
                                                             <select
                                                                 name="fase_control"
                                                                 value={unknown.fase_control}
-                                                                onChange={(e) =>
-                                                                    setObjectLineaTipoAcom({ ...unknown, fase_control: e.target.value })
-                                                                }
+                                                                onChange={(e) => setObjectLineaTipoAcom({ ...unknown, fase_control: e.target.value })}
                                                                 disabled={!canEdit}
                                                                 className="w-full px-3 py-2 border border-gray-300 rounded-md text-center text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                                                             >
