@@ -125,30 +125,54 @@ export const updateUser = async (id: number, data: UpdateUserData): Promise<User
 };
 
 // Manejo de errores reutilizable
-const handleError = (error: unknown): AuthResponse => {
+export const handleError = (error: unknown): AuthResponse => {
   if (axios.isAxiosError(error)) {
     const err = error as AxiosError<{ message?: string }>;
-
     const status = err.response?.status;
     const serverMsg = err.response?.data?.message;
 
-    if (status === 401) {
-      return { success: false, message: 'Correo o contraseña incorrectos.' };
-    }
+    switch (status) {
+      case 400:
+        return { success: false, message: 'Solicitud inválida. Revisa los datos ingresados.' };
 
-    if (status === 422) {
-      return { success: false, message: 'Campos inválidos o incompletos.' };
-    }
+      case 401:
+        return { success: false, message: 'Credenciales incorrectas. Verifica tu correo y contraseña.' };
 
-    if (status === 500) {
-      return { success: false, message: 'Error interno del servidor. Intenta más tarde.' };
-    }
+      case 403:
+        return { success: false, message: 'No tienes permiso para realizar esta acción.' };
 
-    return {
-      success: false,
-      message: serverMsg || `Error inesperado: ${status || 'desconocido'}`,
-    };
+      case 404:
+        return { success: false, message: 'Credenciales incorrectas. Verifica tu correo y contraseña.' };
+
+      case 408:
+        return { success: false, message: 'La solicitud tardó demasiado. Intenta de nuevo.' };
+
+      case 422:
+        return { success: false, message: 'Campos inválidos o faltantes. Corrige el formulario.' };
+
+      case 429:
+        return { success: false, message: 'Demasiadas solicitudes. Espera un momento e inténtalo otra vez.' };
+
+      case 500:
+        return { success: false, message: 'Ocurrió un error en el servidor. Intenta más tarde.' };
+
+      case 503:
+        return { success: false, message: 'Servicio temporalmente no disponible. Estamos trabajando en ello.' };
+
+      default:
+        return {
+          success: false,
+          message: serverMsg || `Error inesperado (${status || 'sin código'}).`,
+        };
+    }
   }
 
-  return { success: false, message: 'No se pudo conectar con el servidor.' };
+  // Error fuera de Axios (por ejemplo, caída total de red)
+  return {
+    success: false,
+    message:
+      (error as Error)?.message?.includes("Network Error")
+        ? 'Sin conexión al servidor. Verifica tu red.'
+        : 'Ocurrió un error inesperado. Intenta nuevamente.',
+  };
 };

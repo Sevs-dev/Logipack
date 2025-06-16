@@ -53,8 +53,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   useEffect(() => {
-    const cookies = nookies.get();
-     console.log("Todas las cookies:", cookies);
+    const cookies = nookies.get(); 
     const token = cookies.token;
     const email = cookies.email;
     const storedRole = cookies.role || null;

@@ -48,7 +48,7 @@ export default function Login() {
         router.push('/pages/dashboard');
       }
     } catch (err) {
-      console.log('Error capturado:', err);
+      // console.log('Error capturado:', err);
       if (err instanceof Error) {
         showError(err.message);
       } else {
