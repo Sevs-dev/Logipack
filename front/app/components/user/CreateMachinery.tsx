@@ -39,6 +39,8 @@ function CreateMachinery({ canEdit = false, canView = false }: CreateClientProps
   const [auditList, setAuditList] = useState<Audit[]>([]);
   // Estado para la auditoría seleccionada (no se usa, pero se deja para posible ampliación)
   const [, setSelectedAudit] = useState<Audit | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+
   useEffect(() => {
     if (canView) {
       const fetchData = async () => {
@@ -82,6 +84,8 @@ function CreateMachinery({ canEdit = false, canView = false }: CreateClientProps
   };
 
   const handleSubmit = async () => {
+    if (isSaving) return;
+    setIsSaving(true);
     try {
       const data: MachineryForm = {
         factory_id: Number(factory_id),
@@ -110,13 +114,16 @@ function CreateMachinery({ canEdit = false, canView = false }: CreateClientProps
     } catch (error) {
       console.error("Error al guardar maquinaria:", error);
       showError("Error al guardar maquinaria");
+    } finally {
+      setIsSaving(false);
     }
   };
 
   const handleEdit = async (id: number) => {
+    if (isSaving) return;
+    setIsSaving(true);
     try {
       const data = await machineryService.getMachinById(id);
-      // console.log("Data to edit:", data);
       setEditMachineryId(id);
       setIsEditMode(true);
       setIsOpen(true);
@@ -133,6 +140,8 @@ function CreateMachinery({ canEdit = false, canView = false }: CreateClientProps
     } catch (error) {
       console.error("Error al obtener detalles de la maquinaria:", error);
       showError("Error al cargar los datos de la maquinaria");
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -189,7 +198,9 @@ function CreateMachinery({ canEdit = false, canView = false }: CreateClientProps
               </div>
 
               <div>
-                <Text type="subtitle" color="text-[#000]" >Categoría</Text>
+                <Text type="subtitle" color="text-[#000]">
+                  Categoría <InfoPopover content="Tamaño general de la máquina, afecta el transporte y espacio requerido." />
+                </Text>
                 <select
                   className="w-full border border-gray-300 rounded px-3 py-2 text-black text-center"
                   value={category}
@@ -204,7 +215,9 @@ function CreateMachinery({ canEdit = false, canView = false }: CreateClientProps
               </div>
 
               <div>
-                <Text type="subtitle" color="text-[#000]" >Potencia</Text>
+                <Text type="subtitle" color="text-[#000]">
+                  Potencia <InfoPopover content="Medida en kW o HP, determina cuánta energía consume la máquina." />
+                </Text>
                 <input
                   type="number"
                   value={power}
@@ -215,7 +228,9 @@ function CreateMachinery({ canEdit = false, canView = false }: CreateClientProps
               </div>
 
               <div>
-                <Text type="subtitle" color="text-[#000]" >Dimensiones</Text>
+                <Text type="subtitle" color="text-[#000]">
+                  Dimensiones <InfoPopover content="Largo x Ancho x Alto en metros o centímetros." />
+                </Text>
                 <input
                   type="text"
                   value={dimensions}
@@ -224,8 +239,9 @@ function CreateMachinery({ canEdit = false, canView = false }: CreateClientProps
                   disabled={!canEdit}
                 />
               </div>
+
               <div>
-                <Text type="subtitle" color="text-[#000]" >Descripción</Text>
+                <Text type="subtitle" color="text-[#000]">Descripción</Text>
                 <textarea
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
@@ -239,7 +255,7 @@ function CreateMachinery({ canEdit = false, canView = false }: CreateClientProps
             {/* Columna 2 */}
             <div className="space-y-4">
               <div>
-                <Text type="subtitle" color="text-[#000]" >Plantas</Text>
+                <Text type="subtitle" color="text-[#000]">Plantas</Text>
                 <select
                   className="w-full border border-gray-300 rounded px-3 py-2 text-black text-center"
                   value={factory_id}
@@ -256,7 +272,9 @@ function CreateMachinery({ canEdit = false, canView = false }: CreateClientProps
               </div>
 
               <div>
-                <Text type="subtitle" color="text-[#000]" >Tipo</Text>
+                <Text type="subtitle" color="text-[#000]">
+                  Tipo <InfoPopover content="Clasificación técnica o funcional de la máquina." />
+                </Text>
                 <input
                   type="text"
                   value={type}
@@ -267,8 +285,8 @@ function CreateMachinery({ canEdit = false, canView = false }: CreateClientProps
               </div>
 
               <div>
-                <Text type="subtitle" color="text-[#000]" >Capacidad
-                  <InfoPopover content="La capidad que la maquina puede producir por dia" />
+                <Text type="subtitle" color="text-[#000]">
+                  Capacidad <InfoPopover content="La capacidad que la máquina puede producir por día." />
                 </Text>
                 <input
                   type="text"
@@ -280,7 +298,9 @@ function CreateMachinery({ canEdit = false, canView = false }: CreateClientProps
               </div>
 
               <div>
-                <Text type="subtitle" color="text-[#000]" >Peso</Text>
+                <Text type="subtitle" color="text-[#000]">
+                  Peso <InfoPopover content="Peso aproximado de la máquina, importante para transporte e instalación." />
+                </Text>
                 <input
                   type="text"
                   value={weight}
@@ -291,7 +311,9 @@ function CreateMachinery({ canEdit = false, canView = false }: CreateClientProps
               </div>
 
               <div className="flex flex-col items-center">
-                <Text type="subtitle" color="text-[#000]" >Movíl</Text>
+                <Text type="subtitle" color="text-[#000]">
+                  Movíl <InfoPopover content="Indica si la máquina puede trasladarse fácilmente dentro del área de trabajo." />
+                </Text>
                 <input
                   type="checkbox"
                   checked={is_mobile}
@@ -300,9 +322,8 @@ function CreateMachinery({ canEdit = false, canView = false }: CreateClientProps
                   disabled={!canEdit}
                 />
               </div>
-
             </div>
-          </form >
+          </form>
 
           <div className="flex justify-end space-x-4 mt-4">
             <Button
@@ -314,7 +335,8 @@ function CreateMachinery({ canEdit = false, canView = false }: CreateClientProps
               label="Cancelar"
             />
             {canEdit && (
-              <Button onClick={handleSubmit} variant="save" label="Guardar" />
+              <Button onClick={handleSubmit} variant="save" disabled={
+                isSaving} label={isSaving ? "Guardando..." : "Guardar"} />
             )}
           </div>
         </ModalSection >

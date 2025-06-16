@@ -38,6 +38,7 @@ function CreateUser({ canEdit = false, canView = false }: CreateClientProps) {
     role: "", // guardamos el id del rol como string
     factory: [] as number[],
   });
+  const [isSaving, setIsSaving] = useState(false);
   // Carga inicial de roles, fábricas y usuarios
   useEffect(() => {
     if (!canView) return;
@@ -116,7 +117,9 @@ function CreateUser({ canEdit = false, canView = false }: CreateClientProps) {
 
   // Crear usuario nuevo
   const handleCreateUser = async () => {
+    if (isSaving) return;
     if (!validateFields()) return;
+    setIsSaving(true);
     setLoading(true);
     try {
       await post({
@@ -128,6 +131,9 @@ function CreateUser({ canEdit = false, canView = false }: CreateClientProps) {
         factory: selectedFactorys.map(f => f.id),
       });
       showSuccess("Usuario creado exitosamente");
+      const newUsers = await getUsers();
+      setUsers(newUsers);
+      setIsModalOpen(false);
       setIsModalOpen(false);
       resetForm();
     } catch (error) {
@@ -135,12 +141,15 @@ function CreateUser({ canEdit = false, canView = false }: CreateClientProps) {
       showError("Error creando usuario");
     } finally {
       setLoading(false);
+      setIsSaving(false);
     }
   };
 
   // Editar usuario existente
   const handleEditUser = async () => {
+    if (isSaving) return;
     if (!validateFields()) return;
+    setIsSaving(true);
     setLoading(true);
     try {
       await updateUser(userToEdit!.id, {
@@ -160,6 +169,7 @@ function CreateUser({ canEdit = false, canView = false }: CreateClientProps) {
       showError("Error actualizando usuario");
     } finally {
       setLoading(false);
+      setIsSaving(false);
     }
   };
 
@@ -369,8 +379,8 @@ function CreateUser({ canEdit = false, canView = false }: CreateClientProps) {
               <Button
                 onClick={userToEdit ? handleEditUser : handleCreateUser}
                 variant="save"
-                label={loading ? "Guardando..." : userToEdit ? "Guardar cambios" : "Crear usuario"}
-                disabled={loading}
+                label={loading ? "Guardando..." : userToEdit ? "Guardar cambios" : isSaving ? "Guardando..." : "Crear usuario"}
+                disabled={loading || isSaving}
               />
             )}
           </div>

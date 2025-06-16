@@ -19,10 +19,10 @@ export const login = async (
     const response = await authUser.post<LoginData>('/login', { email, password });
     return { success: true, data: response.data };
   } catch (error: unknown) {
-    return handleError(error);
+    const result = handleError(error);
+    throw new Error(result.message); // 🔥 lanzamos el mensaje de error
   }
 };
-
 
 // Register
 export const register = async (name: string, email: string, password: string): Promise<AuthResponse> => {

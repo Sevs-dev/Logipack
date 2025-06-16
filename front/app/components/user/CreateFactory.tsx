@@ -28,6 +28,7 @@ function CreateFactory({ canEdit = false, canView = false }: CreateClientProps) 
     const [auditList, setAuditList] = useState<Audit[]>([]);
     // Estado para la auditoría seleccionada (no se usa, pero se deja para posible ampliación)
     const [, setSelectedAudit] = useState<Audit | null>(null);
+    const [isSaving, setIsSaving] = useState(false);
 
     const fetchFactories = async () => {
         try {
@@ -56,6 +57,8 @@ function CreateFactory({ canEdit = false, canView = false }: CreateClientProps) 
     };
 
     const handleSave = async () => {
+        if (isSaving) return;
+        setIsSaving(true);
         if (!name || !location || !capacity || !manager || !employees) {
             showError("Por favor, completa todos los campos antes de continuar.");
             return;
@@ -74,6 +77,8 @@ function CreateFactory({ canEdit = false, canView = false }: CreateClientProps) 
             resetForm();
         } catch {
             showError("Error al guardar la planta");
+        } finally {
+            setIsSaving(false);
         }
     };
 
@@ -216,7 +221,8 @@ function CreateFactory({ canEdit = false, canView = false }: CreateClientProps) 
                     <div className="flex justify-center gap-2 mt-4">
                         <Button onClick={() => setIsModalOpen(false)} variant="cancel" />
                         {canEdit && (
-                            <Button onClick={handleSave} variant="save" label={editingFactory ? "Actualizar" : "Guardar"} />
+                            <Button onClick={handleSave} variant="save" disabled={
+                                isSaving} label={editingFactory ? "Actualizar" : isSaving ? "Guardando..." : "Guardar"} />
                         )}
                     </div>
                 </ModalSection>

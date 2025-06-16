@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import {
   getProduct,
   getProductId,
@@ -20,7 +20,7 @@ import { Product } from "../../interfaces/Products";
 /**
  * Componente principal para gestionar productos.
  * Permite crear, editar, eliminar y ver historial de productos.
- */
+*/
 function Products({ canEdit = false, canView = false }: CreateClientProps) {
   // Estado para la lista de productos
   const [products, setProducts] = useState<Product[]>([]);
@@ -36,6 +36,7 @@ function Products({ canEdit = false, canView = false }: CreateClientProps) {
   const [auditList, setAuditList] = useState<Audit[]>([]);
   // Estado para la auditoría seleccionada (no se usa, pero se deja para posible ampliación)
   const [, setSelectedAudit] = useState<Audit | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
 
   // Efecto para cargar productos si el usuario puede verlos
   useEffect(() => {
@@ -90,6 +91,8 @@ function Products({ canEdit = false, canView = false }: CreateClientProps) {
    * @param e Evento de formulario
    */
   const handleCreate = async (e: React.FormEvent<HTMLFormElement>) => {
+    if (isSaving) return;
+    setIsSaving(true);
     e.preventDefault();
     if (!name) {
       showError("El nombre es requerido");
@@ -114,6 +117,8 @@ function Products({ canEdit = false, canView = false }: CreateClientProps) {
       setError("Error al crear el producto");
       console.error(err);
       showError("Ocurrió un error al crear el producto");
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -122,6 +127,8 @@ function Products({ canEdit = false, canView = false }: CreateClientProps) {
    * @param e Evento de formulario
    */
   const handleUpdate = async (e: React.FormEvent<HTMLFormElement>) => {
+    if (isSaving) return;
+    setIsSaving(true);
     e.preventDefault();
     if (!name || !editingProduct) {
       setError("El nombre es requerido");
@@ -143,6 +150,8 @@ function Products({ canEdit = false, canView = false }: CreateClientProps) {
       setError("Error al actualizar el producto");
       console.error(err);
       showError("Ocurrió un error al actualizar el producto");
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -208,7 +217,7 @@ function Products({ canEdit = false, canView = false }: CreateClientProps) {
             <div className="flex justify-center gap-2 mt-2">
               <Button onClick={() => setShowModal(false)} variant="cancel" />
               {canEdit && (
-                <Button type="submit" variant="save" />
+                <Button type="submit" variant="save" label={isSaving ? "Guardando..." : "Guardando"} disabled={isSaving} />
               )}
             </div>
           </form>
