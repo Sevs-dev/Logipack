@@ -183,8 +183,9 @@ function NewStage({ canEdit = false, canView = false }: CreateClientProps) {
 
     // === Actualización ===
     const handleUpdate = async () => {
+        if (isSaving) return;
         if (!editingStage) return;
-
+        setIsSaving(true);
         const activityIds = ["Actividades", "Control", "Procesos"].includes(phaseType)
             ? selectedActivities.map(a => a.id)
             : [];
@@ -213,6 +214,8 @@ function NewStage({ canEdit = false, canView = false }: CreateClientProps) {
         } catch {
             console.error("Error al actualizar la fase:");
             showError("Ocurrió un error al actualizar la fase");
+        } finally {
+            setIsSaving(false); // Desactiva loading
         }
     };
 

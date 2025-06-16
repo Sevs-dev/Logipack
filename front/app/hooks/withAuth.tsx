@@ -14,7 +14,7 @@ function withAuth<P extends object>(Component: React.ComponentType<P>): React.FC
         console.warn("🚫 Usuario no autenticado. Redirigiendo a /pages/noneUser");
         router.replace("/pages/noneUser");
       } else if (!loading && user) {
-        console.info("✅ Usuario autenticado:", user);
+        // console.info("✅ Usuario autenticado:", user);
       }
     }, [loading, user, router]);
 
