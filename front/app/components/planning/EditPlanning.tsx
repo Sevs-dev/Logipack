@@ -397,8 +397,8 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
 
     const handleTerciario = useCallback(async (id: number) => {
         const { plan } = await getPlanningById(id);
-        // console.log("Terciario", JSON.stringify(plan));
-        localStorage.setItem("ejecutar", JSON.stringify(plan));
+        localStorage.removeItem("ejecutar");
+        localStorage.setItem("ejecutar", JSON.stringify(plan.adaptation_id));
         window.open("/pages/ordenes_ejecutadas", "_blank");
     }, []);
 

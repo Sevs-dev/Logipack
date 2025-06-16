@@ -333,6 +333,7 @@ class OrdenesEjecutadasController extends Controller
      */
     private function crearCabeceraOrden($id) : void
     {
+       
         // Obtener lista de adaptaciones
         $acondicionamiento = DB::table('adaptations as ada')
         ->join('adaptation_dates as ada_date', 'ada.id', '=', 'ada_date.adaptation_id')

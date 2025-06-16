@@ -232,7 +232,7 @@ const Fases = ({ proms, setFaseSave, fase_save, fase_list }) => {
           <div className="bg-gradient-to-r from-green-500 to-green-600 px-4 py-3">
             <div className="flex items-center justify-between">
               <span className="text-white font-medium">
-                {saveStatus === "guardado" ? "Orden ejecutada" : "Ejecutar orden (" + fase.id + "  " + fase.description_fase + ")"}
+                {saveStatus === "guardado" ? "Orden ejecutada" : "Ejecutar orden (" + fase.id + " - " + fase.description_fase + ")"}
               </span>
               <button
                 type="button"
