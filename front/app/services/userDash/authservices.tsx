@@ -127,11 +127,28 @@ export const updateUser = async (id: number, data: UpdateUserData): Promise<User
 // Manejo de errores reutilizable
 const handleError = (error: unknown): AuthResponse => {
   if (axios.isAxiosError(error)) {
-    const err = error as AxiosError<{ message: string }>;
+    const err = error as AxiosError<{ message?: string }>;
+
+    const status = err.response?.status;
+    const serverMsg = err.response?.data?.message;
+
+    if (status === 401) {
+      return { success: false, message: 'Correo o contraseña incorrectos.' };
+    }
+
+    if (status === 422) {
+      return { success: false, message: 'Campos inválidos o incompletos.' };
+    }
+
+    if (status === 500) {
+      return { success: false, message: 'Error interno del servidor. Intenta más tarde.' };
+    }
+
     return {
       success: false,
-      message: err.response?.data?.message || err.message,
+      message: serverMsg || `Error inesperado: ${status || 'desconocido'}`,
     };
   }
-  return { success: false, message: 'Error desconocido' };
+
+  return { success: false, message: 'No se pudo conectar con el servidor.' };
 };

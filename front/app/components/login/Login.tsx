@@ -1,12 +1,15 @@
 'use client';
+
 import React, { useState } from 'react';
 import { login } from '../../services/userDash/authservices';
 import { useRouter } from 'next/navigation';
 import nookies from 'nookies';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
+import { FiEye, FiEyeOff } from 'react-icons/fi';
+import { showError } from '../toastr/Toaster';
 
 const cookieOptions = {
-  maxAge: 7200, // 2 hours
+  maxAge: 7200, // 2 horas
   path: '/',
   secure: process.env.NODE_ENV === 'production',
   sameSite: 'strict',
@@ -14,44 +17,49 @@ const cookieOptions = {
 
 export default function Login() {
   const router = useRouter();
-  const [email, setEmail] = useState('admin@logismart.com');
+  const [email, setEmail] = useState('admin@logismart.com'); // valores por defecto para testing
   const [password, setPassword] = useState('Logismart123*');
-  const [errorMessage, setErrorMessage] = useState('');
   const [loading, setLoading] = useState(false);
 
+  // 🧠 Manejo del envío del formulario de login
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setErrorMessage('');
 
     try {
-      const response = await login(email, password);
+      const response = await login(email, password); // Lanza error si falla (401, 422, etc.)
 
       if (response.success) {
+        // 🧠 Desestructuramos token y usuario
         const data = response.data as {
           autorización: { token: string };
           usuario: { email: string; role: string; name: string };
         };
+
         const { token } = data.autorización;
         const { email, role, name } = data.usuario;
 
+        // 🍪 Guardamos en cookies
         nookies.set(null, 'token', token, cookieOptions);
         nookies.set(null, 'email', email, cookieOptions);
         nookies.set(null, 'role', role, cookieOptions);
         nookies.set(null, 'name', name, cookieOptions);
 
         router.push('/pages/dashboard');
-      } else {
-        setErrorMessage(response.message || 'Credenciales incorrectas');
       }
     } catch (err) {
-      setErrorMessage('Ocurrió un error inesperado. Intenta de nuevo.');
-      console.error(err);
+      console.log('Error capturado:', err);
+      if (err instanceof Error) {
+        showError(err.message);
+      } else {
+        showError('Error inesperado al iniciar sesión.');
+      }
     } finally {
       setLoading(false);
     }
   };
 
+  // ✨ Animación simple para entrada
   const fadeIn = {
     hidden: { opacity: 0, y: 20 },
     visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: 'easeOut' } },
@@ -59,7 +67,7 @@ export default function Login() {
 
   return (
     <div className="min-h-screen flex bg-gradient-to-br from-slate-950 via-indigo-950 to-purple-950 font-sans">
-      {/* Formulario */}
+      {/* FORMULARIO DE LOGIN */}
       <motion.div
         className="relative z-10 w-full md:w-1/2 flex items-center justify-center p-8"
         initial="hidden"
@@ -81,7 +89,6 @@ export default function Login() {
               onChange={setEmail}
               placeholder="ej: admin@logismart.com"
             />
-
             <Input
               id="password"
               label="Contraseña"
@@ -90,18 +97,6 @@ export default function Login() {
               onChange={setPassword}
               placeholder="********"
             />
-
-            {errorMessage && (
-              <div className="bg-red-500/20 border border-red-500/40 text-red-300 px-4 py-2 rounded-lg mt-2">
-                <p className="flex items-center gap-2">
-                  <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  {errorMessage}
-                </p>
-              </div>
-            )}
-
             <button
               type="submit"
               disabled={loading}
@@ -116,7 +111,7 @@ export default function Login() {
         </div>
       </motion.div>
 
-      {/* Lado visual */}
+      {/* PANEL DERECHO DE BIENVENIDA */}
       <motion.div
         className="hidden md:flex w-1/2 items-center justify-center relative overflow-hidden"
         initial="hidden"
@@ -137,7 +132,7 @@ export default function Login() {
   );
 }
 
-// Subcomponente reutilizable para inputs
+// 💡 Input reutilizable para email/contraseña
 const Input = ({
   id,
   label,
@@ -152,21 +147,49 @@ const Input = ({
   value: string;
   onChange: (val: string) => void;
   placeholder: string;
-}) => (
-  <div className="space-y-2">
-    <label htmlFor={id} className="block text-sm text-gray-200 font-medium">
-      {label}
-    </label>
-    <input
-      id={id}
-      type={type}
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      className="w-full px-4 py-3.5 rounded-lg bg-white/5 border border-white/20 text-white 
-                 placeholder-gray-400 focus:ring-2 focus:ring-purple-500/50 outline-none 
-                 transition duration-300"
-      placeholder={placeholder}
-      required
-    />
-  </div>
-);
+}) => {
+  const [showPassword, setShowPassword] = useState(false);
+  const isPassword = type === 'password';
+
+  return (
+    <div className="space-y-2 relative">
+      <label htmlFor={id} className="block text-sm text-gray-200 font-medium">
+        {label}
+      </label>
+      <div className="relative">
+        <input
+          id={id}
+          type={isPassword && showPassword ? 'text' : type}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          className="w-full px-4 py-3.5 pr-12 rounded-lg bg-white/5 border border-white/20 text-white 
+                     placeholder-gray-400 focus:ring-2 focus:ring-purple-500/50 outline-none 
+                     transition duration-300"
+          placeholder={placeholder}
+          required
+        />
+
+        {/* 👁 Icono para mostrar/ocultar contraseña */}
+        {isPassword && (
+          <button
+            type="button"
+            onClick={() => setShowPassword((prev) => !prev)}
+            className="absolute right-3 bottom-[0.9rem] text-gray-300 hover:text-white z-10"
+          >
+            <AnimatePresence mode="wait" initial={false}>
+              <motion.span
+                key={showPassword ? 'visible' : 'hidden'}
+                initial={{ opacity: 0, scale: 0.8, rotate: -90 }}
+                animate={{ opacity: 1, scale: 1, rotate: 0 }}
+                exit={{ opacity: 0, scale: 0.8, rotate: 90 }}
+                transition={{ duration: 0.2 }}
+              >
+                {showPassword ? <FiEyeOff size={20} /> : <FiEye size={20} />}
+              </motion.span>
+            </AnimatePresence>
+          </button>
+        )}
+      </div>
+    </div>
+  );
+};
