@@ -124,55 +124,80 @@ export const updateUser = async (id: number, data: UpdateUserData): Promise<User
   }
 };
 
-// Manejo de errores reutilizable
-export const handleError = (error: unknown): AuthResponse => {
+const handleError = (error: unknown): AuthResponse => {
   if (axios.isAxiosError(error)) {
     const err = error as AxiosError<{ message?: string }>;
     const status = err.response?.status;
     const serverMsg = err.response?.data?.message;
+    const defaultMsg = serverMsg || `Ocurrió un error inesperado (${status ?? 'desconocido'})`;
 
     switch (status) {
       case 400:
-        return { success: false, message: 'Solicitud inválida. Revisa los datos ingresados.' };
+        return {
+          success: false,
+          message: 'Hubo un problema con los datos que enviaste. Por favor, revísalos e intenta de nuevo.',
+        };
 
       case 401:
-        return { success: false, message: 'Credenciales incorrectas. Verifica tu correo y contraseña.' };
+        return {
+          success: false,
+          message: 'Uy... parece que el correo o la contraseña no son correctos.',
+        };
 
       case 403:
-        return { success: false, message: 'No tienes permiso para realizar esta acción.' };
+        return {
+          success: false,
+          message: 'No tienes acceso a esta opción. Si crees que es un error, contacta con soporte.',
+        };
 
       case 404:
-        return { success: false, message: 'Credenciales incorrectas. Verifica tu correo y contraseña.' };
+        return {
+          success: false,
+          message: 'Uy... parece que el correo o la contraseña no son correctos.',
+        };
 
-      case 408:
-        return { success: false, message: 'La solicitud tardó demasiado. Intenta de nuevo.' };
+      case 409:
+        return {
+          success: false,
+          message: 'Ya existe algo similar. Intenta con información diferente.',
+        };
 
       case 422:
-        return { success: false, message: 'Campos inválidos o faltantes. Corrige el formulario.' };
+        return {
+          success: false,
+          message: 'Parece que falta completar algunos campos. Échale un vistazo antes de continuar.',
+        };
 
       case 429:
-        return { success: false, message: 'Demasiadas solicitudes. Espera un momento e inténtalo otra vez.' };
+        return {
+          success: false,
+          message: '¡Hey! Estás haciendo muchas solicitudes seguidas. Espera un momento y vuelve a intentar.',
+        };
 
       case 500:
-        return { success: false, message: 'Ocurrió un error en el servidor. Intenta más tarde.' };
+        return {
+          success: false,
+          message: 'Algo salió mal en nuestro lado. Estamos trabajando para solucionarlo.',
+        };
 
       case 503:
-        return { success: false, message: 'Servicio temporalmente no disponible. Estamos trabajando en ello.' };
+        return {
+          success: false,
+          message: 'El servicio está en pausa temporalmente. Intenta de nuevo en unos minutos.',
+        };
 
       default:
         return {
           success: false,
-          message: serverMsg || `Error inesperado (${status || 'sin código'}).`,
+          message: 'Ocurrió un error inesperado. Por favor, intenta más tarde.',
         };
     }
+
   }
 
-  // Error fuera de Axios (por ejemplo, caída total de red)
   return {
     success: false,
-    message:
-      (error as Error)?.message?.includes("Network Error")
-        ? 'Sin conexión al servidor. Verifica tu red.'
-        : 'Ocurrió un error inesperado. Intenta nuevamente.',
+    message: 'Error desconocido. Intenta de nuevo o contacta al soporte si el problema persiste.',
   };
 };
+
