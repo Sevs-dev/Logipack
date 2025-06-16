@@ -200,6 +200,7 @@ Route::controller(OrdenesEjecutadasController::class)->group(function () {
     Route::get('/getOrdenesEjecutadas', 'getAll'); // Obtener todas las lineas   
     Route::get('/validar_estado/{id}', 'validar_estado'); // Crear una nueva lineas 
     Route::get('/procesar_orden/{id}', 'procesar_orden'); // Crear una nueva lineas 
+    Route::post('/next_line', 'nextLineOrden'); // Crear una nueva lineas 
 });
 
 //Rutas Historial de Audits

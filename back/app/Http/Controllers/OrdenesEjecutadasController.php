@@ -23,6 +23,32 @@ class OrdenesEjecutadasController extends Controller
     }
 
     /**
+     * Procesar siguiente linea de la orden
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function nextLineOrden(Request $request): JsonResponse
+    {
+        $resp = $request->all();
+
+        return response()->json([
+            'message' => 'Orden ejecutada procesada',
+            'estado' => 11500,
+            'data' => $resp,
+        ]);
+        // Actualizar ActividadesEjecutadas
+        // ActividadesEjecutadas::where('estado_form', false)->update([
+        //     'estado_form' => true,
+        // ]);
+
+
+        // $response = OrdenesEjecutadas::where('proceso', 'eject')->where('estado', '100')->first();
+        // return response()->json($response);
+    }
+
+
+    /**
      * Validar estado de la orden
      *
      * @param int $id
