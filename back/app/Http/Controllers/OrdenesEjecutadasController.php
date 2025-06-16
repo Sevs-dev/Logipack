@@ -324,6 +324,7 @@ class OrdenesEjecutadasController extends Controller
             ->Join('stages as std', 'std.id', '=', 'atc.fases_fk')
             ->where('orden.id', '=', $acondicionamiento_id)
             ->where('atc.tipo_acondicionamiento_fk','=', 0)
+            ->where('atc.estado_form', '=', false)
             ->select(
                 'atc.id',
                 'atc.orden_ejecutada',
