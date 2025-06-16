@@ -218,7 +218,6 @@ class OrdenesEjecutadasController extends Controller
             'orden' => $orden,
         ]);     
     }
-
     /**
      * Validar estado de la orden
      *
