@@ -95,12 +95,14 @@ const useFetchData = () => {
   const [list_data, setListData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const adaptation_id = JSON.parse(localStorage.getItem('ejecutar'));
 
   const fetchData = async () => {
     try {
-      const response = await fetch('http://127.0.0.1:8000/api/procesar_orden/4');
+      const response = await fetch('http://127.0.0.1:8000/api/procesar_orden/' + adaptation_id);
       if (!response.ok) throw new Error('Error al obtener los datos');
       const data = await response.json();
+
       setListData(data);
     } catch (e) {
       setError(e.message);
@@ -114,6 +116,35 @@ const useFetchData = () => {
   }, []);
 
   return { list_data, loading, error, reloadData: fetchData };
+};
+
+const useEnviarData = () => {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  const enviarData = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch('http://127.0.0.1:8000/api/procesar_orden/4', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          acondicionamiento,
+          memoria_fase,
+          memoria_tipo_acom,
+        }),
+      });
+      if (!response.ok) throw new Error('Error al enviar los datos');
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return { enviarData, loading, error };
 };
 
 const App = () => {
@@ -172,7 +203,7 @@ const App = () => {
       memoria_tipo_acom
     };
 
-    // console.log('Formulario finalizado con memoria:', data);
+    console.log('Formulario finalizado con memoria:', data);
 
     // Limpiar solo los datos específicos en lugar de todo
     await clearDBData([
@@ -190,7 +221,7 @@ const App = () => {
   };
 
   // Verificar estado de guardado
-  const isAllSaved = saveStatus.fase === "guardado" && saveStatus.tipo_acom === "guardado";
+  const isAllSaved = saveStatus.fase === "guardado" && saveStatus.tipo_acom !== "guardado";
 
   if (loading) return (
     <div className="flex justify-center items-center h-screen">
@@ -250,13 +281,14 @@ const App = () => {
             proms={list_data?.maestra_fases_fk}
             setFaseSave={setFaseSave}
             fase_save={fase_save}
+            fase_list={acondicionamiento.maestra_fases_fk}
           />
 
-          <TipoAcom
+          {/* <TipoAcom
             proms={list_data?.maestra_tipo_acondicionamiento_fk}
             setTipoAcomSave={setTipoAcomSave}
             tipo_acom_save={tipo_acom_save}
-          />
+          /> */}
         </div>
 
         {/* Submit Section */}
@@ -273,7 +305,8 @@ const App = () => {
               </p>
               <button
                 onClick={handleFinalSubmit}
-                className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200"
+                className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white
+                bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200"
               >
                 Finalizar y Enviar
                 <svg className="ml-3 -mr-1 h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">

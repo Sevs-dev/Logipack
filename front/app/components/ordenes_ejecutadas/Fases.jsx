@@ -67,7 +67,7 @@ const readFromDB = async (key) => {
   }
 };
 
-const Fases = ({ proms, setFaseSave, fase_save }) => {
+const Fases = ({ proms, setFaseSave, fase_save, fase_list }) => {
   const formRef = useRef();
   const [lineaIndex, setLineaIndex] = useState(0);
   const [fase, setFase] = useState({
@@ -78,7 +78,8 @@ const Fases = ({ proms, setFaseSave, fase_save }) => {
     fases_fk: '',
     description_fase: '',
     phase_type: '',
-    forms: []
+    forms: [],
+    estado_form: false
   });
 
   const [memoria_fase, setMemoriaFase] = useState({});
@@ -231,7 +232,7 @@ const Fases = ({ proms, setFaseSave, fase_save }) => {
           <div className="bg-gradient-to-r from-green-500 to-green-600 px-4 py-3">
             <div className="flex items-center justify-between">
               <span className="text-white font-medium">
-                {saveStatus === "guardado" ? "FASE : Guardado" : "Iniciar Fase"}
+                {saveStatus === "guardado" ? "Orden ejecutada" : "Ejecutar orden (" + fase.id + " - " + fase.description_fase + ")"}
               </span>
               <button
                 type="button"
@@ -538,7 +539,7 @@ const Fases = ({ proms, setFaseSave, fase_save }) => {
             onClick={handleAnteriorLine}
             disabled={lineaIndex === 0}
           >
-            ← Anterior
+            ← Actividad Anterior
           </button>
 
           <button
@@ -546,7 +547,7 @@ const Fases = ({ proms, setFaseSave, fase_save }) => {
             onClick={handleNextLine}
             disabled={lineaIndex >= listas.length - 1}
           >
-            Siguiente →
+            Siguiente Actividad →
           </button>
 
           <button
