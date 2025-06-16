@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import FirmaFase from './FirmaFase';
 
 // Configuración de la base de datos IndexedDB
 const DB_NAME = 'FasesDB';
@@ -93,17 +94,17 @@ const Fases = ({ proms, setFaseSave, fase_save }) => {
         if (savedData) {
           setMemoriaFase(savedData);
         }
-        
+
         // Verificar estado de guardado
         const status = await readFromDB('fase_save');
         setSaveStatus(status || '');
-        
+
         setDbInitialized(true);
       } catch (error) {
         console.error('Error inicializando IndexedDB:', error);
       }
     };
-    
+
     initialize();
   }, []);
 
@@ -138,7 +139,7 @@ const Fases = ({ proms, setFaseSave, fase_save }) => {
       formsParsed.forEach((item) => {
         initialValues[item.clave] = item.valor || '';
       });
-      
+
       setMemoriaFase((prev) => {
         const actualizado = {
           ...prev,
@@ -176,6 +177,7 @@ const Fases = ({ proms, setFaseSave, fase_save }) => {
 
   const handleNextLine = (e) => {
     e.preventDefault();
+
     if (formRef.current.checkValidity()) {
       if (lineaIndex < listas.length - 1) setLineaIndex((prev) => prev + 1);
     } else {
@@ -185,6 +187,7 @@ const Fases = ({ proms, setFaseSave, fase_save }) => {
 
   const handleFinalSubmit = async (e) => {
     e.preventDefault();
+
     if (!formRef.current.checkValidity()) {
       formRef.current.reportValidity();
       return;
@@ -207,11 +210,11 @@ const Fases = ({ proms, setFaseSave, fase_save }) => {
     }));
 
     const estructura = { maestra_fases_fk: datosFinales };
-    
+
     await saveToDB('memoria_fase', memoria_fase);
     await saveToDB('memoria_fase_save', estructura);
     await saveToDB('fase_save', "guardado");
-    
+
     setSaveStatus("guardado");
     setFaseSave(false);
   };
@@ -509,6 +512,17 @@ const Fases = ({ proms, setFaseSave, fase_save }) => {
                         <span className="block text-sm font-medium text-gray-700">{option}</span>
                       </label>
                     ))
+                  )}
+                  {type === "signature" && (
+
+                    <FirmaFase
+                      type={type}
+                      item={item}
+                      info={info}
+                      lineaIndex={lineaIndex}
+                      setMemoriaFase={setMemoriaFase}
+                      saveToDB={saveToDB}
+                    />
                   )}
                 </div>
               );
