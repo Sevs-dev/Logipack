@@ -98,9 +98,11 @@ const useFetchData = () => {
 
   const fetchData = async () => {
     try {
-      const response = await fetch('http://127.0.0.1:8000/api/procesar_orden/5');
+      const response = await fetch('http://127.0.0.1:8000/api/procesar_orden/' + JSON.parse(localStorage.getItem('ejecutar')).adaptation_id);
       if (!response.ok) throw new Error('Error al obtener los datos');
       const data = await response.json();
+      // console.log(JSON.parse(localStorage.getItem('ejecutar')).adaptation_id);
+      
       setListData(data);
     } catch (e) {
       setError(e.message);

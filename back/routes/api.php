@@ -198,8 +198,6 @@ Route::controller(LineaTipoAcondicionamientoController::class)->group(function (
 //Rutas Ordenes Ejecutadas
 Route::controller(OrdenesEjecutadasController::class)->group(function () {
     Route::get('/getOrdenesEjecutadas', 'getAll'); // Obtener todas las lineas   
-    Route::get('/getOrdenesEjecutadas/{id}', 'getAllByAdaptationId'); // Obtener una lineas específica
-    Route::post('/newOrdenesEjecutadas', 'newOrdnesEjecutadas'); // Crear una nueva lineas 
     Route::get('/validar_estado/{id}', 'validar_estado'); // Crear una nueva lineas 
     Route::get('/procesar_orden/{id}', 'procesar_orden'); // Crear una nueva lineas 
 });
