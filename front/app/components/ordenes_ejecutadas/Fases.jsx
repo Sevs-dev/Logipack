@@ -176,18 +176,56 @@ const Fases = ({ proms, setFaseSave, fase_save, fase_list }) => {
     }
   };
 
-  const handleNextLine = (e) => {
+  const handleNextLine = async (e) => {
     e.preventDefault();
-
     if (formRef.current.checkValidity()) {
-      if (lineaIndex < listas.length - 1) setLineaIndex((prev) => prev + 1);
+      if (lineaIndex < listas.length - 1) {
+        setLineaIndex((prev) => prev + 1);
+
+        const nextLine = async () => {
+          try {
+            
+            const datosFinales = listas.map((item, index) => ({
+              id: item.id,
+              orden_ejecutada: String(item.orden_ejecutada),
+              adaptation_id: String(item.adaptation_id),
+              tipo_acondicionamiento_fk: String(item.tipo_acondicionamiento_fk),
+              fases_fk: String(item.fases_fk),
+              description_fase: String(item.description_fase),
+              phase_type: String(item.phase_type),
+              forms: JSON.stringify(
+                JSON.parse(item.forms).map((form) => ({
+                  ...form,
+                  valor: memoria_fase[index]?.[form.clave] || ''
+                }))
+              )
+            }));
+            
+            const response = await fetch('http://127.0.0.1:8000/api/next_line', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify(datosFinales),
+            });
+            if (!response.ok) throw new Error('Error al enviar los datos');
+            const data = await response.json();
+            console.log(data);
+          } catch (e) {
+            console.log(e);
+          }
+        };
+
+        await nextLine();
+
+      }
     } else {
       formRef.current.reportValidity();
     }
   };
 
   const handleFinalSubmit = async (e) => {
-    
+
     e.preventDefault();
 
     if (!formRef.current.checkValidity()) {

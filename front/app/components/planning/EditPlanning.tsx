@@ -398,11 +398,32 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
     const handleTerciario = useCallback(async (id: number) => {
         const { plan } = await getPlanningById(id);
 
-        if(localStorage.getItem("ejecutar")) {
-            localStorage.removeItem("ejecutar");
+        try {
+            const response = await fetch(`http://localhost:8000/api/validar_estado/${plan.adaptation_id}`);
+            const data = await response.json();
+            if(data.status === "error") {
+                showError(data.message);
+                return;
+            } 
+
+            if(localStorage.getItem("ejecutar")) {
+                localStorage.removeItem("ejecutar");
+            }
+
+            if(data.estado === 100 || data.estado === null) {
+                localStorage.setItem("ejecutar", JSON.stringify(plan.adaptation_id));
+                window.open("/pages/ordenes_ejecutadas", "_blank");
+            } else {
+                showError("La orden ya fué ejecutada  estado: " + data.estado);
+                setTimeout(() => {
+                    window.location.reload();
+                }, 3000);
+            }
+        } catch (error) {
+            console.error("Error al validar estado:", error);
+            showError("Error al validar estado");
+            return;
         }
-        localStorage.setItem("ejecutar", JSON.stringify(plan.adaptation_id));
-        window.open("/pages/ordenes_ejecutadas", "_blank");
     }, []);
 
     //Componente SelectorDual
