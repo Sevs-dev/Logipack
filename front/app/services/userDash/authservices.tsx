@@ -133,11 +133,10 @@ const handleError = (error: unknown): AuthResponse => {
     const serverMsg = err.response?.data?.message;
 
     if (status === 401) {
-      return { success: false, message: 'Uy... parece que el correo o la contraseña no son correctos.' };
+      return { success: false, message: 'Correo o contraseña incorrectos.' };
     }
-    
-    if (status === 404) {
-      return { success: false, message: 'Uy... parece que el correo o la contraseña no son correctos.' };
+    if (status === 401) {
+      return { success: false, message: 'Correo o contraseña incorrectos.' };
     }
 
     if (status === 422) {

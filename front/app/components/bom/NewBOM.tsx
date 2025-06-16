@@ -8,6 +8,7 @@ import { showSuccess, showError, showConfirm } from "../toastr/Toaster";
 import ModalSection from "../modal/ModalSection";
 import { CreateClientProps } from "../../interfaces/CreateClientProps";
 import AuditModal from "../history/AuditModal";
+
 // Servicios 
 import { getClients, getClientsId } from "@/app/services/userDash/clientServices";
 import { getArticleByCode, newArticle, getArticlesId, deleteArticle, updateArticle, getBoms } from "@/app/services/bom/articleServices";
@@ -35,6 +36,9 @@ function BOMManager({ canEdit = false, canView = false }: CreateClientProps) {
     const [searchTerm, setSearchTerm] = useState("");
     const [auditList, setAuditList] = useState<Audit[]>([]);
     const [, setSelectedAudit] = useState<Audit | null>(null);
+    const [articleSearch, setArticleSearch] = useState<string>("");
+
+
     const filteredArticles = useMemo(() => {
         if (!searchTerm.trim()) return articles;
         return articles.filter(
@@ -445,9 +449,14 @@ function BOMManager({ canEdit = false, canView = false }: CreateClientProps) {
                             <input
                                 type="number"
                                 min="0"
+                                step="any"
+                                placeholder="0"
                                 className="w-full border p-2 rounded text-black text-center"
-                                value={baseQuantity}
-                                onChange={e => setBaseQuantity(Number(e.target.value))}
+                                value={baseQuantity === 0 ? '' : baseQuantity}
+                                onChange={e => {
+                                    const val = e.target.value;
+                                    setBaseQuantity(val === '' ? 0 : Number(val));
+                                }}
                                 disabled={!canEdit}
                             />
                         </div>
@@ -467,62 +476,130 @@ function BOMManager({ canEdit = false, canView = false }: CreateClientProps) {
                     </div>
 
                     {selectedArticle && (
-                        <div className="mt-4">
-                            <Text type="subtitle" color="text-[#000]">Materiales:</Text>
-                            <div className="border p-4 rounded bg-gray-50 space-y-4">
-                                {ingredients.length > 0 ? (
-                                    ingredients.map((ing, index) => (
-                                        <div key={index} className="flex flex-col space-y-2 border p-2 rounded bg-white">
-                                            <div className="flex items-center space-x-2 w-full">
-                                                <select
-                                                    className="border p-1 rounded text-black w-[70%]"
-                                                    value={ing.codart}
-                                                    onChange={e => handleIngredientSelect(index, e.target.value)}
-                                                    disabled={!canEdit}
-                                                >
-                                                    <option value="">Seleccione un artículo</option>
-                                                    {allArticles.map(article => (
-                                                        <option key={article.codart} value={article.codart}>
-                                                            {article.desart} ({article.codart})
-                                                        </option>
-                                                    ))}
-                                                </select>
-                                                <input
-                                                    type="number"
-                                                    className="border p-1 rounded text-black w-[15%] text-center"
-                                                    placeholder="Cantidad"
-                                                    value={ing.quantity}
-                                                    onChange={e => handleIngredientChange(index, "quantity", e.target.value)}
+                        <div className="mt-6">
+                            <Text type="subtitle" color="text-gray-800">Materiales:</Text>
+                            {ingredients.length > 0 ? (
+                                ingredients.map((ing, index) => {
+                                    const filteredArticles = allArticles.filter(article =>
+                                        article.desart.toLowerCase().includes(articleSearch.toLowerCase()) ||
+                                        article.codart.toLowerCase().includes(articleSearch.toLowerCase())
+                                    );
+
+                                    return (
+                                        <div key={index}>
+                                            <div
+                                                className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 mb-6 hover:shadow-md transition-shadow duration-300"
+                                            >
+                                                <div className="flex flex-col md:flex-row gap-2">
+                                                    {/* Buscador + Lista de artículos */}
+                                                    <div className="flex-1">
+                                                        <Text type="subtitle" color="text-[#000]">Buscar artículo</Text>
+                                                        <input
+                                                            type="text"
+                                                            placeholder="Nombre o código del artículo..."
+                                                            className="w-full px-5 py-3 border border-gray-300 rounded-xl text-base text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                            value={articleSearch}
+                                                            onChange={(e) => setArticleSearch(e.target.value)}
+                                                            disabled={!canEdit}
+                                                        />
+
+                                                        <div className="mt-4 max-h-64 overflow-y-auto border border-gray-300 rounded-xl divide-y divide-gray-100 shadow-inner bg-white">
+                                                            {filteredArticles.length > 0 ? (
+                                                                filteredArticles.map(article => (
+                                                                    <label
+                                                                        key={article.codart}
+                                                                        className={`flex items-center px-5 py-3 text-base cursor-pointer text-black transition-colors duration-150 ${ing.codart === article.codart
+                                                                            ? 'bg-blue-100 text-black font-medium'
+                                                                            : 'hover:bg-blue-50'
+                                                                            }`}
+                                                                    >
+                                                                        <input
+                                                                            type="radio"
+                                                                            name={`article-${index}`}
+                                                                            className="mr-3 accent-blue-600 scale-110"
+                                                                            value={article.codart}
+                                                                            checked={ing.codart === article.codart}
+                                                                            onChange={() => handleIngredientSelect(index, article.codart)}
+                                                                            disabled={!canEdit}
+                                                                        />
+                                                                        {article.desart} ({article.codart})
+                                                                    </label>
+                                                                ))
+                                                            ) : (
+                                                                <div className="p-5 text-base text-gray-500">No se encontraron artículos.</div>
+                                                            )}
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Inputs y botón */}
+                                                    <div className="mt-8">
+                                                        <div>
+                                                            <Text type="subtitle" color="text-[#000]">Cantidad</Text>
+                                                            <input
+                                                                type="number"
+                                                                min="0"
+                                                                step="any"
+                                                                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-center text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                                placeholder="0"
+                                                                value={ing.quantity}
+                                                                onChange={(e) => handleIngredientChange(index, "quantity", e.target.value)}
+                                                                disabled={!canEdit}
+                                                            />
+                                                        </div>
+                                                        <div>
+                                                            <Text type="subtitle" color="text-[#000]">% Merma</Text>
+                                                            <input
+                                                                type="number"
+                                                                min="0"
+                                                                step="any"
+                                                                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-center text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                                placeholder="0"
+                                                                value={ing.merma}
+                                                                onChange={(e) => handleIngredientChange(index, "merma", e.target.value)}
+                                                                disabled={!canEdit}
+                                                            />
+                                                        </div>
+
+                                                        <div className="pt-4">
+                                                            <button
+                                                                onClick={() => removeIngredientRow(index)}
+                                                                className="w-full bg-red-500 hover:bg-red-600 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-all duration-200"
+                                                                disabled={!canEdit}
+                                                            >
+                                                                Eliminar
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div className="flex justify-center space-x-4 mt-4">
+                                                <Button
+                                                    onClick={addIngredientRow}
+                                                    variant="create"
+                                                    label="Agregar Ingrediente"
                                                     disabled={!canEdit}
                                                 />
-                                                <input
-                                                    type="number"
-                                                    className="border p-1 rounded text-black w-[15%] text-center"
-                                                    placeholder="% Merma"
-                                                    value={ing.merma}
-                                                    onChange={e => handleIngredientChange(index, "merma", e.target.value)}
-                                                    disabled={!canEdit}
-                                                />
-                                                <button
-                                                    onClick={() => removeIngredientRow(index)}
-                                                    className="bg-red-500 text-white px-2 py-1 rounded"
-                                                    disabled={!canEdit}
-                                                >
-                                                    X
-                                                </button>
                                             </div>
                                         </div>
-                                    ))
-                                ) : (
+                                    );
+                                })
+                            ) : (
+                                <div>
                                     <Text type="alert">No hay ingredientes agregados.</Text>
-                                )}
-
-                                <Button onClick={addIngredientRow} variant="create" label="Agregar Ingrediente" disabled={!canEdit} />
-                            </div>
+                                    <div className="flex justify-center space-x-4 mt-4">
+                                        <Button
+                                            onClick={addIngredientRow}
+                                            variant="create"
+                                            label="Agregar Ingrediente"
+                                            disabled={!canEdit}
+                                        />
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     )}
 
-                    <div className="flex justify-end space-x-4 mt-4">
+                    <div className="flex justify-center space-x-4 mt-4">
                         <Button onClick={() => setIsModalOpen(false)} variant="cancel" label="Cancelar" />
                         {canEdit && (
                             <Button

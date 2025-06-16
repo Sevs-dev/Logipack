@@ -450,17 +450,29 @@ const Maestra = ({ canEdit = false, canView = false }: CreateClientProps) => {
             }
 
 
-            // Stages generales (no por acondicionamiento)
+            // Stages generales (no por acondicionamiento) 
             const selectedStageIds = data.type_stage;
-            const selectedStagesData = currentStages.filter(stage => selectedStageIds.includes(stage.id));
 
-            setSelectedStages(prev => {
-                const combined = [...prev, ...selectedStagesData];
-                return combined.filter((item, index, self) =>
-                    index === self.findIndex(t => t.id === item.id)
-                );
-            });
+            const selectedStagesOrdered = await Promise.all(
+                selectedStageIds.map(async (stageId: number) => {
+                    try {
+                        const stageData = await getStageId(stageId);
+                        const descripcion = stageData?.description?.trim();
+                        if (!descripcion) return null;
+                        return {
+                            id: stageId,
+                            description: descripcion,
+                            duration: stageData.duration ?? "",
+                            duration_user: stageData.duration_user ?? "",
+                        } as StageFase;
+                    } catch {
+                        console.warn("❌ Error obteniendo stage ID:", stageId);
+                        return null;
+                    }
+                })
+            );
 
+            setSelectedStages(selectedStagesOrdered.filter((s): s is StageFase => s !== null));
             setIsOpen(true);
         } catch {
             console.error("Error obteniendo datos de la Maestra:");
@@ -729,7 +741,6 @@ const Maestra = ({ canEdit = false, canView = false }: CreateClientProps) => {
                                     selectedStages.map((stage, index) => {
                                         const faseDetalle = detalleAcondicionamiento.find(d => Number(d.fase) === stage.id);
                                         const isEditable = faseDetalle ? Boolean(Number(faseDetalle.editable)) : true;
-
                                         return (
                                             <div
                                                 key={stage.id}

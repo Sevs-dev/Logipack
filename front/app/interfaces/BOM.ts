@@ -5,7 +5,7 @@ export interface ClientBom {
 }
 
 export interface Article {
-  bom: (Bom & { ingredients?: string }) | null;
+  bom?: (Bom & { ingredients?: string }) | null;
   data: never[];
   codart: string;
   desart: string;

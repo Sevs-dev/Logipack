@@ -112,7 +112,7 @@ export default function NewActivity({ canEdit = false, canView = false }: Create
                 options: INPUT_TYPES_WITH_OPTIONS.includes(parsed.type) ? options : undefined,
             };
             return JSON.stringify(finalConfig, null, 2);
-        } catch (err) {
+        } catch {
             showError("Error al generar la configuración de la actividad.");
             return formData.config; // fallback en caso de error
         }
