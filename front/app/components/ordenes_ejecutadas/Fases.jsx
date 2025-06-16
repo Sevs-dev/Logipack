@@ -224,7 +224,6 @@ const Fases = ({ proms, setFaseSave, fase_save }) => {
                 config = {}; // o null según lo que prefieras
               }
               const { type, options } = config;
-
               return (
                 <div key={`item-${index}`} className="space-y-1">
                   <label className="block text-sm font-medium text-gray-700">
@@ -246,64 +245,103 @@ const Fases = ({ proms, setFaseSave, fase_save }) => {
                     </select>
                   )}
                   {type === "file" && (
-                    <input
-                      className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-gray-700"
-                      type="file"
-                      accept="application/pdf"
-                      required={item.binding}
-                      name={item.clave}
-                      onChange={(e) => {
-                        const file = e.target.files[0];
-                        if (file) {
-                          const reader = new FileReader();
-                          reader.onloadend = () => {
-                            const base64 = reader.result; // contiene data:<tipo>;base64,<contenido>
-                            setMemoriaFase((prev) => {
-                              const actualizado = {
-                                ...prev,
-                                [lineaIndex]: {
-                                  ...prev[lineaIndex],
-                                  [item.clave]: base64
-                                }
-                              };
-                              localStorage.setItem('memoria_fase', JSON.stringify(actualizado));
-                              return actualizado;
-                            });
-                          };
-                          reader.readAsDataURL(file); // convierte a base64
-                        }
-                      }}
-                    />
+                    <div>
+                      {/* Mostrar PDF si ya está en info */}
+                      {info[item.clave]?.startsWith("data:application/pdf") && (
+                        <div className="mb-2">
+                          <object
+                            data={info[item.clave]}
+                            type="application/pdf"
+                            width="100%"
+                            height="400px"
+                          >
+                            <p className="text-gray-600">
+                              No se pudo mostrar el PDF.{" "}
+                              <a
+                                href={info[item.clave]}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-blue-600 underline"
+                              >
+                                Haz clic aquí para verlo
+                              </a>
+                            </p>
+                          </object>
+                        </div>
+                      )}
+
+                      <input
+                        className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-gray-700"
+                        type="file"
+                        accept="application/pdf"
+                        required={info[item.clave]?.startsWith("data:application/pdf") ? false : item.binding}
+                        name={item.clave}
+                        onChange={(e) => {
+                          const file = e.target.files[0];
+                          if (file) {
+                            const reader = new FileReader();
+                            reader.onloadend = () => {
+                              const base64 = reader.result; // ej: data:application/pdf;base64,...
+                              setMemoriaFase((prev) => {
+                                const actualizado = {
+                                  ...prev,
+                                  [lineaIndex]: {
+                                    ...prev[lineaIndex],
+                                    [item.clave]: base64,
+                                  },
+                                };
+                                localStorage.setItem("memoria_fase", JSON.stringify(actualizado));
+                                return actualizado;
+                              });
+                            };
+                            reader.readAsDataURL(file);
+                          }
+                        }}
+                      />
+                    </div>
                   )}
                   {type === "image" && (
-                    <input
-                      className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-gray-700"
-                      type="file"
-                      accept="image/*"
-                      required={item.binding}
-                      name={item.clave}
-                      onChange={(e) => {
-                        const file = e.target.files[0];
-                        if (file) {
-                          const reader = new FileReader();
-                          reader.onloadend = () => {
-                            const base64 = reader.result; // contiene data:<tipo>;base64,<contenido>
-                            setMemoriaFase((prev) => {
-                              const actualizado = {
-                                ...prev,
-                                [lineaIndex]: {
-                                  ...prev[lineaIndex],
-                                  [item.clave]: base64
-                                }
-                              };
-                              localStorage.setItem('memoria_fase', JSON.stringify(actualizado));
-                              return actualizado;
-                            });
-                          };
-                          reader.readAsDataURL(file); // convierte a base64
-                        }
-                      }}
-                    />
+                    <div>
+                      {/* Mostrar imagen previa si existe en info */}
+                      {info[item.clave]?.startsWith("data:image") && (
+                        <div className="mb-2">
+                          <img
+                            src={info[item.clave]}
+                            alt="Imagen guardada"
+                            className="max-h-48 rounded shadow object-contain"
+                          />
+                        </div>
+                      )}
+
+                      <input
+                        className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-gray-700"
+                        type="file"
+                        accept="image/*"
+                        required={info[item.clave]?.startsWith("data:image") ? false : item.binding}
+                        name={item.clave}
+                        onChange={(e) => {
+                          const file = e.target.files[0];
+                          if (file) {
+                            const reader = new FileReader();
+                            reader.onloadend = () => {
+                              const base64 = reader.result;
+                              setMemoriaFase((prev) => {
+                                const actualizado = {
+                                  ...prev,
+                                  [lineaIndex]: {
+                                    ...prev[lineaIndex],
+                                    [item.clave]: base64,
+                                  },
+                                };
+                                localStorage.setItem("memoria_fase", JSON.stringify(actualizado));
+                                return actualizado;
+                              });
+                            };
+                            reader.readAsDataURL(file);
+                          }
+                        }}
+                      />
+                    </div>
                   )}
                   {type === "number" && (
                     <input
@@ -317,7 +355,6 @@ const Fases = ({ proms, setFaseSave, fase_save }) => {
                       onChange={inputChange}
                     />
                   )}
-
                   {type === "text" && (
                     <input
                       type="text"
@@ -337,6 +374,7 @@ const Fases = ({ proms, setFaseSave, fase_save }) => {
                           type="radio"
                           name={item.clave}
                           value={option}
+                          required={item.binding}
                           checked={info[item.clave] === option}
                           onChange={(e) => {
                             const { value } = e.target;
@@ -364,6 +402,7 @@ const Fases = ({ proms, setFaseSave, fase_save }) => {
                         <input
                           type="checkbox"
                           name={item.clave}
+                          required={item.binding && (!Array.isArray(info[item.clave]) || info[item.clave].length === 0)}
                           checked={Array.isArray(info[item.clave]) && info[item.clave].includes(option)}
                           onChange={(e) => {
                             const { checked } = e.target;
@@ -374,7 +413,6 @@ const Fases = ({ proms, setFaseSave, fase_save }) => {
                               const newArr = checked
                                 ? [...prevArr, option]
                                 : prevArr.filter(val => val !== option);
-
                               const actualizado = {
                                 ...prev,
                                 [lineaIndex]: {
@@ -382,7 +420,6 @@ const Fases = ({ proms, setFaseSave, fase_save }) => {
                                   [item.clave]: newArr
                                 }
                               };
-
                               localStorage.setItem('memoria_fase', JSON.stringify(actualizado));
                               return actualizado;
                             });
@@ -393,7 +430,6 @@ const Fases = ({ proms, setFaseSave, fase_save }) => {
                       </label>
                     ))
                   )}
-
                 </div>
               );
             })}
