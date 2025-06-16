@@ -36,7 +36,7 @@ export const usePlanningNotifier = () => {
   useEffect(() => {
     if (userInteracted) return;
 
-    const handleUserInteraction = (_e: Event) => {
+    const handleUserInteraction = () => {
       localStorage.setItem("userHasInteracted", "true");
       setUserInteracted(true);
     };
@@ -50,39 +50,39 @@ export const usePlanningNotifier = () => {
     };
   }, [userInteracted]);
 
-  const fetchActivities = async () => {
-    try {
-      const data = await getPlanning();
-      const normalized = data.map((item: Planning) => ({
-        ...item,
-        number_order: item.number_order || `Orden #${item.id}`,
-        clock: !!item.clock,
-        start_date: item.start_date || null,
-        end_date: item.end_date || null,
-        paused: !!item.paused,
-        finish_notificade: !!item.finish_notificade,
-        out: false,
-      }));
-
-      const newNotifs = normalized.filter(
-        (a: Planning) =>
-          !a.paused && a.finish_notificade && !notifiedIds.current.has(a.id)
-      );
-
-      if (newNotifs.length > 0 && userInteracted) {
-        playMessengerSound();
-        newNotifs.forEach((a: Planning) => notifiedIds.current.add(a.id));
-        setHasNewNotification(true); // 👈 se activa solo cuando hay algo nuevo
-      }
-
-      setNotificationCount(newNotifs.length);
-      setActivities(normalized);
-    } catch (err) {
-      console.error("Error fetching planning:", err);
-    }
-  };
-
   useEffect(() => {
+    const fetchActivities = async () => {
+      try {
+        const data = await getPlanning();
+        const normalized = data.map((item: Planning) => ({
+          ...item,
+          number_order: item.number_order || `Orden #${item.id}`,
+          clock: !!item.clock,
+          start_date: item.start_date || null,
+          end_date: item.end_date || null,
+          paused: !!item.paused,
+          finish_notificade: !!item.finish_notificade,
+          out: false,
+        }));
+
+        const newNotifs = normalized.filter(
+          (a: Planning) =>
+            !a.paused && a.finish_notificade && !notifiedIds.current.has(a.id)
+        );
+
+        if (newNotifs.length > 0 && userInteracted) {
+          playMessengerSound();
+          newNotifs.forEach((a: Planning) => notifiedIds.current.add(a.id));
+          setHasNewNotification(true);
+        }
+
+        setNotificationCount(newNotifs.length);
+        setActivities(normalized);
+      } catch (err) {
+        console.error("Error fetching planning:", err);
+      }
+    };
+
     fetchActivities();
     const interval = setInterval(fetchActivities, 10000);
     return () => clearInterval(interval);
