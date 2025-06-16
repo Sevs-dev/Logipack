@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import Firma from './Firma';
 
 // Configuración de la base de datos IndexedDB (consistente con Fases.js)
 const DB_NAME = 'FasesDB';
@@ -507,6 +508,17 @@ const TipoAcom = ({ proms, setTipoAcomSave, tipo_acom_save }) => {
                         <span className="block text-sm font-medium text-gray-700">{option}</span>
                       </label>
                     ))
+                  )}
+                  {type === "signature" && (
+                    <Firma
+                      type={type}
+                      item={item}
+                      info={info}
+                      lineaIndex={lineaIndex}
+                      setMemoriaGeneral={setMemoriaTipoAcom}
+                      saveToDB={saveToDB}
+                      typeMem="memoria_tipo_acom"
+                    />
                   )}
                 </div>
               );

@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import FirmaFase from './FirmaFase';
+import Firma from './Firma';
 
 // Configuración de la base de datos IndexedDB
 const DB_NAME = 'FasesDB';
@@ -514,14 +514,14 @@ const Fases = ({ proms, setFaseSave, fase_save }) => {
                     ))
                   )}
                   {type === "signature" && (
-
-                    <FirmaFase
+                    <Firma
                       type={type}
                       item={item}
                       info={info}
                       lineaIndex={lineaIndex}
-                      setMemoriaFase={setMemoriaFase}
+                      setMemoriaGeneral={setMemoriaFase}
                       saveToDB={saveToDB}
+                      typeMem="memoria_fase"
                     />
                   )}
                 </div>

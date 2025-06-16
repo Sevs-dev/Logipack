@@ -1,12 +1,12 @@
 import React, { useRef } from "react";
 import SignatureCanvas from "react-signature-canvas";
 
-const FirmaFase = ({ type, item, info, lineaIndex, setMemoriaFase, saveToDB }) => {
+const Firma = ({ type, item, info, lineaIndex, setMemoriaGeneral, saveToDB, typeMem = "memoria_fase" }) => {
     const sigCanvasRef = useRef();
 
     const guardarFirma = () => {
         const base64 = sigCanvasRef.current.getCanvas().toDataURL("image/png"); // <- sin trimmed
-        setMemoriaFase((prev) => {
+        setMemoriaGeneral((prev) => {
             const actualizado = {
                 ...prev,
                 [lineaIndex]: {
@@ -14,14 +14,14 @@ const FirmaFase = ({ type, item, info, lineaIndex, setMemoriaFase, saveToDB }) =
                     [item.clave]: base64,
                 },
             };
-            saveToDB("memoria_fase", actualizado);
+            saveToDB(typeMem, actualizado);
             return actualizado;
         });
     };
 
     const limpiarFirma = () => {
         sigCanvasRef.current.clear();
-        setMemoriaFase((prev) => {
+        setMemoriaGeneral((prev) => {
             const actualizado = {
                 ...prev,
                 [lineaIndex]: {
@@ -29,7 +29,7 @@ const FirmaFase = ({ type, item, info, lineaIndex, setMemoriaFase, saveToDB }) =
                     [item.clave]: "",
                 },
             };
-            saveToDB("memoria_fase", actualizado);
+            saveToDB(typeMem, actualizado);
             return actualizado;
         });
     };
@@ -87,4 +87,4 @@ const FirmaFase = ({ type, item, info, lineaIndex, setMemoriaFase, saveToDB }) =
     );
 };
 
-export default FirmaFase;
+export default Firma;
