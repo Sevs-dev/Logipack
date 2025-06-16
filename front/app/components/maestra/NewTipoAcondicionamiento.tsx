@@ -452,8 +452,10 @@ export default function NewTipoAcondicionamiento({ canEdit = false, canView = fa
                                 <Button onClick={() => {
                                     if (isOpenEdit) {
                                         handleBtnAplicarEdit();
+                                        handleReset();
                                     } else {
                                         handleBtnAplicar();
+                                        handleReset();
                                     }
                                 }
                                 } variant="create" label={isOpenEdit ? "Actualizar" : "Aplicar"} />
