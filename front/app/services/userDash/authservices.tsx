@@ -193,6 +193,16 @@ const handleError = (error: unknown): AuthResponse => {
         };
     }
 
+    // // Casos sin status (errores de red, timeout, etc.)
+    // if (err.code === 'ECONNABORTED') {
+    //   return { success: false, message: 'Tiempo de espera agotado. Revisa tu conexión e intenta de nuevo.' };
+    // }
+
+    // if (!err.response) {
+    //   return { success: false, message: 'No se pudo conectar con el servidor. Verifica tu conexión a internet.' };
+    // }
+
+    // return { success: false, message: defaultMsg };
   }
 
   return {
