@@ -151,14 +151,14 @@ const App = () => {
       });
     };
     loadInitialStates();
-    console.log("estado de guardado");
+    // console.log("estado de guardado");
   }, [fase_save, tipo_acom_save]);
 
   useEffect(() => {
     if (list_data?.acondicionamiento) {
       setAcondicionamiento(list_data.acondicionamiento);
     }
-    console.log("list_data");
+    // console.log("list_data");
   }, [list_data]);
 
   const handleFinalSubmit = async (e) => {
@@ -172,7 +172,7 @@ const App = () => {
       memoria_tipo_acom
     };
 
-    console.log('Formulario finalizado con memoria:', data);
+    // console.log('Formulario finalizado con memoria:', data);
 
     // Limpiar solo los datos específicos en lugar de todo
     await clearDBData([
