@@ -2,6 +2,95 @@ import React, { useState, useEffect } from 'react';
 import TipoAcom from './TipoAcom';
 import Fases from './Fases';
 
+// Configuración de la base de datos IndexedDB (debe ser consistente con Fases.js)
+const DB_NAME = 'FasesDB';
+const DB_VERSION = 1;
+const STORE_NAME = 'fasesStore';
+
+// Función para inicializar la base de datos (similar a Fases.js)
+const initDB = () => {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open(DB_NAME, DB_VERSION);
+
+    request.onupgradeneeded = (event) => {
+      const db = event.target.result;
+      if (!db.objectStoreNames.contains(STORE_NAME)) {
+        db.createObjectStore(STORE_NAME, { keyPath: 'id' });
+      }
+    };
+
+    request.onsuccess = (event) => {
+      resolve(event.target.result);
+    };
+
+    request.onerror = (event) => {
+      reject('Error al abrir IndexedDB');
+    };
+  });
+};
+
+// Función para guardar datos en IndexedDB
+const saveToDB = async (key, data) => {
+  try {
+    const db = await initDB();
+    const transaction = db.transaction(STORE_NAME, 'readwrite');
+    const store = transaction.objectStore(STORE_NAME);
+    store.put({ id: key, data });
+    return new Promise((resolve) => {
+      transaction.oncomplete = () => {
+        resolve();
+      };
+    });
+  } catch (error) {
+    console.error('Error al guardar en IndexedDB:', error);
+  }
+};
+
+// Función para leer datos de IndexedDB
+const readFromDB = async (key) => {
+  try {
+    const db = await initDB();
+    const transaction = db.transaction(STORE_NAME, 'readonly');
+    const store = transaction.objectStore(STORE_NAME);
+    const request = store.get(key);
+
+    return new Promise((resolve) => {
+      request.onsuccess = () => {
+        resolve(request.result?.data);
+      };
+      request.onerror = () => {
+        resolve(null);
+      };
+    });
+  } catch (error) {
+    console.error('Error al leer de IndexedDB:', error);
+    return null;
+  }
+};
+
+// Función para limpiar datos específicos de IndexedDB
+const clearDBData = async (keys) => {
+  try {
+    const db = await initDB();
+    const transaction = db.transaction(STORE_NAME, 'readwrite');
+    const store = transaction.objectStore(STORE_NAME);
+
+    if (Array.isArray(keys)) {
+      keys.forEach(key => store.delete(key));
+    } else {
+      store.delete(keys);
+    }
+
+    return new Promise((resolve) => {
+      transaction.oncomplete = () => {
+        resolve();
+      };
+    });
+  } catch (error) {
+    console.error('Error al limpiar IndexedDB:', error);
+  }
+};
+
 const useFetchData = () => {
   const [list_data, setListData] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -45,29 +134,63 @@ const App = () => {
 
   const [fase_save, setFaseSave] = useState(false);
   const [tipo_acom_save, setTipoAcomSave] = useState(false);
+  const [saveStatus, setSaveStatus] = useState({
+    fase: '',
+    tipo_acom: ''
+  });
+
+  // Cargar estados iniciales desde IndexedDB
+  useEffect(() => {
+    const loadInitialStates = async () => {
+      const faseStatus = await readFromDB('fase_save');
+      const tipoAcomStatus = await readFromDB('tipo_acom_save');
+
+      setSaveStatus({
+        fase: faseStatus || '',
+        tipo_acom: tipoAcomStatus || ''
+      });
+    };
+    loadInitialStates();
+    console.log("estado de guardado");
+  }, [fase_save, tipo_acom_save]);
 
   useEffect(() => {
     if (list_data?.acondicionamiento) {
       setAcondicionamiento(list_data.acondicionamiento);
     }
+    console.log("list_data");
   }, [list_data]);
 
-  const handleFinalSubmit = (e) => {
+  const handleFinalSubmit = async (e) => {
     e.preventDefault();
-    const memoria_fase = localStorage.getItem('memoria_fase_save');
-    const memoria_tipo_acom = localStorage.getItem('memoria_tipo_acom_save');
+    const memoria_fase = await readFromDB('memoria_fase_save');
+    const memoria_tipo_acom = await readFromDB('memoria_tipo_acom_save');
 
     const data = {
       acondicionamiento,
       memoria_fase,
       memoria_tipo_acom
-    }
+    };
 
     console.log('Formulario finalizado con memoria:', data);
-    localStorage.clear();
+
+    // Limpiar solo los datos específicos en lugar de todo
+    await clearDBData([
+      'memoria_fase',
+      'memoria_fase_save',
+      'fase_save',
+      'memoria_tipo_acom',
+      'memoria_tipo_acom_save',
+      'tipo_acom_save'
+    ]);
+
     setFaseSave(false);
     setTipoAcomSave(false);
-  }
+    setSaveStatus({ fase: '', tipo_acom: '' });
+  };
+
+  // Verificar estado de guardado
+  const isAllSaved = saveStatus.fase === "guardado" && saveStatus.tipo_acom === "guardado";
 
   if (loading) return (
     <div className="flex justify-center items-center h-screen">
@@ -106,12 +229,7 @@ const App = () => {
             <dl className="sm:divide-y sm:divide-gray-200">
               {[
                 { label: 'Adaptation ID', value: acondicionamiento.adaptation_id },
-                // { label: 'Maestra ID', value: acondicionamiento.maestra_id },
                 { label: 'Descripción Maestra', value: acondicionamiento.descripcion_maestra },
-                // { label: 'Línea Producción', value: acondicionamiento.linea_produccion },
-                // { label: 'Tipo Acondicionamiento', value: acondicionamiento.maestra_tipo_acondicionamiento_fk },
-                // { label: 'Fase', value: acondicionamiento.maestra_fases_fk },
-                // { label: 'Estado', value: acondicionamiento.estado },
               ].map((item, index) => (
                 <div key={index} className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
                   <dt className="text-sm font-medium text-gray-500">
@@ -142,7 +260,7 @@ const App = () => {
         </div>
 
         {/* Submit Section */}
-        {localStorage.getItem('fase_save') === "guardado" && localStorage.getItem('tipo_acom_save') === "guardado" && (
+        {isAllSaved && (
           <div className="mt-8 bg-white shadow sm:rounded-lg">
             <div className="px-4 py-5 sm:px-6 bg-gradient-to-r from-green-600 to-green-500 rounded-t-lg">
               <h3 className="text-lg leading-6 font-medium text-white">

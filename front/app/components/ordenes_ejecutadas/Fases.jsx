@@ -1,5 +1,71 @@
 import React, { useState, useRef, useEffect } from 'react';
 
+// Configuración de la base de datos IndexedDB
+const DB_NAME = 'FasesDB';
+const DB_VERSION = 1;
+const STORE_NAME = 'fasesStore';
+
+// Función para inicializar la base de datos
+const initDB = () => {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open(DB_NAME, DB_VERSION);
+
+    request.onupgradeneeded = (event) => {
+      const db = event.target.result;
+      if (!db.objectStoreNames.contains(STORE_NAME)) {
+        db.createObjectStore(STORE_NAME, { keyPath: 'id' });
+      }
+    };
+
+    request.onsuccess = (event) => {
+      resolve(event.target.result);
+    };
+
+    request.onerror = (event) => {
+      reject('Error al abrir IndexedDB');
+    };
+  });
+};
+
+// Función para guardar datos en IndexedDB
+const saveToDB = async (key, data) => {
+  try {
+    const db = await initDB();
+    const transaction = db.transaction(STORE_NAME, 'readwrite');
+    const store = transaction.objectStore(STORE_NAME);
+    store.put({ id: key, data });
+    return new Promise((resolve) => {
+      transaction.oncomplete = () => {
+        resolve();
+      };
+    });
+  } catch (error) {
+    console.error('Error al guardar en IndexedDB:', error);
+  }
+};
+
+// Función para leer datos de IndexedDB
+const readFromDB = async (key) => {
+  try {
+    const db = await initDB();
+    const transaction = db.transaction(STORE_NAME, 'readonly');
+    const store = transaction.objectStore(STORE_NAME);
+    const request = store.get(key);
+
+    return new Promise((resolve) => {
+      request.onsuccess = () => {
+        resolve(request.result?.data);
+      };
+      request.onerror = () => {
+        resolve(null);
+      };
+    });
+  } catch (error) {
+    console.error('Error al leer de IndexedDB:', error);
+    return null;
+  }
+};
+
 const Fases = ({ proms, setFaseSave, fase_save }) => {
   const formRef = useRef();
   const [lineaIndex, setLineaIndex] = useState(0);
@@ -14,59 +80,75 @@ const Fases = ({ proms, setFaseSave, fase_save }) => {
     forms: []
   });
 
-  const [memoria_fase, setMemoriaFase] = useState(() => {
-    const dataGuardada = localStorage.getItem('memoria_fase');
-    if (dataGuardada) {
+  const [memoria_fase, setMemoriaFase] = useState({});
+  const [dbInitialized, setDbInitialized] = useState(false);
+  const [saveStatus, setSaveStatus] = useState('');
+
+  // Inicializar IndexedDB y cargar datos
+  useEffect(() => {
+    const initialize = async () => {
       try {
-        return JSON.parse(dataGuardada);
-      } catch {
-        return {};
+        // Verificar si ya hay datos guardados
+        const savedData = await readFromDB('memoria_fase');
+        if (savedData) {
+          setMemoriaFase(savedData);
+        }
+        
+        // Verificar estado de guardado
+        const status = await readFromDB('fase_save');
+        setSaveStatus(status || '');
+        
+        setDbInitialized(true);
+      } catch (error) {
+        console.error('Error inicializando IndexedDB:', error);
       }
-    }
-    return {};
-  });
+    };
+    
+    initialize();
+  }, []);
 
   const listas = proms || [];
   const lista = listas[lineaIndex] || {};
   const info = memoria_fase[lineaIndex] || {};
 
   useEffect(() => {
-    if (lista && lista.forms) {
-      let formsParsed = [];
-      try {
-        formsParsed = JSON.parse(lista.forms);
-      } catch (e) {
-        console.warn('Error al parsear forms:', e);
-      }
+    if (!dbInitialized || !lista || !lista.forms) return;
 
-      setFase({
-        id: lista.id || '',
-        orden_ejecutada: lista.orden_ejecutada || '',
-        adaptation_id: lista.adaptation_id || '',
-        tipo_acondicionamiento_fk: lista.tipo_acondicionamiento_fk || '',
-        fases_fk: lista.fases_fk || '',
-        description_fase: lista.description_fase || '',
-        phase_type: lista.phase_type || '',
-        forms: formsParsed
-      });
-
-      // Solo inicializar si no existe ya
-      if (!memoria_fase[lineaIndex]) {
-        const initialValues = {};
-        formsParsed.forEach((item) => {
-          initialValues[item.clave] = item.valor || '';
-        });
-        setMemoriaFase((prev) => {
-          const actualizado = {
-            ...prev,
-            [lineaIndex]: initialValues
-          };
-          localStorage.setItem('memoria_fase', JSON.stringify(actualizado));
-          return actualizado;
-        });
-      }
+    let formsParsed = [];
+    try {
+      formsParsed = JSON.parse(lista.forms);
+    } catch (e) {
+      console.warn('Error al parsear forms:', e);
     }
-  }, [lineaIndex, lista]);
+
+    setFase({
+      id: lista.id || '',
+      orden_ejecutada: lista.orden_ejecutada || '',
+      adaptation_id: lista.adaptation_id || '',
+      tipo_acondicionamiento_fk: lista.tipo_acondicionamiento_fk || '',
+      fases_fk: lista.fases_fk || '',
+      description_fase: lista.description_fase || '',
+      phase_type: lista.phase_type || '',
+      forms: formsParsed
+    });
+
+    // Solo inicializar si no existe ya
+    if (!memoria_fase[lineaIndex]) {
+      const initialValues = {};
+      formsParsed.forEach((item) => {
+        initialValues[item.clave] = item.valor || '';
+      });
+      
+      setMemoriaFase((prev) => {
+        const actualizado = {
+          ...prev,
+          [lineaIndex]: initialValues
+        };
+        saveToDB('memoria_fase', actualizado);
+        return actualizado;
+      });
+    }
+  }, [lineaIndex, lista, dbInitialized]);
 
   const inputChange = (e) => {
     const { name, value } = e.target;
@@ -78,7 +160,7 @@ const Fases = ({ proms, setFaseSave, fase_save }) => {
           [name]: value
         }
       };
-      localStorage.setItem('memoria_fase', JSON.stringify(actualizado));
+      saveToDB('memoria_fase', actualizado);
       return actualizado;
     });
   };
@@ -101,7 +183,7 @@ const Fases = ({ proms, setFaseSave, fase_save }) => {
     }
   };
 
-  const handleFinalSubmit = (e) => {
+  const handleFinalSubmit = async (e) => {
     e.preventDefault();
     if (!formRef.current.checkValidity()) {
       formRef.current.reportValidity();
@@ -125,16 +207,19 @@ const Fases = ({ proms, setFaseSave, fase_save }) => {
     }));
 
     const estructura = { maestra_fases_fk: datosFinales };
-    localStorage.setItem('memoria_fase', JSON.stringify(memoria_fase));
-    localStorage.setItem('memoria_fase_save', JSON.stringify(estructura));
+    
+    await saveToDB('memoria_fase', memoria_fase);
+    await saveToDB('memoria_fase_save', estructura);
+    await saveToDB('fase_save', "guardado");
+    
+    setSaveStatus("guardado");
     setFaseSave(false);
-    localStorage.setItem('fase_save', "guardado");
   };
-
 
   if (fase_save === false) {
     if (proms.length === 0) {
-      localStorage.setItem('fase_save', "guardado");
+      saveToDB('fase_save', "guardado");
+      setSaveStatus("guardado");
     }
     return (
       <div className="max-w-2xl mx-auto my-4">
@@ -142,18 +227,18 @@ const Fases = ({ proms, setFaseSave, fase_save }) => {
           <div className="bg-gradient-to-r from-green-500 to-green-600 px-4 py-3">
             <div className="flex items-center justify-between">
               <span className="text-white font-medium">
-                {localStorage.getItem('fase_save') === "guardado" ? "FASE : Guardado" : "Iniciar Fase"}
+                {saveStatus === "guardado" ? "FASE : Guardado" : "Iniciar Fase"}
               </span>
               <button
                 type="button"
-                className={`px-4 py-2 rounded text-sm font-medium shadow-sm ${localStorage.getItem('fase_save') === "guardado"
+                className={`px-4 py-2 rounded text-sm font-medium shadow-sm ${saveStatus === "guardado"
                   ? 'bg-gray-300 text-gray-600 cursor-not-allowed'
                   : 'bg-blue-600 text-white hover:bg-blue-700'
                   }`}
-                disabled={localStorage.getItem('fase_save') === "guardado"}
+                disabled={saveStatus === "guardado"}
                 onClick={() => { setFaseSave(true); }}
               >
-                {localStorage.getItem('fase_save') === "guardado" ? "Completado" : "Iniciar"}
+                {saveStatus === "guardado" ? "Completado" : "Iniciar"}
               </button>
             </div>
           </div>
@@ -208,20 +293,17 @@ const Fases = ({ proms, setFaseSave, fase_save }) => {
         <div className="bg-white rounded-lg shadow-md overflow-hidden border border-gray-200">
           <div className="p-4 space-y-4">
             {fase.forms.map((item, index) => {
-
-              // Formatear y obtener valores de los campos del componete
               let config = item.config;
               try {
                 if (typeof config === "string") {
-                  config = JSON.parse(config); // 1er parseo
+                  config = JSON.parse(config);
                 }
 
                 if (typeof config === "string") {
-                  config = JSON.parse(config); // 2do parseo (solo si aún es string)
+                  config = JSON.parse(config);
                 }
               } catch (error) {
-                // console.error("Error al parsear config en index", index, item.config, error);
-                config = {}; // o null según lo que prefieras
+                config = {};
               }
               const { type, options } = config;
               return (
@@ -234,7 +316,7 @@ const Fases = ({ proms, setFaseSave, fase_save }) => {
                     <select
                       className="block w-full px-3 py-2 border border-gray-300 
                         rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-gray-700"
-                      name={item.clave} // misma name para radio group
+                      name={item.clave}
                       value={info[item.clave] ?? ''}
                       required={item.binding}
                       onChange={inputChange}>
@@ -246,7 +328,6 @@ const Fases = ({ proms, setFaseSave, fase_save }) => {
                   )}
                   {type === "file" && (
                     <div>
-                      {/* Mostrar PDF si ya está en info */}
                       {info[item.clave]?.startsWith("data:application/pdf") && (
                         <div className="mb-2">
                           <object
@@ -276,12 +357,12 @@ const Fases = ({ proms, setFaseSave, fase_save }) => {
                         accept="application/pdf"
                         required={info[item.clave]?.startsWith("data:application/pdf") ? false : item.binding}
                         name={item.clave}
-                        onChange={(e) => {
+                        onChange={async (e) => {
                           const file = e.target.files[0];
                           if (file) {
                             const reader = new FileReader();
                             reader.onloadend = () => {
-                              const base64 = reader.result; // ej: data:application/pdf;base64,...
+                              const base64 = reader.result;
                               setMemoriaFase((prev) => {
                                 const actualizado = {
                                   ...prev,
@@ -290,7 +371,7 @@ const Fases = ({ proms, setFaseSave, fase_save }) => {
                                     [item.clave]: base64,
                                   },
                                 };
-                                localStorage.setItem("memoria_fase", JSON.stringify(actualizado));
+                                saveToDB('memoria_fase', actualizado);
                                 return actualizado;
                               });
                             };
@@ -302,7 +383,6 @@ const Fases = ({ proms, setFaseSave, fase_save }) => {
                   )}
                   {type === "image" && (
                     <div>
-                      {/* Mostrar imagen previa si existe en info */}
                       {info[item.clave]?.startsWith("data:image") && (
                         <div className="mb-2">
                           <img
@@ -333,7 +413,7 @@ const Fases = ({ proms, setFaseSave, fase_save }) => {
                                     [item.clave]: base64,
                                   },
                                 };
-                                localStorage.setItem("memoria_fase", JSON.stringify(actualizado));
+                                saveToDB('memoria_fase', actualizado);
                                 return actualizado;
                               });
                             };
@@ -349,7 +429,7 @@ const Fases = ({ proms, setFaseSave, fase_save }) => {
                       className="block w-full px-3 py-2 border border-gray-300 
                         rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-gray-700"
                       placeholder={item.descripcion_activitie}
-                      name={item.clave} // misma name para radio group
+                      name={item.clave}
                       value={info[item.clave] ?? ''}
                       required={item.binding}
                       onChange={inputChange}
@@ -386,7 +466,7 @@ const Fases = ({ proms, setFaseSave, fase_save }) => {
                                   [item.clave]: value
                                 }
                               };
-                              localStorage.setItem('memoria_fase', JSON.stringify(actualizado));
+                              saveToDB('memoria_fase', actualizado);
                               return actualizado;
                             });
                           }}
@@ -420,7 +500,7 @@ const Fases = ({ proms, setFaseSave, fase_save }) => {
                                   [item.clave]: newArr
                                 }
                               };
-                              localStorage.setItem('memoria_fase', JSON.stringify(actualizado));
+                              saveToDB('memoria_fase', actualizado);
                               return actualizado;
                             });
                           }}
