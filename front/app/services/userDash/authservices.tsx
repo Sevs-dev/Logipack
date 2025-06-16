@@ -19,10 +19,10 @@ export const login = async (
     const response = await authUser.post<LoginData>('/login', { email, password });
     return { success: true, data: response.data };
   } catch (error: unknown) {
-    return handleError(error);
+    const result = handleError(error);
+    throw new Error(result.message); // 🔥 lanzamos el mensaje de error
   }
 };
-
 
 // Register
 export const register = async (name: string, email: string, password: string): Promise<AuthResponse> => {
@@ -124,31 +124,90 @@ export const updateUser = async (id: number, data: UpdateUserData): Promise<User
   }
 };
 
-// Manejo de errores reutilizable
 const handleError = (error: unknown): AuthResponse => {
   if (axios.isAxiosError(error)) {
     const err = error as AxiosError<{ message?: string }>;
-
     const status = err.response?.status;
     const serverMsg = err.response?.data?.message;
+    const defaultMsg = serverMsg || `Ocurrió un error inesperado (${status ?? 'desconocido'})`;
 
-    if (status === 401) {
-      return { success: false, message: 'Correo o contraseña incorrectos.' };
+    switch (status) {
+      case 400:
+        return {
+          success: false,
+          message: 'Hubo un problema con los datos que enviaste. Por favor, revísalos e intenta de nuevo.',
+        };
+
+      case 401:
+        return {
+          success: false,
+          message: 'Uy... parece que el correo o la contraseña no son correctos.',
+        };
+
+      case 403:
+        return {
+          success: false,
+          message: 'No tienes acceso a esta opción. Si crees que es un error, contacta con soporte.',
+        };
+
+      case 404:
+        return {
+          success: false,
+          message: 'Uy... parece que el correo o la contraseña no son correctos.',
+        };
+
+      case 409:
+        return {
+          success: false,
+          message: 'Ya existe algo similar. Intenta con información diferente.',
+        };
+
+      case 422:
+        return {
+          success: false,
+          message: 'Parece que falta completar algunos campos. Échale un vistazo antes de continuar.',
+        };
+
+      case 429:
+        return {
+          success: false,
+          message: '¡Hey! Estás haciendo muchas solicitudes seguidas. Espera un momento y vuelve a intentar.',
+        };
+
+      case 500:
+        return {
+          success: false,
+          message: 'Algo salió mal en nuestro lado. Estamos trabajando para solucionarlo.',
+        };
+
+      case 503:
+        return {
+          success: false,
+          message: 'El servicio está en pausa temporalmente. Intenta de nuevo en unos minutos.',
+        };
+
+      default:
+        return {
+          success: false,
+          message: 'Ocurrió un error inesperado. Por favor, intenta más tarde.',
+        };
     }
 
-    if (status === 422) {
-      return { success: false, message: 'Campos inválidos o incompletos.' };
-    }
+    // // Casos sin status (errores de red, timeout, etc.)
+    // if (err.code === 'ECONNABORTED') {
+    //   return { success: false, message: 'Tiempo de espera agotado. Revisa tu conexión e intenta de nuevo.' };
+    // }
 
-    if (status === 500) {
-      return { success: false, message: 'Error interno del servidor. Intenta más tarde.' };
-    }
+    // if (!err.response) {
+    //   return { success: false, message: 'No se pudo conectar con el servidor. Verifica tu conexión a internet.' };
+    // }
 
-    return {
-      success: false,
-      message: serverMsg || `Error inesperado: ${status || 'desconocido'}`,
-    };
+    // return { success: false, message: defaultMsg };
   }
 
-  return { success: false, message: 'No se pudo conectar con el servidor.' };
+  return {
+    success: false,
+    message: 'Error desconocido. Intenta de nuevo o contacta al soporte si el problema persiste.',
+  };
 };
+

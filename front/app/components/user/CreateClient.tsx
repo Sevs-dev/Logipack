@@ -46,6 +46,7 @@ function CreateClient({ canEdit = false, canView = false }: CreateClientProps) {
   const [responsiblePerson, setResponsiblePerson] = useState<{ name: string; email: string }[]>([]);
   const [newResponsibleName, setNewResponsibleName] = useState("");
   const [newResponsibleEmail, setNewResponsibleEmail] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
 
   const fetchClients = useCallback(async () => {
     try {
@@ -76,6 +77,8 @@ function CreateClient({ canEdit = false, canView = false }: CreateClientProps) {
 
 
   const handleSave = async () => {
+    if (isSaving) return;
+    setIsSaving(true);
     if (!name || !code || !email || !phone || !jobPosition) {
       showError("Por favor completa todos los campos obligatorios");
       return;
@@ -103,6 +106,8 @@ function CreateClient({ canEdit = false, canView = false }: CreateClientProps) {
     } catch (error) {
       console.error("Error al guardar cliente:", error);
       showError("Error al guardar cliente");
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -328,7 +333,8 @@ function CreateClient({ canEdit = false, canView = false }: CreateClientProps) {
 
           <div className="flex justify-center gap-4 mt-6">
             <Button onClick={closeModal} variant="cancel" />
-            {canEdit && <Button onClick={handleSave} variant="save" />}
+            {canEdit && <Button onClick={handleSave} disabled={
+              isSaving} label={isSaving ? "Guardando..." : "Crear"} variant="save" />}
           </div>
         </ModalSection>
       )

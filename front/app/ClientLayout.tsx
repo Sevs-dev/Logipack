@@ -15,30 +15,27 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
   // Estado para controlar si el sidebar está expandido o colapsado
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  if (showNavbar) {
-    return (
-      <div className="min-h-screen">
-        <header className="w-full">
-          <Navbar />
-        </header>
-        <main>
-          <Toaster />
-          {children}
-        </main>
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen flex">
       <AuthProvider>
-        <Sidebar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
-        <main className="flex-1 bg-[#242424]">
-          <PlanningNotifier />
-          <Toaster />
-          {children}
-        </main>
+        {showNavbar ? (
+          <main className="w-full">
+            <Navbar />
+            <Toaster />
+            {children}
+          </main>
+        ) : (
+          <>
+            <Sidebar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
+            <main className="flex-1 bg-[#242424]">
+              <PlanningNotifier />
+              <Toaster />
+              {children}
+            </main>
+          </>
+        )}
       </AuthProvider>
     </div>
   );
+
 }

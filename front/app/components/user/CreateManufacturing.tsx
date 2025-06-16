@@ -26,6 +26,7 @@ function CreateManufacturing({ canEdit = false, canView = false }: CreateClientP
     const [auditList, setAuditList] = useState<Audit[]>([]);
     // Estado para la auditoría seleccionada (no se usa, pero se deja para posible ampliación)
     const [, setSelectedAudit] = useState<Audit | null>(null);
+    const [isSaving, setIsSaving] = useState(false);
 
     const fetchData = async () => {
         try {
@@ -64,6 +65,8 @@ function CreateManufacturing({ canEdit = false, canView = false }: CreateClientP
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
+        if (isSaving) return;
+        setIsSaving(true);
         e.preventDefault();
         if (!formData.name || !formData.factory_id || formData.products.length === 0) {
             showError("Por favor, completa todos los campos antes de guardar.");
@@ -83,6 +86,8 @@ function CreateManufacturing({ canEdit = false, canView = false }: CreateClientP
         } catch (error) {
             console.error("Error al guardar manufactura", error);
             showError("No se pudo guardar la manufactura");
+        } finally {
+            setIsSaving(false);
         }
     };
 
@@ -199,7 +204,8 @@ function CreateManufacturing({ canEdit = false, canView = false }: CreateClientP
 
                         <div className="flex justify-center gap-2 mt-2">
                             <Button onClick={closeModal} variant="cancel" />
-                            {canEdit && <Button type="submit" variant="save" />}
+                            {canEdit && <Button type="submit" disabled={
+                                isSaving} label={isSaving ? "Guardando..." : "Crear"} variant="save" />}
                         </div>
                     </form>
                 </ModalSection>
