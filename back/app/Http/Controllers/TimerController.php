@@ -4,31 +4,46 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Timer;
+use Illuminate\Support\Facades\Log;
 
 class TimerController extends Controller
 {
     // Crear un nuevo timer
     public function store(Request $request)
     {
-        $validated = $request->validate([
-            'adaptation_id' => 'required|exists:adaptation_dates,id',
-            'stage_id'      => 'required|exists:stages,id',
-            'time'  => 'required|integer|min:0',
-        ]);
+        Log::info('📥 Incoming Timer request:', $request->all());
 
-        $timer = Timer::create([
-            'adaptation_id' => $validated['adaptation_id'],
-            'stage_id'      => $validated['stage_id'],
-            'time'  => $validated['time'],
-            'status' => '0',
-            'pause' => 0, // Inicialmente no hay pausa
-            'finish' => 0, // Inicialmente no hay finalización
-        ]);
+        try {
+            $validated = $request->validate([
+                'adaptation_id' => 'required|exists:adaptation_dates,id',
+                'stage_id'      => 'required|exists:stages,id',
+                'time'          => 'required|integer|min:0',
+            ]);
 
-        return response()->json([
-            'message' => 'Timer creado con éxito',
-            'timer'   => $timer,
-        ], 201);
+            Log::info('✅ Validated Timer data:', $validated);
+
+            $timer = Timer::create([
+                'adaptation_id' => $validated['adaptation_id'],
+                'stage_id'      => $validated['stage_id'],
+                'time'          => $validated['time'],
+                'status'        => '0',
+                'pause'         => 0,
+                'finish'        => 0,
+            ]);
+
+            Log::info('💾 Timer created:', $timer->toArray());
+
+            return response()->json([
+                'message' => 'Timer creado con éxito',
+                'timer'   => $timer,
+            ], 201);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            Log::error('❌ Validation failed:', $e->errors());
+            return response()->json([
+                'message' => 'Validation error',
+                'errors'  => $e->errors(),
+            ], 422);
+        }
     }
 
     // Pausar un timer

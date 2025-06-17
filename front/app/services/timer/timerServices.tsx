@@ -31,16 +31,8 @@ const handleError = (action: string, error: unknown) => {
 
 // Crear un timer
 export const createTimer = async (data: TimerData): Promise<TimerResponse> => {
+    console.log('Creating timer with data:', data);
     try {
-        const name = document.cookie
-            .split('; ')
-            .find(row => row.startsWith('name='))
-            ?.split('=')[1];
-
-        if (name) {
-            data.user = decodeURIComponent(name);
-        }
-
         const response = await apiTimer.post('/newTimer', data);
         return response.data;
     } catch (error) {

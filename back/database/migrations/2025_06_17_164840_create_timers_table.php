@@ -17,7 +17,7 @@ return new class extends Migration
             $table->foreign('adaptation_id')->references('id')->on('adaptation_dates')->onDelete('cascade');
             $table->unsignedBigInteger('stage_id');
             $table->foreign('stage_id')->references('id')->on('stages')->onDelete('cascade');
-            $table->string('time');
+            $table->integer('time')->default(0);
             $table->boolean('status')->default(false);
             $table->boolean('pause')->default(false);
             $table->boolean('finish')->default(false);

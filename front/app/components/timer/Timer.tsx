@@ -5,8 +5,7 @@ import {
     createTimer,
     pauseTimer,
     finishTimer,
-    resetTimer,
-    getTimerById,
+    resetTimer, 
 } from '../../services/timer/timerServices';
 
 interface TimerProps {

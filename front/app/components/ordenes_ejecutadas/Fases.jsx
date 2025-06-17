@@ -2,6 +2,14 @@ import React, { useState, useRef, useEffect } from 'react';
 import Firma from './Firma';
 import Text from "../text/Text";
 import Button from "../buttons/buttons";
+import {
+  createTimer,
+  pauseTimer,
+  finishTimer,
+  resetTimer,
+  getTimerById,
+} from '../../services/timer/timerServices';
+import { getStageId } from "../../services/maestras/stageServices";
 
 // Configuración de la base de datos IndexedDB
 const DB_NAME = 'FasesDB';
@@ -113,6 +121,50 @@ const Fases = ({ proms, setFaseSave, fase_save, fase_list }) => {
 
   const listas = proms || [];
   const lista = listas[lineaIndex] || {};
+  // console.log("Lista actual:", lista);
+  useEffect(() => {
+    const guardarTimer = async () => {
+      if (lista && lista.adaptation_id && lista.fases_fk) {
+        console.log("📥 Nueva lista recibida, procesando...");
+
+        try {
+          // Obtener stage
+          const stage = await getStageId(lista.fases_fk);
+          console.log("🎭 Stage obtenido:", stage);
+
+          let time = 0;
+
+          if (stage?.phase_type === "Procesos") {
+            if (stage.repeat_minutes !== null && stage.repeat_minutes !== undefined) {
+              time = Number(stage.repeat_minutes);
+            } else {
+              time = 0;
+            }
+          }
+
+          await createTimer({
+            adaptation_id: Number(lista.adaptation_id),
+            stage_id: Number(stage?.id),
+            time: Number(time),
+            status: 0,
+            pause: 0,
+            finish: 0
+          });
+
+          console.log("✅ Timer guardado con time =", time);
+
+        } catch (err) {
+          console.error("❌ Error en guardarTimer:", err);
+        }
+      }
+    };
+
+    guardarTimer();
+
+  }, [lista]);
+
+
+
   const info = memoria_fase[lineaIndex] || {};
 
   useEffect(() => {
