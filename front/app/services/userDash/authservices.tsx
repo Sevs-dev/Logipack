@@ -11,10 +11,7 @@ const authUser = axios.create({
 });
 
 // Login
-export const login = async (
-  email: string,
-  password: string
-): Promise<AuthResponse> => {
+export const login = async (email: string, password: string) => {
   try {
     const response = await authUser.post<LoginData>('/login', { email, password });
     return { success: true, data: response.data };
