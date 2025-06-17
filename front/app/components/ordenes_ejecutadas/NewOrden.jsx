@@ -199,10 +199,40 @@ const App = () => {
     const memoria_fase = await readFromDB('memoria_fase_save');
     const memoria_tipo_acom = await readFromDB('memoria_tipo_acom_save');
 
-    const data = {
-      acondicionamiento,
-      memoria_fase,
-      memoria_tipo_acom
+    // const data = {
+    //   acondicionamiento,
+    //   // memoria_fase,
+    //   // memoria_tipo_acom
+    // };
+    const confirmar = async () => {
+      try {
+        const response = await fetch('http://127.0.0.1:8000/api/confirmarOrden', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(acondicionamiento),
+        });
+        if (!response.ok) throw new Error('Error al enviar los datos');
+        const d = await response.json();
+        console.log(d);
+        // Limpiar solo los datos específicos en lugar de todo
+        await clearDBData([
+          'memoria_fase',
+          'memoria_fase_save',
+          'fase_save',
+          'memoria_tipo_acom',
+          'memoria_tipo_acom_save',
+          'tipo_acom_save'
+        ]);
+
+        // setFaseSave(false);
+        setTipoAcomSave(false);
+        setSaveStatus({ fase: '', tipo_acom: '' });
+        window.close();
+      } catch (e) {
+        console.log(e);
+      }
     };
 
     console.log('Formulario finalizado con memoria:', data);
