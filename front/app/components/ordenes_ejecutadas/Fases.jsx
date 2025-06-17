@@ -184,29 +184,18 @@ const Fases = ({ proms, setFaseSave, fase_save, fase_list }) => {
 
         const nextLine = async () => {
           try {
-            
-            const datosFinales = listas.map((item, index) => ({
-              id: item.id,
-              orden_ejecutada: String(item.orden_ejecutada),
-              adaptation_id: String(item.adaptation_id),
-              tipo_acondicionamiento_fk: String(item.tipo_acondicionamiento_fk),
-              fases_fk: String(item.fases_fk),
-              description_fase: String(item.description_fase),
-              phase_type: String(item.phase_type),
-              forms: JSON.stringify(
-                JSON.parse(item.forms).map((form) => ({
-                  ...form,
-                  valor: memoria_fase[index]?.[form.clave] || ''
-                }))
-              )
-            }));
-            
+            lista.forms = JSON.stringify(
+              JSON.parse(lista.forms).map((form) => ({
+                ...form,
+                valor: memoria_fase[lineaIndex]?.[form.clave] || ''
+              }))
+            );
             const response = await fetch('http://127.0.0.1:8000/api/next_line', {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
               },
-              body: JSON.stringify(datosFinales),
+              body: JSON.stringify(lista),
             });
             if (!response.ok) throw new Error('Error al enviar los datos');
             const data = await response.json();
