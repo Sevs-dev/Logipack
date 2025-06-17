@@ -226,8 +226,18 @@ const App = () => {
   };
 
   // Verificar estado de guardado
-  const isAllSaved = saveStatus.fase === "guardado";
-    // && saveStatus.tipo_acom !== "guardado";
+  const [isAllSaved, setIsAllSaved] = useState(false);
+  const [isAllSaved2, setIsAllSaved2] = useState(false);
+  // useEffect(() => {
+    
+  //   if (saveStatus.fase === "guardado" && saveStatus.tipo_acom === "guardado") {
+  //     setIsAllSaved2(true);
+  //   }
+  //   if(list_data?.maestra_fases_fk?.length > 0){
+  //     setIsAllSaved(true);
+  //   }
+  // }, [list_data]);
+  
 
   if (loading) return (
     <div className="flex justify-center items-center h-screen">
@@ -270,7 +280,7 @@ const App = () => {
 
       {/* Fases Component */}
       <div className="mb-10">
-        {list_data.length > 0 && (
+        {list_data?.maestra_fases_fk?.length > 0 && (
           <Fases
             proms={list_data?.maestra_fases_fk}
             setFaseSave={setFaseSave}
@@ -281,7 +291,7 @@ const App = () => {
       </div>
 
       {/* Confirmation Section */}
-      {isAllSaved && (
+      {(list_data?.maestra_fases_fk?.length < 1 || saveStatus.fase === "guardado" ) && (
         <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-100 rounded-xl p-8 shadow-md text-center transition-all transform hover:shadow-lg duration-300">
           <h3 className="text-2xl font-bold text-green-600">Confirmación Final</h3>
           <p className="mt-3 text-gray-600">
