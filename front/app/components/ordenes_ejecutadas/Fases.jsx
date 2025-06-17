@@ -163,8 +163,6 @@ const Fases = ({ proms, setFaseSave, fase_save, fase_list }) => {
 
   }, [lista]);
 
-
-
   const info = memoria_fase[lineaIndex] || {};
 
   useEffect(() => {
