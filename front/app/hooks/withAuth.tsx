@@ -7,19 +7,26 @@ import Loader from "../components/loader/Loader";
 function withAuth<P extends object>(Component: React.ComponentType<P>): React.FC<P> {
   const AuthComponent: React.FC<P> = (props) => {
     const { user, loading } = useAuth();
-    const router = useRouter(); 
+    const router = useRouter();
 
+    // Seguridad extra: si no user, hacer replace
     useEffect(() => {
       if (!loading && !user) {
         console.warn("🚫 Usuario no autenticado. Redirigiendo a /pages/noneUser");
         router.replace("/pages/noneUser");
-      } else if (!loading && user) {
-        // console.info("✅ Usuario autenticado:", user);
       }
     }, [loading, user, router]);
 
+    // Render logic:
     if (loading) return <Loader />;
-    if (!user) return null;
+
+    if (!user && !loading) {
+      // Prevent flicker:
+      if (typeof window !== "undefined") {
+        router.replace("/pages/noneUser");
+      }
+      return null;
+    }
 
     return <Component {...props} />;
   };
@@ -30,4 +37,3 @@ function withAuth<P extends object>(Component: React.ComponentType<P>): React.FC
 }
 
 export default withAuth;
-
