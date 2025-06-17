@@ -625,7 +625,7 @@ function NewAdaptation({ canEdit = false, canView = false }: CreateClientProps) 
 
             {isOpen && (
                 <ModalSection isVisible={isOpen} onClose={() => (resetForm(), setIsOpen(false))} >
-                    <Text type="title" color="text-[#000]">
+                    <Text type="title" color="#000">
                         {isEditMode ? "Editar" : "Crear"} Acondicionamiento
                     </Text>
 
@@ -642,7 +642,7 @@ function NewAdaptation({ canEdit = false, canView = false }: CreateClientProps) 
                         <div className="col-span-full">
                             <div className="flex gap-4">
                                 <div className="w-1/2">
-                                    <Text type="subtitle" color="text-[#000]">Planta:</Text>
+                                    <Text type="subtitle" color="#000">Planta:</Text>
                                     <select
                                         className="w-full border p-3 rounded-lg text-gray-800 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500 text-center"
                                         value={planta}
@@ -659,7 +659,7 @@ function NewAdaptation({ canEdit = false, canView = false }: CreateClientProps) 
                                 </div>
 
                                 <div className="w-1/2">
-                                    <Text type="subtitle" color="text-[#000]">Cliente:</Text>
+                                    <Text type="subtitle" color="#000">Cliente:</Text>
                                     <select
                                         className="w-full border p-3 rounded-lg text-gray-800 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500 text-center"
                                         value={selectedClient}
@@ -679,7 +679,7 @@ function NewAdaptation({ canEdit = false, canView = false }: CreateClientProps) 
                                 </div>
                                 <div className="w-1/2 relative group">
                                     {/* Label con mejor espaciado */}
-                                    <Text type="subtitle" color="text-[#000]">Orden:</Text>
+                                    <Text type="subtitle" color="#000">Orden:</Text>
                                     {/* Contenedor para input y botón */}
                                     <div className="relative">
                                         {/* Input mejorado */}
@@ -727,7 +727,7 @@ function NewAdaptation({ canEdit = false, canView = false }: CreateClientProps) 
                         >
                             {/* Select de Maestras */}
                             <div>
-                                <Text type="subtitle" color="text-[#000]">Maestras:</Text>
+                                <Text type="subtitle" color="#000">Maestras:</Text>
                                 <select
                                     className="w-full border p-3 rounded-lg text-gray-800 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500  text-center"
                                     value={selectedMaestras.length > 0 ? selectedMaestras[0] : ""}
@@ -750,7 +750,7 @@ function NewAdaptation({ canEdit = false, canView = false }: CreateClientProps) 
                             {/* Select de BOM solo si se requiere */}
                             {maestraRequiereBOM && (
                                 <div>
-                                    <Text type="subtitle" color="text-[#000]">BOM:</Text>
+                                    <Text type="subtitle" color="#000">BOM:</Text>
                                     <select
                                         className="w-full border p-3 rounded-lg text-gray-800 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500 text-center"
                                         onChange={(e) => {
@@ -790,7 +790,7 @@ function NewAdaptation({ canEdit = false, canView = false }: CreateClientProps) 
                             )}
                             {/* MultiSelect Articulos*/}
                             <div>
-                                <Text type="subtitle" color="text-[#000]">Artículos:</Text>
+                                <Text type="subtitle" color="#000">Artículos:</Text>
                                 {maestraRequiereBOM ? (
                                     <select
                                         className="w-full border p-3 rounded-lg text-gray-800 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500 text-center"
@@ -866,7 +866,7 @@ function NewAdaptation({ canEdit = false, canView = false }: CreateClientProps) 
                             <div className="col-span-full grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 p-4 border border-gray-300 rounded-md bg-white shadow-sm hover:shadow-md transition-shadow">
                                 {/* Número de Orden */}
                                 <div>
-                                    <Text type="subtitle" color="text-[#000]">N° Orden del Cliente Con:</Text>
+                                    <Text type="subtitle" color="#000">N° Orden del Cliente Con:</Text>
                                     <input
                                         type="text"
                                         className="w-full border p-3 rounded-lg text-gray-800 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500 text-center"
@@ -878,7 +878,7 @@ function NewAdaptation({ canEdit = false, canView = false }: CreateClientProps) 
 
                                 {/* Fecha Entrega */}
                                 <div>
-                                    <Text type="subtitle" color="text-[#000]">Fecha Entrega:</Text>
+                                    <Text type="subtitle" color="#000">Fecha Entrega:</Text>
                                     <input
                                         type="date"
                                         className="w-full border p-3 rounded-lg text-gray-800 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500 text-center"
@@ -890,7 +890,7 @@ function NewAdaptation({ canEdit = false, canView = false }: CreateClientProps) 
 
                                 {/* Cantidad a producir */}
                                 <div>
-                                    <Text type="subtitle" color="text-[#000]">Cantidad a Producir:</Text>
+                                    <Text type="subtitle" color="#000">Cantidad a Producir:</Text>
                                     <input
                                         type="number"
                                         className="w-full border p-3 rounded-lg text-gray-800 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500 text-center"
@@ -903,7 +903,7 @@ function NewAdaptation({ canEdit = false, canView = false }: CreateClientProps) 
                                 {/* Lote */}
 
                                 <div>
-                                    <Text type="subtitle" color="text-[#000]">Lote:</Text>
+                                    <Text type="subtitle" color="#000">Lote:</Text>
                                     <input
                                         type="text"
                                         className="w-full border p-3 rounded-lg text-gray-800 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500 text-center"
@@ -915,7 +915,7 @@ function NewAdaptation({ canEdit = false, canView = false }: CreateClientProps) 
 
                                 {/* Registro Sanitario */}
                                 <div>
-                                    <Text type="subtitle" color="text-[#000]">Registro Sanitario:</Text>
+                                    <Text type="subtitle" color="#000">Registro Sanitario:</Text>
                                     <input
                                         type="text"
                                         className="w-full border p-3 rounded-lg text-gray-800 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500 text-center"
@@ -927,7 +927,7 @@ function NewAdaptation({ canEdit = false, canView = false }: CreateClientProps) 
 
                                 {/* Adjunto */}
                                 <div className="flex flex-col">
-                                    <Text type="subtitle" color="text-[#000]">Adjuntar:</Text>
+                                    <Text type="subtitle" color="#000">Adjuntar:</Text>
                                     {canEdit && (
                                         <File onChange={setAttachment} />
                                     )}
@@ -1039,7 +1039,7 @@ function NewAdaptation({ canEdit = false, canView = false }: CreateClientProps) 
                         {/* Materiales */}
                         {maestraRequiereBOM ? (
                             <div className="col-span-full">
-                                <Text type="subtitle" color="text-[#000]">Materiales:</Text>
+                                <Text type="subtitle" color="#000">Materiales:</Text>
                                 <div>
                                     <table className="w-full border-collapse border border-black text-black">
                                         <thead>

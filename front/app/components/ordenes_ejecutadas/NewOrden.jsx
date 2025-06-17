@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import TipoAcom from './TipoAcom';
 import Fases from './Fases';
+import Text from '../text/Text';
+import Button from "../buttons/buttons";
 
 // Configuración de la base de datos IndexedDB (debe ser consistente con Fases.js)
 const DB_NAME = 'FasesDB';
@@ -237,87 +239,60 @@ const App = () => {
   );
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-4xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
-        {/* Header */}
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-extrabold text-gray-900 sm:text-4xl">
-            Órdenes de Acondicionamiento
-          </h1>
-          <p className="mt-3 text-xl text-gray-500">
-            Gestión de procesos de producción
-          </p>
-        </div>
+    <div className="w-full bg-white border rounded-sm p-6 md:p-10">
+      {/* Header */}
+      <div className="flex flex-wrap justify-center md:justify-between items-center mb-10 gap-4">
+        <Text type="title" color="#000">
+          Orden #{acondicionamiento.number_order}
+        </Text>
 
         {/* Order Card */}
-        <div className="bg-white shadow overflow-hidden sm:rounded-lg mb-8">
-          <div className="px-4 py-5 sm:px-6 bg-gradient-to-r from-blue-600 to-blue-500">
-            <h3 className="text-lg leading-6 font-medium text-white">
-              Orden #{acondicionamiento.number_order}
-            </h3>
+        <div className="inline-flex items-start gap-4 bg-white rounded-xl border border-gray-200 shadow p-4">
+          <div className="flex-shrink-0 w-8 h-8 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center text-sm font-bold shadow-sm">
+            {[{ label: 'Descripción Maestra', value: acondicionamiento.descripcion_maestra }][0].label.charAt(0)}
           </div>
-          <div className="border-t border-gray-200 px-4 py-5 sm:p-0">
-            <dl className="sm:divide-y sm:divide-gray-200">
-              {[
-                { label: 'Adaptation ID', value: acondicionamiento.adaptation_id },
-                { label: 'Descripción Maestra', value: acondicionamiento.descripcion_maestra },
-              ].map((item, index) => (
-                <div key={index} className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                  <dt className="text-sm font-medium text-gray-500">
-                    {item.label}
-                  </dt>
-                  <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
-                    {item.value || '-'}
-                  </dd>
-                </div>
-              ))}
-            </dl>
+          <div>
+            <dt className="text-xs font-semibold text-gray-600 mb-1">
+              Descripción Maestra
+            </dt>
+            <dd className="text-sm text-gray-900">
+              {acondicionamiento.descripcion_maestra || (
+                <span className="text-gray-400 italic">Sin descripción</span>
+              )}
+            </dd>
           </div>
         </div>
-
-        {/* Components */}
-        <div className="space-y-8">
-          <Fases
-            proms={list_data?.maestra_fases_fk}
-            setFaseSave={setFaseSave}
-            fase_save={fase_save}
-            fase_list={acondicionamiento.maestra_fases_fk}
-          />
-
-          {/* <TipoAcom
-            proms={list_data?.maestra_tipo_acondicionamiento_fk}
-            setTipoAcomSave={setTipoAcomSave}
-            tipo_acom_save={tipo_acom_save}
-          /> */}
-        </div>
-
-        {/* Submit Section */}
-        {isAllSaved && (
-          <div className="mt-8 bg-white shadow sm:rounded-lg">
-            <div className="px-4 py-5 sm:px-6 bg-gradient-to-r from-green-600 to-green-500 rounded-t-lg">
-              <h3 className="text-lg leading-6 font-medium text-white">
-                Confirmación Final
-              </h3>
-            </div>
-            <div className="px-4 py-5 sm:p-6 text-center">
-              <p className="mb-6 text-gray-600">
-                Verifique que toda la información es correcta antes de finalizar el proceso.
-              </p>
-              <button
-                onClick={handleFinalSubmit}
-                className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white
-                bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200"
-              >
-                Finalizar y Enviar
-                <svg className="ml-3 -mr-1 h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M10.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L12.586 11H5a1 1 0 110-2h7.586l-2.293-2.293a1 1 0 010-1.414z" clipRule="evenodd" />
-                </svg>
-              </button>
-            </div>
-          </div>
-        )}
       </div>
+
+      {/* Fases Component */}
+      <div className="mb-10">
+        <Fases
+          proms={list_data?.maestra_fases_fk}
+          setFaseSave={setFaseSave}
+          fase_save={fase_save}
+          fase_list={acondicionamiento.maestra_fases_fk}
+        />
+      </div>
+
+      {/* Confirmation Section */}
+      {isAllSaved && (
+        <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-100 rounded-xl p-8 shadow-md text-center transition-all transform hover:shadow-lg duration-300">
+          <h3 className="text-2xl font-bold text-green-600">Confirmación Final</h3>
+          <p className="mt-3 text-gray-600">
+            Verifique que toda la información es correcta antes de finalizar el proceso.
+          </p>
+          <div className="flex justify-center gap-2 mt-6">
+            <Button
+              onClick={() => handleFinalSubmit()}
+              variant="save"
+              label="Finalizar y Enviar"
+              className="px-6 py-3 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg shadow-md transition-colors duration-200"
+            />
+          </div>
+        </div>
+      )}
     </div>
+
   );
 };
 

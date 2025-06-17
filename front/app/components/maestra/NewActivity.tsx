@@ -250,11 +250,11 @@ export default function NewActivity({ canEdit = false, canView = false }: Create
             {modalOpen && (
                 <ModalSection isVisible={modalOpen} onClose={handleModalClose}>
                     <div className="text-center">
-                        <Text type="title" color="text-[#000]">{isEditing ? "Editar Actividad" : "Crear Actividad"}</Text>
+                        <Text type="title" color="#000">{isEditing ? "Editar Actividad" : "Crear Actividad"}</Text>
                     </div>
                     {/* Campo de descripción */}
                     <div>
-                        <Text type="subtitle" color="text-[#000]">Descripción</Text>
+                        <Text type="subtitle" color="#000">Descripción</Text>
                         <input
                             type="text"
                             name="description"
@@ -269,7 +269,7 @@ export default function NewActivity({ canEdit = false, canView = false }: Create
 
                     {/* Selector de tipo de actividad */}
                     <div>
-                        <Text type="subtitle" color="text-[#000]">Tipo de Actividad</Text>
+                        <Text type="subtitle" color="#000">Tipo de Actividad</Text>
                         <select
                             value={selectedType}
                             onChange={(e) => handleTypeChange(e.target.value)}

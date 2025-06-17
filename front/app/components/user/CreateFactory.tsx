@@ -139,12 +139,12 @@ function CreateFactory({ canEdit = false, canView = false }: CreateClientProps) 
             {isModalOpen && (
                 <ModalSection isVisible={isModalOpen} onClose={() => setIsModalOpen(false)}>
                     <div className="text-center">
-                        <Text type="title" color="text-[#000]">{editingFactory ? "Editar" : "Crear"} Planta</Text>
+                        <Text type="title" color="#000">{editingFactory ? "Editar" : "Crear"} Planta</Text>
                     </div>
 
                     <div className="grid grid-cols-2 gap-4 text-center mt-4">
                         <div>
-                            <Text type="subtitle" color="text-[#000]" >Nombre</Text>
+                            <Text type="subtitle" color="#000" >Nombre</Text>
                             <input
                                 type="text"
                                 value={name}
@@ -154,7 +154,7 @@ function CreateFactory({ canEdit = false, canView = false }: CreateClientProps) 
                             />
                         </div>
                         <div>
-                            <Text type="subtitle" color="text-[#000]" >Prefijo</Text>
+                            <Text type="subtitle" color="#000" >Prefijo</Text>
                             <input
                                 type="text"
                                 value={prefix}
@@ -164,7 +164,7 @@ function CreateFactory({ canEdit = false, canView = false }: CreateClientProps) 
                             />
                         </div>
                         <div>
-                            <Text type="subtitle" color="text-[#000]" >Ubicación</Text>
+                            <Text type="subtitle" color="#000" >Ubicación</Text>
                             <input
                                 type="text"
                                 value={location}
@@ -174,7 +174,7 @@ function CreateFactory({ canEdit = false, canView = false }: CreateClientProps) 
                             />
                         </div>
                         <div>
-                            <Text type="subtitle" color="text-[#000]" >Capacidad</Text>
+                            <Text type="subtitle" color="#000" >Capacidad</Text>
                             <input
                                 type="text"
                                 value={capacity}
@@ -184,7 +184,7 @@ function CreateFactory({ canEdit = false, canView = false }: CreateClientProps) 
                             />
                         </div>
                         <div>
-                            <Text type="subtitle" color="text-[#000]" >Persona a Cargo</Text>
+                            <Text type="subtitle" color="#000" >Persona a Cargo</Text>
                             <input
                                 type="text"
                                 value={manager}
@@ -194,7 +194,7 @@ function CreateFactory({ canEdit = false, canView = false }: CreateClientProps) 
                             />
                         </div>
                         <div>
-                            <Text type="subtitle" color="text-[#000]" >Empleados</Text>
+                            <Text type="subtitle" color="#000" >Empleados</Text>
                             <input
                                 type="number"
                                 value={employees}
@@ -204,7 +204,7 @@ function CreateFactory({ canEdit = false, canView = false }: CreateClientProps) 
                             />
                         </div>
                         <div>
-                            <Text type="subtitle" color="text-[#000]" >Estado</Text>
+                            <Text type="subtitle" color="#000" >Estado</Text>
                             <select
                                 value={status ? '1' : '0'}  // Convierte el booleano a '1' o '0'
                                 onChange={(e) => setStatus(e.target.value === '1')}  // Convierte '1' a true y '0' a false

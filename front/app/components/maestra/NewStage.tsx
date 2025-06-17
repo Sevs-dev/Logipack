@@ -293,12 +293,12 @@ function NewStage({ canEdit = false, canView = false }: CreateClientProps) {
                     }
                     resetForm();
                 }}>
-                    <Text type="title" color="text-[#000]">{editingStage ? "Editar Fase" : "Crear Fase"}</Text>
+                    <Text type="title" color="#000">{editingStage ? "Editar Fase" : "Crear Fase"}</Text>
 
                     <div className="space-y-4">
                         {/* Descripción */}
                         <div>
-                            <Text type="subtitle" color="text-[#000]">Descripción</Text>
+                            <Text type="subtitle" color="#000">Descripción</Text>
                             <input
                                 type="text"
                                 value={description}
@@ -310,7 +310,7 @@ function NewStage({ canEdit = false, canView = false }: CreateClientProps) {
 
                         {/* Tipo de Fase */}
                         <div>
-                            <Text type="subtitle" color="text-[#000]">Tipo de Fase</Text>
+                            <Text type="subtitle" color="#000">Tipo de Fase</Text>
                             <select
                                 value={phaseType}
                                 onChange={(e) =>
@@ -340,11 +340,11 @@ function NewStage({ canEdit = false, canView = false }: CreateClientProps) {
                         {/* Actividades (solo si Tipo de Fase es Actividades) */}
                         {(phaseType === "Actividades" || phaseType === "Control" || phaseType === "Procesos") && (
                             <div className="space-y-4">
-                                <Text type="subtitle" color="text-[#000]">Actividades</Text>
+                                <Text type="subtitle" color="#000">Actividades</Text>
                                 <div className="flex flex-col md:flex-row gap-4">
                                     {/* Lista de actividades disponibles */}
                                     <div className="w-full md:w-1/2">
-                                        <Text type="subtitle" color="text-[#000]">Disponibles</Text>
+                                        <Text type="subtitle" color="#000">Disponibles</Text>
                                         <div className="relative mb-2">
                                             <Search className="absolute left-3 top-2.5 w-4 h-4 text-gray-500" />
                                             <input
@@ -391,7 +391,7 @@ function NewStage({ canEdit = false, canView = false }: CreateClientProps) {
 
                                     {/* Lista de actividades seleccionadas */}
                                     <div className="w-full md:w-1/2">
-                                        <Text type="subtitle" color="text-[#000]">Seleccionadas</Text>
+                                        <Text type="subtitle" color="#000">Seleccionadas</Text>
                                         <ul className="mt-1 border border-gray-300 p-2 rounded-lg max-h-48 overflow-y-auto">
                                             {selectedActivities.map((activity) => (
                                                 <li
@@ -423,7 +423,7 @@ function NewStage({ canEdit = false, canView = false }: CreateClientProps) {
                         {/* Total de duración */}
                         <div className="flex flex-col md:flex-row gap-4">
                             <div className="w-full md:w-1/2">
-                                <Text type="subtitle" color="text-[#000]">Tiempo Estimado</Text>
+                                <Text type="subtitle" color="#000">Tiempo Estimado</Text>
                                 <div className="mt-4 relative">
                                     <Clock className="absolute left-3 top-2.5 w-4 h-4 text-gray-500" />
                                     <input
@@ -440,7 +440,7 @@ function NewStage({ canEdit = false, canView = false }: CreateClientProps) {
                             </div>
 
                             <div className="w-full md:w-1/2">
-                                <Text type="subtitle" color="text-[#000]">T. Estimado Por El Usuario</Text>
+                                <Text type="subtitle" color="#000">T. Estimado Por El Usuario</Text>
                                 <div className="mt-4 relative">
                                     <Clock className="absolute left-3 top-2.5 w-4 h-4 text-gray-500" />
                                     <input

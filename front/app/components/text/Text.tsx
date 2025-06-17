@@ -12,14 +12,24 @@ const Heading: React.FC<HeadingProps> = ({
   color,
 }) => {
   let headingElement;
-  const underlineStyle = "border-gray-400 w-full sm:max-w-[260px] mx-auto mb-2 hover:border-blue-500 transition-colors duration-200";
 
-  const getTextClass = (defaultClass: string) => color ? `${defaultClass} ${color}` : defaultClass;
+  const getTextClass = (defaultClass: string) =>
+    color ? `${defaultClass} ${color}` : defaultClass;
+
+  const getBorderColor = () => {
+    if (color?.startsWith("text-")) {
+      return color.replace("text-", "border-");
+    } else if (color?.startsWith("#") || color?.startsWith("rgb")) {
+      return color;
+    } else {
+      return "border-black"; // ahora sí: si es title por defecto → negro
+    }
+  };
 
   switch (type) {
     case "title":
       headingElement = (
-        <h1 className={getTextClass("text-2xl font-bold")}>
+        <h1 className={getTextClass("text-2xl font-bold text-black")}>
           {children}
         </h1>
       );
@@ -53,10 +63,23 @@ const Heading: React.FC<HeadingProps> = ({
       );
   }
 
+  const borderColor = getBorderColor();
+
   return (
     <div className="text-center w-full">
       {headingElement}
-      <hr className={`mt-2 ${underlineStyle}`} />
+      {
+        borderColor.startsWith("#") || borderColor.startsWith("rgb") ? (
+          <hr
+            className={`mt-2 w-full sm:max-w-[260px] mx-auto mb-2 transition-colors duration-200`}
+            style={{ borderColor }}
+          />
+        ) : (
+          <hr
+            className={`mt-2 w-full sm:max-w-[260px] mx-auto mb-2 transition-colors duration-200 border ${borderColor}`}
+          />
+        )
+      }
     </div>
   );
 };

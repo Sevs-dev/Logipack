@@ -1,6 +1,7 @@
 import axios, { AxiosError } from 'axios';
 import { API_URL } from '../../config/api';
-import { AuthResponse, UserData, LoginData, User, Role, UpdateUserData } from "../../interfaces/Auth"
+import { AuthResponse, UserData, User, Role, UpdateUserData } from "../../interfaces/Auth"
+
 
 // Axios Instance
 const authUser = axios.create({
@@ -13,7 +14,7 @@ const authUser = axios.create({
 // Login
 export const login = async (email: string, password: string) => {
   try {
-    const response = await authUser.post<LoginData>('/login', { email, password });
+    const response = await authUser.post('/login', { email, password });
     return { success: true, data: response.data };
   } catch (error: unknown) {
     const result = handleError(error);

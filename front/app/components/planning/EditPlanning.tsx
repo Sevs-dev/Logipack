@@ -401,16 +401,16 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
         try {
             const response = await fetch(`http://localhost:8000/api/validar_estado/${plan.adaptation_id}`);
             const data = await response.json();
-            if(data.status === "error") {
+            if (data.status === "error") {
                 showError(data.message);
                 return;
-            } 
+            }
 
-            if(localStorage.getItem("ejecutar")) {
+            if (localStorage.getItem("ejecutar")) {
                 localStorage.removeItem("ejecutar");
             }
 
-            if(data.estado === 100 || data.estado === null) {
+            if (data.estado === 100 || data.estado === null) {
                 localStorage.setItem("ejecutar", JSON.stringify(plan.adaptation_id));
                 window.open("/pages/ordenes_ejecutadas", "_blank");
             } else {
@@ -451,12 +451,12 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
         <div>
             {isOpen && currentPlan && (
                 <ModalSection isVisible={isOpen} onClose={() => { setIsOpen(false) }}>
-                    <Text type="title" color="text-[#000]">Editar Acondicionamiento</Text>
+                    <Text type="title" color="#000">Editar Acondicionamiento</Text>
                     <h2 className="text-xl font-bold mb-6">Editar planificación</h2>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
-                            <Text type="subtitle" color="text-[#000]">Consecutivo</Text>
+                            <Text type="subtitle" color="#000">Consecutivo</Text>
                             <input
                                 className="w-full border p-3 rounded-lg text-gray-800 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500 text-center"
                                 readOnly
@@ -469,7 +469,7 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
                         </div>
                         {/* 🔹 Artículo */}
                         <div>
-                            <Text type="subtitle" color="text-[#000]">Artículo</Text>
+                            <Text type="subtitle" color="#000">Artículo</Text>
                             <input
                                 className="w-full border p-3 rounded-lg text-gray-800 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500 text-center"
                                 readOnly
@@ -482,7 +482,7 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
                         </div>
                         {/* 🔹 Fecha de entrega */}
                         <div>
-                            <Text type="subtitle" color="text-[#000]">Fecha de entrega</Text>
+                            <Text type="subtitle" color="#000">Fecha de entrega</Text>
                             <input
                                 className="w-full border p-3 rounded-lg text-gray-800 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500 text-center"
                                 type="date"
@@ -496,7 +496,7 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
                         </div>
                         {/* 🔹 Registro Sanitario */}
                         <div>
-                            <Text type="subtitle" color="text-[#000]">Registro Sanitario</Text>
+                            <Text type="subtitle" color="#000">Registro Sanitario</Text>
                             <input
                                 className="w-full border p-3 rounded-lg text-gray-800 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500 text-center"
                                 value={currentPlan.healthRegistration}
@@ -512,7 +512,7 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
                         </div>
                         {/* 🔹 Lote */}
                         <div>
-                            <Text type="subtitle" color="text-[#000]">Lote</Text>
+                            <Text type="subtitle" color="#000">Lote</Text>
                             <input
                                 className="w-full border p-3 rounded-lg text-gray-800 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500 text-center"
                                 value={currentPlan.lot}
@@ -525,7 +525,7 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
                         </div>
                         {/* 🔹 N° de orden */}
                         <div>
-                            <Text type="subtitle" color="text-[#000]">N° de orden</Text>
+                            <Text type="subtitle" color="#000">N° de orden</Text>
                             <input
                                 className="w-full border p-3 rounded-lg text-gray-800 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500 text-center"
                                 value={currentPlan.orderNumber}
@@ -538,7 +538,7 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
                         </div>
                         {/* 🔹 Cantidad a producir */}
                         <div>
-                            <Text type="subtitle" color="text-[#000]">Cantidad a producir</Text>
+                            <Text type="subtitle" color="#000">Cantidad a producir</Text>
                             <input
                                 className="w-full border p-3 rounded-lg text-gray-800 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500 text-center"
                                 type="number"
@@ -555,7 +555,7 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
                         </div>
                         {/* 🔹 Cliente */}
                         <div>
-                            <Text type="subtitle" color="text-[#000]">Cliente</Text>
+                            <Text type="subtitle" color="#000">Cliente</Text>
                             <input
                                 className="w-full border p-3 rounded-lg text-gray-800 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500 text-center"
                                 value={currentPlan.client_name || ""}
@@ -568,7 +568,7 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
                         </div>
                         {/* 🔹 Estado */}
                         <div>
-                            <Text type="subtitle" color="text-[#000]">Estado</Text>
+                            <Text type="subtitle" color="#000">Estado</Text>
                             <select
                                 className="w-full border p-3 rounded-lg text-gray-800 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500 text-center"
                                 value={currentPlan.status_dates}
@@ -584,7 +584,7 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
                         </div>
                         {/* 🔹 Planta */}
                         <div>
-                            <Text type="subtitle" color="text-[#000]">Planta</Text>
+                            <Text type="subtitle" color="#000">Planta</Text>
                             <input
                                 className="w-full border p-3 rounded-lg text-gray-800 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500 text-center"
                                 value={
@@ -596,7 +596,7 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
                         </div>
                         {/* 🔹 Lineas */}
                         <div>
-                            <Text type="subtitle" color="text-[#000]">Líneas</Text>
+                            <Text type="subtitle" color="#000">Líneas</Text>
                             <div className="flex flex-col sm:flex-row gap-4 mt-2">
                                 {/* Lista de líneas disponibles */}
                                 <div className="sm:w-1/2 w-full">
@@ -681,7 +681,7 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
 
                         {/* Actividades disponibles para arrastrar */}
                         <div className="flex-1 border border-gray-200 rounded-lg p-4 bg-gray-50 shadow-sm transition-all">
-                            <Text type="subtitle" color="text-[#000]">Actividades disponibles</Text>
+                            <Text type="subtitle" color="#000">Actividades disponibles</Text>
                             {availableActivities.map((act) => {
                                 const isDisabled = !canEdit;
                                 return (
@@ -716,7 +716,7 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
                                             onDrop={() => handleDrop(lineId)}
                                             className="flex-1 min-w-[250px] border-2 border-dashed border-blue-300 rounded-lg p-4 bg-blue-50 transition-colors"
                                         >
-                                            <Text type="subtitle" color="text-[#000]">
+                                            <Text type="subtitle" color="#000">
                                                 {lineDetails[lineId]?.name || `Línea ${lineId}`}
                                             </Text>
                                             {Array.isArray(lineActivities[lineId]) && lineActivities[lineId].length > 0 ? (
@@ -781,7 +781,7 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
 
                         {/* 🔹 Recursos */}
                         <div>
-                            <Text type="subtitle" color="text-[#000]">Recursos</Text>
+                            <Text type="subtitle" color="#000">Recursos</Text>
                             <textarea
                                 name="resource"
                                 value={currentPlan.resource || ""}
@@ -797,7 +797,7 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
                         </div>
                         {/* Color */}
                         <div>
-                            <Text type="subtitle" color="text-[#000]">Color</Text>
+                            <Text type="subtitle" color="#000">Color</Text>
                             <div className="flex flex-wrap gap-2 mt-2">
                                 {COLORS.map((color, index) => {
                                     const isSelected = currentPlan.color === color;
@@ -829,7 +829,7 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
                         </div>
                         {/* Icono */}
                         <div>
-                            <Text type="subtitle" color="text-[#000]">Icono</Text>
+                            <Text type="subtitle" color="#000">Icono</Text>
                             <IconSelector
                                 selectedIcon={currentPlan?.icon || ""}
                                 onChange={(iconName) =>
@@ -841,7 +841,7 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
                         </div>
                         {/* 🔹 Duración */}
                         <div>
-                            <Text type="subtitle" color="text-[#000]">Duración
+                            <Text type="subtitle" color="#000">Duración
                                 <InfoPopover content="Esta duracion es calculada segun la cantidad de fases que requiera multiple" />
                             </Text>
                             <input
@@ -853,7 +853,7 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
                         </div>
 
                         <div>
-                            <Text type="subtitle" color="text-[#000]">Duración por fase</Text>
+                            <Text type="subtitle" color="#000">Duración por fase</Text>
                             <div className="w-full p-3 mt-2 text-sm text-gray-800 bg-gray-100 border rounded whitespace-pre-line">
                                 {currentPlan.duration_breakdown
                                     ? formatDurationBreakdown(currentPlan.duration_breakdown)
@@ -862,7 +862,7 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
                         </div>
                         {/* 🔹 Fecha de Inicio */}
                         <div>
-                            <Text type="subtitle" color="text-[#000]">Fecha y Hora de Inicio</Text>
+                            <Text type="subtitle" color="#000">Fecha y Hora de Inicio</Text>
                             <input
                                 className="w-full border p-3 rounded-lg text-gray-800 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500 text-center"
                                 value={currentPlan.start_date || ""}
@@ -890,7 +890,7 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
                         </div>
 
                         <div>
-                            <Text type="subtitle" color="text-[#000]">Fecha y Hora de Final</Text>
+                            <Text type="subtitle" color="#000">Fecha y Hora de Final</Text>
                             <input
                                 className="w-full border p-3 rounded-lg text-gray-800 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500 text-center"
                                 value={currentPlan.end_date || ""}

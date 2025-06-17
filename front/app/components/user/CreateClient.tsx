@@ -194,11 +194,11 @@ function CreateClient({ canEdit = false, canView = false }: CreateClientProps) {
 
       {isModalOpen && (
         <ModalSection isVisible={isModalOpen} onClose={closeModal}>
-          <Text type="title" color="text-[#000]">{editingClients ? "Editar Cliente" : "Crear Cliente"}</Text>
+          <Text type="title" color="#000">{editingClients ? "Editar Cliente" : "Crear Cliente"}</Text>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <Text type="subtitle" color="text-[#000]" >Nombre del Cliente</Text>
+              <Text type="subtitle" color="#000" >Nombre del Cliente</Text>
               <input
                 type="text"
                 placeholder="Nombre del Cliente"
@@ -210,7 +210,7 @@ function CreateClient({ canEdit = false, canView = false }: CreateClientProps) {
             </div>
 
             <div>
-              <Text type="subtitle" color="text-[#000]" >Código</Text>
+              <Text type="subtitle" color="#000" >Código</Text>
               <input
                 type="text"
                 placeholder="Código"
@@ -222,7 +222,7 @@ function CreateClient({ canEdit = false, canView = false }: CreateClientProps) {
             </div>
 
             <div>
-              <Text type="subtitle" color="text-[#000]" >Correo</Text>
+              <Text type="subtitle" color="#000" >Correo</Text>
               <input
                 type="email"
                 placeholder="Correo"
@@ -234,7 +234,7 @@ function CreateClient({ canEdit = false, canView = false }: CreateClientProps) {
             </div>
 
             <div>
-              <Text type="subtitle" color="text-[#000]" >Teléfono</Text>
+              <Text type="subtitle" color="#000" >Teléfono</Text>
               <input
                 type="number"
                 placeholder="Teléfono"
@@ -246,7 +246,7 @@ function CreateClient({ canEdit = false, canView = false }: CreateClientProps) {
             </div>
 
             <div className="col-span-2">
-              <Text type="subtitle" color="text-[#000]" >Puesto de Trabajo</Text>
+              <Text type="subtitle" color="#000" >Puesto de Trabajo</Text>
               <input
                 type="text"
                 placeholder="Puesto de trabajo"
@@ -260,10 +260,10 @@ function CreateClient({ canEdit = false, canView = false }: CreateClientProps) {
 
           {/* Responsable */}
           <div className="mt-4">
-            <Text type="subtitle" color="text-[#000]" >Responsable</Text>
+            <Text type="subtitle" color="#000" >Responsable</Text>
             <div className="flex flex-wrap gap-2 mb-2 items-end">
               <div className="flex-1 min-w-[200px]">
-                <Text type="subtitle" color="text-[#000]" >Nombre</Text>
+                <Text type="subtitle" color="#000" >Nombre</Text>
                 <input
                   type="text"
                   placeholder="Nombre"
@@ -274,7 +274,7 @@ function CreateClient({ canEdit = false, canView = false }: CreateClientProps) {
                 />
               </div>
               <div className="flex-1 min-w-[200px]">
-                <Text type="subtitle" color="text-[#000]" >Correo</Text>
+                <Text type="subtitle" color="#000" >Correo</Text>
                 <input
                   type="email"
                   placeholder="Correo"
