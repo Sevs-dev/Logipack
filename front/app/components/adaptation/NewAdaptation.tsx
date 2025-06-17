@@ -625,7 +625,7 @@ function NewAdaptation({ canEdit = false, canView = false }: CreateClientProps) 
 
             {isOpen && (
                 <ModalSection isVisible={isOpen} onClose={() => (resetForm(), setIsOpen(false))} >
-                    <Text type="title" color="#000">
+                    <Text type="title" color="text-[#000]">
                         {isEditMode ? "Editar" : "Crear"} Acondicionamiento
                     </Text>
 

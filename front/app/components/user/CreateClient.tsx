@@ -194,7 +194,7 @@ function CreateClient({ canEdit = false, canView = false }: CreateClientProps) {
 
       {isModalOpen && (
         <ModalSection isVisible={isModalOpen} onClose={closeModal}>
-          <Text type="title" color="#000">{editingClients ? "Editar Cliente" : "Crear Cliente"}</Text>
+          <Text type="title" color="text-[#000]">{editingClients ? "Editar Cliente" : "Crear Cliente"}</Text>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>

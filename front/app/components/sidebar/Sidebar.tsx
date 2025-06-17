@@ -51,11 +51,11 @@ const menuItems: MenuItem[] = [
         icon: <FaFileInvoice />,
         link: "/pages/adaptation",
       },
-      {
-        label: "Planificacion",
-        icon: <FaBookmark />,
-        link: "/pages/planificacion",
-      },
+      // {
+      //   label: "Planificacion",
+      //   icon: <FaBookmark />,
+      //   link: "/pages/planificacion",
+      // },
       // {
       //   label: "Órdenes",
       //   icon: <FaCheckDouble />,

@@ -1,7 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import TipoAcom from './TipoAcom';
+import React, { useState, useEffect } from 'react'; 
 import Fases from './Fases';
-import Text from '../text/Text';
+import Text from "../text/Text";
 import Button from "../buttons/buttons";
 
 // Configuración de la base de datos IndexedDB (debe ser consistente con Fases.js)
@@ -234,7 +233,22 @@ const App = () => {
         console.log(e);
       }
     };
-    await confirmar();
+
+    console.log('Formulario finalizado con memoria:', data);
+
+    // Limpiar solo los datos específicos en lugar de todo
+    await clearDBData([
+      'memoria_fase',
+      'memoria_fase_save',
+      'fase_save',
+      'memoria_tipo_acom',
+      'memoria_tipo_acom_save',
+      'tipo_acom_save'
+    ]);
+
+    setFaseSave(false);
+    setTipoAcomSave(false);
+    setSaveStatus({ fase: '', tipo_acom: '' });
   };
 
   // Verificar estado de guardado
@@ -307,7 +321,6 @@ const App = () => {
         </div>
       )}
     </div>
-
   );
 };
 

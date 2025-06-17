@@ -362,7 +362,7 @@ function BOMManager({ canEdit = false, canView = false }: CreateClientProps) {
 
             {isModalOpen && (
                 <ModalSection isVisible={isModalOpen} onClose={() => { setIsModalOpen(false) }}>
-                    <Text type="title" color="#000">
+                    <Text type="title" color="text-[#000]">
                         {currentBomId ? "Editar BOM" : "Crear BOM"}
                     </Text>
 
