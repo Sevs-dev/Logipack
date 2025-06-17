@@ -21,6 +21,7 @@ use App\Http\Controllers\TipoAcondicionamientoController;
 use App\Http\Controllers\LineaTipoAcondicionamientoController;
 use App\Http\Controllers\OrdenesEjecutadasController;
 use App\Http\Controllers\HistoryAuditController;
+use App\Http\Controllers\TimerController;
 
 Route::controller(AuthController::class)->group(function () {
     Route::post('login', 'login');
@@ -212,4 +213,14 @@ Route::controller(HistoryAuditController::class)->group(function () {
     Route::get('/{model}/{id}', 'byModel'); // Obtener una lineas específica
     Route::get('/audit/{model}/{id}', 'byModelAdaptation'); // Obtener una lineas específica
     Route::get('/audit/admin/{model}/{id}', 'byModelAdmin'); // Obtener una lineas específica
+});
+
+//Rutas Timer
+Route::controller(TimerController::class)->group(function () {
+    Route::get('/getTimer', 'index');              // Listar timers
+    Route::post('/newTimer', 'store');             // Crear timer
+    Route::get('/getTimer/{id}', 'show');          // Obtener uno
+    Route::patch('/pauseTimer/{id}', 'pause');     // Pausar
+    Route::patch('/finishTimer/{id}', 'finish');   // Finalizar
+    Route::patch('/resetTimer/{id}', 'reset');     // Reiniciar
 });

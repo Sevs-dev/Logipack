@@ -79,7 +79,7 @@ function Table<T extends { id: number }>({
     const itemsPerPage = 10;
     const maxButtons = 4;
 
-    const filteredRows = rows.filter((row) =>
+    const filteredRows = (rows ?? []).filter((row) =>
         columns.some((column) => {
             const val = row[column];
             return (

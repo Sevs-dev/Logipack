@@ -1,5 +1,4 @@
-import React, { useState, useEffect } from 'react';
-import TipoAcom from './TipoAcom';
+import React, { useState, useEffect } from 'react'; 
 import Fases from './Fases';
 import Text from "../text/Text";
 import Button from "../buttons/buttons";
