@@ -31,21 +31,21 @@ const initDB = () => {
 };
 
 // Función para guardar datos en IndexedDB
-const saveToDB = async (key, data) => {
-  try {
-    const db = await initDB();
-    const transaction = db.transaction(STORE_NAME, 'readwrite');
-    const store = transaction.objectStore(STORE_NAME);
-    store.put({ id: key, data });
-    return new Promise((resolve) => {
-      transaction.oncomplete = () => {
-        resolve();
-      };
-    });
-  } catch (error) {
-    console.error('Error al guardar en IndexedDB:', error);
-  }
-};
+// const saveToDB = async (key, data) => {
+//   try {
+//     const db = await initDB();
+//     const transaction = db.transaction(STORE_NAME, 'readwrite');
+//     const store = transaction.objectStore(STORE_NAME);
+//     store.put({ id: key, data });
+//     return new Promise((resolve) => {
+//       transaction.oncomplete = () => {
+//         resolve();
+//       };
+//     });
+//   } catch (error) {
+//     console.error('Error al guardar en IndexedDB:', error);
+//   }
+// };
 
 // Función para leer datos de IndexedDB
 const readFromDB = async (key) => {
@@ -119,34 +119,34 @@ const useFetchData = () => {
   return { list_data, loading, error, reloadData: fetchData };
 };
 
-const useEnviarData = () => {
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
+// const useEnviarData = () => {
+//   const [loading, setLoading] = useState(false);
+//   const [error, setError] = useState(null);
 
-  const enviarData = async () => {
-    try {
-      setLoading(true);
-      const response = await fetch('http://127.0.0.1:8000/api/procesar_orden/4', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          acondicionamiento,
-          memoria_fase,
-          memoria_tipo_acom,
-        }),
-      });
-      if (!response.ok) throw new Error('Error al enviar los datos');
-    } catch (e) {
-      setError(e.message);
-    } finally {
-      setLoading(false);
-    }
-  };
+//   const enviarData = async () => {
+//     try {
+//       setLoading(true);
+//       const response = await fetch('http://127.0.0.1:8000/api/procesar_orden/4', {
+//         method: 'POST',
+//         headers: {
+//           'Content-Type': 'application/json',
+//         },
+//         body: JSON.stringify({
+//           acondicionamiento,
+//           memoria_fase,
+//           memoria_tipo_acom,
+//         }),
+//       });
+//       if (!response.ok) throw new Error('Error al enviar los datos');
+//     } catch (e) {
+//       setError(e.message);
+//     } finally {
+//       setLoading(false);
+//     }
+//   };
 
-  return { enviarData, loading, error };
-};
+//   return { enviarData, loading, error };
+// };
 
 const App = () => {
   const { list_data, loading, error } = useFetchData();
@@ -183,26 +183,15 @@ const App = () => {
       });
     };
     loadInitialStates();
-    // console.log("estado de guardado");
   }, [fase_save, tipo_acom_save]);
 
   useEffect(() => {
     if (list_data?.acondicionamiento) {
       setAcondicionamiento(list_data.acondicionamiento);
     }
-    // console.log("list_data");
   }, [list_data]);
 
   const handleFinalSubmit = async (e) => {
-    // e.preventDefault();
-    // const memoria_fase = await readFromDB('memoria_fase_save');
-    // const memoria_tipo_acom = await readFromDB('memoria_tipo_acom_save');
-
-    // const data = {
-    //   acondicionamiento,
-    //   // memoria_fase,
-    //   // memoria_tipo_acom
-    // };
     const confirmar = async () => {
       try {
         const response = await fetch('http://127.0.0.1:8000/api/confirmarOrden', {
@@ -233,26 +222,12 @@ const App = () => {
         console.log(e);
       }
     };
-
-    console.log('Formulario finalizado con memoria:', data);
-
-    // Limpiar solo los datos específicos en lugar de todo
-    await clearDBData([
-      'memoria_fase',
-      'memoria_fase_save',
-      'fase_save',
-      'memoria_tipo_acom',
-      'memoria_tipo_acom_save',
-      'tipo_acom_save'
-    ]);
-
-    setFaseSave(false);
-    setTipoAcomSave(false);
-    setSaveStatus({ fase: '', tipo_acom: '' });
+    await confirmar();
   };
 
   // Verificar estado de guardado
-  const isAllSaved = saveStatus.fase === "guardado" && saveStatus.tipo_acom !== "guardado";
+  const isAllSaved = saveStatus.fase === "guardado";
+    // && saveStatus.tipo_acom !== "guardado";
 
   if (loading) return (
     <div className="flex justify-center items-center h-screen">
@@ -295,12 +270,14 @@ const App = () => {
 
       {/* Fases Component */}
       <div className="mb-10">
-        <Fases
-          proms={list_data?.maestra_fases_fk}
-          setFaseSave={setFaseSave}
-          fase_save={fase_save}
-          fase_list={acondicionamiento.maestra_fases_fk}
-        />
+        {list_data.length > 0 && (
+          <Fases
+            proms={list_data?.maestra_fases_fk}
+            setFaseSave={setFaseSave}
+            fase_save={fase_save}
+            fase_list={acondicionamiento.maestra_fases_fk}
+          />
+        )}
       </div>
 
       {/* Confirmation Section */}
