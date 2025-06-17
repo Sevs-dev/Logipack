@@ -264,7 +264,7 @@ export default function NewTipoAcondicionamiento({ canEdit = false, canView = fa
                         setIsOpenEdit(false);
                     }} >
                         {/* Título */}
-                        <Text type="title" color="#000">{isOpenEdit ? "Editar Tipo de Orden de Acondicionamiento" : "Crear Nuevo Tipo de Acondicionamiento"}</Text>
+                        <Text type="title" color="text-[#000]">{isOpenEdit ? "Editar Tipo de Orden de Acondicionamiento" : "Crear Nuevo Tipo de Acondicionamiento"}</Text>
                         {/* Formulario principal */}
                         <div className="mb-8">
                             <Text type="subtitle" color="#000">Descripción</Text>
@@ -283,7 +283,7 @@ export default function NewTipoAcondicionamiento({ canEdit = false, canView = fa
                         {/* Tabla y formulario dinámico (solo si se aplicó el tipo base) */}
                         {(btnAplicar || isOpenEdit) && (
                             <>
-                                <Text type="title" color="#000">Líneas de Acondicionamiento</Text>
+                                <Text type="title" color="text-[#000]">Líneas de Acondicionamiento</Text>
                                 <div className="overflow-x-auto rounded-lg border border-gray-200 shadow-sm">
                                     <table className="min-w-full divide-y divide-gray-200 text-gray-700 text-center border border-gray-200">
                                         <thead className="bg-gray-50 border-b border-gray-200">

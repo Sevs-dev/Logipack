@@ -266,7 +266,7 @@ function CreateUser({ canEdit = false, canView = false }: CreateClientProps) {
       {/* Modal crear/editar usuario */}
       {isModalOpen && (
         <ModalSection isVisible={isModalOpen || editForm} onClose={closeModal}>
-          <Text type="title" color="#000">{userToEdit ? "Editar Usuario" : "Crear Usuario"}</Text>
+          <Text type="title" color="text-[#000]">{userToEdit ? "Editar Usuario" : "Crear Usuario"}</Text>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
             {/* Nombre */}
             <div>

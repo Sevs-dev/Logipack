@@ -139,7 +139,7 @@ function CreateFactory({ canEdit = false, canView = false }: CreateClientProps) 
             {isModalOpen && (
                 <ModalSection isVisible={isModalOpen} onClose={() => setIsModalOpen(false)}>
                     <div className="text-center">
-                        <Text type="title" color="#000">{editingFactory ? "Editar" : "Crear"} Planta</Text>
+                        <Text type="title" color="text-[#000]">{editingFactory ? "Editar" : "Crear"} Planta</Text>
                     </div>
 
                     <div className="grid grid-cols-2 gap-4 text-center mt-4">

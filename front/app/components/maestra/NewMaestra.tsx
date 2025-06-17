@@ -588,7 +588,7 @@ const Maestra = ({ canEdit = false, canView = false }: CreateClientProps) => {
             {/* Modal de creación/edición */}
             {isOpen && (
                 <ModalSection isVisible={isOpen} onClose={() => { setIsOpen(false) }}>
-                    <Text type="title" color="#000">{editingMaestra ? "Editar Maestra" : "Crear Maestra"}</Text>
+                    <Text type="title" color="text-[#000]">{editingMaestra ? "Editar Maestra" : "Crear Maestra"}</Text>
                     {/* Descripción */}
                     <div className="mt-4">
                         <Text type="subtitle" color="#000">Descripción</Text>
