@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'; 
+import React, { useState, useEffect } from 'react';
 import Fases from './Fases';
 import Text from "../text/Text";
 import Button from "../buttons/buttons";
@@ -29,23 +29,6 @@ const initDB = () => {
     };
   });
 };
-
-// Función para guardar datos en IndexedDB
-// const saveToDB = async (key, data) => {
-//   try {
-//     const db = await initDB();
-//     const transaction = db.transaction(STORE_NAME, 'readwrite');
-//     const store = transaction.objectStore(STORE_NAME);
-//     store.put({ id: key, data });
-//     return new Promise((resolve) => {
-//       transaction.oncomplete = () => {
-//         resolve();
-//       };
-//     });
-//   } catch (error) {
-//     console.error('Error al guardar en IndexedDB:', error);
-//   }
-// };
 
 // Función para leer datos de IndexedDB
 const readFromDB = async (key) => {
@@ -118,35 +101,6 @@ const useFetchData = () => {
 
   return { list_data, loading, error, reloadData: fetchData };
 };
-
-// const useEnviarData = () => {
-//   const [loading, setLoading] = useState(false);
-//   const [error, setError] = useState(null);
-
-//   const enviarData = async () => {
-//     try {
-//       setLoading(true);
-//       const response = await fetch('http://127.0.0.1:8000/api/procesar_orden/4', {
-//         method: 'POST',
-//         headers: {
-//           'Content-Type': 'application/json',
-//         },
-//         body: JSON.stringify({
-//           acondicionamiento,
-//           memoria_fase,
-//           memoria_tipo_acom,
-//         }),
-//       });
-//       if (!response.ok) throw new Error('Error al enviar los datos');
-//     } catch (e) {
-//       setError(e.message);
-//     } finally {
-//       setLoading(false);
-//     }
-//   };
-
-//   return { enviarData, loading, error };
-// };
 
 const App = () => {
   const { list_data, loading, error } = useFetchData();
@@ -225,20 +179,7 @@ const App = () => {
     await confirmar();
   };
 
-  // Verificar estado de guardado
-  const [isAllSaved, setIsAllSaved] = useState(false);
-  const [isAllSaved2, setIsAllSaved2] = useState(false);
-  // useEffect(() => {
-    
-  //   if (saveStatus.fase === "guardado" && saveStatus.tipo_acom === "guardado") {
-  //     setIsAllSaved2(true);
-  //   }
-  //   if(list_data?.maestra_fases_fk?.length > 0){
-  //     setIsAllSaved(true);
-  //   }
-  // }, [list_data]);
-  
-
+  // isAllSaved = saveStatus.fase === "guardado" && saveStatus.tipo_acom === "guardado"
   if (loading) return (
     <div className="flex justify-center items-center h-screen">
       <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
@@ -291,7 +232,7 @@ const App = () => {
       </div>
 
       {/* Confirmation Section */}
-      {(list_data?.maestra_fases_fk?.length < 1 || saveStatus.fase === "guardado" ) && (
+      {(list_data?.maestra_fases_fk?.length < 1 || saveStatus.fase === "guardado") && (
         <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-100 rounded-xl p-8 shadow-md text-center transition-all transform hover:shadow-lg duration-300">
           <h3 className="text-2xl font-bold text-green-600">Confirmación Final</h3>
           <p className="mt-3 text-gray-600">
