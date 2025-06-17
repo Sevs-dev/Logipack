@@ -32,21 +32,45 @@ class OrdenesEjecutadasController extends Controller
     {
         $resp = $request->all();
 
+        // Actualizar ActividadesEjecutadas
+        ActividadesEjecutadas::where('estado_form', false)->where('id', $resp['id'])->update([
+            'estado_form' => true,
+            'forms' => ($resp['forms'])
+        ]);
+
+        return response()->json([
+            'message' => 'Orden ejecutada procesada',
+            'estado' => true,
+            'data' => $resp['id'],
+        ]);
+    }
+
+    /**
+     * Confirmar orden
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function confirmarOrden(Request $request): JsonResponse
+    {
+        $resp = $request->all();
+
+        // Actualizar ActividadesEjecutadas
+        OrdenesEjecutadas::where('id', $resp['id'])->update([
+            'estado' => '11500',
+        ]);
+
+        // datos de la adaptacion
+        AdaptationDate::where('adaptation_id', $resp['adaptation_id'])->update([
+            'status_dates' => 'Ejecutado',
+        ]);
+
         return response()->json([
             'message' => 'Orden ejecutada procesada',
             'estado' => 11500,
-            'data' => $resp,
+            'data' => $resp['adaptation_id'],
         ]);
-        // Actualizar ActividadesEjecutadas
-        // ActividadesEjecutadas::where('estado_form', false)->update([
-        //     'estado_form' => true,
-        // ]);
-
-
-        // $response = OrdenesEjecutadas::where('proceso', 'eject')->where('estado', '100')->first();
-        // return response()->json($response);
     }
-
 
     /**
      * Validar estado de la orden

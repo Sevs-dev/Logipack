@@ -180,8 +180,7 @@ const Fases = ({ proms, setFaseSave, fase_save, fase_list }) => {
     e.preventDefault();
     if (formRef.current.checkValidity()) {
       if (lineaIndex < listas.length - 1) {
-        setLineaIndex((prev) => prev + 1);
-
+        
         const nextLine = async () => {
           try {
             lista.forms = JSON.stringify(
@@ -200,13 +199,12 @@ const Fases = ({ proms, setFaseSave, fase_save, fase_list }) => {
             if (!response.ok) throw new Error('Error al enviar los datos');
             const data = await response.json();
             console.log(data);
+            setLineaIndex((prev) => prev + 1);
           } catch (e) {
             console.log(e);
           }
         };
-
         await nextLine();
-
       }
     } else {
       formRef.current.reportValidity();
@@ -222,30 +220,54 @@ const Fases = ({ proms, setFaseSave, fase_save, fase_list }) => {
       return;
     }
 
-    const datosFinales = listas.map((item, index) => ({
-      id: item.id,
-      orden_ejecutada: String(item.orden_ejecutada),
-      adaptation_id: String(item.adaptation_id),
-      tipo_acondicionamiento_fk: String(item.tipo_acondicionamiento_fk),
-      fases_fk: String(item.fases_fk),
-      description_fase: String(item.description_fase),
-      phase_type: String(item.phase_type),
-      forms: JSON.stringify(
-        JSON.parse(item.forms).map((form) => ({
-          ...form,
-          valor: memoria_fase[index]?.[form.clave] || ''
-        }))
-      )
-    }));
+    const nextLine = async () => {
+      try {
+        lista.forms = JSON.stringify(
+          JSON.parse(lista.forms).map((form) => ({
+            ...form,
+            valor: memoria_fase[lineaIndex]?.[form.clave] || ''
+          }))
+        );
+        const response = await fetch('http://127.0.0.1:8000/api/next_line', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(lista),
+        });
+        if (!response.ok) throw new Error('Error al enviar los datos');
+        const data = await response.json();
+        console.log(data);
+        await saveToDB('fase_save', "guardado");
+        setSaveStatus("guardado");
+        setFaseSave(false);
+      } catch (e) {
+        console.log(e);
+      }
+    };
+    await nextLine();
 
-    const estructura = { maestra_fases_fk: datosFinales };
+    // const datosFinales = listas.map((item, index) => ({
+    //   id: item.id,
+    //   orden_ejecutada: String(item.orden_ejecutada),
+    //   adaptation_id: String(item.adaptation_id),
+    //   tipo_acondicionamiento_fk: String(item.tipo_acondicionamiento_fk),
+    //   fases_fk: String(item.fases_fk),
+    //   description_fase: String(item.description_fase),
+    //   phase_type: String(item.phase_type),
+    //   forms: JSON.stringify(
+    //     JSON.parse(item.forms).map((form) => ({
+    //       ...form,
+    //       valor: memoria_fase[index]?.[form.clave] || ''
+    //     }))
+    //   )
+    // }));
 
-    await saveToDB('memoria_fase', memoria_fase);
-    await saveToDB('memoria_fase_save', estructura);
-    await saveToDB('fase_save', "guardado");
+    // const estructura = { maestra_fases_fk: datosFinales };
 
-    setSaveStatus("guardado");
-    setFaseSave(false);
+    // await saveToDB('memoria_fase', memoria_fase);
+    // await saveToDB('memoria_fase_save', estructura);
+  
   };
 
   if (fase_save === false) {
@@ -582,7 +604,7 @@ const Fases = ({ proms, setFaseSave, fase_save, fase_list }) => {
             className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed"
             disabled={lineaIndex !== listas.length - 1}
           >
-            Finalizar
+            Finalizar y confirmar
           </button>
         </div>
       </form>
