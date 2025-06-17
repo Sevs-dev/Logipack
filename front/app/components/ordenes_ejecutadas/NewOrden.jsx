@@ -194,9 +194,9 @@ const App = () => {
   }, [list_data]);
 
   const handleFinalSubmit = async (e) => {
-    e.preventDefault();
-    const memoria_fase = await readFromDB('memoria_fase_save');
-    const memoria_tipo_acom = await readFromDB('memoria_tipo_acom_save');
+    // e.preventDefault();
+    // const memoria_fase = await readFromDB('memoria_fase_save');
+    // const memoria_tipo_acom = await readFromDB('memoria_tipo_acom_save');
 
     // const data = {
     //   acondicionamiento,
