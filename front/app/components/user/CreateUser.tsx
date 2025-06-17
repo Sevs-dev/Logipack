@@ -266,11 +266,11 @@ function CreateUser({ canEdit = false, canView = false }: CreateClientProps) {
       {/* Modal crear/editar usuario */}
       {isModalOpen && (
         <ModalSection isVisible={isModalOpen || editForm} onClose={closeModal}>
-          <Text type="title" color="text-[#000]">{userToEdit ? "Editar Usuario" : "Crear Usuario"}</Text>
+          <Text type="title" color="#000">{userToEdit ? "Editar Usuario" : "Crear Usuario"}</Text>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
             {/* Nombre */}
             <div>
-              <Text type="subtitle" color="text-[#000]">Nombre de Usuario</Text>
+              <Text type="subtitle" color="#000">Nombre de Usuario</Text>
               <input
                 type="text"
                 placeholder="Nombre"
@@ -283,7 +283,7 @@ function CreateUser({ canEdit = false, canView = false }: CreateClientProps) {
 
             {/* Email */}
             <div>
-              <Text type="subtitle" color="text-[#000]">Correo Electrónico</Text>
+              <Text type="subtitle" color="#000">Correo Electrónico</Text>
               <input
                 type="email"
                 placeholder="email@dominio.com"
@@ -296,7 +296,7 @@ function CreateUser({ canEdit = false, canView = false }: CreateClientProps) {
 
             {/* Contraseña */}
             <div className="relative">
-              <Text type="subtitle" color="text-[#000]">
+              <Text type="subtitle" color="#000">
                 Contraseña
                 {userToEdit && <InfoPopover content="Para no cambiar la contraseña dejar el campo en blanco" />}
               </Text>
@@ -329,7 +329,7 @@ function CreateUser({ canEdit = false, canView = false }: CreateClientProps) {
 
             {/* Rol */}
             <div>
-              <Text type="subtitle" color="text-[#000]">Rol</Text>
+              <Text type="subtitle" color="#000">Rol</Text>
               <select
                 value={role}
                 onChange={(e) => setRole(e.target.value)}
@@ -347,7 +347,7 @@ function CreateUser({ canEdit = false, canView = false }: CreateClientProps) {
 
             {/* Firma BPM */}
             <div>
-              <Text type="subtitle" color="text-[#000]">Firma BPM</Text>
+              <Text type="subtitle" color="#000">Firma BPM</Text>
               <input
                 type="text"
                 placeholder="Firma BPM"
@@ -360,7 +360,7 @@ function CreateUser({ canEdit = false, canView = false }: CreateClientProps) {
 
             {/* Fábricas */}
             <div className="col-span-1 md:col-span-2">
-              <Text type="subtitle" color="text-[#000]">Fábricas asignadas</Text>
+              <Text type="subtitle" color="#000">Fábricas asignadas</Text>
               <SelectorDual
                 titulo="Maquinaria"
                 disponibles={factory}

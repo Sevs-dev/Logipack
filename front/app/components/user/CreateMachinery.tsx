@@ -181,13 +181,13 @@ function CreateMachinery({ canEdit = false, canView = false }: CreateClientProps
 
       {isOpen && (
         <ModalSection isVisible={isOpen} onClose={() => { setIsOpen(false) }}>
-          <Text type="title" color="text-[#000]">{isEditMode ? "Editar" : "Crear"} Maquinaria</Text>
+          <Text type="title" color="#000">{isEditMode ? "Editar" : "Crear"} Maquinaria</Text>
 
           <form className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Columna 1 */}
             <div className="space-y-4">
               <div>
-                <Text type="subtitle" color="text-[#000]">Nombre</Text>
+                <Text type="subtitle" color="#000">Nombre</Text>
                 <input
                   type="text"
                   value={name}
@@ -198,7 +198,7 @@ function CreateMachinery({ canEdit = false, canView = false }: CreateClientProps
               </div>
 
               <div>
-                <Text type="subtitle" color="text-[#000]">
+                <Text type="subtitle" color="#000">
                   Categoría <InfoPopover content="Tamaño general de la máquina, afecta el transporte y espacio requerido." />
                 </Text>
                 <select
@@ -215,7 +215,7 @@ function CreateMachinery({ canEdit = false, canView = false }: CreateClientProps
               </div>
 
               <div>
-                <Text type="subtitle" color="text-[#000]">
+                <Text type="subtitle" color="#000">
                   Potencia <InfoPopover content="Medida en kW o HP, determina cuánta energía consume la máquina." />
                 </Text>
                 <input
@@ -228,7 +228,7 @@ function CreateMachinery({ canEdit = false, canView = false }: CreateClientProps
               </div>
 
               <div>
-                <Text type="subtitle" color="text-[#000]">
+                <Text type="subtitle" color="#000">
                   Dimensiones <InfoPopover content="Largo x Ancho x Alto en metros o centímetros." />
                 </Text>
                 <input
@@ -241,7 +241,7 @@ function CreateMachinery({ canEdit = false, canView = false }: CreateClientProps
               </div>
 
               <div>
-                <Text type="subtitle" color="text-[#000]">Descripción</Text>
+                <Text type="subtitle" color="#000">Descripción</Text>
                 <textarea
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
@@ -255,7 +255,7 @@ function CreateMachinery({ canEdit = false, canView = false }: CreateClientProps
             {/* Columna 2 */}
             <div className="space-y-4">
               <div>
-                <Text type="subtitle" color="text-[#000]">Plantas</Text>
+                <Text type="subtitle" color="#000">Plantas</Text>
                 <select
                   className="w-full border border-gray-300 rounded px-3 py-2 text-black text-center"
                   value={factory_id}
@@ -272,7 +272,7 @@ function CreateMachinery({ canEdit = false, canView = false }: CreateClientProps
               </div>
 
               <div>
-                <Text type="subtitle" color="text-[#000]">
+                <Text type="subtitle" color="#000">
                   Tipo <InfoPopover content="Clasificación técnica o funcional de la máquina." />
                 </Text>
                 <input
@@ -285,7 +285,7 @@ function CreateMachinery({ canEdit = false, canView = false }: CreateClientProps
               </div>
 
               <div>
-                <Text type="subtitle" color="text-[#000]">
+                <Text type="subtitle" color="#000">
                   Capacidad <InfoPopover content="La capacidad que la máquina puede producir por día." />
                 </Text>
                 <input
@@ -298,7 +298,7 @@ function CreateMachinery({ canEdit = false, canView = false }: CreateClientProps
               </div>
 
               <div>
-                <Text type="subtitle" color="text-[#000]">
+                <Text type="subtitle" color="#000">
                   Peso <InfoPopover content="Peso aproximado de la máquina, importante para transporte e instalación." />
                 </Text>
                 <input
@@ -311,7 +311,7 @@ function CreateMachinery({ canEdit = false, canView = false }: CreateClientProps
               </div>
 
               <div className="flex flex-col items-center">
-                <Text type="subtitle" color="text-[#000]">
+                <Text type="subtitle" color="#000">
                   Movíl <InfoPopover content="Indica si la máquina puede trasladarse fácilmente dentro del área de trabajo." />
                 </Text>
                 <input

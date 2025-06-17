@@ -362,12 +362,12 @@ function BOMManager({ canEdit = false, canView = false }: CreateClientProps) {
 
             {isModalOpen && (
                 <ModalSection isVisible={isModalOpen} onClose={() => { setIsModalOpen(false) }}>
-                    <Text type="title" color="text-[#000]">
+                    <Text type="title" color="#000">
                         {currentBomId ? "Editar BOM" : "Crear BOM"}
                     </Text>
 
                     <div className="mb-4">
-                        <Text type="subtitle" color="text-[#000]">Selecciona un Cliente:</Text>
+                        <Text type="subtitle" color="#000">Selecciona un Cliente:</Text>
                         <select
                             className="w-full border p-2 rounded text-black text-center"
                             value={selectedClient}
@@ -386,7 +386,7 @@ function BOMManager({ canEdit = false, canView = false }: CreateClientProps) {
                     {(selectedClient || currentBomId) && (
                         <div className="mt-4 grid grid-cols-2 gap-4">
                             <div>
-                                <Text type="subtitle" color="text-[#000]">Artículos Disponibles:</Text>
+                                <Text type="subtitle" color="#000">Artículos Disponibles:</Text>
                                 <div className="mb-2">
                                     <input
                                         type="text"
@@ -422,7 +422,7 @@ function BOMManager({ canEdit = false, canView = false }: CreateClientProps) {
                             </div>
 
                             <div>
-                                <Text type="subtitle" color="text-[#000]">Artículo Seleccionado:</Text>
+                                <Text type="subtitle" color="#000">Artículo Seleccionado:</Text>
                                 {selectedArticle ? (
                                     <div className="border p-2 rounded bg-gray-100 flex justify-between items-center">
                                         <span className="text-black">
@@ -445,7 +445,7 @@ function BOMManager({ canEdit = false, canView = false }: CreateClientProps) {
 
                     <div className="flex justify-center space-x-2">
                         <div className="mt-4">
-                            <Text type="subtitle" color="text-[#000]">Cantidad Base:</Text>
+                            <Text type="subtitle" color="#000">Cantidad Base:</Text>
                             <input
                                 type="number"
                                 min="0"
@@ -462,7 +462,7 @@ function BOMManager({ canEdit = false, canView = false }: CreateClientProps) {
                         </div>
 
                         <div className="mt-4">
-                            <Text type="subtitle" color="text-[#000]">Estado:</Text>
+                            <Text type="subtitle" color="#000">Estado:</Text>
                             <select
                                 className="w-full border p-2 rounded text-black text-center"
                                 value={bomStatus ? "activo" : "inactivo"}
@@ -493,7 +493,7 @@ function BOMManager({ canEdit = false, canView = false }: CreateClientProps) {
                                                 <div className="flex flex-col md:flex-row gap-2">
                                                     {/* Buscador + Lista de artículos */}
                                                     <div className="flex-1">
-                                                        <Text type="subtitle" color="text-[#000]">Buscar artículo</Text>
+                                                        <Text type="subtitle" color="#000">Buscar artículo</Text>
                                                         <input
                                                             type="text"
                                                             placeholder="Nombre o código del artículo..."
@@ -534,7 +534,7 @@ function BOMManager({ canEdit = false, canView = false }: CreateClientProps) {
                                                     {/* Inputs y botón */}
                                                     <div className="mt-8">
                                                         <div>
-                                                            <Text type="subtitle" color="text-[#000]">Cantidad</Text>
+                                                            <Text type="subtitle" color="#000">Cantidad</Text>
                                                             <input
                                                                 type="number"
                                                                 min="0"
@@ -547,7 +547,7 @@ function BOMManager({ canEdit = false, canView = false }: CreateClientProps) {
                                                             />
                                                         </div>
                                                         <div>
-                                                            <Text type="subtitle" color="text-[#000]">% Merma</Text>
+                                                            <Text type="subtitle" color="#000">% Merma</Text>
                                                             <input
                                                                 type="number"
                                                                 min="0"

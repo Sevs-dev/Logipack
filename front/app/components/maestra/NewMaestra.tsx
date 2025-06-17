@@ -588,10 +588,10 @@ const Maestra = ({ canEdit = false, canView = false }: CreateClientProps) => {
             {/* Modal de creación/edición */}
             {isOpen && (
                 <ModalSection isVisible={isOpen} onClose={() => { setIsOpen(false) }}>
-                    <Text type="title" color="text-[#000]">{editingMaestra ? "Editar Maestra" : "Crear Maestra"}</Text>
+                    <Text type="title" color="#000">{editingMaestra ? "Editar Maestra" : "Crear Maestra"}</Text>
                     {/* Descripción */}
                     <div className="mt-4">
-                        <Text type="subtitle" color="text-[#000]">Descripción</Text>
+                        <Text type="subtitle" color="#000">Descripción</Text>
                         <input
                             type="text"
                             placeholder="Descripción"
@@ -605,7 +605,7 @@ const Maestra = ({ canEdit = false, canView = false }: CreateClientProps) => {
                     {/* Requiere BOM y Aprobado */}
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mt-4 mb-2">
                         <div className="flex flex-col items-center">
-                            <Text type="subtitle" color="text-[#000]">Requiere BOM</Text>
+                            <Text type="subtitle" color="#000">Requiere BOM</Text>
                             <input
                                 type="checkbox"
                                 checked={requiereBOM}
@@ -615,7 +615,7 @@ const Maestra = ({ canEdit = false, canView = false }: CreateClientProps) => {
                             />
                         </div>
                         <div className="flex flex-col items-center">
-                            <Text type="subtitle" color="text-[#000]">Paralelo</Text>
+                            <Text type="subtitle" color="#000">Paralelo</Text>
                             <input
                                 type="checkbox"
                                 checked={paralelo}
@@ -625,7 +625,7 @@ const Maestra = ({ canEdit = false, canView = false }: CreateClientProps) => {
                             />
                         </div>
                         <div className="flex flex-col items-center">
-                            <Text type="subtitle" color="text-[#000]">Seleccione Tipo de Producto</Text>
+                            <Text type="subtitle" color="#000">Seleccione Tipo de Producto</Text>
                             <select
                                 className="w-full p-2 border mb-2 min-w-0 text-black text-center"
                                 value={tipoSeleccionado}
@@ -646,7 +646,7 @@ const Maestra = ({ canEdit = false, canView = false }: CreateClientProps) => {
 
                     {/* Selección de Fases */}
                     <div className="mt-4">
-                        <Text type="subtitle" color="text-[#000]">Seleccione las Fases
+                        <Text type="subtitle" color="#000">Seleccione las Fases
                             <InfoPopover content="Al seleccionar un acondicionamiento, si se tienen las mismas fases se determinara la primera seleccionada con su funcion" />
                         </Text>
                         <div className="flex flex-col md:flex-row space-y-4 md:space-y-0 md:space-x-4">
@@ -777,7 +777,7 @@ const Maestra = ({ canEdit = false, canView = false }: CreateClientProps) => {
                         <div className="flex flex-col md:flex-row gap-4 mt-2">
                             {/* Tiempo estimado por sistema */}
                             <div className="w-full md:w-1/2">
-                                <Text type="subtitle" color="text-[#000]">Tiempo Estimado Sistema</Text>
+                                <Text type="subtitle" color="#000">Tiempo Estimado Sistema</Text>
                                 <div className="mt-2 relative">
                                     <Clock className="absolute left-3 top-2.5 w-4 h-4 text-gray-500" />
                                     <input
@@ -792,7 +792,7 @@ const Maestra = ({ canEdit = false, canView = false }: CreateClientProps) => {
 
                             {/* Tiempo estimado por usuario */}
                             <div className="w-full md:w-1/2">
-                                <Text type="subtitle" color="text-[#000]">Tiempo Por Usuario</Text>
+                                <Text type="subtitle" color="#000">Tiempo Por Usuario</Text>
                                 <div className="mt-2 relative">
                                     <Clock className="absolute left-3 top-2.5 w-4 h-4 text-gray-500" />
                                     <input

@@ -149,10 +149,10 @@ function CreateManufacturing({ canEdit = false, canView = false }: CreateClientP
 
             {isModalOpen && (
                 <ModalSection isVisible={isModalOpen} onClose={closeModal}>
-                    <Text type="title" color="text-[#000]">{formData.id ? "Editar" : "Crear"} Línea</Text>
+                    <Text type="title" color="#000">{formData.id ? "Editar" : "Crear"} Línea</Text>
                     <form onSubmit={handleSubmit}>
                         <div className="mb-4">
-                            <Text type="subtitle" color="text-[#000]" >Nombre de Línea</Text>
+                            <Text type="subtitle" color="#000" >Nombre de Línea</Text>
                             <input
                                 type="text"
                                 name="name"
@@ -165,7 +165,7 @@ function CreateManufacturing({ canEdit = false, canView = false }: CreateClientP
                         </div>
 
                         <div className="mb-4">
-                            <Text type="subtitle" color="text-[#000]" >Seleccionar Fábrica</Text>
+                            <Text type="subtitle" color="#000" >Seleccionar Fábrica</Text>
                             <select
                                 name="factory_id"
                                 value={formData.factory_id}
