@@ -23,19 +23,16 @@ const customScrollStyles = `
 `;
 
 const AuditModal: React.FC<AuditModalProps> = ({ audit, onClose }) => {
-    if (audit.length === 0) return null;
-
-    // Orden descendente: más reciente primero
     const sortedAudit = [...audit].sort(
         (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
     );
 
     const firstItemRef = useRef<HTMLLIElement>(null);
-    const [selectedAudit, setSelectedAudit] = useState<Audit | null>(sortedAudit[0]);
+    const [selectedAudit, setSelectedAudit] = useState<Audit | null>(sortedAudit[0] ?? null);
 
     useEffect(() => {
         firstItemRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
-    }, []);
+    }, [sortedAudit]);
 
     return (
         <>
@@ -52,15 +49,19 @@ const AuditModal: React.FC<AuditModalProps> = ({ audit, onClose }) => {
                     <div className="md:w-1/3 flex flex-col h-full max-h-[80vh]">
                         <Text type="title" color="text-[#fff]">Historial</Text>
                         <ul className="flex-1 overflow-y-auto rounded-xl border border-white/20 divide-y divide-white/10 bg-black/10">
-                            {sortedAudit.map((item, index) => (
-                                <AuditItem
-                                    key={item.id}
-                                    item={item}
-                                    isSelected={selectedAudit?.id === item.id}
-                                    onSelect={() => setSelectedAudit(item)}
-                                    ref={index === 0 ? firstItemRef : null} // Primer ítem (más reciente)
-                                />
-                            ))}
+                            {sortedAudit.length === 0 ? (
+                                <li className="p-4 text-center text-gray-400 italic">No hay registros</li>
+                            ) : (
+                                sortedAudit.map((item, index) => (
+                                    <AuditItem
+                                        key={item.id}
+                                        item={item}
+                                        isSelected={selectedAudit?.id === item.id}
+                                        onSelect={() => setSelectedAudit(item)}
+                                        ref={index === 0 ? firstItemRef : null}
+                                    />
+                                ))
+                            )}
                         </ul>
                         <div className="flex justify-center gap-4 mt-4">
                             <Button onClick={onClose} variant="cancel" label="Cerrar" />

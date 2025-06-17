@@ -5,7 +5,7 @@ import {
     createTimer,
     pauseTimer,
     finishTimer,
-    resetTimer, 
+    resetTimer,
 } from '../../services/timer/timerServices';
 
 interface TimerProps {
@@ -141,7 +141,7 @@ const Timer: React.FC<TimerProps> = ({ adaptationId, stageId, initialMinutes }) 
                 intervalRef.current = null;
             }
         };
-    }, [isRunning]);
+    }, [isRunning, handleFinish]);
 
     return (
         <motion.div
