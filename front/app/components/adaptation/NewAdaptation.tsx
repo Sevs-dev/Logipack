@@ -264,7 +264,6 @@ function NewAdaptation({ canEdit = false, canView = false }: CreateClientProps) 
     }, [selectedClient, selectedMaestras, maestra]);
 
     // Este efecto depende de `selectedClient`, `selectedMaestras`, y `maestra`
-
     // Efecto que recalcula la cantidad teórica de ingredientes cada vez que cambia `quantityToProduce`
     useEffect(() => {
         if (quantityToProduce !== "") {
