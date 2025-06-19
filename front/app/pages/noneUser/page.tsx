@@ -73,12 +73,12 @@ export default function UnauthorizedPage() {
         whileHover={{ scale: 1.05, rotate: 1 }}
         whileTap={{ scale: 0.95, rotate: -1 }}
       >
-        <button
+        {/* <button
           onClick={handleLogout}
           className="w-full bg-red-600 hover:bg-red-500 text-white rounded-md transition-colors flex items-center justify-center p-2"
         >
           <span className="text-sm ml-2">Cerrar Sesión</span>
-        </button>
+        </button> */}
       </motion.div>
     </div>
   );

@@ -2,18 +2,20 @@ import axios from 'axios';
 import { API_URL } from '../../config/api';
 
 export interface TimerData {
-    adaptation_id: number;
+    ejecutada_id: number;
     stage_id: number;
     time: number;
-    user?: string;
 }
 
 export interface TimerResponse {
     id: number;
-    adaptation_id: number;
+    ejecutada_id: number;
     stage_id: number;
     time: number;
     status: 'running' | 'paused' | 'finished';
+    pause: number;
+    pause_time: number;
+    finish: number;
     created_at: string;
     updated_at: string;
 }
@@ -30,49 +32,55 @@ const handleError = (action: string, error: unknown) => {
 };
 
 // Crear un timer
-export const createTimer = async (data: TimerData): Promise<TimerResponse> => {
-    console.log('Creating timer with data:', data);
+export const createTimer = async (data: TimerData): Promise<TimerResponse | { exists: true }> => {
     try {
         const response = await apiTimer.post('/newTimer', data);
         return response.data;
     } catch (error) {
-        handleError('createTimer', error);
-        throw error;
+        const status = (error as { response?: { status?: number } })?.response?.status;
+        if (status === 409) {
+            return { exists: true };
+        } else {
+            handleError('createTimer', error);
+            throw error;
+        }
     }
 };
 
-// Pausar un timer
-export const pauseTimer = async (id: number): Promise<TimerResponse> => {
+export const pauseTimer = async (payload: { ejecutada_id: number; pause_time: number }) => {
     try {
-        const response = await apiTimer.patch(`/pauseTimer/${id}`);
+        console.log('🚀 pauseTimer payload:', payload);
+        const response = await apiTimer.patch('/timers/pause', payload);
+        console.log('📡 pauseTimer response.data:', response.data);
         return response.data;
     } catch (error) {
-        handleError('pauseTimer', error);
+        console.error('🔥 Error en pauseTimer service:', error);
         throw error;
     }
 };
 
-// Finalizar un timer
-export const finishTimer = async (id: number): Promise<TimerResponse> => {
+// Finalizar un timer (por id)
+export const finishTimer = async (payload: { ejecutada_id: number; pause_time: number }) => {
     try {
-        const response = await apiTimer.patch(`/finishTimer/${id}`);
-        return response.data;
+        const response = await apiTimer.patch('/timers/finish', payload);
+        return response.data.timer;
     } catch (error) {
         handleError('finishTimer', error);
         throw error;
     }
 };
 
-// Reiniciar un timer
-export const resetTimer = async (id: number): Promise<TimerResponse> => {
+// Reiniciar un timer (por id)
+export const resetTimer = async (payload: { ejecutada_id: number; time_reset: number }): Promise<TimerResponse> => {
     try {
-        const response = await apiTimer.patch(`/resetTimer/${id}`);
-        return response.data;
+        const response = await apiTimer.patch('/timers/reset', payload);
+        return response.data.timer;
     } catch (error) {
         handleError('resetTimer', error);
         throw error;
     }
 };
+
 
 // Obtener un timer por ID
 export const getTimerById = async (id: number): Promise<TimerResponse> => {
@@ -85,13 +93,24 @@ export const getTimerById = async (id: number): Promise<TimerResponse> => {
     }
 };
 
-// Listar timers (opcionalmente filtrando por adaptation_id y stage_id)
-export const getTimers = async (params?: { adaptation_id?: number; stage_id?: number }): Promise<TimerResponse[]> => {
+// Listar timers (sin filtros)
+export const getTimers = async (): Promise<TimerResponse[]> => {
     try {
-        const response = await apiTimer.get('/getTimer', { params });
+        const response = await apiTimer.get('/getTimer');
         return response.data;
     } catch (error) {
         handleError('getTimers', error);
+        throw error;
+    }
+};
+
+// Obtener un timer por ejecutada_id
+export const getTimerEjecutadaById = async (ejecutada_id: number): Promise<{ exists: boolean; timer: TimerResponse | null }> => {
+    try {
+        const response = await apiTimer.get(`/timers/by-ejecutada/${ejecutada_id}`);
+        return response.data;
+    } catch (error) {
+        handleError('getTimerEjecutadaById', error);
         throw error;
     }
 };

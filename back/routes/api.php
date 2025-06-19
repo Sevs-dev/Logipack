@@ -217,10 +217,12 @@ Route::controller(HistoryAuditController::class)->group(function () {
 
 //Rutas Timer
 Route::controller(TimerController::class)->group(function () {
-    Route::get('/getTimer', 'index');              // Listar timers
-    Route::post('/newTimer', 'store');             // Crear timer
-    Route::get('/getTimer/{id}', 'show');          // Obtener uno
-    Route::patch('/pauseTimer/{id}', 'pause');     // Pausar
-    Route::patch('/finishTimer/{id}', 'finish');   // Finalizar
-    Route::patch('/resetTimer/{id}', 'reset');     // Reiniciar
+    Route::get('/getTimer', 'index');                         // Listar timers
+    Route::post('/newTimer', 'store');                        // Crear timer
+    Route::get('/getTimer/{id}', 'show');                     // Obtener uno
+    Route::get('/timers/by-ejecutada/{ejecutada_id}', 'getEjecutadaId'); // Obtener por ejecutada_id
+
+    Route::patch('/timers/pause', 'pause');                     // Pausar
+    Route::patch('/timers/finishTimer', 'finish');                   // Finalizar
+    Route::patch('/timers/resetTimer', 'reset');                     // Reiniciar
 });

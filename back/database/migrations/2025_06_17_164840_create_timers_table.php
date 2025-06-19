@@ -13,15 +13,17 @@ return new class extends Migration
     {
         Schema::create('timers', function (Blueprint $table) {
             $table->id();
-            $table->unsignedBigInteger('adaptation_id');
-            $table->foreign('adaptation_id')->references('id')->on('adaptation_dates')->onDelete('cascade');
+            $table->unsignedBigInteger('ejecutada_id');
             $table->unsignedBigInteger('stage_id');
-            $table->foreign('stage_id')->references('id')->on('stages')->onDelete('cascade');
-            $table->integer('time')->default(0);
-            $table->boolean('status')->default(false);
+            $table->unsignedInteger('time')->default(0);
+            $table->string('status', 50)->default('0');
             $table->boolean('pause')->default(false);
+            $table->unsignedInteger('pause_time')->default(0);
             $table->boolean('finish')->default(false);
             $table->timestamps();
+
+            $table->foreign('ejecutada_id')->references('id')->on('actividades_ejecutadas')->onDelete('cascade');
+            $table->foreign('stage_id')->references('id')->on('stages')->onDelete('cascade');
         });
     }
 

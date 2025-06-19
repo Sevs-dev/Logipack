@@ -1,13 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react';
 import Firma from './Firma';
 import Text from "../text/Text";
+import Timer from '../timer/Timer';
 import Button from "../buttons/buttons";
 import {
   createTimer,
-  pauseTimer,
-  finishTimer,
-  resetTimer,
-  getTimerById,
+  getTimerEjecutadaById
 } from '../../services/timer/timerServices';
 import { getStageId } from "../../services/maestras/stageServices";
 
@@ -78,6 +76,7 @@ const readFromDB = async (key) => {
 };
 
 const Fases = ({ proms, setFaseSave, fase_save, fase_list }) => {
+
   const formRef = useRef();
   const [lineaIndex, setLineaIndex] = useState(0);
   const [fase, setFase] = useState({
@@ -122,46 +121,108 @@ const Fases = ({ proms, setFaseSave, fase_save, fase_list }) => {
   const listas = proms || [];
   const lista = listas[lineaIndex] || {};
   // console.log("Lista actual:", lista);
+  const [timerData, setTimerData] = useState(null);
+  const [timerReady, setTimerReady] = useState(false);
   useEffect(() => {
     const guardarTimer = async () => {
-      if (lista && lista.adaptation_id && lista.fases_fk) {
-        console.log("📥 Nueva lista recibida, procesando...");
+      if (!lista || !lista.adaptation_id || !lista.fases_fk) {
+        console.warn("⚠️ Lista incompleta. No se ejecuta guardarTimer.");
+        return;
+      }
 
-        try {
-          // Obtener stage
-          const stage = await getStageId(lista.fases_fk);
-          console.log("🎭 Stage obtenido:", stage);
-
-          let time = 0;
-
-          if (stage?.phase_type === "Procesos") {
-            if (stage.repeat_minutes !== null && stage.repeat_minutes !== undefined) {
-              time = Number(stage.repeat_minutes);
-            } else {
-              time = 0;
-            }
-          }
-
-          await createTimer({
-            adaptation_id: Number(lista.adaptation_id),
-            stage_id: Number(stage?.id),
-            time: Number(time),
-            status: 0,
-            pause: 0,
-            finish: 0
-          });
-
-          console.log("✅ Timer guardado con time =", time);
-
-        } catch (err) {
-          console.error("❌ Error en guardarTimer:", err);
+      try {
+        const stage = await getStageId(lista.fases_fk);
+        if (!stage?.id) {
+          console.warn("⚠️ Stage inválido:", stage);
+          return;
         }
+
+        let time = 0;
+        if (stage.phase_type === "Procesos") {
+          time = stage.repeat_minutes != null ? Number(stage.repeat_minutes) : 0;
+        }
+
+        const ejecutadaId = Number(lista.id);
+        if (!Number.isFinite(ejecutadaId) || ejecutadaId <= 0) {
+          console.warn("⚠️ ejecutada_id inválido:", lista.id);
+          return;
+        }
+
+        // Intentar crear el timer
+        const createResult = await createTimer({
+          ejecutada_id: ejecutadaId,
+          stage_id: Number(stage.id),
+          time,
+        });
+
+        if ('exists' in createResult && createResult.exists) {
+          console.log("⚠️ Timer ya existía.");
+        }
+
+        // Obtener el Timer real
+        const timerResult = await getTimerEjecutadaById(ejecutadaId);
+
+        if (
+          timerResult?.timer &&
+          timerResult.timer.id > 0 &&
+          timerResult.timer.stage_id > 0 &&
+          timerResult.timer.ejecutada_id === ejecutadaId
+        ) {
+          console.log("✅ Timer cargado:", timerResult.timer);
+
+          setTimerData({
+            ejecutadaId: Number(timerResult.timer.ejecutada_id),
+            stageId: Number(timerResult.timer.stage_id),
+            initialMinutes: Number(timerResult.timer.time),
+          });
+          setTimerReady(true);
+        } else {
+          console.warn("⚠️ Timer inválido o no encontrado:", timerResult?.timer);
+          setTimerData(null);
+          setTimerReady(false);
+        }
+      } catch (err) {
+        console.error("❌ Error en guardarTimer:", err);
+        setTimerData(null);
+        setTimerReady(false);
       }
     };
 
     guardarTimer();
-
   }, [lista]);
+
+  const refetchTimer = async () => {
+    if (!lista || !lista.adaptation_id || !lista.fases_fk) return;
+
+    const stage = await getStageId(lista.fases_fk);
+    if (!stage?.id) return;
+
+    const ejecutadaId = Number(lista.id);
+    if (!Number.isFinite(ejecutadaId) || ejecutadaId <= 0) return;
+
+    const timerResult = await getTimerEjecutadaById(ejecutadaId);
+
+    if (
+      timerResult?.timer &&
+      timerResult.timer.id > 0 &&
+      timerResult.timer.stage_id > 0 &&
+      timerResult.timer.ejecutada_id === ejecutadaId
+    ) {
+      console.log("✅ Timer refetch:", timerResult.timer);
+
+      setTimerData({
+        ejecutadaId: Number(timerResult.timer.ejecutada_id),
+        stageId: Number(timerResult.timer.stage_id),
+        initialMinutes: Number(timerResult.timer.pause_time ?? timerResult.timer.time), // usa pause_time si existe
+      });
+      setTimerReady(true);
+    } else {
+      console.warn("⚠️ Timer inválido en refetch:", timerResult?.timer);
+      setTimerData(null);
+      setTimerReady(false);
+    }
+  };
+
 
   const info = memoria_fase[lineaIndex] || {};
 
@@ -361,6 +422,14 @@ const Fases = ({ proms, setFaseSave, fase_save, fase_list }) => {
           Fase de {fase.description_fase} ({fase.phase_type})
         </Text>
       </div>
+      {timerReady && timerData && (
+        <Timer
+          ejecutadaId={timerData.ejecutadaId}
+          stageId={timerData.stageId}
+          initialMinutes={timerData.initialMinutes}
+          refetchTimer={refetchTimer}
+        />
+      )}
 
       {/* Formulario */}
       <form ref={formRef} onSubmit={handleFinalSubmit} className="space-y-8">

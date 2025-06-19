@@ -11,77 +11,130 @@ class TimerController extends Controller
     // Crear un nuevo timer
     public function store(Request $request)
     {
-        Log::info('📥 Incoming Timer request:', $request->all());
+        $validated = $request->validate([
+            'ejecutada_id' => 'required|exists:actividades_ejecutadas,id',
+            'stage_id'     => 'required|exists:stages,id',
+            'time'         => 'required|integer|min:0',
+        ]);
 
-        try {
-            $validated = $request->validate([
-                'adaptation_id' => 'required|exists:adaptation_dates,id',
-                'stage_id'      => 'required|exists:stages,id',
-                'time'          => 'required|integer|min:0',
-            ]);
+        // Si ya existe un Timer para esta ejecutada_id, retornar error
+        $exists = Timer::where('ejecutada_id', $validated['ejecutada_id'])->exists();
 
-            Log::info('✅ Validated Timer data:', $validated);
-
-            $timer = Timer::create([
-                'adaptation_id' => $validated['adaptation_id'],
-                'stage_id'      => $validated['stage_id'],
-                'time'          => $validated['time'],
-                'status'        => '0',
-                'pause'         => 0,
-                'finish'        => 0,
-            ]);
-
-            Log::info('💾 Timer created:', $timer->toArray());
-
+        if ($exists) {
             return response()->json([
-                'message' => 'Timer creado con éxito',
-                'timer'   => $timer,
-            ], 201);
-        } catch (\Illuminate\Validation\ValidationException $e) {
-            Log::error('❌ Validation failed:', $e->errors());
-            return response()->json([
-                'message' => 'Validation error',
-                'errors'  => $e->errors(),
-            ], 422);
+                'message' => 'Timer ya existe para esta ejecutada_id',
+            ], 409); // Conflict
         }
+
+        // Crear Timer
+        $timer = Timer::create([
+            'ejecutada_id' => $validated['ejecutada_id'],
+            'stage_id'     => $validated['stage_id'],
+            'time'         => $validated['time'],
+            'status'       => '0',
+            'pause'        => 0,
+            'pause_time'   => 0,
+            'finish'       => 0,
+        ]);
+
+        return response()->json([
+            'message' => 'Timer creado con éxito',
+            'timer'   => $timer,
+        ], 201);
     }
 
     // Pausar un timer
-    public function pause($id)
+    public function pause(Request $request)
     {
-        $timer = Timer::findOrFail($id);
-        $timer->status = 'paused';
+        $request->validate([
+            'ejecutada_id' => 'required|integer',
+            'pause_time'   => 'required|integer',
+        ]);
+
+        $timer = Timer::where('ejecutada_id', $request->ejecutada_id)
+            ->where('finish', 0)
+            ->first();
+
+        if (!$timer) {
+            return response()->json([
+                'message' => 'Timer no encontrado',
+            ], 404);
+        }
+
+        if ($timer->pause == 0) {
+            // Si está corriendo → lo pausamos
+            $timer->status = 'paused';
+            $timer->pause = 1;
+            $timer->pause_time = $request->pause_time;
+            $message = 'Timer pausado correctamente';
+        } else {
+            // Si está pausado → lo reanudamos
+            $timer->status = 'running';
+            $timer->pause = 0;
+            $message = 'Timer reanudado correctamente';
+        }
+
         $timer->save();
 
         return response()->json([
-            'message' => 'Timer pausado',
+            'message' => $message,
             'timer'   => $timer,
         ]);
     }
 
     // Finalizar un timer
-    public function finish($id)
+    public function finish(Request $request)
     {
-        $timer = Timer::findOrFail($id);
+        $request->validate([
+            'ejecutada_id' => 'required|integer',
+        ]);
+
+        $timer = Timer::where('ejecutada_id', $request->ejecutada_id)
+            ->where('finish', 0)
+            ->first();
+
+        if (!$timer) {
+            return response()->json([
+                'message' => 'Timer no encontrado para esta ejecución',
+            ], 404);
+        }
+
         $timer->status = 'finished';
+        $timer->finish = 1;
         $timer->save();
 
         return response()->json([
-            'message' => 'Timer finalizado',
+            'message' => 'Timer finalizado correctamente',
             'timer'   => $timer,
         ]);
     }
 
-    // Reiniciar un timer (opcional: puedes resetear el tiempo a 0 si quieres)
-    public function reset($id)
+    // Reiniciar un timer
+    public function reset(Request $request)
     {
-        $timer = Timer::findOrFail($id);
-        $timer->status = 'running';
-        $timer->time = 0; // Opcional: reinicia el tiempo
+        $request->validate([
+            'ejecutada_id' => 'required|integer',
+            'time_reset'   => 'required|integer',
+        ]);
+
+        $timer = Timer::where('ejecutada_id', $request->ejecutada_id)
+            ->first();
+
+        if (!$timer) {
+            return response()->json([
+                'message' => 'Timer no encontrado para esta ejecución',
+            ], 404);
+        }
+
+        $timer->status      = 'running';
+        $timer->pause       = 0;
+        $timer->pause_time  = 0;
+        $timer->finish      = 0;
+        $timer->time        = $request->time_reset;
         $timer->save();
 
         return response()->json([
-            'message' => 'Timer reiniciado',
+            'message' => 'Timer reiniciado correctamente',
             'timer'   => $timer,
         ]);
     }
@@ -94,21 +147,29 @@ class TimerController extends Controller
         return response()->json($timer);
     }
 
-    // Listar timers (puedes filtrar por adaptation_id y/o stage_id)
-    public function index(Request $request)
+    // Listar timers (puedes filtrar si quieres)
+    public function index()
     {
-        $query = Timer::query();
+        $query = Timer::all();
 
-        if ($request->has('adaptation_id')) {
-            $query->where('adaptation_id', $request->adaptation_id);
+        return response()->json($query);
+    }
+
+    // Obtener un timer por ejecutada_id
+    public function getEjecutadaId($ejecutada_id)
+    {
+        $timer = Timer::where('ejecutada_id', $ejecutada_id)->first();
+
+        if ($timer) {
+            return response()->json([
+                'exists' => true,
+                'timer'  => $timer
+            ]);
+        } else {
+            return response()->json([
+                'exists' => false,
+                'timer'  => null
+            ]);
         }
-
-        if ($request->has('stage_id')) {
-            $query->where('stage_id', $request->stage_id);
-        }
-
-        $timers = $query->orderBy('created_at', 'desc')->get();
-
-        return response()->json($timers);
     }
 }
