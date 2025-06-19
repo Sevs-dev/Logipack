@@ -45,7 +45,8 @@ export default function Login() {
         nookies.set(null, 'role', role, cookieOptions);
         nookies.set(null, 'name', name, cookieOptions);
 
-        router.push('/pages/dashboard');
+        window.location.href = '/pages/dashboard';
+
       }
     } catch (err) {
       // console.log('Error capturado:', err);
