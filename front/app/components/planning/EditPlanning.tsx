@@ -415,9 +415,7 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
                 window.open("/pages/ordenes_ejecutadas", "_blank");
             } else {
                 showError("La orden ya fué ejecutada  estado: " + data.estado);
-                setTimeout(() => {
-                    window.location.reload();
-                }, 3000);
+                fetchAll();
             }
         } catch (error) {
             console.error("Error al validar estado:", error);
