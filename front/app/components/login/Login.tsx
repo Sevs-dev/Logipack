@@ -1,12 +1,11 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import Head from 'next/head';
+import React, { useState } from 'react';
+import { login } from '../../services/userDash/authservices';
 import { useRouter } from 'next/navigation';
 import nookies from 'nookies';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FiEye, FiEyeOff } from 'react-icons/fi';
-import { login } from '../../services/userDash/authservices';
 import { showError } from '../toastr/Toaster';
 
 const cookieOptions = {
@@ -22,14 +21,6 @@ export default function Login() {
   const [password, setPassword] = useState('Logismart123*');
   const [loading, setLoading] = useState(false);
 
-  // 🚀 Si ya está logueado, redirigir automáticamente al dashboard
-  useEffect(() => {
-    const cookies = nookies.get();
-    if (cookies.token) {
-      router.push('/pages/dashboard');
-    }
-  }, [router]);
-
   // 🧠 Manejo del envío del formulario de login
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -39,6 +30,7 @@ export default function Login() {
       const response = await login(email, password); // Lanza error si falla (401, 422, etc.)
 
       if (response.success) {
+        // 🧠 Desestructuramos token y usuario
         const data = response.data as {
           autorización: { token: string };
           usuario: { email: string; role: string; name: string };
@@ -53,9 +45,11 @@ export default function Login() {
         nookies.set(null, 'role', role, cookieOptions);
         nookies.set(null, 'name', name, cookieOptions);
 
-        router.push('/pages/dashboard'); // Navegación SPA
+        window.location.href = '/pages/dashboard';
+
       }
     } catch (err) {
+      // console.log('Error capturado:', err);
       if (err instanceof Error) {
         showError(err.message);
       } else {
@@ -66,81 +60,76 @@ export default function Login() {
     }
   };
 
+  // ✨ Animación simple para entrada
   const fadeIn = {
     hidden: { opacity: 0, y: 20 },
     visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: 'easeOut' } },
   };
 
   return (
-    <>
-      <Head>
-        <title>Iniciar sesión | Logismart</title>
-      </Head>
-
-      <div className="min-h-screen flex bg-gradient-to-br from-slate-950 via-indigo-950 to-purple-950 font-sans">
-        {/* FORMULARIO DE LOGIN */}
-        <motion.div
-          className="relative z-10 w-full md:w-1/2 flex items-center justify-center p-8"
-          initial="hidden"
-          animate="visible"
-          variants={fadeIn}
-        >
-          <div className="w-full max-w-md bg-white/5 backdrop-blur-2xl border border-white/10 rounded-3xl shadow-xl p-8 space-y-6">
-            <div className="text-center">
-              <h1 className="text-4xl font-bold text-white mb-3 drop-shadow-lg">Inicia sesión</h1>
-              <p className="text-sm text-gray-300">Accede al panel de control de Logismart</p>
-            </div>
-
-            <form onSubmit={handleSubmit} className="space-y-5">
-              <Input
-                id="email"
-                label="Email"
-                type="email"
-                value={email}
-                onChange={setEmail}
-                placeholder="ej: admin@logismart.com"
-              />
-              <Input
-                id="password"
-                label="Contraseña"
-                type="password"
-                value={password}
-                onChange={setPassword}
-                placeholder="********"
-              />
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full py-3.5 rounded-lg bg-gradient-to-r from-purple-600 to-indigo-700 
-                           text-white font-semibold hover:from-purple-700 hover:to-indigo-800 
-                           shadow-lg hover:shadow-xl transition-all duration-300 transform 
-                           hover:-translate-y-0.5 active:translate-y-0"
-              >
-                {loading ? 'Cargando...' : 'Iniciar Sesión'}
-              </button>
-            </form>
+    <div className="min-h-screen flex bg-gradient-to-br from-slate-950 via-indigo-950 to-purple-950 font-sans">
+      {/* FORMULARIO DE LOGIN */}
+      <motion.div
+        className="relative z-10 w-full md:w-1/2 flex items-center justify-center p-8"
+        initial="hidden"
+        animate="visible"
+        variants={fadeIn}
+      >
+        <div className="w-full max-w-md bg-white/5 backdrop-blur-2xl border border-white/10 rounded-3xl shadow-xl p-8 space-y-6">
+          <div className="text-center">
+            <h1 className="text-4xl font-bold text-white mb-3 drop-shadow-lg">Inicia sesión</h1>
+            <p className="text-sm text-gray-300">Accede al panel de control de Logismart</p>
           </div>
-        </motion.div>
 
-        {/* PANEL DERECHO DE BIENVENIDA */}
-        <motion.div
-          className="hidden md:flex w-1/2 items-center justify-center relative overflow-hidden"
-          initial="hidden"
-          animate="visible"
-          variants={fadeIn}
-        >
-          <div className="absolute inset-0 bg-gradient-to-br from-purple-900/50 to-indigo-950/70 blur-2xl"></div>
-          <div className="relative z-10 text-center text-white px-10">
-            <h2 className="text-6xl font-bold mb-4 drop-shadow-2xl tracking-tight">
-              Bienvenido a<br />Logismart
-            </h2>
-            <p className="text-lg text-gray-200/90 font-medium tracking-wide">
-              Optimiza tus procesos.<br />Visualiza tu éxito.
-            </p>
-          </div>
-        </motion.div>
-      </div>
-    </>
+          <form onSubmit={handleSubmit} className="space-y-5">
+            <Input
+              id="email"
+              label="Email"
+              type="email"
+              value={email}
+              onChange={setEmail}
+              placeholder="ej: admin@logismart.com"
+            />
+            <Input
+              id="password"
+              label="Contraseña"
+              type="password"
+              value={password}
+              onChange={setPassword}
+              placeholder="********"
+            />
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full py-3.5 rounded-lg bg-gradient-to-r from-purple-600 to-indigo-700 
+                         text-white font-semibold hover:from-purple-700 hover:to-indigo-800 
+                         shadow-lg hover:shadow-xl transition-all duration-300 transform 
+                         hover:-translate-y-0.5 active:translate-y-0"
+            >
+              {loading ? 'Cargando...' : 'Iniciar Sesión'}
+            </button>
+          </form>
+        </div>
+      </motion.div>
+
+      {/* PANEL DERECHO DE BIENVENIDA */}
+      <motion.div
+        className="hidden md:flex w-1/2 items-center justify-center relative overflow-hidden"
+        initial="hidden"
+        animate="visible"
+        variants={fadeIn}
+      >
+        <div className="absolute inset-0 bg-gradient-to-br from-purple-900/50 to-indigo-950/70 blur-2xl"></div>
+        <div className="relative z-10 text-center text-white px-10">
+          <h2 className="text-6xl font-bold mb-4 drop-shadow-2xl tracking-tight">
+            Bienvenido a<br />Logismart
+          </h2>
+          <p className="text-lg text-gray-200/90 font-medium tracking-wide">
+            Optimiza tus procesos.<br />Visualiza tu éxito.
+          </p>
+        </div>
+      </motion.div>
+    </div>
   );
 }
 
