@@ -66,7 +66,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
 
     const decoded = parseJwt(token);
-    console.log("Decoded JWT:", decoded);
+    // console.log("Decoded JWT:", decoded);
 
     if (!decoded || decoded.exp < Date.now() / 1000) {
       logout();
