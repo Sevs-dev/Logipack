@@ -70,14 +70,17 @@ class AdaptationController extends Controller
 
             Log::info('📝 Nuevo número de orden generado', ['number_order' => $newNumberOrder]);
 
-            $articleAttachments = [];
+            // Procesar attachment general (único)
             if ($request->hasFile('attachment')) {
                 $file = $request->file('attachment');
                 $filename = 'general_' . now()->format('Ymd_His') . '.' . $file->getClientOriginalExtension();
                 $path = $file->storeAs('attachments', $filename, 'public');
-                $articleAttachments['general'] = $path;
+                $validatedData['attachment'] = $path;
                 Log::info('📎 Archivo general adjuntado', ['path' => $path]);
             }
+
+            // Procesar attachments individuales (NO guardar en Adaptation)
+            $articleAttachments = [];
 
             foreach ($request->files as $key => $file) {
                 if (Str::startsWith($key, 'attachment_')) {
@@ -96,10 +99,7 @@ class AdaptationController extends Controller
                 }
             }
 
-            if (!empty($articleAttachments)) {
-                $validatedData['attachment'] = json_encode($articleAttachments);
-            }
-
+            // Crear Adaptation
             $validatedData['version'] = '1';
             $validatedData['reference_id'] = (string) Str::uuid();
             $adaptation = Adaptation::create($validatedData);
@@ -143,7 +143,7 @@ class AdaptationController extends Controller
                     }
 
                     $duration_breakdown[] = [
-                        'fase'     => 'TOTAL',
+                        'fase'      => 'TOTAL',
                         'resultado' => $totalDuration,
                     ];
                     $masterDuration = $totalDuration;
@@ -155,6 +155,7 @@ class AdaptationController extends Controller
                 }
             }
 
+            // Crear AdaptationDate
             $articleCodes = json_decode($validatedData['article_code'], true);
             foreach ($articleCodes as $article) {
                 AdaptationDate::create([
@@ -178,6 +179,7 @@ class AdaptationController extends Controller
                 Log::info('📅 AdaptationDate creada para artículo', ['codart' => $article['codart']]);
             }
 
+            // Consecutive_date
             Consecutive_date::create([
                 'prefix'         => $prefix,
                 'year'           => $currentYear,
@@ -195,7 +197,7 @@ class AdaptationController extends Controller
                 'message'       => 'Adaptation saved successfully',
                 'number_order'  => $newNumberOrder,
                 'adaptation'    => $adaptation,
-                'article_files' => $articleAttachments,
+                'article_files' => $articleAttachments, // Los attachments individuales se devuelven en response, no se guardan en DB
             ], 201);
         } catch (ValidationException $e) {
             Log::warning('❌ Fallo de validación', ['errors' => $e->errors()]);
@@ -265,9 +267,8 @@ class AdaptationController extends Controller
                 'ingredients'  => 'nullable|json',
             ]);
 
-            // Procesar adjuntos individuales
+            // Procesar adjuntos individuales (NO se guardan en attachment)
             $articleAttachments = [];
-            $oldAttachments = json_decode($adaptation->attachment, true) ?? [];
 
             foreach ($request->files as $key => $file) {
                 if (Str::startsWith($key, 'attachment_')) {
@@ -275,11 +276,6 @@ class AdaptationController extends Controller
 
                     if ($file instanceof SymfonyUploadedFile && !$file instanceof LaravelUploadedFile) {
                         $file = LaravelUploadedFile::createFromBase($file);
-                    }
-
-                    // Borrar adjunto antiguo si existe
-                    if (isset($oldAttachments[$codart])) {
-                        Storage::disk('public')->delete($oldAttachments[$codart]);
                     }
 
                     $safeCodart = preg_replace('/[^A-Za-z0-9_\-\.]/', '_', $codart);
@@ -297,26 +293,14 @@ class AdaptationController extends Controller
                     $file = LaravelUploadedFile::createFromBase($file);
                 }
 
-                // Si el attachment anterior era JSON con múltiples archivos, borrar todos
-                if (is_string($adaptation->attachment)) {
-                    $oldAttachmentData = json_decode($adaptation->attachment, true);
-                    if (is_array($oldAttachmentData)) {
-                        foreach ($oldAttachmentData as $oldFilePath) {
-                            Storage::disk('public')->delete($oldFilePath);
-                        }
-                    } else {
-                        Storage::disk('public')->delete($adaptation->attachment);
-                    }
+                // Borrar attachment anterior si existe
+                if (!empty($adaptation->attachment)) {
+                    Storage::disk('public')->delete($adaptation->attachment);
                 }
 
                 $filename = 'general_' . now()->format('Ymd_His') . '.' . $file->getClientOriginalExtension();
                 $filePath = $file->storeAs('attachments', $filename, 'public');
-                $articleAttachments['general'] = $filePath;
-            }
-
-            // Si hay adjuntos, codificarlos en JSON para guardar en DB
-            if (!empty($articleAttachments)) {
-                $validatedData['attachment'] = json_encode($articleAttachments);
+                $validatedData['attachment'] = $filePath;
             }
 
             // Decodificar JSON si vienen como string
@@ -344,16 +328,7 @@ class AdaptationController extends Controller
                         $stage = Stage::find($stageId);
                         if (!$stage) continue;
 
-                        $duracionEtapa = 0;
-                        $multiplicacion = null;
-
-                        if ($stage->multi) {
-                            $duracionEtapa = $stage->duration * $teoricaTotal;
-                            $multiplicacion = "{$stage->duration} * {$teoricaTotal}";
-                        } else {
-                            $duracionEtapa = $stage->duration;
-                        }
-
+                        $duracionEtapa = $stage->multi ? $stage->duration * $teoricaTotal : $stage->duration;
                         $totalDuration += $duracionEtapa;
 
                         $duration_breakdown[] = [
@@ -361,7 +336,7 @@ class AdaptationController extends Controller
                             'multi'          => $stage->multi,
                             'duracion_base'  => $stage->duration,
                             'teorica_total'  => $stage->multi ? $teoricaTotal : null,
-                            'multiplicacion' => $multiplicacion,
+                            'multiplicacion' => $stage->multi ? "{$stage->duration} * {$teoricaTotal}" : null,
                             'resultado'      => $duracionEtapa,
                         ];
                     }
@@ -379,13 +354,17 @@ class AdaptationController extends Controller
             $validatedData['duration_breakdown'] = json_encode($duration_breakdown);
             $validatedData['duration'] = $masterDuration;
 
+            // Actualizar Adaptation
+            $adaptation->update($validatedData);
+
+            // Actualizar AdaptationDate
             $articleCodes = json_decode($validatedData['article_code'], true);
 
             foreach ($articleCodes as $article) {
                 AdaptationDate::updateOrCreate(
                     [
                         'adaptation_id' => $adaptation->id,
-                        'codart'       => $article['codart'],
+                        'codart'        => $article['codart'],
                     ],
                     [
                         'client_id'           => $validatedData['client_id'],
@@ -406,8 +385,9 @@ class AdaptationController extends Controller
             }
 
             return response()->json([
-                'message'    => 'Adaptation updated successfully',
-                'adaptation' => $adaptation,
+                'message'          => 'Adaptation updated successfully',
+                'adaptation'       => $adaptation,
+                'article_files'    => $articleAttachments, // se devuelven en el response, NO en DB
             ], 200);
         } catch (ValidationException $e) {
             return response()->json([

@@ -285,6 +285,7 @@ const Maestra = ({ canEdit = false, canView = false }: CreateClientProps) => {
 
     // Validación y envío del formulario
     const handleSubmit = async () => {
+        console.log("📥 Enviando datos para crear Maestra:", tipoSeleccionado)
         if (isSaving) return;
         setIsSaving(true);
         if (!descripcion.trim()) {
@@ -299,7 +300,7 @@ const Maestra = ({ canEdit = false, canView = false }: CreateClientProps) => {
             showError("Debes seleccionar al menos una fase");
             return;
         }
-
+        
         const payload = {
             descripcion,
             requiere_bom: requiereBOM,
@@ -364,9 +365,7 @@ const Maestra = ({ canEdit = false, canView = false }: CreateClientProps) => {
                 const loadedStages = await getStage();
                 setStages(loadedStages);
             }
-
             const data = await getMaestraId(id);
-
             setEditingMaestra(data);
             setDescripcion(data.descripcion);
             setRequiereBOM(data.requiere_bom);
@@ -376,27 +375,20 @@ const Maestra = ({ canEdit = false, canView = false }: CreateClientProps) => {
             setParalelo(data.paralelo);
             setDuration(data.duration);
             setDurationUser(data.duration_user);
-
             const tiposAcond = Array.isArray(data.type_acondicionamiento)
                 ? data.type_acondicionamiento
                 : data.type_acondicionamiento != null
                     ? [data.type_acondicionamiento]
                     : [];
-
             setTipoSeleccionadoAcon(tiposAcond);
-
-            // Limpia antes de cargar nuevos datos
             setStagesAcon([]);
             setDetalleAcondicionamiento([]);
             setSelectedStages([]);
-
-            // Esperar a que las fases estén listas antes de continuar
             let currentStages = stages;
             if (currentStages.length === 0) {
                 currentStages = await getStage();
                 setStages(currentStages);
             }
-
             for (const tipoId of tiposAcond) {
                 const response = await lisTipoacondicionamientoId(tipoId);
                 const dataArray = Array.isArray(response) ? response : response.data || [];

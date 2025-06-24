@@ -339,17 +339,22 @@ export default function NewActivity({ canEdit = false, canView = false }: Create
                                         type="number"
                                         name="duration"
                                         min={1}
-                                        value={formData.duration}
+                                        value={formData.duration === 0 ? '' : formData.duration}
                                         onChange={(e) => {
                                             const val = Number(e.target.value);
-                                            setFormData({ ...formData, duration: Math.max(1, val) });
+                                            setFormData({
+                                                ...formData,
+                                                duration: isNaN(val) ? 0 : Math.max(1, val)
+                                            });
                                         }}
                                         placeholder="Duración (en minutos)"
                                         className="w-full max-w-[350px] border p-2 pl-9 rounded-md text-black focus:ring-2 focus:ring-blue-500"
                                         disabled={!canEdit && !isEditing}
                                     />
                                 </div>
-                                <span className="w-full border border-gray-300 rounded-lg shadow-sm py-3 px-3 text-gray-800 bg-gray-50 mt-1 text-center">min - ({getFormattedDuration(Number(formData.duration))})</span>
+                                <span className="w-full border border-gray-300 rounded-lg shadow-sm py-3 px-3 text-gray-800 bg-gray-50 mt-1 text-center">
+                                    min - ({getFormattedDuration(Number(formData.duration))})
+                                </span>
                             </div>
                         )}
                     </div>
