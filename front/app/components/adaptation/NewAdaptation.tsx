@@ -345,12 +345,15 @@ function NewAdaptation({ canEdit = false, canView = false }: CreateClientProps) 
         if (!planta) return showError("Por favor, selecciona una Planta.");
         if (!selectedArticles.length) return showError("Por favor, selecciona al menos un artículo.");
         if (!selectedMaestras.length) return showError("Por favor, selecciona al menos una Maestra.");
+
         let articlesData;
+
         if (maestraRequiereBOM) {
             if (!orderNumber) return showError("Por favor, ingresa el número de orden.");
             if (!deliveryDate || !quantityToProduce || !lot || !healthRegistration) {
                 return showError("Por favor, completa todos los campos del artículo.");
             }
+
             articlesData = [
                 {
                     codart: selectedArticles[0]?.codart || "",
@@ -371,6 +374,7 @@ function NewAdaptation({ canEdit = false, canView = false }: CreateClientProps) 
                 if (!fields.quantityToProduce) missingFields.push("quantityToProduce");
                 if (!fields.lot) missingFields.push("lot");
                 if (!fields.healthRegistration) missingFields.push("healthRegistration");
+
                 if (missingFields.length) {
                     console.error(`❌ Faltan campos en el artículo ${article.codart}:`, missingFields);
                     showError(`Faltan campos en el artículo ${article.codart}: ${missingFields.join(", ")}`);
@@ -378,7 +382,9 @@ function NewAdaptation({ canEdit = false, canView = false }: CreateClientProps) 
                 }
                 return false;
             });
+
             if (invalidArticles.length) return;
+
             articlesData = selectedArticles.map((article) => {
                 const fields = articleFields[article.codart];
                 return {
@@ -392,7 +398,7 @@ function NewAdaptation({ canEdit = false, canView = false }: CreateClientProps) 
                 };
             });
         }
-        // Construcción del FormData
+
         const formData = new FormData();
         formData.append("client_id", selectedClient.toString());
         formData.append("factory_id", planta.toString());
@@ -402,6 +408,7 @@ function NewAdaptation({ canEdit = false, canView = false }: CreateClientProps) 
         formData.append("master", selectedMaestras[0] || "");
         formData.append("bom", selectedBom?.toString() || "");
         formData.append("ingredients", JSON.stringify(ingredients));
+
         // Archivos
         if (maestraRequiereBOM) {
             if (attachment) formData.append("attachment", attachment);
@@ -411,6 +418,7 @@ function NewAdaptation({ canEdit = false, canView = false }: CreateClientProps) 
                 if (file) formData.append(`attachment_${article.codart}`, file);
             });
         }
+
         console.log("🧾 Datos a guardar:", {
             client_id: selectedClient,
             plant_id: planta,
@@ -421,8 +429,10 @@ function NewAdaptation({ canEdit = false, canView = false }: CreateClientProps) 
             bom: selectedBom,
             ingredients,
         });
+
         try {
             setIsLoading(true);
+
             if (isEditMode) {
                 await updateAdaptation(editAdaptationId!, formData);
                 showSuccess("Acondicionamiento actualizado.");
@@ -430,6 +440,7 @@ function NewAdaptation({ canEdit = false, canView = false }: CreateClientProps) 
                 await newAdaptation(formData);
                 showSuccess("Acondicionamiento creado.");
             }
+
             resetForm();
             setIsOpen(false);
             const { adaptations } = await getAdaptations();
@@ -440,7 +451,6 @@ function NewAdaptation({ canEdit = false, canView = false }: CreateClientProps) 
             console.error("🔥 Error completo:", error);
 
             if (typeof error === "object" && error !== null) {
-                // Reutilizamos el casting solo una vez
                 const err = error as { response?: { data?: unknown }; message?: string };
 
                 if (err.response && typeof err.response === "object") {
@@ -453,8 +463,7 @@ function NewAdaptation({ canEdit = false, canView = false }: CreateClientProps) 
             } else {
                 console.error("💥 Error desconocido:", error);
             }
-        }
-        finally {
+        } finally {
             setIsLoading(false);
         }
     };
@@ -462,7 +471,6 @@ function NewAdaptation({ canEdit = false, canView = false }: CreateClientProps) 
     // Función para cargar los datos de una adaptación para editarla
     const handleEdit = async (id: number) => {
         try {
-            // Obtenemos los datos de la adaptación a editar
             const response = await getAdaptationsId(id);
             const adaptation = response.adaptation;
             if (!adaptation) {
@@ -470,41 +478,27 @@ function NewAdaptation({ canEdit = false, canView = false }: CreateClientProps) 
                 return;
             }
 
-            // Logs detallados de campos clave
-            // console.log("client_id:", adaptation.client_id);
-            // console.log("factory_id:", adaptation.factory_id);
-            // console.log("master:", adaptation.master);
-            // console.log("bom:", adaptation.bom);
-            // console.log("article_code (raw):", adaptation.article_code);
-            // console.log("ingredients (raw):", adaptation.ingredients);
-
-            // Configuramos el formulario en modo edición
             setIsEditMode(true);
             setEditAdaptationId(id);
 
-            // Conversión segura con logs
-            const clientIdStr = adaptation.client_id?.toString() ?? "";
-            setSelectedClient(clientIdStr);
+            setSelectedClient(adaptation.client_id?.toString() ?? "");
+            setPlanta(adaptation.factory_id?.toString() ?? "");
+            setSelectedMaestras(adaptation.master?.toString() ?? "");
+            setSelectedBom(adaptation.bom?.toString() ?? "");
 
-            const plantaStr = adaptation.factory_id?.toString() ?? "";
-            setPlanta(plantaStr);
-
-            const masterStr = adaptation.master?.toString() ?? "";
-            setSelectedMaestras(masterStr);
-
-            const bomStr = adaptation.bom?.toString() ?? "";
-            setSelectedBom(bomStr);
-
-            // Procesamos los artículos
+            // Parseamos articles y quitamos "attachment"
             const parsedArticles = adaptation.article_code
-                ? JSON.parse(adaptation.article_code)
+                ? JSON.parse(adaptation.article_code).map((a: any) => {
+                    const { attachment, ...rest } = a; // limpiamos attachment
+                    return rest;
+                })
                 : [];
+
             setSelectedArticles(parsedArticles.map((a: { codart: string }) => ({ codart: a.codart })));
 
-            // Procesamos los campos específicos del artículo si es necesario
             setClientOrder(adaptation.number_order || "");
 
-            if (bomStr !== "") {
+            if (adaptation.bom?.toString() !== "") {
                 const general = parsedArticles[0] || {};
                 setOrderNumber(general.orderNumber ?? "");
                 setClientOrder(general.client_order ?? adaptation.number_order ?? "");
@@ -514,12 +508,12 @@ function NewAdaptation({ canEdit = false, canView = false }: CreateClientProps) 
                 setHealthRegistration(general.healthRegistration ?? "");
                 setAttachment(null);
                 setAttachmentUrl(
-                    general.attachment ? `/storage/${general.attachment}` : null
+                    adaptation.attachment ? `/storage/${adaptation.attachment}` : null
                 );
                 setArticleFields({});
             } else {
                 const fieldsMap: Record<string, ArticleFormData> = {};
-                parsedArticles.forEach((a: { codart: string; orderNumber?: string; client_order?: string; deliveryDate?: string; quantityToProduce?: string; lot?: string; healthRegistration?: string; attachment?: File; }) => {
+                parsedArticles.forEach((a: any) => {
                     fieldsMap[a.codart] = {
                         orderNumber: a.orderNumber ?? "",
                         numberOrder: a.client_order ?? "",
@@ -527,20 +521,20 @@ function NewAdaptation({ canEdit = false, canView = false }: CreateClientProps) 
                         quantityToProduce: Number(a.quantityToProduce) ?? "",
                         lot: a.lot ?? "",
                         healthRegistration: a.healthRegistration ?? "",
-                        attachment: a.attachment,
+                        attachment: null, // no cargamos attachment en los artículos
                     };
                 });
                 setArticleFields(fieldsMap);
+                setAttachmentUrl(null);
             }
 
-            // Procesamos los ingredientes si existen
+            // Ingredientes
             if (adaptation.ingredients) {
                 try {
-                    const parsedIng = (JSON.parse(adaptation.ingredients) as Ingredient[])
-                        .map((ing) => ({
-                            ...ing,
-                            teorica: (Number(ing.quantity || "0") * (1 + Number(ing.merma || "0"))).toFixed(4),
-                        }));
+                    const parsedIng = (JSON.parse(adaptation.ingredients) as Ingredient[]).map((ing) => ({
+                        ...ing,
+                        teorica: (Number(ing.quantity || "0") * (1 + Number(ing.merma || "0"))).toFixed(4),
+                    }));
                     setIngredients(parsedIng);
                 } catch (e) {
                     console.error("❌ Error al parsear ingredientes:", e);
@@ -550,9 +544,8 @@ function NewAdaptation({ canEdit = false, canView = false }: CreateClientProps) 
                 setIngredients([]);
             }
 
-            setIsOpen(true); // Abrimos el modal para edición
+            setIsOpen(true);
         } catch (error) {
-            // Si hay algún error en el proceso de edición, lo mostramos
             showError("Error al cargar la adaptación.");
             console.error(error);
         }
@@ -721,11 +714,6 @@ function NewAdaptation({ canEdit = false, canView = false }: CreateClientProps) 
                         </div>
 
                         {/* Maestras y BOM*/}
-                        <div
-                            className={`col-span-full grid grid-cols-1 ${maestraRequiereBOM ? "sm:grid-cols-3" : "lg:grid-cols-1"
-                                } gap-4`}
-                        >
-                            {/* Select de Maestras */}
                             <div>
                                 <Text type="subtitle" color="#000">Maestras:</Text>
                                 <select
@@ -746,7 +734,24 @@ function NewAdaptation({ canEdit = false, canView = false }: CreateClientProps) 
                                     ))}
                                 </select>
                             </div>
-
+                            <div className="flex flex-col justify-end">
+                                <Text type="subtitle" color="text-gray-700">Adjuntar:</Text>
+                                {canEdit && (
+                                    <File
+                                        onChange={(fileList) => {
+                                            const file = Array.isArray(fileList) ? fileList[0] : fileList;
+                                            setAttachment(file ?? null);
+                                        }}
+                                        maxSizeMB={5}
+                                        allowMultiple={true}
+                                    />
+                                )}
+                            </div>
+                        <div
+                            className={`col-span-full grid grid-cols-1 ${maestraRequiereBOM ? "sm:grid-cols-2" : "lg:grid-cols-1"
+                                } gap-4`}
+                        >
+                            {/* Select de Maestras */}
                             {/* Select de BOM solo si se requiere */}
                             {maestraRequiereBOM && (
                                 <div>
@@ -859,6 +864,7 @@ function NewAdaptation({ canEdit = false, canView = false }: CreateClientProps) 
                                     />
                                 )}
                             </div>
+                            
                         </div>
 
                         {/* Campos en grid responsivo */}
@@ -923,14 +929,6 @@ function NewAdaptation({ canEdit = false, canView = false }: CreateClientProps) 
                                         onChange={e => setHealthRegistration(e.target.value)}
                                         disabled={!canEdit}
                                     />
-                                </div>
-
-                                {/* Adjunto */}
-                                <div className="flex flex-col">
-                                    <Text type="subtitle" color="#000">Adjuntar:</Text>
-                                    {canEdit && (
-                                        <File onChange={setAttachment} />
-                                    )}
                                 </div>
                             </div>
                         ) : (
@@ -1017,18 +1015,6 @@ function NewAdaptation({ canEdit = false, canView = false }: CreateClientProps) 
                                                     }
                                                     disabled={!canEdit}
                                                 />
-                                            </div>
-
-                                            {/* Adjuntar */}
-                                            <div className="flex flex-col justify-end">
-                                                <Text type="subtitle" color="text-gray-700">Adjuntar:</Text>
-                                                {canEdit && (
-                                                    <File
-                                                        onChange={(file) =>
-                                                            handleFieldChange(article.codart, "attachment", file)
-                                                        }
-                                                    />
-                                                )}
                                             </div>
                                         </div>
                                     </div>

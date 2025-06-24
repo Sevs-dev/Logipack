@@ -359,10 +359,9 @@ function CreateUser({ canEdit = false, canView = false }: CreateClientProps) {
             </div>
 
             {/* Fábricas */}
-            <div className="col-span-1 md:col-span-2">
-              <Text type="subtitle" color="#000">Fábricas asignadas</Text>
+            <div className="col-span-1 md:col-span-2"> 
               <SelectorDual
-                titulo="Maquinaria"
+                titulo="Fábricas asignadas"
                 disponibles={factory}
                 seleccionados={selectedFactorys}
                 onAgregar={agregarMaquina}
