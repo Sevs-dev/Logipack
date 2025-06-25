@@ -42,6 +42,13 @@ class StagesController extends Controller
             'user' => 'string|nullable',
         ]);
 
+        // Normalizar activities (por ejemplo, convertir a enteros)
+        if (isset($validatedData['activities']) && is_array($validatedData['activities'])) {
+            $validatedData['activities'] = array_values(
+                array_map(fn($item) => intval($item), $validatedData['activities'])
+            );
+        }
+
         $validatedData['version'] = '1';
         $validatedData['reference_id'] = (string) Str::uuid();
 
@@ -53,6 +60,7 @@ class StagesController extends Controller
             'Fase' => $Fase
         ], 201);
     }
+
 
     // Obtener una Fase por ID
     public function FaseId($id): JsonResponse
@@ -87,14 +95,17 @@ class StagesController extends Controller
             'duration_user' => 'nullable|string',
             'user' => 'string|nullable',
         ]);
-
         // Desactivar la versión anterior
         $Fase->active = false;
         $Fase->save();
-
+        // Normalizar activities (por ejemplo, convertir a enteros)
+        if (isset($validatedData['activities']) && is_array($validatedData['activities'])) {
+            $validatedData['activities'] = array_values(
+                array_map(fn($item) => intval($item), $validatedData['activities'])
+            );
+        };
         // Crear nueva versión
         $newVersion = (int) $Fase->version + 1;
-
         $newFase = $Fase->replicate(); // duplica todos los atributos excepto la PK
         $newFase->version = $newVersion;
         $newFase->fill($validatedData);

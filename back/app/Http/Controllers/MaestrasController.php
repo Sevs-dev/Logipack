@@ -41,20 +41,24 @@ class MaestrasController extends Controller
             'duration_user' => 'nullable',
             'user' => 'string|nullable',
         ]);
-        // Limpiamos espacios en cada elemento de type_stage
+        // Limpiar y normalizar type_stage
         if (isset($validatedData['type_stage']) && is_array($validatedData['type_stage'])) {
-            $validatedData['type_stage'] = array_map(fn($item) => intval($item), $validatedData['type_stage']);
+            $validatedData['type_stage'] = array_values(
+                array_map(fn($item) => intval($item), $validatedData['type_stage'])
+            );
         }
         // Generar código autoincremental manualmente
         $validatedData['version'] = '1';
         $validatedData['reference_id'] = (string) Str::uuid();
-        // Crear la nueva Fase
+        // Crear la nueva Maestra
         $Maestra = Maestra::create($validatedData);
+
         return response()->json([
             'message' => 'Línea creada exitosamente',
             'Maestra' => $Maestra
         ], 201);
     }
+
 
     // Obtener una Maestra por ID
     public function MaestraId($id): JsonResponse
@@ -73,6 +77,7 @@ class MaestrasController extends Controller
         if (!$Maestra) {
             return response()->json(['message' => 'Maestrafactura no encontrada'], 404);
         }
+
         $validatedData = $request->validate([
             'descripcion' => 'required|string',
             'requiere_bom' => 'required|boolean',
@@ -86,25 +91,26 @@ class MaestrasController extends Controller
             'duration_user' => 'nullable',
             'user' => 'string|nullable',
         ]);
-        // Limpiar espacios en cada elemento de type_stage
+        // Limpiar y normalizar type_stage
         if (isset($validatedData['type_stage']) && is_array($validatedData['type_stage'])) {
-            $validatedData['type_stage'] = array_map(fn($item) => intval($item), $validatedData['type_stage']);
+            $validatedData['type_stage'] = array_values(
+                array_map(fn($item) => intval($item), $validatedData['type_stage'])
+            );
         }
         // Crear nueva versión
         $newVersion = (int) $Maestra->version + 1;
-
         $newMaestra = $Maestra->replicate(); // duplica todos los atributos excepto la PK
         $newMaestra->version = $newVersion;
         $newMaestra->fill($validatedData);
         $newMaestra->reference_id = $Maestra->reference_id ?? (string) Str::uuid();
         $newMaestra->active = true; // activamos la nueva versión
         $newMaestra->save();
-
         return response()->json([
             'message' => 'Maestrafactura actualizada correctamente',
-            'Maestra' => $Maestra
+            'Maestra' => $newMaestra // ojo aquí: devuelves la nueva versión, no la vieja
         ]);
     }
+
 
     // Eliminar una Maestra
     public function deleteMaestra($id): JsonResponse
