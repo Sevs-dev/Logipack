@@ -143,28 +143,28 @@ class OrdenesEjecutadasController extends Controller
             $acondicionamiento_id =  $acondicionamiento ? $acondicionamiento->id : null;
 
             // Consultar fases del tipo de acondicionamiento
-            $maestra_tipo_acondicionamiento_fk = DB::table('ordenes_ejecutadas as orden')
-            ->join('actividades_ejecutadas as atc', function($join) {
-                $join->on('orden.id', '=', 'atc.orden_ejecutada')->whereRaw("
-                    FIND_IN_SET(atc.tipo_acondicionamiento_fk,
-                        REPLACE(REPLACE(REPLACE(REPLACE(COALESCE(orden.maestra_tipo_acondicionamiento_fk, ''), '[', ''), ']', ''), ' ', ''), '\"', '')
-                    ) > 0
-                ");
-            })
-            ->Join('stages as std', 'std.id', '=', 'atc.fases_fk')
-            ->where('orden.id', '=', $acondicionamiento_id)
-            ->where('atc.tipo_acondicionamiento_fk', '!=', 0)
-            ->select(
-                'atc.id',
-                'atc.orden_ejecutada',
-                'atc.adaptation_id',
-                'atc.tipo_acondicionamiento_fk',
-                'atc.fases_fk',
-                'std.description as description_fase',
-                'std.phase_type',
-                'atc.forms'
-            )
-            ->get();
+            // $maestra_tipo_acondicionamiento_fk = DB::table('ordenes_ejecutadas as orden')
+            // ->join('actividades_ejecutadas as atc', function($join) {
+            //     $join->on('orden.id', '=', 'atc.orden_ejecutada')->whereRaw("
+            //         FIND_IN_SET(atc.tipo_acondicionamiento_fk,
+            //             REPLACE(REPLACE(REPLACE(REPLACE(COALESCE(orden.maestra_tipo_acondicionamiento_fk, ''), '[', ''), ']', ''), ' ', ''), '\"', '')
+            //         ) > 0
+            //     ");
+            // })
+            // ->Join('stages as std', 'std.id', '=', 'atc.fases_fk')
+            // ->where('orden.id', '=', $acondicionamiento_id)
+            // ->where('atc.tipo_acondicionamiento_fk', '!=', 0)
+            // ->select(
+            //     'atc.id',
+            //     'atc.orden_ejecutada',
+            //     'atc.adaptation_id',
+            //     'atc.tipo_acondicionamiento_fk',
+            //     'atc.fases_fk',
+            //     'std.description as description_fase',
+            //     'std.phase_type',
+            //     'atc.forms'
+            // )
+            // ->get();
 
             // Consultar fases 
             $maestra_fases_fk = DB::table('ordenes_ejecutadas as orden')
@@ -195,7 +195,7 @@ class OrdenesEjecutadasController extends Controller
                 'message' => 'Estado de la orden pendiente',
                 'estado' => 100,
                 'acondicionamiento' => $acondicionamiento,
-                'maestra_tipo_acondicionamiento_fk' => $maestra_tipo_acondicionamiento_fk,
+                'maestra_tipo_acondicionamiento_fk' => [],
                 'maestra_fases_fk' => $maestra_fases_fk
             ]);
         }
@@ -210,24 +210,24 @@ class OrdenesEjecutadasController extends Controller
             $ordenes = OrdenesEjecutadas::where('adaptation_id', $id)->where('proceso', 'eject')->first();
 
             // Obtener lista de tipos de acondicionamiento y sus actividades
-            $tipo_acondicionamiento = $this->getTipoAcondicionamiento((
-                DB::table('adaptations as ada')
-            ->join('ordenes_ejecutadas as mae', 'mae.adaptation_id', '=', 'ada.id')
-            ->leftJoin('tipo_acondicionamientos as tipo_acon', function($join) {
-                $join->on(DB::raw("FIND_IN_SET(tipo_acon.id, REPLACE(REPLACE(REPLACE(REPLACE(COALESCE(mae.maestra_tipo_acondicionamiento_fk, ''), '[', ''), ']', ''), ' ', ''), '\"', ''))"), '>', DB::raw('0'));
-            })
-            ->join('linea_tipo_acondicionamientos as lin_tipo_acon', 'tipo_acon.id', '=', 'lin_tipo_acon.tipo_acondicionamiento_id')
-            ->Join('stages as std', 'std.id', '=', 'lin_tipo_acon.fase')
-            ->where('ada.id', isset($ordenes->adaptation_id) ? $ordenes->adaptation_id : null)
-            ->select(
-                'tipo_acon.id as tipo_acondicionamiento_id',
-                'tipo_acon.descripcion as descripcion_tipo_acondicionamiento',
-                'lin_tipo_acon.descripcion as descripcion_linea_tipo_acondicionamiento',
-                'lin_tipo_acon.fase AS fases_fk', 
-                'std.description AS description_fase',
-                'std.phase_type',
-                'std.repeat_line'
-            )->get()), $ordenes);
+            // $tipo_acondicionamiento = $this->getTipoAcondicionamiento((
+            //     DB::table('adaptations as ada')
+            // ->join('ordenes_ejecutadas as mae', 'mae.adaptation_id', '=', 'ada.id')
+            // ->leftJoin('tipo_acondicionamientos as tipo_acon', function($join) {
+            //     $join->on(DB::raw("FIND_IN_SET(tipo_acon.id, REPLACE(REPLACE(REPLACE(REPLACE(COALESCE(mae.maestra_tipo_acondicionamiento_fk, ''), '[', ''), ']', ''), ' ', ''), '\"', ''))"), '>', DB::raw('0'));
+            // })
+            // ->join('linea_tipo_acondicionamientos as lin_tipo_acon', 'tipo_acon.id', '=', 'lin_tipo_acon.tipo_acondicionamiento_id')
+            // ->Join('stages as std', 'std.id', '=', 'lin_tipo_acon.fase')
+            // ->where('ada.id', isset($ordenes->adaptation_id) ? $ordenes->adaptation_id : null)
+            // ->select(
+            //     'tipo_acon.id as tipo_acondicionamiento_id',
+            //     'tipo_acon.descripcion as descripcion_tipo_acondicionamiento',
+            //     'lin_tipo_acon.descripcion as descripcion_linea_tipo_acondicionamiento',
+            //     'lin_tipo_acon.fase AS fases_fk', 
+            //     'std.description AS description_fase',
+            //     'std.phase_type',
+            //     'std.repeat_line'
+            // )->get()), $ordenes);
 
             // obtener actividades de la fase
             $fases = $this->getActividades((
@@ -237,6 +237,7 @@ class OrdenesEjecutadasController extends Controller
                 $join->on(DB::raw("FIND_IN_SET(std.id, REPLACE(REPLACE(REPLACE(REPLACE(COALESCE(mae.maestra_fases_fk, ''), '[', ''), ']', ''), ' ', ''), '\"', ''))"), '>', DB::raw('0'));
             })
             ->where('ada.id', isset($ordenes->adaptation_id) ? $ordenes->adaptation_id : null)
+            ->where(DB::raw('LOWER(std.phase_type)'), '!=', DB::raw("LOWER('Control')"))
             ->selectRaw("
                 0 as tipo_acondicionamiento_id,
                 NULL as descripcion_tipo_acondicionamiento,
@@ -248,13 +249,13 @@ class OrdenesEjecutadasController extends Controller
             ")->get()), $ordenes);
 
             // insertar actividades de la orden ejecutada
-            $this->crearActividadesOrden($tipo_acondicionamiento, $fases);
+            $this->crearActividadesOrden([], $fases);
 
             // retornar estructra de respuesta
             return response()->json([
                 'message' => 'Orden procesada',
                 'acondicionamiento' => json_decode($ordenes, true),
-                'maestra_tipo_acondicionamiento_fk' => $tipo_acondicionamiento,
+                'maestra_tipo_acondicionamiento_fk' => [],
                 'maestra_fases_fk' => $fases,
             ]);
         }
@@ -308,6 +309,7 @@ class OrdenesEjecutadasController extends Controller
                 $join->on(DB::raw("FIND_IN_SET(atc.id, REPLACE(REPLACE(REPLACE(REPLACE(COALESCE(std.activities, ''), '[', ''), ']', ''), ' ', ''), '\"', ''))"), '>', DB::raw('0'));
             })
             ->where('std.id', $fase['fases_fk'])
+            ->where(DB::raw('LOWER(std.phase_type)'), '!=', DB::raw("LOWER('Control')"))
             ->select(
                 'atc.id as id_activitie',
                 'atc.description as descripcion_activitie',
