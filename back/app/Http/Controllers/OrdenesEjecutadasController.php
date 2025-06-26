@@ -302,7 +302,7 @@ class OrdenesEjecutadasController extends Controller
     {
         // obtener actividades segun la fase
         $acom = [];
-        foreach (json_decode($fases, true) as $count => $fase) {
+        foreach ($fases as $count => $fase) {
             // obtener lista si la actividades
             $actividades =  DB::table('stages as std')
             ->join('activities as atc', function ($join) {
