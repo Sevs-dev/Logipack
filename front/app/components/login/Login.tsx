@@ -9,7 +9,7 @@ import { FiEye, FiEyeOff } from 'react-icons/fi';
 import { showError } from '../toastr/Toaster';
 
 const cookieOptions = {
-  maxAge: 7200, // 2 horas
+  maxAge: 3600, // 2 horas
   path: '/',
   secure: process.env.NODE_ENV === 'production',
   sameSite: 'strict',

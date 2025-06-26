@@ -402,6 +402,11 @@ function NewAdaptation({ canEdit = false, canView = false }: CreateClientProps) 
         try {
             setIsLoading(true);
             if (isEditMode) {
+                console.log("📝 Actualizando adaptación con ID:", editAdaptationId);
+                for (let [key, value] of formData.entries()) {
+                    console.log(`📦 ${key}:`, value);
+                }
+
                 await updateAdaptation(editAdaptationId!, formData);
                 showSuccess("Acondicionamiento actualizado.");
             } else {
