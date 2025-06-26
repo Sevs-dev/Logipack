@@ -14,6 +14,8 @@ class TimerController extends Controller
         $validated = $request->validate([
             'ejecutada_id' => 'required|exists:actividades_ejecutadas,id',
             'stage_id'     => 'required|exists:stages,id',
+            'control_id'     => 'nullable|exists:stages,id',
+            'orden_id'     => 'required|string',
             'time'         => 'required|integer|min:0',
         ]);
 
@@ -30,6 +32,8 @@ class TimerController extends Controller
         $timer = Timer::create([
             'ejecutada_id' => $validated['ejecutada_id'],
             'stage_id'     => $validated['stage_id'],
+            'control_id'   => $validated['control_id'],
+            'orden_id'     => $validated['orden_id'],
             'time'         => $validated['time'],
             'status'       => '0',
             'pause'        => 0,

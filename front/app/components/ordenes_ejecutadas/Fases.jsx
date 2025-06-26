@@ -118,14 +118,15 @@ const Fases = ({ proms, setFaseSave, fase_save, fase_list }) => {
   }, []);
 
   const listas = proms || [];
+  // console.log("Lista actual:", listas);
   const lista = listas[lineaIndex] || {};
-  // console.log("Lista actual:", lista);
   const [timerData, setTimerData] = useState(null);
   const [timerReady, setTimerReady] = useState(false);
   // Extrae solo la fase tipo "Procesos"
   const faseEnProceso = listas.find(
     (lista) => lista?.phase_type === "Procesos"
   );
+  const faseEnControl = listas.find((lista) => lista?.phase_type === "Control");
 
   // Lógica principal: crear y cargar el timer
   useEffect(() => {
@@ -141,6 +142,15 @@ const Fases = ({ proms, setFaseSave, fase_save, fase_list }) => {
 
       try {
         const stage = await getStageId(faseEnProceso.fases_fk);
+        let controlStageId = null;
+
+        if (faseEnControl?.fases_fk) {
+          const controlStage = await getStageId(faseEnControl.fases_fk);
+          if (controlStage?.id) {
+            controlStageId = controlStage.id;
+          }
+        }
+
         if (!stage?.id) return;
 
         const ejecutadaId = Number(faseEnProceso.id);
@@ -151,6 +161,8 @@ const Fases = ({ proms, setFaseSave, fase_save, fase_list }) => {
         const createResult = await createTimer({
           ejecutada_id: ejecutadaId,
           stage_id: stage.id,
+          control_id: controlStageId,
+          orden_id: faseEnProceso.orden_ejecutada,
           time,
         });
 
