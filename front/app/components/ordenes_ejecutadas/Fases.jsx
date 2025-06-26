@@ -290,7 +290,7 @@ const Fases = ({ proms, setFaseSave, fase_save, fase_list }) => {
   };
 
   const handleNextLine = async (e) => {
-    e.preventDefault();
+    // e.preventDefault();
     if (formRef.current.checkValidity()) {
       if (lineaIndex < listas.length - 1) {
 

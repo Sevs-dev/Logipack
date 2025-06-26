@@ -237,6 +237,7 @@ class OrdenesEjecutadasController extends Controller
                 $join->on(DB::raw("FIND_IN_SET(std.id, REPLACE(REPLACE(REPLACE(REPLACE(COALESCE(mae.maestra_fases_fk, ''), '[', ''), ']', ''), ' ', ''), '\"', ''))"), '>', DB::raw('0'));
             })
             ->where('ada.id', isset($ordenes->adaptation_id) ? $ordenes->adaptation_id : null)
+            ->where(DB::raw('LOWER(std.phase_type)'), '!=', DB::raw("LOWER('Control')"))
             ->selectRaw("
                 0 as tipo_acondicionamiento_id,
                 NULL as descripcion_tipo_acondicionamiento,
@@ -308,6 +309,7 @@ class OrdenesEjecutadasController extends Controller
                 $join->on(DB::raw("FIND_IN_SET(atc.id, REPLACE(REPLACE(REPLACE(REPLACE(COALESCE(std.activities, ''), '[', ''), ']', ''), ' ', ''), '\"', ''))"), '>', DB::raw('0'));
             })
             ->where('std.id', $fase['fases_fk'])
+            ->where(DB::raw('LOWER(std.phase_type)'), '!=', DB::raw("LOWER('Control')"))
             ->select(
                 'atc.id as id_activitie',
                 'atc.description as descripcion_activitie',
