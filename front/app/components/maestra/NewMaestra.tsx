@@ -598,7 +598,9 @@ const Maestra = ({ canEdit = false, canView = false }: CreateClientProps) => {
                     {/* Requiere BOM y Aprobado */}
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mt-4 mb-2">
                         <div className="flex flex-col items-center">
-                            <Text type="subtitle" color="#000">Requiere BOM</Text>
+                            <Text type="subtitle" color="#000">Requiere BOM
+                                <InfoPopover content={<>Indica que este acondicionamiento requiere una <strong>BOM</strong>. Esto se aplicará al crear la orden de acondicionamiento.</>} />
+                            </Text>
                             <input
                                 type="checkbox"
                                 checked={requiereBOM}
@@ -608,7 +610,11 @@ const Maestra = ({ canEdit = false, canView = false }: CreateClientProps) => {
                             />
                         </div>
                         <div className="flex flex-col items-center">
-                            <Text type="subtitle" color="#000">Paralelo</Text>
+                            <Text type="subtitle" color="#000">Paralelo
+                                <InfoPopover content={<>
+                                    <strong>Paralelo</strong> indica que esta fase puede ejecutarse simultáneamente con otras, es decir, trabaja múltiples líneas al mismo tiempo.
+                                </>} />
+                            </Text>
                             <input
                                 type="checkbox"
                                 checked={paralelo}
@@ -642,7 +648,7 @@ const Maestra = ({ canEdit = false, canView = false }: CreateClientProps) => {
                         <Text type="subtitle" color="#000">Seleccione las Fases</Text>
                         <div className="flex flex-col md:flex-row space-y-4 md:space-y-0 md:space-x-4">
                             <div className="w-full md:w-1/2 border p-4 max-h-60 overflow-y-auto rounded-xl bg-white shadow-sm">
-                                <Text type="subtitle">Acondicionamientos Disponibles
+                                <Text type="subtitle">Acond. Disponibles
                                     <InfoPopover
                                         content={
                                             <>
@@ -836,70 +842,78 @@ const Maestra = ({ canEdit = false, canView = false }: CreateClientProps) => {
                     </div>
 
                     {/* Botones de acción */}
-                    <div className="flex justify-center space-x-4 mt-4">
-                        <Button onClick={() => setIsOpen(false)} variant="cancel" label="Cancelar" />
-                        {/* Botón Finalizado */}
-                        {canEdit && (
-                            <div className="flex gap-2">
-                                {/* Botón Finalizar (Aprobada) */}
-                                <Button
-                                    onClick={async () => {
-                                        const payload = {
-                                            descripcion,
-                                            requiere_bom: requiereBOM,
-                                            type_product: tipoSeleccionado,
-                                            ...(tipoSeleccionadoAcon != null && {
-                                                type_acondicionamiento: tipoSeleccionadoAcon,
-                                            }),
-                                            type_stage: selectedStages.map((s) => s.id),
-                                            status_type: "Aprobada",
-                                            aprobado: true,
-                                            paralelo,
-                                            duration,
-                                            duration_user: durationUser,
-                                        };
+                    <div className="flex justify-center mt-4">
+                        <div className="flex gap-2">
+                            <Button onClick={() => setIsOpen(false)} variant="cancel" label="Cancelar" />
 
-                                        if (isSaving) return;
-                                        setIsSaving(true);
-                                        try {
-                                            if (editingMaestra) {
-                                                await updateMaestra(editingMaestra.id, payload);
-                                            } else {
-                                                await createMaestra(payload);
+                            {canEdit && (
+                                <>
+                                    {!(editingMaestra && editingMaestra.status_type === "Aprobada") && (
+                                        <Button
+                                            onClick={async () => {
+                                                const payload = {
+                                                    descripcion,
+                                                    requiere_bom: requiereBOM,
+                                                    type_product: tipoSeleccionado,
+                                                    ...(tipoSeleccionadoAcon != null && {
+                                                        type_acondicionamiento: tipoSeleccionadoAcon,
+                                                    }),
+                                                    type_stage: selectedStages.map((s) => s.id),
+                                                    status_type: "Aprobada",
+                                                    aprobado: true,
+                                                    paralelo,
+                                                    duration,
+                                                    duration_user: durationUser,
+                                                };
+
+                                                if (isSaving) return;
+                                                setIsSaving(true);
+                                                try {
+                                                    if (editingMaestra) {
+                                                        await updateMaestra(editingMaestra.id, payload);
+                                                    } else {
+                                                        await createMaestra(payload);
+                                                    }
+                                                    showSuccess(editingMaestra ? "Maestra actualizada con éxito" : "Maestra creada con éxito");
+                                                    setIsOpen(false);
+                                                    resetForm();
+                                                    fetchMaestra();
+                                                } catch (error) {
+                                                    showError("Ocurrió un error al guardar la maestra. Por favor intenta nuevamente.");
+                                                    console.error("Error al guardar maestra:", error);
+                                                } finally {
+                                                    setIsSaving(false);
+                                                }
+                                            }}
+                                            variant="terciario"
+                                            disabled={isSaving}
+                                            label={
+                                                editingMaestra
+                                                    ? "Finalizar Edición"
+                                                    : isSaving
+                                                        ? "Guardando..."
+                                                        : "Finalizar"
                                             }
-                                            showSuccess(editingMaestra ? "Maestra actualizada con éxito" : "Maestra creada con éxito");
-                                            setIsOpen(false);
-                                            resetForm();
-                                            fetchMaestra();
-                                        } catch (error) {
-                                            showError("Ocurrió un error al guardar la maestra. Por favor intenta nuevamente.");
-                                            console.error("Error al guardar maestra:", error);
-                                        } finally {
-                                            setIsSaving(false); // Desactiva loading
-                                        }
-                                    }}
-                                    variant="terciario"
-                                    disabled={isSaving}
-                                    label={editingMaestra ? "Finalizar Edición" : isSaving ? "Guardando..." : "Finalizar"}
-                                />
+                                        />
+                                    )}
 
-                                {/* Botón Guardar en estado "En creación" */}
-                                <Button
-                                    onClick={() => {
-                                        setEstado("En creación");
-                                        setAprobado(false);
-                                        if (editingMaestra) {
-                                            handleUpdate();
-                                        } else {
-                                            handleSubmit();
-                                        }
-                                    }}
-                                    variant="create"
-                                    disabled={isSaving}
-                                    label={editingMaestra ? "Guardar Cambios" : isSaving ? "Guardando..." : "Crear Maestra"}
-                                />
-                            </div>
-                        )}
+                                    <Button
+                                        onClick={() => {
+                                            setEstado("En creación");
+                                            setAprobado(false);
+                                            if (editingMaestra) {
+                                                handleUpdate();
+                                            } else {
+                                                handleSubmit();
+                                            }
+                                        }}
+                                        variant="create"
+                                        disabled={isSaving}
+                                        label={editingMaestra ? "Guardar Cambios" : isSaving ? "Guardando..." : "Crear Maestra"}
+                                    />
+                                </>
+                            )}
+                        </div>
                     </div>
                 </ModalSection>
             )}
