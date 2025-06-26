@@ -5,7 +5,7 @@ import Navbar from "./components/navbar/Navbar";
 import Sidebar from "./components/sidebar/Sidebar";
 import Toaster from "./components/toastr/Toaster";
 import { AuthProvider } from "./context/AuthProvider";
-import PlanningNotifier from "@/app/components/clock/PlanningNotifier"; 
+// import PlanningNotifier from "@/app/components/clock/PlanningNotifier"; 
 
 export default function ClientLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -30,7 +30,7 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
             <main className="flex-1 bg-[#242424]"> 
               {children}
             </main> 
-            <PlanningNotifier />
+            {/* <PlanningNotifier /> */}
             <Toaster />
           </>
         )}

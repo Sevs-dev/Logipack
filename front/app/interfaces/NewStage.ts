@@ -44,4 +44,5 @@ export interface StageFase {
   description: string;
   duration: string;
   duration_user: string;
+  phase_type: string;
 }

@@ -254,20 +254,32 @@ class AdaptationController extends Controller
     public function updateAdaptation(Request $request, $id)
     {
         try {
+           Log::info("🔧 Iniciando actualización de adaptación ID: {$id}");
+
             $adaptation = Adaptation::findOrFail($id);
 
             $validatedData = $request->validate([
                 'client_id'    => 'required|exists:clients,id',
                 'factory_id'   => 'required|exists:factories,id',
-                'article_code' => 'required|json',
+                'article_code' => 'required|string',
                 'number_order' => 'required|string',
                 'attachment'   => 'nullable|file',
                 'master'       => 'nullable|exists:maestras,id',
                 'bom'          => 'nullable|exists:boms,id',
-                'ingredients'  => 'nullable|json',
+                'ingredients'  => 'nullable|string',
             ]);
 
-            // Procesar adjuntos individuales (NO se guardan en attachment)
+           Log::info("📥 Payload recibido: ", $request->all());
+           Log::info("✅ Datos validados: ", $validatedData);
+
+            $validatedData['article_code'] = json_decode($validatedData['article_code'], true);
+            $validatedData['ingredients'] = isset($validatedData['ingredients'])
+                ? json_decode($validatedData['ingredients'], true)
+                : null;
+
+           Log::info("📦 article_code decodificado: ", $validatedData['article_code']);
+           Log::info("🥕 ingredients decodificados: ", $validatedData['ingredients'] ?? []);
+
             $articleAttachments = [];
 
             foreach ($request->files as $key => $file) {
@@ -285,7 +297,6 @@ class AdaptationController extends Controller
                 }
             }
 
-            // Procesar adjunto general
             if ($request->hasFile('attachment')) {
                 $file = $request->file('attachment');
 
@@ -293,7 +304,6 @@ class AdaptationController extends Controller
                     $file = LaravelUploadedFile::createFromBase($file);
                 }
 
-                // Borrar attachment anterior si existe
                 if (!empty($adaptation->attachment)) {
                     Storage::disk('public')->delete($adaptation->attachment);
                 }
@@ -303,10 +313,7 @@ class AdaptationController extends Controller
                 $validatedData['attachment'] = $filePath;
             }
 
-            // Decodificar JSON si vienen como string
-            $validatedData['ingredients'] = isset($validatedData['ingredients']) ? json_decode($validatedData['ingredients'], true) : null;
-
-            // Duración y desglose
+            // Cálculo de duración y desglose
             $masterDuration = null;
             $duration_breakdown = [];
 
@@ -316,13 +323,7 @@ class AdaptationController extends Controller
 
                 if ($master && is_array($master->type_stage)) {
                     $totalDuration = 0;
-                    $teoricaTotal = 0;
-
-                    foreach ($ingredients as $ing) {
-                        if (isset($ing['teorica'])) {
-                            $teoricaTotal += floatval($ing['teorica']);
-                        }
-                    }
+                    $teoricaTotal = collect($ingredients)->sum(fn($i) => floatval($i['teorica'] ?? 0));
 
                     foreach ($master->type_stage as $stageId) {
                         $stage = Stage::find($stageId);
@@ -350,17 +351,22 @@ class AdaptationController extends Controller
                 }
             }
 
-            // Guardar desglose y duración en validatedData
-            $validatedData['duration_breakdown'] = json_encode($duration_breakdown);
-            $validatedData['duration'] = $masterDuration;
+           Log::info("⏱ Duración calculada: ", ['total' => $masterDuration, 'desglose' => $duration_breakdown]);
 
-            // Actualizar Adaptation
-            $adaptation->update($validatedData);
+            // Actualizar solo campos válidos en Adaptation
+            $adaptation->update([
+                'client_id'    => $validatedData['client_id'],
+                'factory_id'   => $validatedData['factory_id'],
+                'article_code' => json_encode($validatedData['article_code']),
+                'number_order' => $validatedData['number_order'],
+                'attachment'   => $validatedData['attachment'] ?? $adaptation->attachment,
+                'master'       => $validatedData['master'],
+                'bom'          => $validatedData['bom'],
+                'ingredients'  => json_encode($validatedData['ingredients']),
+            ]);
 
             // Actualizar AdaptationDate
-            $articleCodes = json_decode($validatedData['article_code'], true);
-
-            foreach ($articleCodes as $article) {
+            foreach ($validatedData['article_code'] as $article) {
                 AdaptationDate::updateOrCreate(
                     [
                         'adaptation_id' => $adaptation->id,
@@ -385,9 +391,9 @@ class AdaptationController extends Controller
             }
 
             return response()->json([
-                'message'          => 'Adaptation updated successfully',
-                'adaptation'       => $adaptation,
-                'article_files'    => $articleAttachments, // se devuelven en el response, NO en DB
+                'message'       => 'Adaptation updated successfully',
+                'adaptation'    => $adaptation,
+                'article_files' => $articleAttachments,
             ], 200);
         } catch (ValidationException $e) {
             return response()->json([
@@ -395,12 +401,14 @@ class AdaptationController extends Controller
                 'details' => $e->errors(),
             ], 422);
         } catch (\Exception $e) {
+           Log::warning("🔥 Error inesperado en updateAdaptation: " . $e->getMessage());
             return response()->json([
                 'error'   => 'Error updating adaptation',
                 'details' => $e->getMessage(),
             ], 500);
         }
     }
+
 
     public function deleteAdaptation($id)
     {
