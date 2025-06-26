@@ -55,7 +55,7 @@ class FaseTimerController extends Controller
             'std.phase_type',
             'std.repeat_line'
         )
-        ->get(), $ordenes);
+        ->get(), $ordenes, $id);
     
 
 
@@ -74,7 +74,7 @@ class FaseTimerController extends Controller
      * @param object $ordenes
      * @return array
      */
-    private function getActividades($fases, $ordenes) : array 
+    private function getActividades($fases, $ordenes, $id) : array 
     {
         // obtener actividades segun la fase
         $acom = [];
@@ -107,6 +107,7 @@ class FaseTimerController extends Controller
                                 $value['id_activitie'],
                                 $count,
                                 $key + ($i + 1),
+                                $id,
                             ]);
                             $value['orden_ejecutada'] = $ordenes->id;
                             $value['adaptation_id'] = $ordenes->adaptation_id;
@@ -133,6 +134,7 @@ class FaseTimerController extends Controller
                         $value['id_activitie'],
                         $count,
                         $key,
+                        $id,
                     ]);
                     $value['orden_ejecutada'] = $ordenes->id;
                     $value['adaptation_id'] = $ordenes->adaptation_id;
