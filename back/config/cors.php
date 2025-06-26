@@ -21,7 +21,7 @@ return [
 
     'allowed_origins' => ['*'],
 
-    'allowed_origins' => ['http://129.146.161.23:9004'],
+    'allowed_origins' => ['http://129.146.161.23:9004','http://localhost:9004'],
 
     'allowed_headers' => ['*'],
 
