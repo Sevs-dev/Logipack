@@ -23,7 +23,7 @@ class ArticlesController extends Controller
                 // Validar que la API devolvió datos en formato esperado
                 if (!is_array($data) || empty($data)) {
                     return response()->json([
-                        'success' => false,
+                        'success' => true,
                         'message' => 'No se encontraron artículos para este código.',
                         'data' => []
                     ], 404);

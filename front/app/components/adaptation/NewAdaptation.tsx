@@ -27,235 +27,196 @@ import { BOM, Adaptation, ArticleFormData, Plant } from "@/app/interfaces/NewAda
 import { Audit } from "../../interfaces/Audit";
 
 function NewAdaptation({ canEdit = false, canView = false }: CreateClientProps) {
+    // UI
     const [isOpen, setIsOpen] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
+    const [isEditMode, setIsEditMode] = useState(false);
+
+    // Cliente y Planta
+    const [clients, setClients] = useState<Client[]>([]);
     const [selectedClient, setSelectedClient] = useState<number | "">("");
     const [plantas, setPlantas] = useState<Plant[]>([]);
-    const [planta, setPlanta] = useState<string>('');
-    const [, setConsecutivo] = useState<string | null>(null);
+    const [planta, setPlanta] = useState<string>("");
+
+    // Maestra
+    const [maestra, setMaestra] = useState<MaestraBase[]>([]);
+    const [selectedMaestras, setSelectedMaestras] = useState<string[]>([]);
+
+    // Artículos
+    const [articles, setArticles] = useState<Article[]>([]);
+    const [selectedArticles, setSelectedArticles] = useState<Article[]>([]);
+    const [articleFields, setArticleFields] = useState<Record<string, ArticleFormData>>({});
+
+    // Orden y datos de producción
     const [client_order, setClientOrder] = useState<string>("");
     const [orderNumber, setOrderNumber] = useState<string>("");
     const [deliveryDate, setDeliveryDate] = useState<string>("");
-    const [selectedArticles, setSelectedArticles] = useState<Article[]>([]);
+    const [quantityToProduce, setQuantityToProduce] = useState("");
     const [lot, setLot] = useState<string>("");
     const [healthRegistration, setHealthRegistration] = useState<string>("");
-    const [quantityToProduce, setQuantityToProduce] = useState("");
-    const [attachment, setAttachment] = useState<File | null>(null);
-    const [, setAttachmentUrl] = useState<string | null>(null);
-    const [clients, setClients] = useState<Client[]>([]);
-    const [maestra, setMaestra] = useState<MaestraBase[]>([]);
-    const [articles, setArticles] = useState<Article[]>([]);
-    const [adaptation, setAdaptation] = useState<Adaptation[]>([]);
-    const [ingredients, setIngredients] = useState<Ingredient[]>([]);
-    const [isEditMode, setIsEditMode] = useState(false);
-    const [editAdaptationId, setEditAdaptationId] = useState<number | null>(null);
-    const [selectedMaestras, setSelectedMaestras] = useState<string[]>([]);
+
+    // BOM e Ingredientes
     const [boms, setBoms] = useState<BOM[]>([]);
     const [selectedBom, setSelectedBom] = useState<number | "">("");
-    const [isLoading, setIsLoading] = useState(false);
-    const [articleFields, setArticleFields] = useState<Record<string, ArticleFormData>>({});
+    const [ingredients, setIngredients] = useState<Ingredient[]>([]);
+
+    // Adaptaciones
+    const [adaptation, setAdaptation] = useState<Adaptation[]>([]);
+    const [editAdaptationId, setEditAdaptationId] = useState<number | null>(null);
+
+    // Adjuntos
+    const [attachment, setAttachment] = useState<File | null>(null);
+    const [, setAttachmentUrl] = useState<string | null>(null);
+
+    // Consecutivo
+    const [, setConsecutivo] = useState<string | null>(null);
+
+    // Auditoría (por si se usa después)
     const [auditList, setAuditList] = useState<Audit[]>([]);
     const [, setSelectedAudit] = useState<Audit | null>(null);
 
-    // Ejecutar al montar el componente
+    // Cargar Adaptaciones al montar si se puede ver
     useEffect(() => {
-        if (canView) {
-            fetchAdaptations();
-        } // Llamamos a la función para cargar las adaptaciones
+        if (canView) fetchAdaptations();
     }, [canView]);
 
+    // Cargar Clientes
     useEffect(() => {
         const fetchClients = async () => {
             try {
                 setIsLoading(true);
                 const clientsData = await getClients();
                 setClients(clientsData);
-            } catch (error) {
+            } catch (err) {
                 showError("Error al cargar los clientes.");
-                console.error(error);
+                console.error(err);
             } finally {
                 setIsLoading(false);
             }
         };
-
         fetchClients();
     }, []);
 
-    // Cargar plantas (factories) al montar el componente
+    // Cargar Plantas
     useEffect(() => {
         const fetchFactories = async () => {
             try {
                 setIsLoading(true);
-                const factoriesData: Plant[] = await getFactory();
-                setPlantas(factoriesData);
-            } catch (error) {
+                const data = await getFactory();
+                setPlantas(data);
+            } catch (err) {
                 showError("Error al cargar las plantas.");
-                console.error(error);
+                console.error(err);
             } finally {
                 setIsLoading(false);
             }
         };
-
         fetchFactories();
     }, []);
-    // Este efecto solo se ejecuta una vez cuando el componente se monta
-    // Maneja el cambio de planta seleccionada
-    const handlePlantaChange = async (value: string) => {
-        // Actualiza el estado de la planta seleccionada
-        setPlanta(value);
-        // Busca la planta seleccionada a partir de la lista de plantas
-        const selectedPlant = plantas.find(p => p.id.toString() === value);
-        // Si se encuentra la planta y tiene un prefijo, obtiene el consecutivo
-        if (selectedPlant && selectedPlant.prefix) {
-            try {
-                // Llama a la API para obtener el consecutivo con el prefijo de la planta
-                const response = await getPrefix(selectedPlant.prefix);
-                // Si la respuesta es válida y tiene consecutivos, establece el consecutivo
-                if (response && response.consecutives?.length > 0) {
-                    const cons = response.consecutives[0]; // Tomamos el primer consecutivo
-                    setConsecutivo(cons); // Establece el consecutivo
 
-                    // Arma el string del orden con el formato adecuado
-                    const formattedOrder = `${cons.prefix}-${cons.year}-${cons.month}-${cons.consecutive}`;
-                    setClientOrder(formattedOrder); // Establece el número de orden
-                }
-            } catch (error) {
-                // Muestra el error si algo falla al obtener el consecutivo
-                console.error("Error al obtener el consecutivo:", error);
-            }
-        }
-    };
-
-    // Copiar el número de orden al portapapeles
-    const copyToClipboard = () => {
-        // Si hay un número de orden, lo copia al portapapeles
-        if (client_order) {
-            navigator.clipboard.writeText(client_order); // Copia al portapapeles
-            showSuccess('Orden copiada al portapapeles'); // Muestra mensaje de éxito
-        }
-    };
-
-    // Cargar Maestras al montar el componente
+    // Cargar Maestras
     useEffect(() => {
-        // Función asincrónica para obtener las maestras
         const fetchMaestras = async () => {
             try {
-                // Inicia el estado de carga
                 setIsLoading(true);
-                // Obtiene los datos de las maestras
                 const maestrasData = await getMaestra();
-                setMaestra(maestrasData); // Almacena las maestras en el estado
-            } catch (error) {
-                // Muestra un error si algo falla al cargar las maestras
+                setMaestra(maestrasData);
+            } catch (err) {
                 showError("Error al cargar las maestras.");
-                console.error(error); // Muestra el error en consola para depuración
+                console.error(err);
             } finally {
-                // Finaliza el estado de carga independientemente de si hubo error o no
                 setIsLoading(false);
             }
         };
-
-        // Llama a la función para cargar las maestras
         fetchMaestras();
-    }, []); // Este efecto solo se ejecuta una vez cuando el componente se monta
+    }, []);
 
-    // Cargar artículos disponibles basados en el cliente seleccionado
+    // Cargar Artículos por Cliente
     useEffect(() => {
         if (!selectedClient) return;
-
         let isMounted = true;
-
         const fetchArticles = async () => {
             try {
                 setIsLoading(true);
-
                 const clientData = await getClientsId(Number(selectedClient));
+
                 if (!clientData?.code) {
                     showError("Código de cliente no disponible.");
-                    console.error("Error: clientData o clientData.code es inválido", clientData);
                     return;
                 }
+                const articlesData = await getArticleByCode(clientData.code);
+                const list = articlesData.data || [];
 
-                const articlesData = await getArticleByCode(clientData.code as string);
-                if (isMounted) setArticles(articlesData.data || []);
-
-            } catch (error) {
                 if (isMounted) {
-                    showError("Error al cargar los artículos.");
-                    console.error("Error en fetchArticles:", error);
+                    setArticles(list);
+
+                    if (list.length === 0) {
+                        showError("Este cliente no tiene artículos disponibles.");
+                    }
                 }
+            } catch (err) {
+                if (isMounted) showError("Error al cargar los artículos.");
+                console.error(err);
             } finally {
                 if (isMounted) setIsLoading(false);
             }
         };
-
         fetchArticles();
-
         return () => {
             isMounted = false;
         };
     }, [selectedClient]);
-    // Este efecto depende de `selectedClient`, se ejecuta cada vez que cambia
 
-    // Nuevo useEffect para asignar los artículos seleccionados cuando `articles` esté listo
+    // Actualizar artículos seleccionados cuando los datos cambian
     useEffect(() => {
-        // Si hay artículos disponibles y artículos seleccionados
         if (articles.length > 0 && selectedArticles.length > 0) {
-            // Filtra los artículos seleccionados de la lista de artículos disponibles
-            const selectedArticlesFormatted = articles.filter(article =>
-                selectedArticles.some(selected => selected.codart === article.codart)
+            const formatted = articles.filter(article =>
+                selectedArticles.some(sel => sel.codart === article.codart)
             );
-            // Solo actualiza los artículos seleccionados si hay cambios
             setSelectedArticles(prev =>
-                JSON.stringify(prev) !== JSON.stringify(selectedArticlesFormatted)
-                    ? selectedArticlesFormatted
-                    : prev
+                JSON.stringify(prev) !== JSON.stringify(formatted) ? formatted : prev
             );
         }
-    }, [articles, selectedArticles]); // 👈 Ahora depende de `articles` y `selectedArticles`
+    }, [articles, selectedArticles]);
 
-    // Cargar BOM (Bill of Materials) si el cliente y las maestras son válidas
+    // Cargar BOM e Ingredientes si se requiere
     useEffect(() => {
         if (!selectedClient || selectedMaestras.length === 0) return;
-        const selectedMaestraObj = maestra.find(
-            (m) => m.id.toString() === selectedMaestras[0]
-        );
+        const selectedMaestraObj = maestra.find(m => m.id.toString() === selectedMaestras[0]);
         if (!selectedMaestraObj?.requiere_bom) {
             setBoms([]);
             setIngredients([]);
             return;
         }
+
         const fetchBom = async () => {
             try {
                 const clientData = await getClientsId(Number(selectedClient));
-                const articlesWithBom: Article[] = await getArticleByClient(clientData.id);
-                const bomsExtraidos: Bom[] = articlesWithBom
-                    .map(article => article.bom)
-                    .filter((bom): bom is Bom & { ingredients?: string } => !!bom);
+                const articlesWithBom = await getArticleByClient(clientData.id);
+                const bomsExtraidos = articlesWithBom.map(a => a.bom).filter(bom => !!bom);
                 if (bomsExtraidos.length === 0) {
                     setBoms([]);
                     setIngredients([]);
                     return;
                 }
-                setBoms(
-                    bomsExtraidos.map((bom) => ({
-                        ...bom,
-                        status: bom.status ? 1 : 0,
-                    }))
-                );
+
+                setBoms(bomsExtraidos.map(b => ({ ...b, status: b.status ? 1 : 0 })));
+
                 const firstBom = bomsExtraidos[0];
                 if (firstBom.ingredients) {
                     try {
-                        const parsedIngredients: Ingredient[] = JSON.parse(firstBom.ingredients);
-                        setIngredients(parsedIngredients);
-                    } catch (err) {
-                        console.warn("Ingredientes mal formateados en el primer BOM", err);
+                        const parsed = JSON.parse(firstBom.ingredients);
+                        setIngredients(parsed);
+                    } catch (e) {
+                        console.warn("Ingredientes mal formateados", e);
                         setIngredients([]);
                     }
                 } else {
                     setIngredients([]);
                 }
-            } catch (error) {
-                console.error("Error al obtener los BOMs o los artículos:", error);
+            } catch (err) {
+                showError("Error al obtener BOM.");
+                console.error(err);
                 setBoms([]);
                 setIngredients([]);
             }
@@ -263,43 +224,76 @@ function NewAdaptation({ canEdit = false, canView = false }: CreateClientProps) 
         fetchBom();
     }, [selectedClient, selectedMaestras, maestra]);
 
-    // Este efecto depende de `selectedClient`, `selectedMaestras`, y `maestra`
-    // Efecto que recalcula la cantidad teórica de ingredientes cada vez que cambia `quantityToProduce`
+    // Recalcular ingredientes cuando cambia cantidad
     useEffect(() => {
-        if (quantityToProduce !== "") {
-            const quantityToProduceNumber = Number(quantityToProduce);
-            if (!ingredients.length || isNaN(quantityToProduceNumber)) return;
+        if (quantityToProduce === "") return;
+        const qty = Number(quantityToProduce);
+        if (!ingredients.length || isNaN(qty)) return;
+        const recalculated = ingredients.map((ing) => {
+            const merma = parseFloat(ing.merma);
+            const teorica = qty + qty * merma;
+            return { ...ing, teorica: teorica.toFixed(4) };
+        });
+        setIngredients(recalculated);
+    }, [quantityToProduce, ingredients]);
 
-            const recalculated = ingredients.map((ing) => {
-                const merma = parseFloat(ing.merma);
-                const teoricaPorUnidad = quantityToProduceNumber + quantityToProduceNumber * merma;
-                const teoricaCalculada = teoricaPorUnidad.toFixed(4);
-                return {
-                    ...ing,
-                    teorica: teoricaCalculada,
-                };
-            });
+    // ======================= 🔁 Funciones de cambio y copia =======================
 
-            setIngredients(recalculated);
+    const handlePlantaChange = async (value: string) => {
+        setPlanta(value);
+        const selected = plantas.find(p => p.id.toString() === value);
+        if (!selected?.prefix) return;
+
+        try {
+            const { consecutives } = await getPrefix(selected.prefix);
+            if (consecutives?.length) {
+                const cons = consecutives[0];
+                setConsecutivo(cons);
+                setClientOrder(`${cons.prefix}-${cons.year}-${cons.month}-${cons.consecutive}`);
+            }
+        } catch (error) {
+            console.error("Error al obtener el consecutivo:", error);
         }
-    }, [quantityToProduce, ingredients]); // ← importante
-    // Este efecto se ejecuta cada vez que cambia `quantityToProduce`
+    };
 
-    // UseMemo para obtener la maestra seleccionada, solo se recalcula si cambian `selectedMaestras` o `maestra`
+    const copyToClipboard = () => {
+        if (client_order) {
+            navigator.clipboard.writeText(client_order);
+            showSuccess("Orden copiada al portapapeles");
+        }
+    };
+
+    const visualOrder = useMemo(() => {
+        if (!client_order) {
+            return "";
+        }
+        if (!/\d{7}$/.test(client_order)) {
+            return "";
+        }
+        if (client_order.endsWith("0000000")) {
+            return "";
+        }
+        const match = client_order.match(/(\d{7})$/)?.[1];
+        if (match) {
+            const incremented = String(parseInt(match, 10) + 1).padStart(7, "0");
+            const newOrder = client_order.replace(/(\d{7})$/, incremented);
+            return newOrder;
+        }
+        console.log("⚠️ No se encontró match válido, retornando vacío");
+        return "";
+    }, [client_order]);
+
+    // ======================= 📦 Memos y helpers =======================
+
     const maestraSeleccionada = useMemo(() => {
-        // Busca la maestra cuyo ID coincida con el seleccionado
         return maestra.find(m => m.id.toString() === selectedMaestras[0]);
     }, [selectedMaestras, maestra]);
 
-    // Verifica si la maestra seleccionada requiere BOM (Bill of Materials)
-    const maestraRequiereBOM = maestraSeleccionada?.requiere_bom ?? false; // Default a `false` si no está definida
-    // Función para manejar los cambios en los campos de los ingredientes
+    const maestraRequiereBOM = maestraSeleccionada?.requiere_bom ?? false;
+
     const handleChange = (index: number, field: keyof Ingredient, value: string): void => {
-        // Crea una copia del array de ingredientes
-        const updated: Ingredient[] = [...ingredients];
-        // Actualiza el campo específico del ingrediente en la posición indicada
+        const updated = [...ingredients];
         updated[index][field] = value;
-        // Establece los ingredientes actualizados en el estado
         setIngredients(updated);
     };
 
@@ -312,127 +306,101 @@ function NewAdaptation({ canEdit = false, canView = false }: CreateClientProps) 
             ...prev,
             [codart]: {
                 ...prev[codart],
-                [field]: value
-            }
+                [field]: value,
+            },
         }));
     };
 
-    // Función para cargar adaptaciones
+    // ======================= 📥 Carga de datos =======================
+
     const fetchAdaptations = async () => {
         try {
-            const adaptations: Adaptation[] = await getAdaptations();
-            const adapData = await Promise.all(
-                adaptations.map(async (adaptation) => {
-                    const clientData = await getClientsId(adaptation.client_id);
-                    return {
-                        ...adaptation,
-                        client_name: clientData.name,
-                        numberOrder: clientData.number_order as string | undefined,
-                    };
+            const adaptations = await getAdaptations();
+            const fullData = await Promise.all(
+                adaptations.map(async (a: Adaptation) => {
+                    const client = await getClientsId(a.client_id);
+                    return { ...a, client_name: client.name, numberOrder: client.number_order };
                 })
             );
-
-            setAdaptation(adapData as Adaptation[]);
+            setAdaptation(fullData);
         } catch (error) {
             showError("Error al cargar adaptaciones.");
             console.error(error);
         }
     };
 
-    // Manejo del envío del formulario
+    // ======================= 📤 Envío del formulario =======================
+
     const handleSubmit = async () => {
-        if (!selectedClient) return showError("Por favor, selecciona un Cliente.");
-        if (!planta) return showError("Por favor, selecciona una Planta.");
-        if (!selectedArticles.length) return showError("Por favor, selecciona al menos un artículo.");
-        if (!selectedMaestras.length) return showError("Por favor, selecciona al menos una Maestra.");
+        if (!selectedClient) return showError("Selecciona un Cliente.");
+        if (!planta) return showError("Selecciona una Planta.");
+        if (!selectedArticles.length) return showError("Selecciona al menos un artículo.");
+        if (!selectedMaestras.length) return showError("Selecciona una Maestra.");
 
         let articlesData;
 
         if (maestraRequiereBOM) {
-            if (!orderNumber) return showError("Por favor, ingresa el número de orden.");
-            if (!deliveryDate || !quantityToProduce || !lot || !healthRegistration) {
-                return showError("Por favor, completa todos los campos del artículo.");
+            if (!orderNumber || !deliveryDate || !quantityToProduce || !lot || !healthRegistration) {
+                return showError("Completa todos los campos del artículo.");
             }
 
-            articlesData = [
-                {
-                    codart: selectedArticles[0]?.codart || "",
-                    number_order: client_order,
-                    orderNumber,
-                    deliveryDate,
-                    quantityToProduce,
-                    lot,
-                    healthRegistration,
-                },
-            ];
+            articlesData = [{
+                codart: selectedArticles[0]?.codart || "",
+                number_order: client_order,
+                orderNumber,
+                deliveryDate,
+                quantityToProduce,
+                lot,
+                healthRegistration,
+            }];
         } else {
-            const invalidArticles = selectedArticles.filter((article) => {
-                const fields = articleFields[article.codart] || {};
-                const missingFields = [];
-                if (!fields.orderNumber) missingFields.push("orderNumber");
-                if (!fields.deliveryDate) missingFields.push("deliveryDate");
-                if (!fields.quantityToProduce) missingFields.push("quantityToProduce");
-                if (!fields.lot) missingFields.push("lot");
-                if (!fields.healthRegistration) missingFields.push("healthRegistration");
-
-                if (missingFields.length) {
-                    console.error(`❌ Faltan campos en el artículo ${article.codart}:`, missingFields);
-                    showError(`Faltan campos en el artículo ${article.codart}: ${missingFields.join(", ")}`);
+            const invalids = selectedArticles.filter(({ codart }) => {
+                const f = articleFields[codart];
+                const missing = ["orderNumber", "deliveryDate", "quantityToProduce", "lot", "healthRegistration"]
+                    .filter(k => !f?.[k as keyof ArticleFormData]);
+                if (missing.length) {
+                    showError(`Faltan campos en ${codart}: ${missing.join(", ")}`);
                     return true;
                 }
                 return false;
             });
+            if (invalids.length) return;
 
-            if (invalidArticles.length) return;
-
-            articlesData = selectedArticles.map((article) => {
-                const fields = articleFields[article.codart];
+            articlesData = selectedArticles.map(({ codart }) => {
+                const f = articleFields[codart];
                 return {
-                    codart: article.codart,
+                    codart,
                     number_order: client_order,
-                    orderNumber: fields.orderNumber,
-                    deliveryDate: fields.deliveryDate,
-                    quantityToProduce: fields.quantityToProduce,
-                    lot: fields.lot,
-                    healthRegistration: fields.healthRegistration,
+                    orderNumber: f.orderNumber,
+                    deliveryDate: f.deliveryDate,
+                    quantityToProduce: f.quantityToProduce,
+                    lot: f.lot,
+                    healthRegistration: f.healthRegistration,
                 };
             });
         }
 
         const formData = new FormData();
-        formData.append("client_id", selectedClient.toString());
-        formData.append("factory_id", planta.toString());
+        formData.append("client_id", String(selectedClient));
+        formData.append("factory_id", planta);
         formData.append("article_code", JSON.stringify(articlesData));
         formData.append("number_order", client_order);
         formData.append("orderNumber", orderNumber);
-        formData.append("master", selectedMaestras[0] || "");
-        formData.append("bom", selectedBom?.toString() || "");
+        formData.append("master", selectedMaestras[0]);
+        formData.append("bom", selectedBom !== "" ? String(selectedBom) : "");
         formData.append("ingredients", JSON.stringify(ingredients));
 
-        // Archivos
         if (maestraRequiereBOM) {
             if (attachment) formData.append("attachment", attachment);
         } else {
-            selectedArticles.forEach((article) => {
-                const file = articleFields[article.codart]?.attachment;
-                if (file) formData.append(`attachment_${article.codart}`, file);
+            selectedArticles.forEach(({ codart }) => {
+                const file = articleFields[codart]?.attachment;
+                if (file) formData.append(`attachment_${codart}`, file);
             });
         }
 
-        console.log("🧾 Datos a guardar:", {
-            client_id: selectedClient,
-            plant_id: planta,
-            article_code: articlesData,
-            number_order: client_order,
-            orderNumber,
-            master: selectedMaestras,
-            bom: selectedBom,
-            ingredients,
-        });
-
         try {
             setIsLoading(true);
-
             if (isEditMode) {
                 await updateAdaptation(editAdaptationId!, formData);
                 showSuccess("Acondicionamiento actualizado.");
@@ -443,62 +411,31 @@ function NewAdaptation({ canEdit = false, canView = false }: CreateClientProps) 
 
             resetForm();
             setIsOpen(false);
-            const { adaptations } = await getAdaptations();
-            setAdaptation(adaptations);
             fetchAdaptations();
         } catch (error: unknown) {
             showError("Error al guardar.");
-            console.error("🔥 Error completo:", error);
-
-            if (typeof error === "object" && error !== null) {
-                const err = error as { response?: { data?: unknown }; message?: string };
-
-                if (err.response && typeof err.response === "object") {
-                    console.error("🧠 Respuesta del servidor:", err.response.data);
-                } else if (typeof err.message === "string") {
-                    console.error("💥 Error sin respuesta del servidor:", err.message);
-                } else {
-                    console.error("💥 Error desconocido dentro del objeto:", err);
-                }
-            } else {
-                console.error("💥 Error desconocido:", error);
-            }
+            console.error(error);
         } finally {
             setIsLoading(false);
         }
     };
 
-    // Función para cargar los datos de una adaptación para editarla
+    // ======================= ✏️ Edición =======================
+
     const handleEdit = async (id: number) => {
         try {
-            const response = await getAdaptationsId(id);
-            const adaptation = response.adaptation;
-            if (!adaptation) {
-                showError("La adaptación no existe");
-                return;
-            }
-
+            const { adaptation } = await getAdaptationsId(id);
+            if (!adaptation) return showError("La adaptación no existe");
             setIsEditMode(true);
             setEditAdaptationId(id);
-
             setSelectedClient(adaptation.client_id?.toString() ?? "");
             setPlanta(adaptation.factory_id?.toString() ?? "");
             setSelectedMaestras(adaptation.master?.toString() ?? "");
             setSelectedBom(adaptation.bom?.toString() ?? "");
-
-            // Parseamos articles y quitamos "attachment"
-            const parsedArticles = adaptation.article_code
-                ? JSON.parse(adaptation.article_code).map((a: any) => {
-                    const { attachment, ...rest } = a; // limpiamos attachment
-                    return rest;
-                })
-                : [];
-
+            const parsedArticles = adaptation.article_code ? JSON.parse(adaptation.article_code) : [];
             setSelectedArticles(parsedArticles.map((a: { codart: string }) => ({ codart: a.codart })));
-
             setClientOrder(adaptation.number_order || "");
-
-            if (adaptation.bom?.toString() !== "") {
+            if (adaptation.bom) {
                 const general = parsedArticles[0] || {};
                 setOrderNumber(general.orderNumber ?? "");
                 setClientOrder(general.client_order ?? adaptation.number_order ?? "");
@@ -507,13 +444,20 @@ function NewAdaptation({ canEdit = false, canView = false }: CreateClientProps) 
                 setLot(general.lot ?? "");
                 setHealthRegistration(general.healthRegistration ?? "");
                 setAttachment(null);
-                setAttachmentUrl(
-                    adaptation.attachment ? `/storage/${adaptation.attachment}` : null
-                );
+                setAttachmentUrl(general.attachment ? `/storage/${general.attachment}` : null);
                 setArticleFields({});
             } else {
                 const fieldsMap: Record<string, ArticleFormData> = {};
-                parsedArticles.forEach((a: any) => {
+                parsedArticles.forEach((a: {
+                    codart: string;
+                    orderNumber?: string;
+                    client_order?: string;
+                    deliveryDate?: string;
+                    quantityToProduce?: number | string;
+                    lot?: string;
+                    healthRegistration?: string;
+                    attachment?: File;
+                }) => {
                     fieldsMap[a.codart] = {
                         orderNumber: a.orderNumber ?? "",
                         numberOrder: a.client_order ?? "",
@@ -521,21 +465,19 @@ function NewAdaptation({ canEdit = false, canView = false }: CreateClientProps) 
                         quantityToProduce: Number(a.quantityToProduce) ?? "",
                         lot: a.lot ?? "",
                         healthRegistration: a.healthRegistration ?? "",
-                        attachment: null, // no cargamos attachment en los artículos
+                        attachment: a.attachment,
                     };
                 });
                 setArticleFields(fieldsMap);
-                setAttachmentUrl(null);
             }
-
-            // Ingredientes
             if (adaptation.ingredients) {
                 try {
-                    const parsedIng = (JSON.parse(adaptation.ingredients) as Ingredient[]).map((ing) => ({
-                        ...ing,
-                        teorica: (Number(ing.quantity || "0") * (1 + Number(ing.merma || "0"))).toFixed(4),
+                    const parsed = JSON.parse(adaptation.ingredients) as Ingredient[];
+                    const enriched = parsed.map(i => ({
+                        ...i,
+                        teorica: (Number(i.quantity || 0) * (1 + Number(i.merma || 0))).toFixed(4),
                     }));
-                    setIngredients(parsedIng);
+                    setIngredients(enriched);
                 } catch (e) {
                     console.error("❌ Error al parsear ingredientes:", e);
                     setIngredients([]);
@@ -543,7 +485,6 @@ function NewAdaptation({ canEdit = false, canView = false }: CreateClientProps) 
             } else {
                 setIngredients([]);
             }
-
             setIsOpen(true);
         } catch (error) {
             showError("Error al cargar la adaptación.");
@@ -551,30 +492,29 @@ function NewAdaptation({ canEdit = false, canView = false }: CreateClientProps) 
         }
     };
 
-    // Manejo de la eliminación de una adaptación
+    // ======================= 🗑️ Eliminación =======================
+
     const handleDelete = async (id: number) => {
         if (!canEdit) return;
-        const confirmDelete = window.confirm("¿Estás seguro de que deseas eliminar esta adaptación?");
-        if (confirmDelete) {
-            try {
-                await deleteAdaptation(id); // Llamamos a la función para eliminar la adaptación
-                setAdaptation(adaptation.filter((item) => item.id !== id)); // Actualizamos el estado para reflejar la eliminación
-            } catch (error) {
-                // Si ocurre un error al eliminar, mostramos un mensaje de error
-                showError("Error al eliminar la adaptación.");
-                console.error(error);
-            }
+        const confirmed = window.confirm("¿Eliminar esta adaptación?");
+        if (!confirmed) return;
+
+        try {
+            await deleteAdaptation(id);
+            setAdaptation(adaptation.filter(a => a.id !== id));
+        } catch (error) {
+            showError("Error al eliminar la adaptación.");
+            console.error(error);
         }
     };
 
-    // Función para formatear las fechas a formato YYYY-MM-DD
+    // ======================= 🧰 Utilidades =======================
+
     const formatDate = (dateString: string): string => {
         const dt = new Date(dateString);
-        if (isNaN(dt.getTime())) return ""; // Si la fecha es inválida, devolvemos una cadena vacía
-        return dt.toISOString().slice(0, 10); // Devolvemos la fecha en formato YYYY-MM-DD
+        return isNaN(dt.getTime()) ? "" : dt.toISOString().slice(0, 10);
     };
 
-    // Resetear el formulario
     const resetForm = () => {
         setSelectedClient("");
         setPlanta("");
@@ -591,10 +531,6 @@ function NewAdaptation({ canEdit = false, canView = false }: CreateClientProps) 
         setIngredients([]);
     };
 
-    const visualOrder = client_order.replace(/(\d{7})$/, (match) =>
-        String(parseInt(match) + 1).padStart(7, '0')
-    );
-
     const handleHistory = async (id: number) => {
         const model = "Adaptation";
         try {
@@ -605,6 +541,7 @@ function NewAdaptation({ canEdit = false, canView = false }: CreateClientProps) 
             console.error("Error al obtener la auditoría:", error);
         }
     };
+
     return (
         <div>
             <div className="flex justify-center space-x-2 mb-2">
@@ -670,83 +607,74 @@ function NewAdaptation({ canEdit = false, canView = false }: CreateClientProps) 
                                         ))}
                                     </select>
                                 </div>
-                                <div className="w-1/2 relative group">
-                                    {/* Label con mejor espaciado */}
-                                    <Text type="subtitle" color="#000">Orden:</Text>
-                                    {/* Contenedor para input y botón */}
-                                    <div className="relative">
-                                        {/* Input mejorado */}
-                                        <input
-                                            type="text"
-                                            value={visualOrder}
-                                            readOnly
-                                            className="w-full border border-gray-300 rounded-lg shadow-sm py-3 px-4 text-gray-800 bg-gray-50 
-                                                mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 
-                                                text-center pr-12 transition-all duration-200 ease-in-out
-                                                cursor-not-allowed"
-                                            onCopy={e => e.preventDefault()}
-                                            onPaste={e => e.preventDefault()}
-                                            onCut={e => e.preventDefault()}
-                                            aria-readonly="true"
-                                            disabled={!canEdit}
-                                        />
+                                <div className="w-full max-w-md relative group space-y-2">
+                                    {/* Label */}
+                                    <Text type="subtitle" color="#000">
+                                        Orden:
+                                    </Text>
 
-                                        {/* Botón con tooltip y mejor posicionamiento */}
+                                    {/* Contenedor visual + botón */}
+                                    <div className="relative bg-gray-50 border border-gray-300 rounded-lg px-4 py-3 mt-2 shadow-sm">
+                                        {/* VisualOrder visible */}
+                                        <p className="text-center font-mono text-sm text-gray-800 tracking-wide select-none">
+                                            {visualOrder || "Cargando orden..."}
+                                        </p>
+
+                                        {/* Botón copiar */}
                                         <button
                                             type="button"
                                             onClick={copyToClipboard}
                                             className="absolute top-1/2 right-3 transform -translate-y-1/2 
-                                                text-gray-400 hover:text-blue-600 transition-colors duration-200 
-                                                focus:outline-none focus:ring-2 focus:ring-blue-500 rounded-full p-1"
+                                            text-gray-400 hover:text-blue-600 transition-colors duration-200 
+                                            focus:outline-none focus:ring-2 focus:ring-blue-500 rounded-full p-1"
                                             title="Copiar al portapapeles"
                                         >
                                             <ClipboardCopy size={20} />
-                                            {/* Tooltip opcional */}
+                                            {/* Tooltip flotante */}
                                             <span className="absolute hidden group-hover:block -top-8 right-0 
-                                                    bg-gray-800 text-white text-xs rounded py-1 px-2 whitespace-nowrap">
+                                             bg-gray-800 text-white text-xs rounded py-1 px-2 whitespace-nowrap z-50">
                                                 Copiar
                                             </span>
                                         </button>
                                     </div>
                                 </div>
-
                             </div>
                         </div>
 
                         {/* Maestras y BOM*/}
-                            <div>
-                                <Text type="subtitle" color="#000">Maestras:</Text>
-                                <select
-                                    className="w-full border p-3 rounded-lg text-gray-800 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500  text-center"
-                                    value={selectedMaestras.length > 0 ? selectedMaestras[0] : ""}
-                                    onChange={(e) => setSelectedMaestras([e.target.value])}
-                                    disabled={!canEdit}
-                                >
-                                    <option value="">Seleccione...</option>
-                                    {maestra.map((master) => (
-                                        <option
-                                            key={master.id}
-                                            value={master.id.toString()}
-                                            disabled={Number(master.aprobado) === 0}
-                                        >
-                                            {master.descripcion}
-                                        </option>
-                                    ))}
-                                </select>
-                            </div>
-                            <div className="flex flex-col justify-end">
-                                <Text type="subtitle" color="text-gray-700">Adjuntar:</Text>
-                                {canEdit && (
-                                    <File
-                                        onChange={(fileList) => {
-                                            const file = Array.isArray(fileList) ? fileList[0] : fileList;
-                                            setAttachment(file ?? null);
-                                        }}
-                                        maxSizeMB={5}
-                                        allowMultiple={true}
-                                    />
-                                )}
-                            </div>
+                        <div>
+                            <Text type="subtitle" color="#000">Maestras:</Text>
+                            <select
+                                className="w-full border p-3 rounded-lg text-gray-800 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500  text-center"
+                                value={selectedMaestras.length > 0 ? selectedMaestras[0] : ""}
+                                onChange={(e) => setSelectedMaestras([e.target.value])}
+                                disabled={!canEdit}
+                            >
+                                <option value="">Seleccione...</option>
+                                {maestra.map((master) => (
+                                    <option
+                                        key={master.id}
+                                        value={master.id.toString()}
+                                        disabled={Number(master.aprobado) === 0}
+                                    >
+                                        {master.descripcion}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+                        <div className="flex flex-col justify-end">
+                            <Text type="subtitle" color="text-gray-700">Adjuntar:</Text>
+                            {canEdit && (
+                                <File
+                                    onChange={(fileList) => {
+                                        const file = Array.isArray(fileList) ? fileList[0] : fileList;
+                                        setAttachment(file ?? null);
+                                    }}
+                                    maxSizeMB={5}
+                                    allowMultiple={true}
+                                />
+                            )}
+                        </div>
                         <div
                             className={`col-span-full grid grid-cols-1 ${maestraRequiereBOM ? "sm:grid-cols-2" : "lg:grid-cols-1"
                                 } gap-4`}
@@ -796,6 +724,7 @@ function NewAdaptation({ canEdit = false, canView = false }: CreateClientProps) 
                             {/* MultiSelect Articulos*/}
                             <div>
                                 <Text type="subtitle" color="#000">Artículos:</Text>
+
                                 {maestraRequiereBOM ? (
                                     <select
                                         className="w-full border p-3 rounded-lg text-gray-800 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500 text-center"
@@ -852,19 +781,22 @@ function NewAdaptation({ canEdit = false, canView = false }: CreateClientProps) 
                                             <option disabled>No hay BOMs disponibles</option>
                                         )}
                                     </select>
-
-
                                 ) : (
-                                    <MultiSelect
-                                        options={articles}
-                                        selected={selectedArticles}
-                                        onChange={setSelectedArticles}
-                                        getLabel={(article) => article.codart}
-                                        getValue={(article) => article.codart}
-                                    />
+                                    articles.length > 0 ? (
+                                        <MultiSelect
+                                            options={articles}
+                                            selected={selectedArticles}
+                                            onChange={setSelectedArticles}
+                                            getLabel={(article) => article.codart}
+                                            getValue={(article) => article.codart}
+                                        />
+                                    ) : (
+                                        <p className="text-sm italic text-gray-500 mt-2 text-center">
+                                            No hay artículos disponibles para este cliente.
+                                        </p>
+                                    )
                                 )}
                             </div>
-                            
                         </div>
 
                         {/* Campos en grid responsivo */}

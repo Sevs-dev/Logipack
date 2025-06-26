@@ -1,6 +1,6 @@
 import axios from 'axios';
 import { API_URL } from '../../config/api';
-import { Article, Bom, BomPayload } from '@/app/interfaces/BOM';
+import { Article, Bom, BomPayload, ArticleResponse } from '@/app/interfaces/BOM';
 
 // Instancia axios base
 const Articles = axios.create({

@@ -36,15 +36,22 @@ const DEFAULT_WEEK = dayjs().startOf('isoWeek');
 
 // Funciones auxiliares
 const parsePlanningData = (data: PlanningItem[]): Event[] => {
-  return data.map((item) => ({
-    ...item,
-    startDate: dayjs(item.start_date.replace(' ', 'T')),
-    endDate: dayjs(item.end_date.replace(' ', 'T')),
-    minutes: typeof item.duration === 'string'
-      ? parseInt(item.duration, 10)
-      : item.duration,
-    title: item.codart,
-  }));
+  return data.map((item) => {
+    if (!item.start_date || !item.end_date) {
+      console.warn('Evento con datos inválidos:', item);
+      return null;
+    }
+
+    return {
+      ...item,
+      startDate: dayjs(item.start_date.replace(' ', 'T')),
+      endDate: dayjs(item.end_date.replace(' ', 'T')),
+      minutes: typeof item.duration === 'string'
+        ? parseInt(item.duration, 10)
+        : item.duration,
+      title: item.codart,
+    };
+  }).filter(Boolean) as Event[];
 };
 
 const splitEventByDay = (event: Event): Event[] => {

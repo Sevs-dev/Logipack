@@ -235,15 +235,24 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
         try {
             const serverPlansWithDetails: ServerPlan[] = await fetchAndProcessPlans(id);
 
+            if (!serverPlansWithDetails || serverPlansWithDetails.length === 0) {
+                showError("No se encontró información detallada en el servidor.");
+                return;
+            }
+
             const matchedPlan = serverPlansWithDetails.find(
                 p => p.ID_ADAPTACION === selectedPlan.id
             ) || serverPlansWithDetails[0];
+
+            if (!matchedPlan || !matchedPlan.activitiesDetails) {
+                showError("No se encontraron detalles de actividades en el plan seleccionado.");
+                return;
+            }
 
             const newLineActivities: Record<number, number[]> = {};
 
             if (selectedPlan.activities && Array.isArray(selectedPlan.activities)) {
                 selectedPlan.activities.forEach((activityDetail: ActivityDetail) => {
-                    // En este caso, asumimos que cada actividad tiene binding (una línea)
                     const binding = activityDetail.binding;
                     if (Array.isArray(binding)) {
                         binding.forEach(lineId => {
@@ -255,7 +264,7 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
                         newLineActivities[binding].push(activityDetail.id);
                     }
                 });
-            } else if (serverPlansWithDetails && serverPlansWithDetails.length > 0) {
+            } else {
                 serverPlansWithDetails.forEach((line: ServerPlan) => {
                     const lineId = line.ID_LINEA ?? line.ID_LINE ?? null;
                     const activityIds = Array.isArray(line.ID_ACTIVITIES) ? line.ID_ACTIVITIES : [];
@@ -267,7 +276,7 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
 
             setLineActivities(newLineActivities);
 
-            setActivitiesDetails(matchedPlan.activitiesDetails || []);
+            setActivitiesDetails(matchedPlan.activitiesDetails);
             setSelectedMachines(
                 machine.filter(m => (selectedPlan.machine || []).includes(m.id))
             );
@@ -277,15 +286,15 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
 
             setCurrentPlan({
                 ...selectedPlan,
-                activitiesDetails: matchedPlan.activitiesDetails || [],
+                activitiesDetails: matchedPlan.activitiesDetails,
                 lineActivities: newLineActivities,
                 line: getLinesArray(selectedPlan.line),
             });
 
             setIsOpen(true);
 
-        } catch {
-            console.error("Error fetching plan:");
+        } catch (error) {
+            console.error("Error fetching plan:", error);
             showError("Error al cargar la planificación para edición");
         }
     }, [planning, machine, user]);
@@ -377,6 +386,7 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
     );
 
     async function fetchAndProcessPlans(id: number) {
+        console.log("Planes desde servidor:", id);
         const { plan: serverPlans = [] } = await getActivitiesByPlanning(id);
 
         if (!Array.isArray(serverPlans) || serverPlans.length === 0) {
