@@ -56,12 +56,11 @@ class FaseTimerController extends Controller
             'std.repeat_line'
         )
         ->get(), $ordenes, $id);
-    
-
 
         return response()->json([
             'message' => 'Estado de la fase de control pendiente',
             'estado' => 100,
+            'acondicionamiento' => json_decode($ordenes, true),
             'maestra_fases_fk' => $maestra_fases_fk,
         ]);
     }
