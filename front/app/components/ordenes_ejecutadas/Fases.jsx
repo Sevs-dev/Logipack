@@ -155,7 +155,7 @@ const Fases = ({ proms, setFaseSave, fase_save, fase_list }) => {
         });
 
         if (createResult?.exists) {
-          console.log("⚠️ Timer ya existía para:", ejecutadaId);
+          // console.log("⚠️ Timer ya existía para:", ejecutadaId);
         }
 
         const timerResult = await getTimerEjecutadaById(ejecutadaId);
