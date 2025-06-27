@@ -164,9 +164,8 @@ const Sidebar: React.FC<SidebarProps> = ({ sidebarOpen, setSidebarOpen }) => {
             <Image
               src="/logipack_2.png"
               alt="Logipack"
-              width={160}
+              width={60}
               height={40}
-              className="h-10 w-auto"
             />
           )}
           <button
@@ -288,11 +287,12 @@ const Sidebar: React.FC<SidebarProps> = ({ sidebarOpen, setSidebarOpen }) => {
         <div className="mt-auto p-3 border-t border-white/20">
           <div className="mb-2 flex items-center">
             <Image
-              src="/user.jpg"
+              src="/avatar.png"
               alt={userName}
               width={40}
               height={40}
-              className="rounded-full object-cover cursor-pointer"
+              priority
+              className="w-[40px] h-[40px] rounded-full object-cover cursor-pointer hover:opacity-80 transition-opacity"
               onClick={() => router.push("/pages/perfil")}
             />
             {sidebarOpen && (
