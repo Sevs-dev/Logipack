@@ -17,6 +17,7 @@ class TimerControlController extends Controller
             'data.*.tipo' => 'required|string',
             'data.*.descripcion' => 'required|string',
             'data.*.valor' => 'nullable',
+            'data.*.clave' => 'nullable|string',
         ]);
 
         $registro = TimerControl::create($validated);

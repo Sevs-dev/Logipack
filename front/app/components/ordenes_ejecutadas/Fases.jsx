@@ -436,7 +436,11 @@ const Fases = ({ proms, setFaseSave, fase_save, fase_list }) => {
           Fase de {fase.description_fase} ({fase.phase_type})
         </Text>
       </div>
-      {timerReady && timerData && (
+      {!timerReady || !timerData ? (
+        <div className="text-center text-sm text-gray-600 animate-pulse py-4">
+          ⏳ Cargando datos del temporizador...
+        </div>
+      ) : (
         <Timer
           ejecutadaId={timerData.ejecutadaId}
           stageId={timerData.stageId}

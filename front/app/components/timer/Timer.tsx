@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { FaPlay, FaStop, FaRedo } from 'react-icons/fa';
-import { motion } from 'framer-motion';
-import { showSuccess, showConfirm } from "../toastr/Toaster"; 
+import { motion, useMotionValue, useTransform, useSpring } from "framer-motion";
+import { showSuccess, showConfirm } from "../toastr/Toaster";
 import Text from "../text/Text";
 import { TimerControlData } from '../../interfaces/TimerController';
 import { createTimerControl } from '../../services/timerControl/timerControlServices';
@@ -112,6 +112,7 @@ const Timer: React.FC<TimerProps> = ({ ejecutadaId, stageId, initialMinutes, ref
                     tipo: JSON.parse(actividad.config ?? "{}").type || "text",
                     descripcion: actividad.descripcion_activitie,
                     valor: actividad.valor ?? "",
+                    clave: actividad.clave,
                 })),
             };
 
@@ -188,7 +189,7 @@ const Timer: React.FC<TimerProps> = ({ ejecutadaId, stageId, initialMinutes, ref
                 alertAudio.current.pause();
                 alertAudio.current.currentTime = 0;
             }
-            showSuccess("Fase de control detenida correctamente."); 
+            showSuccess("Fase de control detenida correctamente.");
         });
     };
 
@@ -262,6 +263,36 @@ const Timer: React.FC<TimerProps> = ({ ejecutadaId, stageId, initialMinutes, ref
         );
     };
 
+    const handleResetValue = () => {
+        const reseteado = controlData.map((actividad) => {
+            const tipo = JSON.parse(actividad.config ?? "{}").type || "text";
+            let nuevoValor = "";
+            if (tipo === "checkbox") nuevoValor = "false";
+            else if (tipo === "file") nuevoValor = "";
+            return {
+                ...actividad,
+                valor: nuevoValor,
+            };
+        });
+        setControlData(reseteado);
+    };
+
+    const percentageRemaining = (seconds / initialSeconds) * 100;
+
+    const getColorClassByPercentage = () => {
+        if (seconds === 0) {
+            return 'bg-gradient-to-br from-red-600/80 to-red-800/80 animate-pulse';
+        } else if (percentageRemaining <= 25) {
+            return 'bg-gradient-to-br from-red-500/60 to-red-700/80';
+        } else if (percentageRemaining <= 50) {
+            return 'bg-gradient-to-br from-yellow-500/60 to-yellow-700/80';
+        } else if (percentageRemaining <= 75) {
+            return 'bg-gradient-to-br from-blue-600/60 to-blue-800/80';
+        } else {
+            return 'bg-gradient-to-br from-purple-700/60 to-purple-900/80';
+        }
+    };
+
     return (
         <>
             {/* Timer Widget */}
@@ -272,20 +303,20 @@ const Timer: React.FC<TimerProps> = ({ ejecutadaId, stageId, initialMinutes, ref
                     dragElastic={0.2}
                     whileDrag={{ scale: 1.1 }}
                     className={`
-            fixed right-6 bottom-6 z-[9999] backdrop-blur-md
-            ${seconds === 0
-                            ? 'bg-gradient-to-br from-red-600/80 to-red-800/80 animate-pulse'
-                            : 'bg-gradient-to-br from-purple-700/60 to-purple-900/80'}
-            border border-white/20 rounded-full shadow-xl p-3 w-32 h-32
-            flex flex-col items-center justify-center gap-1
-            transition-all duration-300 hover:scale-105 cursor-grab
-            ${!isRunning && !alarmActive ? 'opacity-50 hover:opacity-100' : ''}
-        `}
+                    fixed right-6 bottom-6 z-[9999] backdrop-blur-md
+                    ${getColorClassByPercentage()}
+                    border border-white/20 rounded-full shadow-xl p-3 w-24 h-24
+                    flex flex-col items-center justify-center gap-1
+                    transition-all duration-300 hover:scale-105 cursor-grab
+                    ${!isRunning && !alarmActive ? 'opacity-50 hover:opacity-100' : ''}
+                `}
                 >
-                    <div className={`
-            text-base font-mono tracking-wider text-center
-            ${seconds === 0 ? 'text-white' : 'text-purple-100'}
-        `}>
+                    <div
+                        className={`
+                        text-lg font-bold font-mono tracking-wide text-center
+                        ${seconds === 0 ? 'text-white' : 'text-purple-100'}
+                        `}
+                    >
                         {formatTime(seconds)}
                     </div>
 
@@ -293,7 +324,7 @@ const Timer: React.FC<TimerProps> = ({ ejecutadaId, stageId, initialMinutes, ref
                         {!isRunning && (
                             <button
                                 onClick={handleStart}
-                                className="p-1 bg-green-500/80 hover:bg-green-600/80 text-white rounded-full shadow-sm transition"
+                                className="p-2 bg-green-500/80 hover:bg-green-600/80 text-white rounded-full shadow-sm transition"
                                 aria-label="Iniciar"
                             >
                                 <FaPlay size={10} />
@@ -301,14 +332,14 @@ const Timer: React.FC<TimerProps> = ({ ejecutadaId, stageId, initialMinutes, ref
                         )}
                         <button
                             onClick={handleStop}
-                            className="p-1 bg-red-500/80 hover:bg-red-600/80 text-white rounded-full shadow-sm transition"
+                            className="p-2 bg-red-500/80 hover:bg-red-600/80 text-white rounded-full shadow-sm transition"
                             aria-label="Parar"
                         >
                             <FaStop size={10} />
                         </button>
                         <button
                             onClick={handleReset}
-                            className="p-1 bg-indigo-500/80 hover:bg-indigo-600/80 text-white rounded-full shadow-sm transition"
+                            className="p-2 bg-indigo-500/80 hover:bg-indigo-600/80 text-white rounded-full shadow-sm transition"
                             aria-label="Reiniciar"
                         >
                             <FaRedo size={10} />
@@ -514,6 +545,7 @@ const Timer: React.FC<TimerProps> = ({ ejecutadaId, stageId, initialMinutes, ref
                                 setShowModal(false);
                                 handleSaveTimerData();
                                 handleReset();
+                                handleResetValue();
                             }}
                             className="px-4 py-2 bg-indigo-600 text-white rounded shadow hover:bg-indigo-700"
                         >
