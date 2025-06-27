@@ -114,3 +114,21 @@ export const getTimerEjecutadaById = async (ejecutada_id: number): Promise<{ exi
         throw error;
     }
 };
+
+
+export const getcontrolTimer = async (timerId: number): Promise<any[]> => {
+    try {
+        const response = await apiTimer.get(`/getFaseTimer/control/${timerId}`);
+        const fases = Array.isArray(response.data.maestra_fases_fk?.[0])
+            ? response.data.maestra_fases_fk[0]
+            : [];
+
+        return fases;
+    } catch (error: unknown) {
+        throw new Error(
+            axios.isAxiosError(error) && error.response?.data?.message
+                ? error.response.data.message
+                : 'Error al obtener el control del timer'
+        );
+    }
+};

@@ -14,21 +14,22 @@ class TimerController extends Controller
         $validated = $request->validate([
             'ejecutada_id' => 'required|exists:actividades_ejecutadas,id',
             'stage_id'     => 'required|exists:stages,id',
-            'control_id'     => 'nullable|exists:stages,id',
+            'control_id'   => 'nullable|exists:stages,id',
             'orden_id'     => 'required|string',
             'time'         => 'required|integer|min:0',
         ]);
 
-        // Si ya existe un Timer para esta ejecutada_id, retornar error
-        $exists = Timer::where('ejecutada_id', $validated['ejecutada_id'])->exists();
+        // Verificar si ya existe
+        $existing = Timer::where('ejecutada_id', $validated['ejecutada_id'])->first();
 
-        if ($exists) {
+        if ($existing) {
+            // Silenciosamente retornar el existente
             return response()->json([
-                'message' => 'Timer ya existe para esta ejecutada_id',
-            ], 409); // Conflict
+                'timer' => $existing,
+            ], 200); // OK
         }
 
-        // Crear Timer
+        // Crear nuevo timer
         $timer = Timer::create([
             'ejecutada_id' => $validated['ejecutada_id'],
             'stage_id'     => $validated['stage_id'],
@@ -44,7 +45,7 @@ class TimerController extends Controller
         return response()->json([
             'message' => 'Timer creado con éxito',
             'timer'   => $timer,
-        ], 201);
+        ], 201); // Created
     }
 
     // Pausar un timer
@@ -89,6 +90,8 @@ class TimerController extends Controller
     // Finalizar un timer
     public function finish(Request $request)
     {
+        Log::info('🔔 [Timer Finish] Petición recibida', $request->all());
+
         $request->validate([
             'ejecutada_id' => 'required|integer',
         ]);
@@ -98,14 +101,27 @@ class TimerController extends Controller
             ->first();
 
         if (!$timer) {
+            Log::warning('⚠️ [Timer Finish] No se encontró timer activo para ejecutada_id=' . $request->ejecutada_id);
             return response()->json([
                 'message' => 'Timer no encontrado para esta ejecución',
             ], 404);
         }
 
+        Log::info('✅ [Timer Finish] Timer encontrado', [
+            'id' => $timer->id,
+            'status_actual' => $timer->status,
+            'finish_actual' => $timer->finish,
+        ]);
+
         $timer->status = 'finished';
         $timer->finish = 1;
         $timer->save();
+
+        Log::info('✅ [Timer Finish] Timer actualizado correctamente', [
+            'id' => $timer->id,
+            'nuevo_status' => $timer->status,
+            'nuevo_finish' => $timer->finish,
+        ]);
 
         return response()->json([
             'message' => 'Timer finalizado correctamente',

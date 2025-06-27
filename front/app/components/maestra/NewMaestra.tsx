@@ -318,7 +318,7 @@ const Maestra = ({ canEdit = false, canView = false }: CreateClientProps) => {
             }),
         };
 
-        console.log(payload);
+        // console.log(payload);
         // console.groupCollapsed("📤 Enviando datos para crear Maestra");
         console.groupEnd();
 
