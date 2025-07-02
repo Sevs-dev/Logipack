@@ -228,7 +228,7 @@ class OrdenesEjecutadasController extends Controller
             //     'std.phase_type',
             //     'std.repeat_line'
             // )->get()), $ordenes);
-
+            
             // obtener actividades de la fase
             $fases = $this->getActividades((
             DB::table('adaptations as ada')
@@ -245,8 +245,16 @@ class OrdenesEjecutadasController extends Controller
                 std.id as fases_fk,
                 std.description AS 'description_fase', 
                 std.phase_type,
-                std.repeat_line
-            ")->get()), $ordenes);
+                std.repeat_line,
+                FIND_IN_SET(std.id, REPLACE(REPLACE(REPLACE(REPLACE(COALESCE(mae.maestra_fases_fk, ''), '[', ''), ']', ''), ' ', ''), '\"', '')) as orden_fase
+            ")
+            ->orderByRaw("orden_fase ASC")
+            ->get()), $ordenes);
+
+                // return response()->json([
+                //     'maestra_fases_fk' => ($fases),
+                // ]);
+                // exit();
 
             // insertar actividades de la orden ejecutada
             $this->crearActividadesOrden([], $fases);
@@ -321,7 +329,9 @@ class OrdenesEjecutadasController extends Controller
             if(count(json_decode($actividades, true)) > 0){
                 $actividades = json_decode($actividades, true);
                 if ($fase['repeat_line'] == 1) {
-                    for ($i=0; $i < count(json_decode($ordenes->linea_produccion, true)); $i++) {
+                    // define cuantas veces va a recorrer la lista de actividades repetidas
+                    $size_line = (json_decode($ordenes->linea_produccion, true) == "" ? 1 : count(json_decode($ordenes->linea_produccion, true)));
+                    for ($i=0; $i < ($size_line); $i++) {
                         foreach ($actividades as $key => $value) {
                             $clave = implode('', [
                                 $ordenes->id,
