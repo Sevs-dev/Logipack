@@ -54,3 +54,9 @@ export interface BomPayload {
 export interface Bom extends BomPayload {
   id: number;
 }
+
+export interface ArticleResponse {
+  success: boolean;
+  message?: string;
+  data: Article[];
+}

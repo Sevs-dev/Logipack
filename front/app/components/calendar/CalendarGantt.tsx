@@ -6,6 +6,8 @@ import isoWeek from 'dayjs/plugin/isoWeek';
 import { getPlanning } from "../../services/planing/planingServices";
 import { DynamicIcon } from "../dinamicSelect/DynamicIcon";
 import Button from "../buttons/buttons";
+import Text from "../text/Text";
+import { motion, AnimatePresence } from "framer-motion";
 
 // Configuración inicial
 dayjs.extend(isoWeek);
@@ -20,6 +22,7 @@ interface PlanningItem {
   color: string;
   codart: string;
   icon: string;
+  number_order: string;
 }
 
 interface Event extends Omit<PlanningItem, 'start_date' | 'end_date' | 'duration' | 'codart'> {
@@ -36,15 +39,22 @@ const DEFAULT_WEEK = dayjs().startOf('isoWeek');
 
 // Funciones auxiliares
 const parsePlanningData = (data: PlanningItem[]): Event[] => {
-  return data.map((item) => ({
-    ...item,
-    startDate: dayjs(item.start_date.replace(' ', 'T')),
-    endDate: dayjs(item.end_date.replace(' ', 'T')),
-    minutes: typeof item.duration === 'string'
-      ? parseInt(item.duration, 10)
-      : item.duration,
-    title: item.codart,
-  }));
+  return data.map((item) => {
+    if (!item.start_date || !item.end_date) {
+      console.warn('Evento con datos inválidos:', item);
+      return null;
+    }
+
+    return {
+      ...item,
+      startDate: dayjs(item.start_date.replace(' ', 'T')),
+      endDate: dayjs(item.end_date.replace(' ', 'T')),
+      minutes: typeof item.duration === 'string'
+        ? parseInt(item.duration, 10)
+        : item.duration,
+      title: item.number_order,
+    };
+  }).filter(Boolean) as Event[];
 };
 
 const splitEventByDay = (event: Event): Event[] => {
@@ -351,77 +361,93 @@ const CalendarGantt: React.FC = () => {
 
       {/* Modal */}
       {selectedEvent && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full transform transition-all animate-fade-in-down">
-            <div className="p-6">
-              {/* Header */}
-              <div className="flex justify-between items-center border-b border-gray-200 pb-4 mb-4">
-                <h3 className="text-2xl font-bold text-gray-900 flex items-center">
-                  <span className="w-2 h-6 bg-indigo-600 rounded-full mr-3"></span>
-                  {selectedEvent.title}
-                </h3>
-                <button
-                  onClick={() => setSelectedEvent(null)}
-                  className="p-1.5 rounded-full hover:bg-gray-100 transition-colors duration-200 text-gray-500 hover:text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  aria-label="Cerrar modal"
+        <AnimatePresence>
+          <motion.div
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            <motion.div
+              initial={{ y: 40, opacity: 0, scale: 0.95 }}
+              animate={{ y: 0, opacity: 1, scale: 1 }}
+              exit={{ y: 40, opacity: 0, scale: 0.95 }}
+              transition={{ duration: 0.4, ease: "easeOut" }}
+              className="relative w-full max-w-xl rounded-3xl border border-white/20 bg-white/70 dark:bg-zinc-900/60 backdrop-blur-2xl shadow-2xl overflow-hidden"
+            >
+              {/* Botón cerrar */}
+              <button
+                onClick={() => setSelectedEvent(null)}
+                className="absolute top-4 right-4 bg-white/80 dark:bg-zinc-800/70 hover:bg-white hover:dark:bg-zinc-700 text-zinc-700 dark:text-zinc-200 p-2 rounded-full shadow transition-colors"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+
+              <div className="p-6 sm:p-8 space-y-8">
+                {/* Header con animación */}
+                <motion.div
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.1 }}
+                  className="flex items-center gap-3"
                 >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                    <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-                  </svg>
-                </button>
-              </div>
+                  <Text type="title" color="text-white">{selectedEvent.title}</Text>
+                </motion.div>
 
-              {/* Contenido */}
-              <div className="space-y-4">
-                <div className="bg-gray-50 rounded-lg p-4 border border-gray-100">
-                  <div className="flex items-center space-x-2 text-sm text-gray-500 mb-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-indigo-500" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
+                {/* Detalles */}
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.2 }}
+                  className="rounded-2xl border border-indigo-200 dark:border-indigo-300/20 bg-white/50 dark:bg-indigo-900/30 backdrop-blur-md p-5 shadow-inner"
+                >
+                  <div className="text-indigo-700 dark:text-indigo-300 font-medium text-sm flex items-center mb-3">
+                    <svg className="h-5 w-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                      <path d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" />
                     </svg>
-                    <span>Detalles</span>
+                    Detalles del evento
                   </div>
-
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between p-2 bg-white rounded-md border border-gray-100">
-                      <span className="text-sm text-gray-500">Inicio:</span>
-                      <span className="font-medium text-gray-900">{selectedEvent.startDate.format('DD/MM/YYYY HH:mm')}</span>
-                    </div>
-
-                    <div className="flex items-center justify-between p-2 bg-white rounded-md border border-gray-100">
-                      <span className="text-sm text-gray-500">Fin:</span>
-                      <span className="font-medium text-gray-900">{selectedEvent.endDate.format('DD/MM/YYYY HH:mm')}</span>
-                    </div>
-
-                    <div className="flex items-center justify-between p-2 bg-white rounded-md border border-gray-100">
-                      <span className="text-sm text-gray-500">Duración:</span>
-                      <span className="font-medium text-gray-900">{getFormattedDuration(Number(selectedEvent.minutes))} minutos</span>
-                    </div>
+                  <div className="space-y-3 text-sm text-zinc-700 dark:text-zinc-200">
+                    <div className="flex justify-between"><span className="text-white">Inicio:</span><span>{selectedEvent.startDate.format('DD/MM/YYYY HH:mm')}</span></div>
+                    <div className="flex justify-between"><span className="text-white">Fin:</span><span>{selectedEvent.endDate.format('DD/MM/YYYY HH:mm')}</span></div>
+                    <div className="flex justify-between"><span className="text-white">Duración:</span><span>{getFormattedDuration(Number(selectedEvent.minutes))} minutos</span></div>
                   </div>
-                </div>
+                </motion.div>
 
                 {/* Información adicional */}
-                <div className="bg-gray-50 rounded-lg p-4 border border-gray-100">
-                  <div className="flex items-center space-x-2 text-sm text-gray-500 mb-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-indigo-500" viewBox="0 0 20 20" fill="currentColor">
+                {/* <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.3 }}
+                  className="rounded-2xl border border-zinc-200 dark:border-zinc-600 bg-white/40 dark:bg-zinc-800/60 backdrop-blur-md p-5 shadow-inner"
+                >
+                  <div className="text-zinc-600 dark:text-zinc-300 font-medium text-sm flex items-center mb-3">
+                    <svg className="h-5 w-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
                     </svg>
-                    <span>Información adicional</span>
+                    Información adicional
                   </div>
-
-                  <div className="flex items-center justify-between p-2 bg-white rounded-md border border-gray-100">
-                    <span className="text-sm text-gray-500">ID del evento:</span>
-                    <span className="font-medium text-gray-900">{selectedEvent.id}</span>
+                  <div className="flex justify-between text-sm text-zinc-700 dark:text-zinc-200">
+                    <span className="text-zinc-500 dark:text-zinc-400">ID del evento:</span>
+                    <span>{selectedEvent.id}</span>
                   </div>
-                </div>
-              </div>
+                </motion.div> */}
 
-              {/* Botones */}
-              <div className="flex justify-center space-x-4 mt-4">
-                <Button onClick={() => setSelectedEvent(null)} variant="cancel" label="Cerrar" />
+                {/* Botón */}
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.4 }}
+                  className="flex justify-center pt-2"
+                >
+                  <Button onClick={() => setSelectedEvent(null)} variant="cancel" label="Cancelar" />
+                </motion.div>
               </div>
-            </div>
-          </div>
-        </div>
+            </motion.div>
+          </motion.div>
+        </AnimatePresence>
       )}
 
       {/* Estilos */}

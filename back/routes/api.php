@@ -22,6 +22,8 @@ use App\Http\Controllers\LineaTipoAcondicionamientoController;
 use App\Http\Controllers\OrdenesEjecutadasController;
 use App\Http\Controllers\HistoryAuditController;
 use App\Http\Controllers\TimerController;
+use App\Http\Controllers\FaseTimerController;
+use App\Http\Controllers\TimerControlController;
 
 Route::controller(AuthController::class)->group(function () {
     Route::post('login', 'login');
@@ -156,6 +158,7 @@ Route::controller(AdaptationController::class)->group(function () {
     Route::get('/getAdaptationId/{id}', 'getAdaptationById'); // Obtener una lineas específica 
     Route::put('/updateAdaptation/{id}', 'updateAdaptation'); // Actualizar una lineas
     Route::delete('/deleteAdaptation/{id}', 'deleteAdaptation'); // Eliminar una lineas
+    Route::get('/debug/adaptation/{id}', 'debugBomAndIngredients'); // Obtener una lineas específica 
 });
 
 //Rutas Planificación
@@ -223,6 +226,17 @@ Route::controller(TimerController::class)->group(function () {
     Route::get('/timers/by-ejecutada/{ejecutada_id}', 'getEjecutadaId'); // Obtener por ejecutada_id
 
     Route::patch('/timers/pause', 'pause');                     // Pausar
-    Route::patch('/timers/finishTimer', 'finish');                   // Finalizar
+    Route::patch('/timers/finish', 'finish');                   // Finalizar
     Route::patch('/timers/resetTimer', 'reset');                     // Reiniciar
+});
+
+//Rutas FaseTimer
+Route::controller(FaseTimerController::class)->group(function () {
+    Route::get('/getFaseTimer', 'getAll');                         // Listar timers
+    Route::get('/getFaseTimer/control/{id}', 'getFaseTimerControl');   // Listar timers por id
+});
+
+//Rutas Timer Control
+Route::controller(TimerControlController::class)->group(function () {
+    Route::post('/newTcontrol', 'store');    
 });

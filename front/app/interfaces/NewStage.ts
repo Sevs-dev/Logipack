@@ -3,7 +3,7 @@ export interface Stage {
   description: string;
   phase_type: string;
   repeat: boolean;
-  repeatLine: boolean;
+  repeat_line: boolean;
   repeat_minutes?: number;
   alert: boolean;
   can_pause: boolean;
@@ -18,7 +18,7 @@ export interface Data {
   description: string;
   phase_type: string;
   repeat: boolean;
-  repeatLine: boolean;
+  repeat_line: boolean;
   repeat_minutes?: number;
   alert: boolean;
   can_pause: boolean;
@@ -44,4 +44,5 @@ export interface StageFase {
   description: string;
   duration: string;
   duration_user: string;
+  phase_type: string;
 }

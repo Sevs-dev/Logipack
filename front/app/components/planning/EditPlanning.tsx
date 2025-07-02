@@ -235,15 +235,24 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
         try {
             const serverPlansWithDetails: ServerPlan[] = await fetchAndProcessPlans(id);
 
+            if (!serverPlansWithDetails || serverPlansWithDetails.length === 0) {
+                showError("No se encontró información detallada en el servidor.");
+                return;
+            }
+
             const matchedPlan = serverPlansWithDetails.find(
                 p => p.ID_ADAPTACION === selectedPlan.id
             ) || serverPlansWithDetails[0];
+
+            if (!matchedPlan || !matchedPlan.activitiesDetails) {
+                showError("No se encontraron detalles de actividades en el plan seleccionado.");
+                return;
+            }
 
             const newLineActivities: Record<number, number[]> = {};
 
             if (selectedPlan.activities && Array.isArray(selectedPlan.activities)) {
                 selectedPlan.activities.forEach((activityDetail: ActivityDetail) => {
-                    // En este caso, asumimos que cada actividad tiene binding (una línea)
                     const binding = activityDetail.binding;
                     if (Array.isArray(binding)) {
                         binding.forEach(lineId => {
@@ -255,7 +264,7 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
                         newLineActivities[binding].push(activityDetail.id);
                     }
                 });
-            } else if (serverPlansWithDetails && serverPlansWithDetails.length > 0) {
+            } else {
                 serverPlansWithDetails.forEach((line: ServerPlan) => {
                     const lineId = line.ID_LINEA ?? line.ID_LINE ?? null;
                     const activityIds = Array.isArray(line.ID_ACTIVITIES) ? line.ID_ACTIVITIES : [];
@@ -267,7 +276,7 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
 
             setLineActivities(newLineActivities);
 
-            setActivitiesDetails(matchedPlan.activitiesDetails || []);
+            setActivitiesDetails(matchedPlan.activitiesDetails);
             setSelectedMachines(
                 machine.filter(m => (selectedPlan.machine || []).includes(m.id))
             );
@@ -277,15 +286,15 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
 
             setCurrentPlan({
                 ...selectedPlan,
-                activitiesDetails: matchedPlan.activitiesDetails || [],
+                activitiesDetails: matchedPlan.activitiesDetails,
                 lineActivities: newLineActivities,
                 line: getLinesArray(selectedPlan.line),
             });
 
             setIsOpen(true);
 
-        } catch {
-            console.error("Error fetching plan:");
+        } catch (error) {
+            console.error("Error fetching plan:", error);
             showError("Error al cargar la planificación para edición");
         }
     }, [planning, machine, user]);
@@ -377,6 +386,7 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
     );
 
     async function fetchAndProcessPlans(id: number) {
+        console.log("Planes desde servidor:", id);
         const { plan: serverPlans = [] } = await getActivitiesByPlanning(id);
 
         if (!Array.isArray(serverPlans) || serverPlans.length === 0) {
@@ -398,6 +408,11 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
     const handleTerciario = useCallback(async (id: number) => {
         const { plan } = await getPlanningById(id);
 
+        if(plan.line === null){
+            showError("Lineas de produccion no encontradas o no definidas.");
+            return;
+        }
+        
         try {
             const response = await fetch(`http://localhost:8000/api/validar_estado/${plan.adaptation_id}`);
             const data = await response.json();
@@ -908,10 +923,11 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
             )}
 
             <Table
-                columns={["client_name", "codart", "deliveryDate", "status_dates"]}
+                columns={["client_name", "number_order", "codart", "deliveryDate", "status_dates",]}
                 rows={planning}
                 columnLabels={{
                     client_name: "Cliente",
+                    number_order: "N° de orden",
                     codart: "Artículo",
                     deliveryDate: "Fecha de entrega",
                     status_dates: "Estado",

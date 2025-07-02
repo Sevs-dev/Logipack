@@ -3,6 +3,7 @@
 import { ToastContainer, toast, Slide, ToastOptions } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { CheckCircle, XCircle, AlertTriangle } from "lucide-react";
+import Button from "../buttons/buttons";
 
 // Clase de estilo común para todos los toasts
 const commonToastClass =
@@ -49,24 +50,18 @@ export const showWarning = (message: string) =>
 
 export const showConfirm = (message: string, onConfirm: () => void) => {
   const toastId = toast.info(
-    <div className="flex flex-col gap-3">
-      <p className="text-sm text-gray-200">{message}</p>
-      <div className="flex justify-end gap-2">
-        <button
-          className="bg-red-600 hover:bg-red-400 text-gray-100 px-4 py-1.5 rounded-lg text-sm transition duration-200"
-          onClick={() => toast.dismiss(toastId)}
-        >
-          Cancelar
-        </button>
-        <button
-          className="bg-green-500 hover:bg-green-400 text-gray-800 px-4 py-1.5 rounded-lg text-sm transition duration-200"
+    <div className="flex flex-col gap-4 text-sm text-gray-900 dark:text-gray-900 text-center">
+      <p>{message}</p>
+      <div className="flex justify-center gap-2"> 
+        <Button onClick={() => toast.dismiss(toastId)} variant="cancel" label="Cancelar" />
+        <Button
           onClick={() => {
             toast.dismiss(toastId);
             onConfirm();
           }}
-        >
-          Confirmar
-        </button>
+          variant="create"
+          label="Confirmar"
+        />
       </div>
     </div>,
     {
@@ -74,6 +69,7 @@ export const showConfirm = (message: string, onConfirm: () => void) => {
       autoClose: false,
       closeOnClick: false,
       closeButton: false,
+      className: "bg-[#fff] border border-gray-300 dark:border-gray-700 rounded-xl shadow-md",
     }
   );
 };

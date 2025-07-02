@@ -1,7 +1,7 @@
 "use client";
-import { createContext, useContext, useEffect, useState, ReactNode, useCallback } from "react";
+import { createContext, useContext, useEffect, useState, ReactNode, useCallback, } from "react";
 import nookies from "nookies";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { getUserByEmail } from "../services/userDash/authservices";
 import Loader from "../components/loader/Loader";
 
@@ -26,6 +26,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
 
   const router = useRouter();
+  const pathname = usePathname();
 
   const logout = useCallback(() => {
     nookies.destroy(null, "token");
@@ -53,7 +54,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   useEffect(() => {
-    const cookies = nookies.get(); 
+    const cookies = nookies.get();
     const token = cookies.token;
     const email = cookies.email;
     const storedRole = cookies.role || null;
@@ -65,6 +66,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
 
     const decoded = parseJwt(token);
+    // console.log("Decoded JWT:", decoded);
+
     if (!decoded || decoded.exp < Date.now() / 1000) {
       logout();
       return;
@@ -83,8 +86,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       .finally(() => {
         setLoading(false);
       });
-
-  }, [router, logout]);
+  }, [pathname, logout]); // 👈 Usas pathname como dependencia
 
   if (loading) {
     return (

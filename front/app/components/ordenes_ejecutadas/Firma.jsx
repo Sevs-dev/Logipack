@@ -5,7 +5,7 @@ const Firma = ({ type, item, info, lineaIndex, setMemoriaGeneral, saveToDB, type
     const sigCanvasRef = useRef();
 
     const guardarFirma = () => {
-        const base64 = sigCanvasRef.current.getCanvas().toDataURL("image/png"); // <- sin trimmed
+        const base64 = sigCanvasRef.current.getCanvas().toDataURL("image/png");
         setMemoriaGeneral((prev) => {
             const actualizado = {
                 ...prev,
@@ -36,7 +36,6 @@ const Firma = ({ type, item, info, lineaIndex, setMemoriaGeneral, saveToDB, type
 
     if (type !== "signature") return null;
 
-    // Validación de firma antes del renderizado
     let firmaValida = true;
 
     if (type === "signature" && item.binding) {
@@ -45,40 +44,41 @@ const Firma = ({ type, item, info, lineaIndex, setMemoriaGeneral, saveToDB, type
     }
 
     return (
-        <div>
+        <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-md space-y-4 max-w-md mx-auto">
             {firmaValida && info[item.clave]?.startsWith("data:image") && (
                 <div className="mb-2">
                     <img
                         src={info[item.clave]}
                         alt="Firma guardada"
-                        className="max-h-48 rounded shadow object-contain"
+                        className="max-h-48 w-full object-contain rounded-lg border border-gray-300 shadow"
                     />
                 </div>
             )}
 
-            <SignatureCanvas
-                ref={sigCanvasRef}
-                penColor="black"
-                canvasProps={{
-                    width: 300,
-                    height: 150,
-                    className:
-                        "border border-gray-300 rounded-md shadow-sm w-full mb-2",
-                }}
-            />
+            <div className="border-2 border-dashed border-gray-400 rounded-lg overflow-hidden">
+                <SignatureCanvas
+                    ref={sigCanvasRef}
+                    penColor="#1f2937" // gray-800
+                    canvasProps={{
+                        width: 300,
+                        height: 150,
+                        className: "w-full h-auto",
+                    }}
+                />
+            </div>
 
-            <div className="flex gap-2">
+            <div className="flex gap-3 justify-end">
                 <button
                     type="button"
                     onClick={guardarFirma}
-                    className="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600"
+                    className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg shadow transition"
                 >
                     Guardar
                 </button>
                 <button
                     type="button"
                     onClick={limpiarFirma}
-                    className="bg-gray-400 text-white px-3 py-1 rounded hover:bg-gray-500"
+                    className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg shadow transition"
                 >
                     Limpiar
                 </button>

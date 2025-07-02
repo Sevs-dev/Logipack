@@ -28,7 +28,7 @@ function NewStage({ canEdit = false, canView = false }: CreateClientProps) {
     const [phaseType, setPhaseType] = useState<string>("");
     // === useState (Flags) ===
     const [repeat, setRepeat] = useState(false);
-    const [repeatLine, setRepeatLine] = useState(false);
+    const [repeat_line, setrepeat_line] = useState(false);
     const [repeatMinutes, setRepeatMinutes] = useState("");
     const [alert, setAlert] = useState(false);
     const [status, setStatus] = useState(false);
@@ -127,7 +127,7 @@ function NewStage({ canEdit = false, canView = false }: CreateClientProps) {
             description,
             phase_type: phaseType,
             repeat,
-            repeatLine,
+            repeat_line,
             repeat_minutes: repeat ? Number(repeatMinutes) : undefined,
             alert,
             can_pause: canPause,
@@ -166,7 +166,7 @@ function NewStage({ canEdit = false, canView = false }: CreateClientProps) {
             setDescription(data.description);
             setPhaseType(data.phase_type);
             setRepeat(data.repeat);
-            setRepeatLine(data.repeatLine);
+            setrepeat_line(!!data.repeat_line);
             setRepeatMinutes(data.repeat_minutes?.toString() || "");
             setAlert(data.alert);
             setStatus(data.status);
@@ -194,7 +194,7 @@ function NewStage({ canEdit = false, canView = false }: CreateClientProps) {
             description,
             phase_type: phaseType,
             repeat: Boolean(repeat),
-            repeatLine: Boolean(repeatLine),
+            repeat_line: Boolean(repeat_line),
             repeat_minutes: repeat ? Number(repeatMinutes) : undefined,
             alert: Boolean(alert),
             can_pause: Boolean(canPause),
@@ -203,8 +203,7 @@ function NewStage({ canEdit = false, canView = false }: CreateClientProps) {
             activities: activityIds,
             duration_user: durationUser ?? "",
             duration,
-        };
-
+        }; 
         try {
             await updateStage(editingStage.id, updatedStage);
             showSuccess("Fase actualizada con éxito");
@@ -530,8 +529,8 @@ function NewStage({ canEdit = false, canView = false }: CreateClientProps) {
                             <div className="flex items-center gap-2">
                                 <input
                                     type="checkbox"
-                                    checked={repeatLine}
-                                    onChange={(e) => setRepeatLine(e.target.checked)}
+                                    checked={repeat_line}
+                                    onChange={(e) => setrepeat_line(e.target.checked)}
                                     className="h-5 w-5 text-blue-600"
                                     disabled={!canEdit}
                                 />

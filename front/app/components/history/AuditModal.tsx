@@ -47,7 +47,7 @@ const AuditModal: React.FC<AuditModalProps> = ({ audit, onClose }) => {
                 <div className="bg-white/10 backdrop-blur-md rounded-2xl p-4 w-full max-w-4xl max-h-[90vh] overflow-auto flex flex-col md:flex-row gap-4 shadow-lg shadow-black/30 text-gray-100 border border-white/20">
                     {/* Panel izquierdo */}
                     <div className="md:w-1/3 flex flex-col h-full max-h-[80vh]">
-                        <Text type="title" color="text-[#fff]">Historial</Text>
+                        <Text type="title" color="text-white">Historial</Text>
                         <ul className="flex-1 overflow-y-auto rounded-xl border border-white/20 divide-y divide-white/10 bg-black/10">
                             {sortedAudit.length === 0 ? (
                                 <li className="p-4 text-center text-gray-400 italic">No hay registros</li>

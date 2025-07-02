@@ -6,6 +6,7 @@ use App\Models\Stage;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Log;
 
 class StagesController extends Controller
 {
@@ -42,6 +43,13 @@ class StagesController extends Controller
             'user' => 'string|nullable',
         ]);
 
+        // Normalizar activities (por ejemplo, convertir a enteros)
+        if (isset($validatedData['activities']) && is_array($validatedData['activities'])) {
+            $validatedData['activities'] = array_values(
+                array_map(fn($item) => intval($item), $validatedData['activities'])
+            );
+        }
+
         $validatedData['version'] = '1';
         $validatedData['reference_id'] = (string) Str::uuid();
 
@@ -72,35 +80,62 @@ class StagesController extends Controller
             return response()->json(['message' => 'Fase no encontrada'], 404);
         }
 
-        $validatedData = $request->validate([
-            'description' => 'required|string',
-            'phase_type' => 'required|string',
-            'repeat' => 'boolean',
-            'repeat_line' => 'boolean',
-            'repeat_minutes' => 'nullable|integer',
-            'alert' => 'boolean',
-            'can_pause' => 'boolean',
-            'status' => 'boolean',
-            'multi' => 'boolean',
-            'activities' => 'required|array',
-            'duration' => 'nullable|string',
-            'duration_user' => 'nullable|string',
-            'user' => 'string|nullable',
+        Log::info('📥 Request recibido para actualizar fase', [
+            'fase_id' => $id,
+            'request' => $request->all()
         ]);
 
-        // Desactivar la versión anterior
+        // 🔁 Normalizamos repeatLine → repeat_line si viene con camelCase
+        if ($request->has('repeatLine')) {
+            $request->merge([
+                'repeat_line' => $request->input('repeatLine')
+            ]);
+        }
+
+        $validatedData = $request->validate([
+            'description'     => 'required|string',
+            'phase_type'      => 'required|string',
+            'repeat'          => 'boolean',
+            'repeat_line'     => 'boolean',
+            'repeat_minutes'  => 'nullable|integer',
+            'alert'           => 'boolean',
+            'can_pause'       => 'boolean',
+            'status'          => 'boolean',
+            'multi'           => 'boolean',
+            'activities'      => 'required|array',
+            'duration'        => 'nullable|string',
+            'duration_user'   => 'nullable|string',
+            'user'            => 'string|nullable',
+        ]);
+
+        Log::info('✅ Datos validados correctamente', $validatedData);
+
+        // Desactivar versión anterior
         $Fase->active = false;
         $Fase->save();
 
+        // Normalizar activities
+        if (isset($validatedData['activities']) && is_array($validatedData['activities'])) {
+            $validatedData['activities'] = array_values(
+                array_map(fn($item) => intval($item), $validatedData['activities'])
+            );
+        }
+
+        Log::info('🔧 Datos listos para nueva versión', $validatedData);
+
         // Crear nueva versión
         $newVersion = (int) $Fase->version + 1;
-
-        $newFase = $Fase->replicate(); // duplica todos los atributos excepto la PK
+        $newFase = $Fase->replicate();
         $newFase->version = $newVersion;
         $newFase->fill($validatedData);
         $newFase->reference_id = $Fase->reference_id ?? (string) Str::uuid();
-        $newFase->active = true; // activamos la nueva versión
+        $newFase->active = true;
+
+        Log::info('🆕 Nueva fase antes de guardar', $newFase->toArray());
+
         $newFase->save();
+
+        Log::info('💾 Nueva fase guardada', $newFase->toArray());
 
         return response()->json([
             'message' => 'Fase actualizada como nueva versión correctamente',

@@ -20,7 +20,7 @@ return new class extends Migration
             $table->string('description_fase')->nullable();
             $table->string('phase_type')->nullable();
             $table->json('forms')->nullable();
-            $table->json('estado_form')->default(false);
+            $table->json('estado_form')->nullable()->default(false);
             $table->timestamps();
         });
     }
