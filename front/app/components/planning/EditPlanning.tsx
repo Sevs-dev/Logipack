@@ -408,6 +408,11 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
     const handleTerciario = useCallback(async (id: number) => {
         const { plan } = await getPlanningById(id);
 
+        if(plan.line === null){
+            showError("Lineas de produccion no encontradas o no definidas.");
+            return;
+        }
+        
         try {
             const response = await fetch(`http://localhost:8000/api/validar_estado/${plan.adaptation_id}`);
             const data = await response.json();
