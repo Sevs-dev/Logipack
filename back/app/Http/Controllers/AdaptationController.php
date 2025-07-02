@@ -254,7 +254,7 @@ class AdaptationController extends Controller
     public function updateAdaptation(Request $request, $id)
     {
         try {
-           Log::info("🔧 Iniciando actualización de adaptación ID: {$id}");
+            Log::info("🔧 Iniciando actualización de adaptación ID: {$id}");
 
             $adaptation = Adaptation::findOrFail($id);
 
@@ -269,16 +269,16 @@ class AdaptationController extends Controller
                 'ingredients'  => 'nullable|string',
             ]);
 
-           Log::info("📥 Payload recibido: ", $request->all());
-           Log::info("✅ Datos validados: ", $validatedData);
+            Log::info("📥 Payload recibido: ", $request->all());
+            Log::info("✅ Datos validados: ", $validatedData);
 
             $validatedData['article_code'] = json_decode($validatedData['article_code'], true);
             $validatedData['ingredients'] = isset($validatedData['ingredients'])
                 ? json_decode($validatedData['ingredients'], true)
                 : null;
 
-           Log::info("📦 article_code decodificado: ", $validatedData['article_code']);
-           Log::info("🥕 ingredients decodificados: ", $validatedData['ingredients'] ?? []);
+            Log::info("📦 article_code decodificado: ", $validatedData['article_code']);
+            Log::info("🥕 ingredients decodificados: ", $validatedData['ingredients'] ?? []);
 
             $articleAttachments = [];
 
@@ -351,7 +351,7 @@ class AdaptationController extends Controller
                 }
             }
 
-           Log::info("⏱ Duración calculada: ", ['total' => $masterDuration, 'desglose' => $duration_breakdown]);
+            Log::info("⏱ Duración calculada: ", ['total' => $masterDuration, 'desglose' => $duration_breakdown]);
 
             // Actualizar solo campos válidos en Adaptation
             $adaptation->update([
@@ -401,14 +401,13 @@ class AdaptationController extends Controller
                 'details' => $e->errors(),
             ], 422);
         } catch (\Exception $e) {
-           Log::warning("🔥 Error inesperado en updateAdaptation: " . $e->getMessage());
+            Log::warning("🔥 Error inesperado en updateAdaptation: " . $e->getMessage());
             return response()->json([
                 'error'   => 'Error updating adaptation',
                 'details' => $e->getMessage(),
             ], 500);
         }
     }
-
 
     public function deleteAdaptation($id)
     {
@@ -429,5 +428,26 @@ class AdaptationController extends Controller
                 'details' => $e->getMessage()
             ], 500);
         }
+    }
+    public function debugBomAndIngredients($id)
+    {
+        $adaptation = Adaptation::find($id);
+
+        if (!$adaptation) {
+            return response()->json([
+                'error' => 'Adaptation not found',
+                'adaptation_id' => $id,
+            ], 404);
+        }
+
+        // Convertir en array si vienen como JSON string
+        $bom = is_string($adaptation->bom) ? json_decode($adaptation->bom, true) : $adaptation->bom;
+        $ingredients = is_string($adaptation->ingredients) ? json_decode($adaptation->ingredients, true) : $adaptation->ingredients;
+
+        return response()->json([
+            'adaptation_id' => $adaptation->id,
+            'bom'           => $bom ?? 'No válido o vacío',
+            'ingredients'   => $ingredients ?? 'No válido o vacío',
+        ]);
     }
 }

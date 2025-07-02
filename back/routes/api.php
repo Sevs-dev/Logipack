@@ -158,6 +158,7 @@ Route::controller(AdaptationController::class)->group(function () {
     Route::get('/getAdaptationId/{id}', 'getAdaptationById'); // Obtener una lineas específica 
     Route::put('/updateAdaptation/{id}', 'updateAdaptation'); // Actualizar una lineas
     Route::delete('/deleteAdaptation/{id}', 'deleteAdaptation'); // Eliminar una lineas
+    Route::get('/debug/adaptation/{id}', 'debugBomAndIngredients'); // Obtener una lineas específica 
 });
 
 //Rutas Planificación

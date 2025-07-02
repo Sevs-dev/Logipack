@@ -162,11 +162,12 @@ function NewStage({ canEdit = false, canView = false }: CreateClientProps) {
     const handleEdit = async (id: number) => {
         try {
             const data = await getStageId(id);
+            console.log("Datos de la fase:", data);
             setEditingStage(data);
             setDescription(data.description);
             setPhaseType(data.phase_type);
             setRepeat(data.repeat);
-            setRepeatLine(data.repeatLine);
+            setRepeatLine(!!data.repeat_line);
             setRepeatMinutes(data.repeat_minutes?.toString() || "");
             setAlert(data.alert);
             setStatus(data.status);
@@ -203,8 +204,7 @@ function NewStage({ canEdit = false, canView = false }: CreateClientProps) {
             activities: activityIds,
             duration_user: durationUser ?? "",
             duration,
-        };
-
+        }; 
         try {
             await updateStage(editingStage.id, updatedStage);
             showSuccess("Fase actualizada con éxito");

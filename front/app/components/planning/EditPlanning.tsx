@@ -918,10 +918,11 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
             )}
 
             <Table
-                columns={["client_name", "codart", "deliveryDate", "status_dates"]}
+                columns={["client_name", "number_order", "codart", "deliveryDate", "status_dates",]}
                 rows={planning}
                 columnLabels={{
                     client_name: "Cliente",
+                    number_order: "N° de orden",
                     codart: "Artículo",
                     deliveryDate: "Fecha de entrega",
                     status_dates: "Estado",

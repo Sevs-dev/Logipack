@@ -145,7 +145,7 @@ const AuditHistory: React.FC<AuditHistoryProps> = ({ audit }) => {
 
     return (
         <div className="rounded-lg max-h-[70vh]">
-            <Text type="title" color="text-[#fff]">Detalle de Historia</Text>
+            <Text type="title" color="text-white">Detalle de Historia</Text>
 
             <div className="space-y-2 text-sm">
                 <p><span className="font-semibold text-white">Usuario: </span><span className="text-white">{audit.user}</span></p>
@@ -153,7 +153,7 @@ const AuditHistory: React.FC<AuditHistoryProps> = ({ audit }) => {
                 <p><span className="font-semibold text-white">Fecha: </span><span className="text-white">{new Date(audit.created_at).toLocaleString()}</span></p>
             </div>
 
-            <Text type="subtitle" color="#000">Cambios</Text>
+            <Text type="subtitle" color="text-white">Cambios</Text>
 
             <div className="text-sm overflow-y-auto mt-2 flex-grow max-h-[40vh] pr-4 custom-scroll">
                 {Object.keys(newValues).length > 0 ? (
