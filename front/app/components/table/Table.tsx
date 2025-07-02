@@ -19,7 +19,6 @@ type TableProps<T extends { id: number }> = {
     showHistory?: boolean;
 };
 
-
 const Header = ({
     column,
     label,
@@ -70,8 +69,8 @@ function Table<T extends { id: number }>({
     showTerciarioButton = true,
     showHistory = true,
 }: TableProps<T>) {
-    const [sortColumn, setSortColumn] = useState(columns[0] as string);
-    const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
+    const [sortColumn, setSortColumn] = useState("id");
+    const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
     const [searchTerm, setSearchTerm] = useState("");
     const [currentPage, setCurrentPage] = useState(1);
 
@@ -91,6 +90,10 @@ function Table<T extends { id: number }>({
     );
 
     const sortedRows = [...filteredRows].sort((a, b) => {
+        // Si estás ordenando por id, forzalo a descendente
+        if (sortColumn === "id") {
+            return sortOrder === "asc" ? a.id - b.id : b.id - a.id;
+        }
         const valA = a[sortColumn as keyof T] ?? "";
         const valB = b[sortColumn as keyof T] ?? "";
 
@@ -100,6 +103,7 @@ function Table<T extends { id: number }>({
             return sortOrder === "asc" ? (valA > valB ? 1 : -1) : valA < valB ? 1 : -1;
         }
     });
+
 
     const totalPages = Math.ceil(sortedRows.length / itemsPerPage);
 
