@@ -357,12 +357,17 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
 
     const handleDrop = (lineId: number) => {
         if (draggedActivityId === null) return;
+
         setLineActivities((prev) => {
             const updated = { ...prev };
-            // ← NO eliminamos de otras líneas, permitimos duplicados
+
+            // ⛔ No agregar si ya existe en esta línea
+            if (updated[lineId]?.includes(draggedActivityId)) return prev;
+
             updated[lineId] = [...(updated[lineId] || []), draggedActivityId];
             return updated;
         });
+
         setDraggedActivityId(null);
     };
 
