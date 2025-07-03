@@ -56,6 +56,7 @@ const Header = ({
         </th>
     );
 };
+
 function Table<T extends { id: number }>({
     rows,
     columns,
@@ -71,26 +72,22 @@ function Table<T extends { id: number }>({
 }: TableProps<T>) {
     const [sortColumn, setSortColumn] = useState("id");
     const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
-    const [searchTerm, setSearchTerm] = useState("");
+    const [columnSearchTerms, setColumnSearchTerms] = useState<Partial<Record<keyof T, string>>>({});
     const [currentPage, setCurrentPage] = useState(1);
 
     const booleanColumns: BooleanColumns[] = ["binding", "status", "aprobado", "paralelo"];
     const itemsPerPage = 10;
     const maxButtons = 4;
 
-    const filteredRows = (rows ?? []).filter((row) =>
-        columns.some((column) => {
-            const val = row[column];
-            return (
-                val !== null &&
-                val !== undefined &&
-                val.toString().toLowerCase().includes(searchTerm.toLowerCase())
-            );
+    const filteredRows = rows.filter((row) =>
+        columns.every((column) => {
+            const searchValue = columnSearchTerms[column]?.toLowerCase() ?? "";
+            const cellValue = String(row[column] ?? "").toLowerCase();
+            return cellValue.includes(searchValue);
         })
     );
 
     const sortedRows = [...filteredRows].sort((a, b) => {
-        // Si estás ordenando por id, forzalo a descendente
         if (sortColumn === "id") {
             return sortOrder === "asc" ? a.id - b.id : b.id - a.id;
         }
@@ -103,7 +100,6 @@ function Table<T extends { id: number }>({
             return sortOrder === "asc" ? (valA > valB ? 1 : -1) : valA < valB ? 1 : -1;
         }
     });
-
 
     const totalPages = Math.ceil(sortedRows.length / itemsPerPage);
 
@@ -134,23 +130,6 @@ function Table<T extends { id: number }>({
 
     return (
         <div className="w-full overflow-hidden rounded-xl shadow-lg p-3 sm:p-4 bg-gray-900 transition-all duration-300">
-            <div className="flex justify-end mb-3">
-                <input
-                    type="text"
-                    placeholder="Buscar..."
-                    value={searchTerm}
-                    onChange={(e) => {
-                        setSearchTerm(e.target.value);
-                        setCurrentPage(1);
-                    }}
-                    className="px-4 py-2 text-gray-300 bg-gray-800 border border-gray-700 rounded-md 
-                    transition-all duration-300 ease-in-out 
-                    focus:outline-none focus:ring-2 focus:ring-blue-500 
-                    focus:bg-gray-850 focus:border-blue-400 
-                    focus:shadow-md hover:shadow-lg"
-                />
-            </div>
-
             {filteredRows.length === 0 ? (
                 <div className="text-center text-gray-400 py-4 flex flex-col sm:flex-row items-center justify-center gap-2 text-xs sm:text-sm">
                     <span>No hay datos que coincidan con la búsqueda.</span>
@@ -161,6 +140,27 @@ function Table<T extends { id: number }>({
                     <div className="hidden md:block overflow-x-auto">
                         <table className="w-full border-collapse bg-gray-900 text-gray-300 text-center">
                             <thead>
+                                <tr className="bg-gray-900 text-sm">
+                                    {columns.map((column) => (
+                                        <th key={`input-${String(column)}`} className="px-2 py-1">
+                                            <input
+                                                type="text"
+                                                value={columnSearchTerms[column] ?? ""}
+                                                onChange={(e) => {
+                                                    setColumnSearchTerms((prev) => ({
+                                                        ...prev,
+                                                        [column]: e.target.value,
+                                                    }));
+                                                    setCurrentPage(1);
+                                                }}
+                                                className="w-full px-2 py-1 text-sm text-gray-200 bg-gray-800 border border-gray-600 rounded-md 
+                                                focus:outline-none focus:ring-2 focus:ring-blue-500 text-center"
+                                                placeholder="Buscar..."
+                                            />
+                                        </th>
+                                    ))}
+                                    <th />
+                                </tr>
                                 <tr className="bg-gradient-to-r from-gray-800 to-gray-700 text-sm">
                                     {columns.map((column) => (
                                         <Header
@@ -172,9 +172,7 @@ function Table<T extends { id: number }>({
                                             sortOrder={sortOrder}
                                         />
                                     ))}
-                                    <th className="px-6 py-3 text-center font-semibold text-gray-300">
-                                        Acciones
-                                    </th>
+                                    <th className="px-6 py-3 text-center font-semibold text-gray-300">Acciones</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -213,15 +211,12 @@ function Table<T extends { id: number }>({
                                             {showEditButton && onEdit && (
                                                 <Button onClick={() => onEdit(row.id)} variant="edit" />
                                             )}
-
                                             {showDeleteButton && onDelete && (
                                                 <Button onClick={() => onDelete(row.id)} variant="delete" />
                                             )}
-
                                             {showTerciarioButton && onTerciario && (
                                                 <Button onClick={() => onTerciario(row.id)} variant="create2" />
                                             )}
-
                                             {showHistory && onHistory && (
                                                 <Button onClick={() => onHistory(row.id)} variant="history" />
                                             )}
@@ -232,6 +227,7 @@ function Table<T extends { id: number }>({
                         </table>
                     </div>
 
+                    {/* Mobile version */}
                     <div className="md:hidden space-y-4">
                         {paginatedRows.map((row, index) => (
                             <div
@@ -246,22 +242,21 @@ function Table<T extends { id: number }>({
                                         <span className="font-semibold text-gray-400">
                                             {columnLabels[column] ?? String(column)}:
                                         </span>
-                                        <span className="text-gray-300">{row[column] !== null && row[column] !== undefined ? String(row[column]) : ""}</span>
+                                        <span className="text-gray-300">
+                                            {row[column] !== null && row[column] !== undefined ? String(row[column]) : ""}
+                                        </span>
                                     </div>
                                 ))}
                                 <div className="flex justify-end gap-3 mt-3">
                                     {showEditButton && onEdit && (
                                         <Button onClick={() => onEdit(row.id)} variant="edit" />
                                     )}
-
                                     {showDeleteButton && onDelete && (
                                         <Button onClick={() => onDelete(row.id)} variant="delete" />
                                     )}
-
                                     {showTerciarioButton && onTerciario && (
                                         <Button onClick={() => onTerciario(row.id)} variant="create2" />
                                     )}
-
                                     {showHistory && onHistory && (
                                         <Button onClick={() => onHistory(row.id)} variant="history" />
                                     )}
@@ -270,6 +265,7 @@ function Table<T extends { id: number }>({
                         ))}
                     </div>
 
+                    {/* Pagination */}
                     <div className="relative flex items-center w-full mt-4">
                         <div className="absolute left-1/2 transform -translate-x-1/2 flex gap-x-2">
                             <button
@@ -317,6 +313,6 @@ function Table<T extends { id: number }>({
             )}
         </div>
     );
-};
+}
 
 export default Table;

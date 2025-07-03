@@ -346,7 +346,7 @@ export default function NewActivity({ canEdit = false, canView = false }: Create
                                         content={
                                             <>
                                                 Para establecer segundos en la duración, separa los minutos con una <strong>coma (,)</strong>.<br />
-                                                Ejemplo: <code>1,25</code> representa 1 minuto y 25 segundos.
+                                                Ejemplo: <code>1,25 ó ,12</code> representa 1 minuto y 25 segundos ó 12 segundos.
                                             </>
                                         }
                                     />
@@ -358,19 +358,19 @@ export default function NewActivity({ canEdit = false, canView = false }: Create
                                         type="number"
                                         name="duration"
                                         min={0}
-                                        value={formData.duration}
+                                        value={formData.duration || ""}
                                         onChange={(e) => {
                                             const val = Number(e.target.value);
                                             setFormData({
                                                 ...formData,
-                                                duration: isNaN(val) ? 0 : Math.max(0, val)  // permite 0, nunca negativos
+                                                duration: isNaN(val) ? 0 : Math.max(0, val),
                                             });
                                         }}
-
                                         placeholder="Duración (en minutos)"
                                         className="w-full max-w-[350px] border p-2 pl-9 rounded-md text-black focus:ring-2 focus:ring-blue-500"
                                         disabled={!canEdit && !isEditing}
                                     />
+
                                 </div>
                                 <span className="w-full border border-gray-300 rounded-lg shadow-sm py-3 px-3 text-gray-800 bg-gray-50 mt-1 text-center">
                                     min - ({getFormattedDuration(Number(formData.duration))})

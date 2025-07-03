@@ -359,9 +359,7 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
         if (draggedActivityId === null) return;
         setLineActivities((prev) => {
             const updated = { ...prev };
-            for (const key in updated) {
-                updated[key] = updated[key].filter(id => id !== draggedActivityId);
-            }
+            // ← NO eliminamos de otras líneas, permitimos duplicados
             updated[lineId] = [...(updated[lineId] || []), draggedActivityId];
             return updated;
         });
@@ -391,10 +389,7 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
     }
 
     const assignedActivityIds = useMemo(() => Object.values(lineActivities).flat(), [lineActivities]);
-    const availableActivities = useMemo(() =>
-        activitiesDetails.filter(a => !assignedActivityIds.includes(a.id)),
-        [activitiesDetails, assignedActivityIds]
-    );
+    const availableActivities = useMemo(() => activitiesDetails, [activitiesDetails]);
 
     async function fetchAndProcessPlans(id: number) {
         console.log("Planes desde servidor:", id);
@@ -939,7 +934,7 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
                 columnLabels={{
                     client_name: "Cliente",
                     number_order: "N° de orden",
-                    codart: "Artículo", 
+                    codart: "Artículo",
                     factory: "Planta",
                     status_dates: "Estado",
                 }}
