@@ -193,7 +193,7 @@ function Products({ canEdit = false, canView = false }: CreateClientProps) {
       {/* Botón para crear producto, solo si tiene permisos de edición */}
       {canEdit && (
         <div className="flex justify-center mb-2">
-          <Button onClick={openCreateModal} variant="create" label="Crear Producto" />
+          <Button onClick={openCreateModal} variant="create" label="Crear Tipo de Productos" />
         </div>
       )}
 

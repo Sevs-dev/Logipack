@@ -17,8 +17,8 @@ const cookieOptions = {
 
 export default function Login() {
   const router = useRouter();
-  const [email, setEmail] = useState('admin@logismart.com'); // valores por defecto para testing
-  const [password, setPassword] = useState('Logismart123*');
+  const [email, setEmail] = useState(''); // valores por defecto para testing
+  const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
 
   // 🧠 Manejo del envío del formulario de login

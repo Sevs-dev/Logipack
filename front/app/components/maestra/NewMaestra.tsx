@@ -3,10 +3,11 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { Search, X, Clock } from "lucide-react";
 // ------------------------- 2. Importaciones de servicios -------------------------
-import { createMaestra, getMaestra, deleteMaestra, getMaestraId, updateMaestra, getTipo } from "../../services/maestras/maestraServices";
+import { createMaestra, getMaestra, deleteMaestra, getMaestraId, updateMaestra } from "../../services/maestras/maestraServices";
 import { getStage, getStageId } from "../../services/maestras/stageServices";
 import { getStage as listTipoAcondicionamiento, getStageById as lisTipoacondicionamientoId } from "@/app/services/maestras/TipoAcondicionamientoService";
 import { getAuditsByModel } from "../../services/history/historyAuditServices";
+import { getProduct } from "../../services/userDash/productServices"
 // ------------------------- 3. Importaciones de componentes de la UI -------------------------
 import Button from "../buttons/buttons";
 import { showSuccess, showError, showConfirm } from "../toastr/Toaster";
@@ -19,6 +20,7 @@ import AuditModal from "../history/AuditModal";
 // ------------------------- 5. Tipos de datos e interfaces -------------------------
 import { MaestraBase } from "../../interfaces/NewMaestra";
 import { Stage, StageFase } from "../../interfaces/NewStage";
+import { Product } from "../../interfaces/Products";
 import { DataTipoAcondicionamiento, DataLineaTipoAcondicionamiento } from "@/app/interfaces/NewTipoAcondicionamiento";
 import { getLineaTipoAcondicionamientoById as getLineaTipoAcomById } from "@/app/services/maestras/LineaTipoAcondicionamientoService";
 import { Audit } from "../../interfaces/Audit";
@@ -37,7 +39,7 @@ const Maestra = ({ canEdit = false, canView = false }: CreateClientProps) => {
     const [stages, setStages] = useState<Stage[]>([]);
     const [selectedStages, setSelectedStages] = useState<StageFase[]>([]);
     const [tipoSeleccionado, setTipoSeleccionado] = useState("");
-    const [tiposProducto, setTiposProducto] = useState<string[]>([]);
+    const [tiposProducto, setTiposProducto] = useState<Product[]>([]);
     const [searchStage, setSearchStage] = useState("");
     const [duration, setDuration] = useState("");
     const [durationUser, setDurationUser] = useState("");
@@ -273,7 +275,7 @@ const Maestra = ({ canEdit = false, canView = false }: CreateClientProps) => {
     useEffect(() => {
         const fetchTipos = async () => {
             try {
-                const tipos = await getTipo();
+                const tipos = await getProduct();
                 // console.log(tipos);
                 setTiposProducto(tipos)
             } catch {
@@ -542,16 +544,26 @@ const Maestra = ({ canEdit = false, canView = false }: CreateClientProps) => {
         setDurationUser(String(totalUserDuration));
     }, [selectedStages]);
 
-    const getFormattedDuration = (minutes: number): string => {
-        if (minutes <= 0) return 'menos de 1 minuto';
-        const days = Math.floor(minutes / 1440); // 1440 min = 1 día
-        const remainingMinutesAfterDays = minutes % 1440;
-        const hours = Math.floor(remainingMinutesAfterDays / 60);
-        const remainingMinutes = remainingMinutesAfterDays % 60;
+    const getFormattedDuration = (raw: number): string => {
+        const minutes = Math.floor(raw);
+        const seconds = Math.round((raw % 1) * 100); // <-- parte decimal como "segundos"
+        const totalSeconds = minutes * 60 + seconds;
+        if (totalSeconds < 60) return `${totalSeconds} seg`;
+        const days = Math.floor(totalSeconds / 86400);
+        const hours = Math.floor((totalSeconds % 86400) / 3600);
+        const mins = Math.floor((totalSeconds % 3600) / 60);
+        const secs = totalSeconds % 60;
         const parts: string[] = [];
-        if (days > 0) parts.push(`${days} día${days > 1 ? 's' : ''}`);
-        if (hours > 0) parts.push(`${hours} hora${hours > 1 ? 's' : ''}`);
-        if (remainingMinutes > 0) parts.push(`${remainingMinutes} min`);
+        const pushPart = (value: number, singular: string, plural: string = singular + 's') => {
+            if (value > 0) parts.push(`${value} ${value === 1 ? singular : plural}`);
+        };
+        pushPart(days, 'día');
+        pushPart(hours, 'hora');
+        pushPart(mins, 'min', 'min');
+        const shouldShowSeconds = totalSeconds < 3600 && secs > 0 && days === 0 && hours === 0;
+        if (shouldShowSeconds) {
+            pushPart(secs, 'seg', 'seg');
+        }
         return parts.join(' ');
     };
 
@@ -624,7 +636,13 @@ const Maestra = ({ canEdit = false, canView = false }: CreateClientProps) => {
                             />
                         </div>
                         <div className="flex flex-col items-center">
-                            <Text type="subtitle" color="#000">Seleccione Tipo de Producto</Text>
+                            <Text type="subtitle" color="#000">Seleccione Tipo de Producto
+                                <InfoPopover content={
+                                    <>
+                                        Selecciona uno de los productos previamente creados en la sección <strong>Productos</strong>.
+                                    </>
+                                } />
+                            </Text>
                             <select
                                 className="w-full p-2 border mb-2 min-w-0 text-black text-center"
                                 value={tipoSeleccionado}
@@ -635,8 +653,8 @@ const Maestra = ({ canEdit = false, canView = false }: CreateClientProps) => {
                                     -- Seleccione un tipo de producto --
                                 </option>
                                 {tiposProducto.map((tipo) => (
-                                    <option key={tipo} value={tipo} className="text-black">
-                                        {tipo}
+                                    <option key={tipo.id} value={tipo.id} className="text-black">
+                                        {tipo.name}
                                     </option>
                                 ))}
                             </select>
@@ -811,7 +829,15 @@ const Maestra = ({ canEdit = false, canView = false }: CreateClientProps) => {
                         <div className="flex flex-col md:flex-row gap-4 mt-2">
                             {/* Tiempo estimado por sistema */}
                             <div className="w-full md:w-1/2">
-                                <Text type="subtitle" color="#000">Tiempo Estimado Sistema</Text>
+                                <Text type="subtitle" color="#000">Tiempo Estimado Sistema
+                                    <InfoPopover
+                                        content={
+                                            <>
+                                                Este es el tiempo calculado automáticamente por el <strong>sistema</strong> según la duración proporcionada por el usuario y las actividades seleccionadas.
+                                            </>
+                                        }
+                                    />
+                                </Text>
                                 <div className="mt-2 relative">
                                     <Clock className="absolute left-3 top-2.5 w-4 h-4 text-gray-500" />
                                     <input
@@ -826,7 +852,15 @@ const Maestra = ({ canEdit = false, canView = false }: CreateClientProps) => {
 
                             {/* Tiempo estimado por usuario */}
                             <div className="w-full md:w-1/2">
-                                <Text type="subtitle" color="#000">Tiempo Por Usuario</Text>
+                                <Text type="subtitle" color="#000">Tiempo Por Usuario
+                                    <InfoPopover
+                                        content={
+                                            <>
+                                                Este es el tiempo calculado automáticamente por el <strong>usuario</strong> según la duración proporcionada a las actividades seleccionadas.
+                                            </>
+                                        }
+                                    />
+                                </Text>
                                 <div className="mt-2 relative">
                                     <Clock className="absolute left-3 top-2.5 w-4 h-4 text-gray-500" />
                                     <input

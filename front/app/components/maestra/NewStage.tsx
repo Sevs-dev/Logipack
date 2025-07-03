@@ -203,7 +203,7 @@ function NewStage({ canEdit = false, canView = false }: CreateClientProps) {
             activities: activityIds,
             duration_user: durationUser ?? "",
             duration,
-        }; 
+        };
         try {
             await updateStage(editingStage.id, updatedStage);
             showSuccess("Fase actualizada con éxito");
@@ -248,16 +248,26 @@ function NewStage({ canEdit = false, canView = false }: CreateClientProps) {
         setMulti(false);
     };
 
-    const getFormattedDuration = (minutes: number): string => {
-        if (minutes <= 0) return 'menos de 1 minuto';
-        const days = Math.floor(minutes / 1440);
-        const remainingMinutesAfterDays = minutes % 1440;
-        const hours = Math.floor(remainingMinutesAfterDays / 60);
-        const remainingMinutes = remainingMinutesAfterDays % 60;
+    const getFormattedDuration = (raw: number): string => {
+        const minutes = Math.floor(raw);
+        const seconds = Math.round((raw % 1) * 100); // <-- parte decimal como "segundos"
+        const totalSeconds = minutes * 60 + seconds;
+        if (totalSeconds < 60) return `${totalSeconds} seg`;
+        const days = Math.floor(totalSeconds / 86400);
+        const hours = Math.floor((totalSeconds % 86400) / 3600);
+        const mins = Math.floor((totalSeconds % 3600) / 60);
+        const secs = totalSeconds % 60;
         const parts: string[] = [];
-        if (days > 0) parts.push(`${days} día${days > 1 ? 's' : ''}`);
-        if (hours > 0) parts.push(`${hours} hora${hours > 1 ? 's' : ''}`);
-        if (remainingMinutes > 0) parts.push(`${remainingMinutes} min`);
+        const pushPart = (value: number, singular: string, plural: string = singular + 's') => {
+            if (value > 0) parts.push(`${value} ${value === 1 ? singular : plural}`);
+        };
+        pushPart(days, 'día');
+        pushPart(hours, 'hora');
+        pushPart(mins, 'min', 'min');
+        const shouldShowSeconds = totalSeconds < 3600 && secs > 0 && days === 0 && hours === 0;
+        if (shouldShowSeconds) {
+            pushPart(secs, 'seg', 'seg');
+        }
         return parts.join(' ');
     };
 
@@ -422,13 +432,22 @@ function NewStage({ canEdit = false, canView = false }: CreateClientProps) {
                         {/* Total de duración */}
                         <div className="flex flex-col md:flex-row gap-4">
                             <div className="w-full md:w-1/2">
-                                <Text type="subtitle" color="#000">Tiempo Estimado</Text>
+                                <Text type="subtitle" color="#000">Tiempo Estimado
+                                    <InfoPopover
+                                        content={
+                                            <>
+                                                Este es el tiempo calculado automáticamente por el <strong>sistema</strong> según la duración proporcionada por el usuario y las actividades seleccionadas.
+                                            </>
+                                        }
+                                    />
+                                </Text>
                                 <div className="mt-4 relative">
                                     <Clock className="absolute left-3 top-2.5 w-4 h-4 text-gray-500" />
                                     <input
                                         type="text"
                                         readOnly
-                                        value={`${duration} minutos`}
+                                        value={`${duration ?? 0} minutos`}
+                                        placeholder="0 minutos"
                                         className="w-full border border-gray-300 p-2 pl-9 pr-24 rounded-md text-sm text-black bg-gray-100 cursor-default"
                                         disabled={!canEdit}
                                     />
@@ -439,7 +458,16 @@ function NewStage({ canEdit = false, canView = false }: CreateClientProps) {
                             </div>
 
                             <div className="w-full md:w-1/2">
-                                <Text type="subtitle" color="#000">T. Estimado Por El Usuario</Text>
+                                <Text type="subtitle" color="#000">T. Estimado Por El Usuario
+                                    <InfoPopover
+                                        content={
+                                            <>
+                                                Para establecer segundos en la duración, separa los minutos con una <strong>coma (,)</strong>.<br />
+                                                Ejemplo: <code>1,25</code> representa 1 minuto y 25 segundos.
+                                            </>
+                                        }
+                                    />
+                                </Text>
                                 <div className="mt-4 relative">
                                     <Clock className="absolute left-3 top-2.5 w-4 h-4 text-gray-500" />
                                     <input
@@ -500,7 +528,7 @@ function NewStage({ canEdit = false, canView = false }: CreateClientProps) {
                                     className="h-5 w-5 text-blue-600"
                                     disabled={!canEdit}
                                 />
-                                <span className="text-sm text-black">Activar Estado</span>
+                                <span className="text-sm text-black">Activar Fase</span>
                             </div>
                             <div className="flex items-center gap-2">
                                 <input

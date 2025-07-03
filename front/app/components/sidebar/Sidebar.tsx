@@ -83,8 +83,8 @@ const menuItems: MenuItem[] = [
     label: "Ajustes",
     icon: <FaCog />,
     children: [
-      { label: "General", icon: <FaCog />, link: "/ajustes/general" },
-      { label: "Seguridad", icon: <FaCog />, link: "/ajustes/seguridad" },
+      { label: "General", icon: <FaCog />, link: "/pages/perfil" },
+      // { label: "Seguridad", icon: <FaCog />, link: "/ajustes/seguridad" },
     ],
   },
 ];
@@ -293,7 +293,7 @@ const Sidebar: React.FC<SidebarProps> = ({ sidebarOpen, setSidebarOpen }) => {
               height={40}
               priority
               className="w-[40px] h-[40px] rounded-full object-cover cursor-pointer hover:opacity-80 transition-opacity"
-              onClick={() => router.push("/pages/perfil")}
+              onClick={() => router.push("/pages/userProfile")}
             />
             {sidebarOpen && (
               <span className="ml-2 text-white font-medium">

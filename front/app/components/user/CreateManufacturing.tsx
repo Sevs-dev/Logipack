@@ -38,7 +38,7 @@ function CreateManufacturing({ canEdit = false, canView = false }: CreateClientP
 
             const manuWithFactoryNames = manuResponse.map((m: Manu) => {
                 const factory = (factoriesResponse as Factory[]).find((f: Factory) => f.id === m.factory_id);
-                return { ...m, factory: factory?.name || "Sin fábrica" };
+                return { ...m, factory: factory?.name || "Sin Planta" };
             });
 
             setProducts(productsResponse);
@@ -165,7 +165,7 @@ function CreateManufacturing({ canEdit = false, canView = false }: CreateClientP
                         </div>
 
                         <div className="mb-4">
-                            <Text type="subtitle" color="#000" >Seleccionar Fábrica</Text>
+                            <Text type="subtitle" color="#000" >Seleccionar Planta</Text>
                             <select
                                 name="factory_id"
                                 value={formData.factory_id}
@@ -215,7 +215,7 @@ function CreateManufacturing({ canEdit = false, canView = false }: CreateClientP
             <Table
                 columns={["name", "factory"]}
                 rows={manu}
-                columnLabels={{ name: "Nombre", factory: "Fábrica" }}
+                columnLabels={{ name: "Nombre", factory: "Planta" }}
                 onDelete={canEdit ? handleDelete : undefined}
                 onEdit={openEditModal}
                 onHistory={handleHistory}

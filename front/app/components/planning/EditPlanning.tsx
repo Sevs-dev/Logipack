@@ -312,16 +312,27 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
     const handleDelete = useCallback(() => {
         // console.log("Eliminar", id);
     }, []);
-    const getFormattedDuration = (minutes: number): string => {
-        if (minutes <= 0) return 'menos de 1 minuto';
-        const days = Math.floor(minutes / 1440);
-        const remainingMinutesAfterDays = minutes % 1440;
-        const hours = Math.floor(remainingMinutesAfterDays / 60);
-        const remainingMinutes = remainingMinutesAfterDays % 60;
+
+    const getFormattedDuration = (raw: number): string => {
+        const minutes = Math.floor(raw);
+        const seconds = Math.round((raw % 1) * 100); // <-- parte decimal como "segundos"
+        const totalSeconds = minutes * 60 + seconds;
+        if (totalSeconds < 60) return `${totalSeconds} seg`;
+        const days = Math.floor(totalSeconds / 86400);
+        const hours = Math.floor((totalSeconds % 86400) / 3600);
+        const mins = Math.floor((totalSeconds % 3600) / 60);
+        const secs = totalSeconds % 60;
         const parts: string[] = [];
-        if (days > 0) parts.push(`${days} día${days > 1 ? 's' : ''}`);
-        if (hours > 0) parts.push(`${hours} hora${hours > 1 ? 's' : ''}`);
-        if (remainingMinutes > 0) parts.push(`${remainingMinutes} min`);
+        const pushPart = (value: number, singular: string, plural: string = singular + 's') => {
+            if (value > 0) parts.push(`${value} ${value === 1 ? singular : plural}`);
+        };
+        pushPart(days, 'día');
+        pushPart(hours, 'hora');
+        pushPart(mins, 'min', 'min');
+        const shouldShowSeconds = totalSeconds < 3600 && secs > 0 && days === 0 && hours === 0;
+        if (shouldShowSeconds) {
+            pushPart(secs, 'seg', 'seg');
+        }
         return parts.join(' ');
     };
 
@@ -408,11 +419,11 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
     const handleTerciario = useCallback(async (id: number) => {
         const { plan } = await getPlanningById(id);
 
-        if(plan.line === null){
+        if (plan.line === null) {
             showError("Lineas de produccion no encontradas o no definidas.");
             return;
         }
-        
+
         try {
             const response = await fetch(`http://localhost:8000/api/validar_estado/${plan.adaptation_id}`);
             const data = await response.json();
@@ -923,13 +934,13 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
             )}
 
             <Table
-                columns={["client_name", "number_order", "codart", "deliveryDate", "status_dates",]}
+                columns={["client_name", "number_order", "codart", "factory", "status_dates",]}
                 rows={planning}
                 columnLabels={{
                     client_name: "Cliente",
                     number_order: "N° de orden",
-                    codart: "Artículo",
-                    deliveryDate: "Fecha de entrega",
+                    codart: "Artículo", 
+                    factory: "Planta",
                     status_dates: "Estado",
                 }}
                 onDelete={handleDelete}

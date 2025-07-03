@@ -5,6 +5,7 @@ import { getAuditsByModel } from "../../services/history/historyAuditServices";
 import { showError, showSuccess, showConfirm } from "../toastr/Toaster";
 import Button from "../buttons/buttons";
 import Table from "../table/Table";
+import { InfoPopover } from "../buttons/InfoPopover";
 import { ActivityType, Activities } from "../../interfaces/NewActivity";
 import Text from "../text/Text";
 import { Clock } from "lucide-react";
@@ -206,16 +207,26 @@ export default function NewActivity({ canEdit = false, canView = false }: Create
         }
     };
 
-    const getFormattedDuration = (minutes: number): string => {
-        if (minutes <= 0) return 'menos de 1 minuto';
-        const days = Math.floor(minutes / 1440);
-        const remainingMinutesAfterDays = minutes % 1440;
-        const hours = Math.floor(remainingMinutesAfterDays / 60);
-        const remainingMinutes = remainingMinutesAfterDays % 60;
+    const getFormattedDuration = (raw: number): string => {
+        const minutes = Math.floor(raw);
+        const seconds = Math.round((raw % 1) * 100); // <-- parte decimal como "segundos"
+        const totalSeconds = minutes * 60 + seconds;
+        if (totalSeconds < 60) return `${totalSeconds} seg`;
+        const days = Math.floor(totalSeconds / 86400);
+        const hours = Math.floor((totalSeconds % 86400) / 3600);
+        const mins = Math.floor((totalSeconds % 3600) / 60);
+        const secs = totalSeconds % 60;
         const parts: string[] = [];
-        if (days > 0) parts.push(`${days} día${days > 1 ? 's' : ''}`);
-        if (hours > 0) parts.push(`${hours} hora${hours > 1 ? 's' : ''}`);
-        if (remainingMinutes > 0) parts.push(`${remainingMinutes} min`);
+        const pushPart = (value: number, singular: string, plural: string = singular + 's') => {
+            if (value > 0) parts.push(`${value} ${value === 1 ? singular : plural}`);
+        };
+        pushPart(days, 'día');
+        pushPart(hours, 'hora');
+        pushPart(mins, 'min', 'min');
+        const shouldShowSeconds = totalSeconds < 3600 && secs > 0 && days === 0 && hours === 0;
+        if (shouldShowSeconds) {
+            pushPart(secs, 'seg', 'seg');
+        }
         return parts.join(' ');
     };
 
@@ -329,8 +340,16 @@ export default function NewActivity({ canEdit = false, canView = false }: Create
                         {/* Campo de duración solo visible si 'Tiempo' es true */}
                         {formData.has_time && (
                             <div className="flex items-center gap-3">
-                                <label htmlFor="duration" className="text-sm text-black">
+                                <label htmlFor="duration" className="text-sm text-black flex items-center gap-1">
                                     Duración
+                                    <InfoPopover
+                                        content={
+                                            <>
+                                                Para establecer segundos en la duración, separa los minutos con una <strong>coma (,)</strong>.<br />
+                                                Ejemplo: <code>1,25</code> representa 1 minuto y 25 segundos.
+                                            </>
+                                        }
+                                    />
                                 </label>
                                 <div className="relative">
                                     <Clock className="absolute left-3 top-2.5 w-4 h-4 text-gray-500" />
@@ -338,15 +357,16 @@ export default function NewActivity({ canEdit = false, canView = false }: Create
                                         id="duration"
                                         type="number"
                                         name="duration"
-                                        min={1}
-                                        value={formData.duration === 0 ? '' : formData.duration}
+                                        min={0}
+                                        value={formData.duration}
                                         onChange={(e) => {
                                             const val = Number(e.target.value);
                                             setFormData({
                                                 ...formData,
-                                                duration: isNaN(val) ? 0 : Math.max(1, val)
+                                                duration: isNaN(val) ? 0 : Math.max(0, val)  // permite 0, nunca negativos
                                             });
                                         }}
+
                                         placeholder="Duración (en minutos)"
                                         className="w-full max-w-[350px] border p-2 pl-9 rounded-md text-black focus:ring-2 focus:ring-blue-500"
                                         disabled={!canEdit && !isEditing}

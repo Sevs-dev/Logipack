@@ -15,6 +15,7 @@ use Illuminate\Http\UploadedFile as LaravelUploadedFile;
 use Symfony\Component\HttpFoundation\File\UploadedFile as SymfonyUploadedFile;
 use App\Models\Consecutive;
 use App\Models\Consecutive_date;
+use App\Models\Factory;
 use App\Models\Stage;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Log;
@@ -157,6 +158,11 @@ class AdaptationController extends Controller
 
             // Crear AdaptationDate
             $articleCodes = json_decode($validatedData['article_code'], true);
+            $factory = Factory::find($validatedData['factory_id']);
+            if (!$factory) {
+                return response()->json(['error' => 'Fábrica no encontrada'], 404);
+            }
+            $factoryName = $factory->name;
             foreach ($articleCodes as $article) {
                 AdaptationDate::create([
                     'client_id'           => $validatedData['client_id'],
@@ -173,6 +179,7 @@ class AdaptationController extends Controller
                     'ingredients'         => $validatedData['ingredients'],
                     'adaptation_id'       => $adaptation->id,
                     'duration'            => $masterDuration,
+                    'factory'             => $factoryName,
                     'duration_breakdown'  => json_encode($duration_breakdown),
                     'user'                => $adaptation->user,
                 ]);

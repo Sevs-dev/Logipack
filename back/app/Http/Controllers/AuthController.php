@@ -3,86 +3,81 @@
 namespace App\Http\Controllers;
 
 use App\Models\Role;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
-use App\Models\User;
 use Illuminate\Support\Facades\Log;
 
 class AuthController extends Controller
 {
+    /** =======================
+     *         LOGIN
+     *  ======================= */
     public function login(Request $request)
     {
         $request->validate([
-            'email' => 'required|string|email',
+            'email'    => 'required|email',
             'password' => 'required|string',
         ]);
 
-        // Buscar el usuario por su correo
-        $usuario = User::where('email', $request->email)->first();
+        $user = User::where('email', $request->email)->first();
 
-        if (!$usuario) {
-            return response()->json([
-                'estado' => 'error',
-                'mensaje' => 'Correo electrónico no encontrado',
-            ], 404);
+        if (!$user) {
+            return response()->json(['estado' => 'error', 'mensaje' => 'Correo electrónico no encontrado'], 404);
         }
 
-        $credenciales = $request->only('email', 'password');
-
-        // Intenta autenticar al usuario con las credenciales
-        $token = Auth::attempt($credenciales);
-
-        if (!$token) {
-            return response()->json([
-                'estado' => 'error',
-                'mensaje' => 'Contraseña incorrecta',
-            ], 401);
+        if (!$token = Auth::attempt($request->only('email', 'password'))) {
+            return response()->json(['estado' => 'error', 'mensaje' => 'Contraseña incorrecta'], 401);
         }
 
         return response()->json([
             'estado' => 'éxito',
-            'usuario' => $usuario,
+            'usuario' => $user,
             'autorización' => [
                 'token' => $token,
-                'tipo' => 'bearer',
-            ]
+                'tipo'  => 'bearer',
+            ],
         ]);
     }
 
+    /** =======================
+     *       REGISTRO SIMPLE
+     *  ======================= */
     public function register(Request $request)
     {
         $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255|unique:users',
+            'name'     => 'required|string|max:255',
+            'email'    => 'required|email|max:255|unique:users',
             'password' => 'required|string|min:6',
         ]);
 
         $usuario = User::create([
-            'name' => $request->name,
-            'email' => $request->email,
+            'name'     => $request->name,
+            'email'    => $request->email,
             'password' => Hash::make($request->password),
         ]);
 
         $token = Auth::login($usuario);
+
         return response()->json([
             'estado' => 'éxito',
             'mensaje' => 'Usuario creado con éxito',
             'usuario' => $usuario,
             'autorización' => [
                 'token' => $token,
-                'tipo' => 'bearer',
-            ]
+                'tipo'  => 'bearer',
+            ],
         ]);
     }
 
+    /** =======================
+     *     LOGOUT & REFRESH
+     *  ======================= */
     public function logout()
     {
         Auth::logout();
-        return response()->json([
-            'estado' => 'éxito',
-            'mensaje' => 'Cierre de sesión exitoso',
-        ]);
+        return response()->json(['estado' => 'éxito', 'mensaje' => 'Cierre de sesión exitoso']);
     }
 
     public function refresh()
@@ -92,207 +87,171 @@ class AuthController extends Controller
             'usuario' => Auth::user(),
             'autorización' => [
                 'token' => Auth::refresh(),
-                'tipo' => 'bearer',
-            ]
+                'tipo'  => 'bearer',
+            ],
         ]);
     }
 
-    public function getUserByEmail($email)
-    {
-        $usuario = User::where('email', $email)->first();
-
-        if (!$usuario) {
-            return response()->json([
-                'estado'  => 'error',
-                'mensaje' => 'Correo electrónico no encontrado',
-            ], 404);
-        }
-        return response()->json([
-            'estado'  => 'éxito',
-            'usuario' => $usuario,
-        ]);
-    }
-
-    public function EditImage(Request $request, $email)
-    {
-        // Verificar si el usuario existe
-        $user = User::where('email', $email)->first();
-        if (!$user) {
-            return response()->json(['message' => 'Usuario no encontrado'], 404);
-        }
-        // Validar solo la imagen
-        $request->validate([
-            'image' => 'required|image|mimes:jpg,png,jpeg,gif|max:2048'
-        ]);
-        // Eliminar imagen anterior si existe
-        if ($user->image) {
-            $oldImagePath = public_path('storage/' . $user->image);
-            if (file_exists($oldImagePath)) {
-                unlink($oldImagePath);
-            }
-        }
-        // Guardar la nueva imagen en storage/app/public/images
-        $imagePath = $request->file('image')->store('images', 'public');
-        // Guardar la ruta en la base de datos
-        $user->image = $imagePath;
-        $user->save();
-        return response()->json([
-            'message' => 'Imagen subida y actualizada exitosamente',
-            'image' => asset('storage/' . $imagePath)
-        ]);
-    }
-
-    public function uploadUserImage(Request $request)
-    {
-        $request->validate([
-            'image' => 'required|image|mimes:jpg,png,jpeg,gif|max:2048',
-        ]);
-
-        $imagePath = $request->file('image')->store('images', 'public');
-
-        // Genera la URL manualmente
-        $imageUrl = env('APP_URL') . '/storage/' . $imagePath;
-
-        return response()->json([
-            'estado' => 'éxito',
-            'mensaje' => 'Imagen subida correctamente',
-            'image_url' => $imageUrl, // URL manualmente generada
-            'image_path' => $imagePath,
-        ]);
-    }
-
+    /** =======================
+     *       CREAR USUARIO
+     *  ======================= */
     public function create(Request $request)
     {
-        // Log de datos entrantes
         Log::info('Datos recibidos para crear usuario:', $request->all());
 
-        // Validación de los datos de entrada
-        try {
-            $request->validate([
-                'name' => 'required|string|max:255',
-                'email' => 'required|string|email|max:255',
-                'password' => 'required|string|min:6',
-                'role' => 'required',
-                'signature_bpm' => 'required|string|max:255',
-                'factory' => 'required|array',
-            ]);
-        } catch (\Illuminate\Validation\ValidationException $e) {
-            Log::error('Error de validación al crear usuario:', $e->errors());
-            return response()->json([
-                'estado' => 'error',
-                'mensaje' => 'Error de validación',
-                'errores' => $e->errors(),
-            ], 400);
-        }
-
-        // Verificar si el correo ya existe
-        $existingUser = User::where('email', $request->email)->first();
-        if ($existingUser) {
-            Log::warning("Intento de crear usuario con correo ya registrado: {$request->email}");
-            return response()->json([
-                'estado' => 'error',
-                'mensaje' => 'El correo electrónico ya está registrado.',
-            ], 400);
-        }
+        $request->validate([
+            'name'          => 'required|string|max:255',
+            'email'         => 'required|email|max:255|unique:users',
+            'password'      => 'required|string|min:6',
+            'role'          => 'required|string',
+            'signature_bpm' => 'required|string|max:255|unique:users',
+            'factory'       => 'required|array',
+        ]);
 
         try {
-            // Crear el nuevo usuario
             $usuario = User::create([
-                'name' => $request->name,
-                'email' => $request->email,
-                'password' => Hash::make($request->password),
-                'role' => $request->role,
+                'name'          => $request->name,
+                'email'         => $request->email,
+                'password'      => Hash::make($request->password),
+                'role'          => $request->role,
                 'signature_bpm' => $request->signature_bpm,
-                'factory' => $request->factory,
+                'factory'       => $request->factory,
             ]);
 
-            Log::info("Usuario creado con éxito: ID {$usuario->id}");
-
-            // Respuesta exitosa
             return response()->json([
                 'estado' => 'éxito',
                 'mensaje' => 'Usuario creado con éxito',
                 'usuario' => $usuario,
             ]);
         } catch (\Exception $e) {
-            Log::error('Error al crear usuario:', ['message' => $e->getMessage()]);
-            return response()->json([
-                'estado' => 'error',
-                'mensaje' => 'Error al crear el usuario',
-            ], 500);
+            Log::error('Error al crear usuario: ' . $e->getMessage());
+            return response()->json(['estado' => 'error', 'mensaje' => 'Error al crear el usuario'], 500);
         }
     }
 
-    public function role()
-    {
-        $roles = Role::all();
-        return response()->json($roles);
-    }
-
-    public function getUsers()
-    {
-        $users = User::all();
-        return response()->json($users);
-    }
-
-    public function getUserDelete($id)
-    {
-        $user = User::find($id);
-        if (!$user) {
-            return response()->json([
-                'estado' => 'error',
-                'mensaje' => 'Usuario no encontrado',
-            ], 404);
-        }
-        $user->delete();
-        return response()->json([
-            'estado' => 'éxito',
-            'mensaje' => 'Usuario eliminado con éxito',
-        ]);
-    }
-    public function getuserById($id)
-    {
-        $user = User::find($id);
-        if (!$user) {
-            return response()->json([
-                'estado' => 'error',
-                'mensaje' => 'Usuario no encontrado',
-            ], 404);
-        }
-        return response()->json([
-            'estado' => 'éxito',
-            'usuario' => $user,
-        ]);
-    }
-
+    /** =======================
+     *     ACTUALIZAR USUARIO
+     *  ======================= */
     public function getUserUpdate(Request $request, $id)
     {
         $user = User::find($id);
         if (!$user) {
-            return response()->json([
-                'estado' => 'error',
-                'mensaje' => 'Usuario no encontrado',
-            ], 404);
+            return response()->json(['estado' => 'error', 'mensaje' => 'Usuario no encontrado'], 404);
         }
 
         $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255',
-            'role' => 'required',
-            'factory' => 'required|array', 
+            'name'          => 'required|string|max:255',
+            'email'         => "required|email|max:255|unique:users,email,$id",
+            'role'          => 'required|string',
+            'factory'       => 'required|array',
+            'signature_bpm' => "required|string|max:255|unique:users,signature_bpm,$id",
         ]);
 
-        $user->name = $request->name;
-        $user->email = $request->email;
-        $user->role = $request->role;
-        $user->factory = $request->factory;
-
-        $user->save();
+        $user->update([
+            'name'          => $request->name,
+            'email'         => $request->email,
+            'role'          => $request->role,
+            'factory'       => $request->factory,
+            'signature_bpm' => $request->signature_bpm,
+        ]);
 
         return response()->json([
             'estado' => 'éxito',
             'mensaje' => 'Usuario actualizado con éxito',
             'usuario' => $user,
+        ]);
+    }
+
+    /** =======================
+     *     ELIMINAR USUARIO
+     *  ======================= */
+    public function getUserDelete($id)
+    {
+        $user = User::find($id);
+        if (!$user) {
+            return response()->json(['estado' => 'error', 'mensaje' => 'Usuario no encontrado'], 404);
+        }
+
+        $user->delete();
+        return response()->json(['estado' => 'éxito', 'mensaje' => 'Usuario eliminado con éxito']);
+    }
+
+    /** =======================
+     *       USUARIOS VARIOS
+     *  ======================= */
+    public function getUsers()
+    {
+        return response()->json(User::all());
+    }
+
+    public function getuserById($id)
+    {
+        $user = User::find($id);
+        if (!$user) {
+            return response()->json(['estado' => 'error', 'mensaje' => 'Usuario no encontrado'], 404);
+        }
+        return response()->json(['estado' => 'éxito', 'usuario' => $user]);
+    }
+
+    public function getUserByEmail($email)
+    {
+        $user = User::where('email', $email)->first();
+        if (!$user) {
+            return response()->json(['estado' => 'error', 'mensaje' => 'Correo electrónico no encontrado'], 404);
+        }
+        return response()->json(['estado' => 'éxito', 'usuario' => $user]);
+    }
+
+    public function role()
+    {
+        return response()->json(Role::all());
+    }
+
+    /** =======================
+     *     MANEJO DE IMAGENES
+     *  ======================= */
+    public function uploadUserImage(Request $request)
+    {
+        $request->validate([
+            'image' => 'required|image|mimes:jpg,jpeg,png,gif|max:2048',
+        ]);
+
+        $imagePath = $request->file('image')->store('images', 'public');
+        $imageUrl = env('APP_URL') . '/storage/' . $imagePath;
+
+        return response()->json([
+            'estado' => 'éxito',
+            'mensaje' => 'Imagen subida correctamente',
+            'image_url' => $imageUrl,
+            'image_path' => $imagePath,
+        ]);
+    }
+
+    public function EditImage(Request $request, $email)
+    {
+        $user = User::where('email', $email)->first();
+        if (!$user) {
+            return response()->json(['mensaje' => 'Usuario no encontrado'], 404);
+        }
+
+        $request->validate([
+            'image' => 'required|image|mimes:jpg,jpeg,png,gif|max:2048',
+        ]);
+
+        if ($user->image) {
+            $oldImagePath = public_path('storage/' . $user->image);
+            if (file_exists($oldImagePath)) {
+                unlink($oldImagePath);
+            }
+        }
+
+        $imagePath = $request->file('image')->store('images', 'public');
+        $user->image = $imagePath;
+        $user->save();
+
+        return response()->json([
+            'mensaje' => 'Imagen actualizada correctamente',
+            'image' => asset('storage/' . $imagePath),
         ]);
     }
 }
