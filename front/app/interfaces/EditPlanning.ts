@@ -158,3 +158,55 @@ export interface DurationItem {
   multiplicacion?: string;
   resultado: number;
 }
+
+
+///////
+export interface RelatedEntity {
+  id: number;
+  name: string;
+}
+
+export interface ActivityDetailFetch {
+  id: number;
+  name: string;
+}
+
+export interface PlanFetch {
+  adaptation_id: number;
+  bom: string | null;
+  client_id: number;
+  factory_id: number;
+  codart: string;
+  created_at: string;
+  deliveryDate: string;
+ factory: { id: number; name: string } // 👈 eso es un objeto, no un string
+  healthRegistration: string;
+  id: number;
+  ingredients: string;
+  line: number[];
+  lot: string;
+  machine: number[];
+  users: number[];
+  master: string;
+  orderNumber: string;
+  number_order: string;
+  quantityToProduce: number;
+  resource: string | null;
+  status_dates: string;
+  duration_breakdown: string;
+
+  // Opcionales
+  activities?: ActivityDetail[];
+  activitiesDetails?: ActivityDetail[];
+  lineActivities?: Record<number, number[]>;
+}
+
+export interface EnrichedPlan extends Omit<PlanFetch, 'factory' | 'users' | 'machine' | 'line'> {
+  client: RelatedEntity | null;
+  adaptation: RelatedEntity | null;
+  maestra: RelatedEntity | null;
+  factory: RelatedEntity | null;
+  machines: RelatedEntity[];
+  users: RelatedEntity[];
+  lines: RelatedEntity[];
+}

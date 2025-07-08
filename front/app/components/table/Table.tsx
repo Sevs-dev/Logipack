@@ -13,10 +13,12 @@ type TableProps<T extends { id: number }> = {
     onDelete?: (id: number) => void;
     onTerciario?: (id: number) => void;
     onHistory?: (id: number) => void;
+    onPDF?: (id: number) => void;
     showDeleteButton?: boolean;
     showEditButton?: boolean;
     showTerciarioButton?: boolean;
     showHistory?: boolean;
+    showPDF?: boolean;
 };
 
 const Header = ({
@@ -65,10 +67,12 @@ function Table<T extends { id: number }>({
     onDelete,
     onTerciario,
     onHistory,
+    onPDF,
     showDeleteButton = true,
     showEditButton = true,
     showTerciarioButton = true,
     showHistory = true,
+    showPDF = true,
 }: TableProps<T>) {
     const [sortColumn, setSortColumn] = useState("id");
     const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
@@ -220,6 +224,9 @@ function Table<T extends { id: number }>({
                                             {showHistory && onHistory && (
                                                 <Button onClick={() => onHistory(row.id)} variant="history" />
                                             )}
+                                            {showPDF && onPDF && (
+                                                <Button onClick={() => onPDF(row.id)} variant="pdf" />
+                                            )}
                                         </td>
                                     </tr>
                                 ))}
@@ -259,6 +266,9 @@ function Table<T extends { id: number }>({
                                     )}
                                     {showHistory && onHistory && (
                                         <Button onClick={() => onHistory(row.id)} variant="history" />
+                                    )}
+                                    {showPDF && onHistory && (
+                                        <Button onClick={() => onHistory(row.id)} variant="pdf" />
                                     )}
                                 </div>
                             </div>

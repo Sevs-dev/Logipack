@@ -26,6 +26,11 @@ export default function NewActivity({ canEdit = false, canView = false }: Create
         "Selección múltiple": { type: "checkbox", options: ["Opción A", "Opción B"] },
         Firma: { type: "signature" },
         Informativo: { type: "text", placeholder: "Escribe aquí..." },
+        "Medir temperatura": {
+            type: "temperature",
+            min: 35,
+            max: 42,
+        },
     };
     const [modalOpen, setModalOpen] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
@@ -185,9 +190,13 @@ export default function NewActivity({ canEdit = false, canView = false }: Create
         try {
             const data = await getActivitieId(id);
             const parsed = typeof data.config === "string" ? JSON.parse(data.config) : data.config;
-            const activityType = Object.keys(activityTypes).find(
-                (key) => activityTypes[key].type === parsed.type
-            ) || "Texto corto";
+            const activityType = Object.keys(activityTypes).find((key) => {
+                const def = activityTypes[key];
+                if (def.type !== parsed.type) return false;
+                if (def.type === "temperature") return true;
+                if (parsed.type === "text" && parsed.min && parsed.max) return key === "Medir temperatura";
+                return JSON.stringify(def) === JSON.stringify(parsed);
+            }) || "Texto corto";
             setEditingId(data.id);
             setFormData({
                 description: data.description,
@@ -306,40 +315,36 @@ export default function NewActivity({ canEdit = false, canView = false }: Create
                     }
 
                     {/* Contenedor para los tres elementos en fila */}
-                    <div className="mt-4 flex flex-wrap justify-center gap-6">
-                        {/* Contenedor para "Requerido" */}
-                        <div className="flex items-center gap-3">
+                    <div className="mt-4 flex flex-wrap items-center justify-center gap-6">
+                        {/* Requerido */}
+                        <div className="flex items-center gap-2">
                             <label htmlFor="binding" className="text-sm text-black">Requerido</label>
                             <input
                                 id="binding"
                                 type="checkbox"
                                 checked={formData.binding}
-                                onChange={(e) =>
-                                    setFormData({ ...formData, binding: e.target.checked })
-                                }
+                                onChange={(e) => setFormData({ ...formData, binding: e.target.checked })}
                                 className="h-5 w-5 text-blue-500 rounded-md focus:ring-2 focus:ring-blue-500"
                                 disabled={!canEdit && !isEditing}
                             />
                         </div>
 
-                        {/* Contenedor para "Medir Tiempo" */}
-                        <div className="flex items-center gap-3">
+                        {/* Medir Tiempo */}
+                        <div className="flex items-center gap-2">
                             <label htmlFor="has_time" className="text-sm text-black">Medir Tiempo</label>
                             <input
                                 id="has_time"
                                 type="checkbox"
                                 checked={formData.has_time}
-                                onChange={(e) =>
-                                    setFormData({ ...formData, has_time: e.target.checked })
-                                }
+                                onChange={(e) => setFormData({ ...formData, has_time: e.target.checked })}
                                 className="h-5 w-5 text-blue-500 rounded-md focus:ring-2 focus:ring-blue-500"
                                 disabled={!canEdit && !isEditing}
                             />
                         </div>
 
-                        {/* Campo de duración solo visible si 'Tiempo' es true */}
+                        {/* Duración */}
                         {formData.has_time && (
-                            <div className="flex items-center gap-3">
+                            <div className="flex items-center gap-2">
                                 <label htmlFor="duration" className="text-sm text-black flex items-center gap-1">
                                     Duración
                                     <InfoPopover
@@ -351,7 +356,7 @@ export default function NewActivity({ canEdit = false, canView = false }: Create
                                         }
                                     />
                                 </label>
-                                <div className="relative">
+                                <div className="relative flex items-center">
                                     <Clock className="absolute left-3 top-2.5 w-4 h-4 text-gray-500" />
                                     <input
                                         id="duration"
@@ -366,18 +371,59 @@ export default function NewActivity({ canEdit = false, canView = false }: Create
                                                 duration: isNaN(val) ? 0 : Math.max(0, val),
                                             });
                                         }}
-                                        placeholder="Duración (en minutos)"
-                                        className="w-full max-w-[350px] border p-2 pl-9 rounded-md text-black focus:ring-2 focus:ring-blue-500"
+                                        placeholder="Minutos"
+                                        className="w-[140px] border p-2 pl-9 rounded-md text-black focus:ring-2 focus:ring-blue-500"
                                         disabled={!canEdit && !isEditing}
                                     />
-
                                 </div>
-                                <span className="w-full border border-gray-300 rounded-lg shadow-sm py-3 px-3 text-gray-800 bg-gray-50 mt-1 text-center">
-                                    min - ({getFormattedDuration(Number(formData.duration))})
+                                <span className="border border-gray-300 rounded-lg py-1.5 px-3 text-gray-800 bg-gray-50 text-sm h-[40px] flex items-center">
+                                    ({getFormattedDuration(Number(formData.duration))})
                                 </span>
                             </div>
                         )}
+
+                        {/* Rango de temperatura */}
+                        {selectedType === "Medir temperatura" && (
+                            <div className="flex items-center gap-2">
+                                <label htmlFor="duration" className="text-sm text-black flex items-center gap-1">
+                                    Rangos de la temperatura a medir
+                                    <InfoPopover
+                                        content={
+                                            <>
+                                                Establece el rango de temperatura permitida para esta actividad.<br />
+                                                Puedes usar decimales (por ejemplo: <code>36.5</code> °C).<br />
+                                                El valor mínimo debe ser menor que el máximo.
+                                            </>
+                                        }
+                                    />
+                                </label>
+
+                                <input
+                                    type="number"
+                                    step="0.1"
+                                    value={parsedConfig?.min ?? ""}
+                                    onChange={(e) => {
+                                        const updatedConfig = { ...parsedConfig, min: parseFloat(e.target.value) };
+                                        setFormData({ ...formData, config: JSON.stringify(updatedConfig, null, 2) });
+                                    }}
+                                    placeholder="Mín °C"
+                                    className="w-[100px] border p-2 rounded-md text-black text-center"
+                                />
+                                <input
+                                    type="number"
+                                    step="0.1"
+                                    value={parsedConfig?.max ?? ""}
+                                    onChange={(e) => {
+                                        const updatedConfig = { ...parsedConfig, max: parseFloat(e.target.value) };
+                                        setFormData({ ...formData, config: JSON.stringify(updatedConfig, null, 2) });
+                                    }}
+                                    placeholder="Máx °C"
+                                    className="w-[100px] border p-2 rounded-md text-black text-center"
+                                />
+                            </div>
+                        )}
                     </div>
+
 
                     {/* Botones */}
                     <div className="flex justify-center gap-4 mt-6">

@@ -39,7 +39,6 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
     const [selectedMachines, setSelectedMachines] = useState<MachinePlanning[]>([]);
     const [selectedUsers, setSelectedUsers] = useState<UserPlaning[]>([]);
 
-    // Extraer fetchAll para poder reutilizarlo
     const fetchAll = useCallback(async () => {
         try {
             const [planningData, factoriesData, manuData, machineData, userData] = await Promise.all([
@@ -49,22 +48,27 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
                 getMachin(),
                 getUsers(),
             ]);
-
+            const clientCache = new Map<number, { name: string }>();
             const updatedPlanning = await Promise.all(
                 planningData.map(async (plan: Plan) => {
-                    const clientData = await getClientsId(plan.client_id);
-                    return { ...plan, client_name: clientData.name };
+                    if (!clientCache.has(plan.client_id)) {
+                        const clientData = await getClientsId(plan.client_id);
+                        clientCache.set(plan.client_id, clientData);
+                    }
+                    return {
+                        ...plan,
+                        client_name: clientCache.get(plan.client_id)!.name,
+                    };
                 })
             );
-
             setPlanning(updatedPlanning);
             setFactories(factoriesData);
             setManu(manuData);
             setMachine(machineData);
-            setUser(userData)
-        } catch {
+            setUser(userData);
+        } catch (error) {
             showError("Error cargando datos iniciales");
-            console.error("Error cargando datos iniciales en fetchAll");
+            console.error("Error en fetchAll:", error);
         }
     }, []);
 
@@ -470,6 +474,10 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
     const removerUser = (id: number) => {
         setSelectedUsers(selectedUsers.filter(m => m.id !== id));
     };
+
+    const handlePDF = useCallback((id: number) => {
+        window.open(`/pages/pdfGeneral/${id}`,);
+    }, []);
 
     return (
         <div>
@@ -947,6 +955,7 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
                 showDeleteButton={false}
                 onEdit={handleEdit}
                 onTerciario={handleTerciario}
+                onPDF={handlePDF}
             />
         </div>
     );

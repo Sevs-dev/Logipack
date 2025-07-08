@@ -4,8 +4,10 @@ import 'dayjs/locale/es';
 import isBetween from 'dayjs/plugin/isBetween';
 import isoWeek from 'dayjs/plugin/isoWeek';
 import { getPlanning } from "../../services/planing/planingServices";
+import { getClients } from "@/app/services/userDash/clientServices";
 import { DynamicIcon } from "../dinamicSelect/DynamicIcon";
 import Button from "../buttons/buttons";
+import DateLoader from '@/app/components/loader/DateLoader';
 import Text from "../text/Text";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -23,6 +25,7 @@ interface PlanningItem {
   codart: string;
   icon: string;
   number_order: string;
+  client_id: number;
 }
 
 interface Event extends Omit<PlanningItem, 'start_date' | 'end_date' | 'duration' | 'codart'> {
@@ -30,6 +33,9 @@ interface Event extends Omit<PlanningItem, 'start_date' | 'end_date' | 'duration
   endDate: dayjs.Dayjs;
   minutes: number;
   title: string;
+  codart: string;
+  client_id: number;
+  clientName?: string;
 }
 
 // Constantes
@@ -89,18 +95,33 @@ const CalendarGantt: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedDate, setSelectedDate] = useState<dayjs.Dayjs | null>(null);
+  const [currentEventIndex, setCurrentEventIndex] = useState<number>(0);
 
   // Cargar datos
   useEffect(() => {
     const fetchData = async () => {
       try {
         setIsLoading(true);
-        const data: PlanningItem[] = await getPlanning();
-        const mappedEvents = parsePlanningData(data);
+        // Use a function that fetches all clients, e.g., getClientsList (adjust import if needed)
+        const [planningData, clientData] = await Promise.all([
+          getPlanning(),
+          getClients(),
+        ]);
+
+        const clientMap = new Map(clientData.map(c => [c.id, c]));
+
+        const mappedEvents = parsePlanningData(planningData).map(event => {
+          const client = clientMap.get(event.client_id);
+          return {
+            ...event,
+            clientName: client?.name || "Cliente desconocido",
+          };
+        });
+
         setEvents(mappedEvents);
         setError(null);
       } catch (err) {
-        console.error("Error al cargar el planning:", err);
+        console.error("Error al cargar planning o clientes:", err);
         setError("No se pudieron cargar los eventos. Inténtalo más tarde.");
       } finally {
         setIsLoading(false);
@@ -110,10 +131,63 @@ const CalendarGantt: React.FC = () => {
     fetchData();
   }, []);
 
+  //Filtros
+  const [filters, setFilters] = useState({
+    numberOrder: '',
+    codart: '',
+    minDuration: null as number | null,
+    clientName: '',
+  });
+
+  const filteredEvents = useMemo(() => {
+    return events.filter((event) => {
+      const matchOrder = filters.numberOrder === '' || event.title.includes(filters.numberOrder);
+      const matchCodart = filters.codart === '' || event.codart === filters.codart;
+      const matchDuration = filters.minDuration == null || event.minutes >= filters.minDuration;
+      const matchClient = filters.clientName === '' || event.clientName?.toLowerCase().includes(filters.clientName.toLowerCase());
+
+      return matchOrder && matchCodart && matchDuration && matchClient;
+    });
+  }, [events, filters]);
+
+  useEffect(() => {
+    if (filteredEvents.length > 0) {
+      const firstEventDate = filteredEvents[0].startDate.startOf('isoWeek');
+      if (!firstEventDate.isSame(currentWeek, 'day')) {
+        setCurrentWeek(firstEventDate);
+      }
+    }
+  }, [filteredEvents]);
+
+  useEffect(() => {
+    if (!selectedEvent) return;
+    const index = filteredEvents.findIndex(ev => ev.id === selectedEvent.id);
+    if (index !== -1) {
+      setCurrentEventIndex(index);
+    }
+  }, [selectedEvent, filteredEvents]);
+
   // Eventos expandidos por día
   const expandedEvents = useMemo(() => {
-    return events.flatMap(splitEventByDay);
-  }, [events]);
+    return filteredEvents.flatMap(splitEventByDay);
+  }, [filteredEvents]);
+
+  const clientEvents = useMemo(() => {
+    if (!selectedEvent) return [];
+    return filteredEvents.filter(ev => ev.client_id === selectedEvent.client_id);
+  }, [selectedEvent, filteredEvents]);
+
+  const goToNextEvent = () => {
+    if (clientEvents.length === 0) return;
+    setCurrentEventIndex(prev => (prev + 1) % clientEvents.length);
+    setSelectedEvent(clientEvents[(currentEventIndex + 1) % clientEvents.length]);
+  };
+
+  const goToPreviousEvent = () => {
+    if (clientEvents.length === 0) return;
+    setCurrentEventIndex(prev => (prev - 1 + clientEvents.length) % clientEvents.length);
+    setSelectedEvent(clientEvents[(currentEventIndex - 1 + clientEvents.length) % clientEvents.length]);
+  };
 
   // Navegación de semanas
   const goToPreviousWeek = useCallback(() => {
@@ -129,48 +203,32 @@ const CalendarGantt: React.FC = () => {
   }, []);
 
   const getFormattedDuration = (raw: number): string => {
-        const minutes = Math.floor(raw);
-        const seconds = Math.round((raw % 1) * 100); // <-- parte decimal como "segundos"
-        const totalSeconds = minutes * 60 + seconds;
-        if (totalSeconds < 60) return `${totalSeconds} seg`;
-        const days = Math.floor(totalSeconds / 86400);
-        const hours = Math.floor((totalSeconds % 86400) / 3600);
-        const mins = Math.floor((totalSeconds % 3600) / 60);
-        const secs = totalSeconds % 60;
-        const parts: string[] = [];
-        const pushPart = (value: number, singular: string, plural: string = singular + 's') => {
-            if (value > 0) parts.push(`${value} ${value === 1 ? singular : plural}`);
-        };
-        pushPart(days, 'día');
-        pushPart(hours, 'hora');
-        pushPart(mins, 'min', 'min');
-        const shouldShowSeconds = totalSeconds < 3600 && secs > 0 && days === 0 && hours === 0;
-        if (shouldShowSeconds) {
-            pushPart(secs, 'seg', 'seg');
-        }
-        return parts.join(' ');
+    const minutes = Math.floor(raw);
+    const seconds = Math.round((raw % 1) * 100); // <-- parte decimal como "segundos"
+    const totalSeconds = minutes * 60 + seconds;
+    if (totalSeconds < 60) return `${totalSeconds} seg`;
+    const days = Math.floor(totalSeconds / 86400);
+    const hours = Math.floor((totalSeconds % 86400) / 3600);
+    const mins = Math.floor((totalSeconds % 3600) / 60);
+    const secs = totalSeconds % 60;
+    const parts: string[] = [];
+    const pushPart = (value: number, singular: string, plural: string = singular + 's') => {
+      if (value > 0) parts.push(`${value} ${value === 1 ? singular : plural}`);
     };
+    pushPart(days, 'día');
+    pushPart(hours, 'hora');
+    pushPart(mins, 'min', 'min');
+    const shouldShowSeconds = totalSeconds < 3600 && secs > 0 && days === 0 && hours === 0;
+    if (shouldShowSeconds) {
+      pushPart(secs, 'seg', 'seg');
+    }
+    return parts.join(' ');
+  };
 
   // Filtrar eventos para una celda específica
   const getEventsForCell = useCallback((dayIndex: number, hour: number): Event[] => {
-    const baseTime = currentWeek.add(dayIndex, 'day').hour(hour).minute(0);
+    const baseTime = currentWeek.clone().add(dayIndex, 'day').hour(hour).minute(0);
 
-    // Filtramos solo los eventos para el día seleccionado
-    if (selectedDate) {
-      const startOfDay = selectedDate.startOf('day');
-      const endOfDay = selectedDate.endOf('day');
-
-      return expandedEvents.filter(e => {
-        return dayjs(e.startDate).isBetween(startOfDay, endOfDay, 'minute', '[]') &&
-          (
-            e.startDate.hour() === hour ||
-            (e.startDate.hour() < hour && e.endDate.hour() > hour) ||
-            (e.startDate.hour() === hour && e.startDate.minute() > 0)
-          );
-      });
-    }
-
-    // Si no se seleccionó una fecha, retornar todos los eventos
     return expandedEvents.filter(e => {
       return dayjs(e.startDate).isSame(baseTime, 'day') &&
         (
@@ -179,7 +237,7 @@ const CalendarGantt: React.FC = () => {
           (e.startDate.hour() === hour && e.startDate.minute() > 0)
         );
     });
-  }, [currentWeek, expandedEvents, selectedDate]);
+  }, [currentWeek, expandedEvents]);
 
   function assignLanes(events: Event[]) {
     const sorted = [...events].sort((a, b) => a.startDate.valueOf() - b.startDate.valueOf());
@@ -262,87 +320,146 @@ const CalendarGantt: React.FC = () => {
     );
   }, [getEventsForCell, currentWeek]);
 
+  if (isLoading) {
+    return (
+      <DateLoader message="Generando Calendario..." backgroundColor="#242424" color="#ffff" />
+    );
+  }
   // Renderizado principal
   return (
-    <div className="p-6 max-w-6xl mx-auto bg-gradient-to-br from-blue-50 to-indigo-100 rounded-xl shadow-2xl">
-      <div className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4 sm:gap-6">
-        <div className="flex items-center space-x-2 sm:space-x-3">
-          <button
-            onClick={goToPreviousWeek}
-            className="p-2 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 active:scale-95 transition-all duration-200 shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-opacity-50 focus:ring-offset-2"
-            aria-label="Semana anterior"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-              <path fillRule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clipRule="evenodd" />
-            </svg>
-          </button>
-          <button
-            onClick={goToToday}
-            className="px-3 py-1.5 text-sm bg-white text-indigo-700 border border-indigo-200 rounded-lg hover:bg-indigo-50 hover:border-indigo-300 active:bg-indigo-100 transition-all duration-200 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-opacity-50 focus:ring-offset-2"
-          >
-            Hoy
-          </button>
-          <button
-            onClick={goToNextWeek}
-            className="p-2 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 active:scale-95 transition-all duration-200 shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-opacity-50 focus:ring-offset-2"
-            aria-label="Semana siguiente"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-              <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
-            </svg>
-          </button>
-        </div>
-        <div className="relative w-full sm:w-auto sm:min-w-[200px] flex-shrink-0">
-          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
-              <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" />
-            </svg>
+    <div className="w-full p-8 bg-white rounded-3xl shadow-xl border border-gray-200">
+      <div className="flex flex-col gap-8 mb-8">
+        {/* Navegación y fecha */}
+        <div className="flex flex-col sm:flex-row justify-between items-center gap-6">
+          {/* Botones de navegación */}
+          <div className="flex items-center gap-2">
+            <button
+              onClick={goToPreviousWeek}
+              className="p-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-full shadow transition"
+              aria-label="Semana anterior"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clipRule="evenodd" />
+              </svg>
+            </button>
+            <button
+              onClick={goToToday}
+              className="text-sm px-5 py-2 bg-gray-50 border border-gray-200 rounded-full shadow hover:bg-gray-100 hover:text-blue-700 transition text-blue-700 font-semibold"
+            >
+              Hoy
+            </button>
+            <button
+              onClick={goToNextWeek}
+              className="p-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-full shadow transition"
+              aria-label="Semana siguiente"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
+              </svg>
+            </button>
           </div>
-          <input
-            type="date"
-            className="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-gray-900 placeholder-gray-400 transition-all duration-200 bg-white"
-            value={selectedDate ? selectedDate.format('YYYY-MM-DD') : ''}
-            onChange={e => {
-              const value = e.target.value;
-              if (!value) {
-                const today = dayjs();
-                setSelectedDate(null); // vacía el input
-                setCurrentWeek(today.startOf('week'));
-              } else {
-                const newDate = dayjs(value);
-                setSelectedDate(newDate);
-                setCurrentWeek(newDate.startOf('week'));
-              }
-            }}
-          />
+          {/* Selector de fecha */}
+          <div className="relative w-full sm:w-auto sm:min-w-[220px]">
+            <input
+              type="date"
+              className="w-full pl-4 pr-4 py-2 border border-gray-200 rounded-full shadow text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-400 transition bg-white"
+              value={selectedDate ? selectedDate.format('YYYY-MM-DD') : ''}
+              onChange={(e) => {
+                const value = e.target.value;
+                if (!value) {
+                  setSelectedDate(null);
+                  setCurrentWeek(dayjs().startOf('isoWeek'));
+                } else {
+                  const newDate = dayjs(value);
+                  setSelectedDate(newDate);
+                  setCurrentWeek(newDate.startOf('isoWeek'));
+                }
+              }}
+            />
+          </div>
         </div>
-        <h2 className="text-2xl font-bold text-indigo-900 text-center sm:text-left sm:w-full sm:order-3">
-          Semana del {currentWeek.format('DD/MM/YYYY')} - {currentWeek.add(6, 'day').format('DD/MM/YYYY')}
+        {/* Filtros */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+          {/* Número de orden */}
+          <div className="flex flex-col items-center text-center bg-gray-50 rounded-xl shadow p-3 border border-gray-100">
+            <label className="mb-1 text-xs font-semibold text-gray-700">N° Orden</label>
+            <input
+              type="text"
+              placeholder="Ej: 1234"
+              value={filters.numberOrder}
+              onChange={(e) => setFilters({ ...filters, numberOrder: e.target.value })}
+              className="w-full px-3 py-2 border border-gray-200 rounded-lg shadow-sm text-sm text-gray-700 placeholder-gray-300 focus:ring-2 focus:ring-blue-200"
+            />
+          </div>
+          {/* Línea */}
+          <div className="flex flex-col items-center text-center bg-gray-50 rounded-xl shadow p-3 border border-gray-100">
+            <label className="mb-1 text-xs font-semibold text-gray-700">Línea</label>
+            <select
+              value={filters.codart}
+              onChange={(e) => setFilters({ ...filters, codart: e.target.value })}
+              className="w-full px-3 py-2 border border-gray-200 rounded-lg shadow-sm text-sm text-gray-700 bg-white focus:ring-2 focus:ring-blue-200"
+            >
+              <option value="">Todas</option>
+              {[...new Set(events.map(e => e.codart))].map(cod => (
+                <option key={cod} value={cod}>{cod}</option>
+              ))}
+            </select>
+          </div>
+          {/* Duración mínima */}
+          <div className="flex flex-col items-center text-center bg-gray-50 rounded-xl shadow p-3 border border-gray-100">
+            <label className="mb-1 text-xs font-semibold text-gray-700">Duración (min)</label>
+            <input
+              type="number"
+              placeholder="Ej: 30"
+              value={filters.minDuration ?? ""}
+              onChange={(e) => setFilters({ ...filters, minDuration: Number(e.target.value) })}
+              className="w-full px-3 py-2 border border-gray-200 rounded-lg shadow-sm text-sm text-gray-700 placeholder-gray-300 focus:ring-2 focus:ring-blue-200"
+            />
+          </div>
+          {/* Cliente */}
+          <div className="flex flex-col items-center text-center bg-gray-50 rounded-xl shadow p-3 border border-gray-100">
+            <label className="mb-1 text-xs font-semibold text-gray-700">Cliente</label>
+            <select
+              value={filters.clientName}
+              onChange={(e) => setFilters({ ...filters, clientName: e.target.value })}
+              className="w-full px-3 py-2 border border-gray-200 rounded-lg shadow-sm text-sm text-gray-700 bg-white focus:ring-2 focus:ring-blue-200"
+            >
+              <option value="">Todos</option>
+              {[...new Set(events.map(e => e.clientName))].map(client => (
+                <option key={client} value={client}>{client}</option>
+              ))}
+            </select>
+          </div>
+          {/* Botón de limpiar */}
+          <div className="flex flex-col items-center text-center justify-end bg-transparent">
+            <label className="mb-1 text-xs font-medium text-transparent">Limpiar</label>
+            <button
+              onClick={() => setFilters({ numberOrder: "", codart: "", minDuration: null, clientName: "" })}
+              className="w-full text-sm px-3 py-2 bg-gray-100 text-gray-500 rounded-xl hover:bg-gray-200 shadow-sm transition font-semibold"
+            >
+              Limpiar filtros
+            </button>
+          </div>
+        </div>
+        {/* Rango de semana */}
+        <h2 className="text-xl font-bold text-gray-900 text-center sm:text-center mt-4 tracking-tight">
+          Semana del <span className="text-blue-600">{currentWeek.format('DD/MM/YYYY')}</span> - <span className="text-blue-600">{currentWeek.add(6, 'day').format('DD/MM/YYYY')}</span>
         </h2>
       </div>
-
-      {/* Estado de carga */}
-      {isLoading && (
-        <div className="flex justify-center py-10">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
-        </div>
-      )}
-
       {/* Mensaje de error */}
       {error && (
-        <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-4" role="alert">
+        <div className="bg-red-50 border-l-4 border-red-400 text-red-700 p-4 mb-4 rounded-xl shadow">
           <p>{error}</p>
         </div>
       )}
-
       {/* Tabla */}
-      <div className="overflow-x-auto border-2 border-indigo-200 rounded-xl shadow-inner bg-white">
+      <div className="overflow-x-auto border border-gray-200 rounded-2xl shadow-inner bg-white mt-2">
         <table className="min-w-full table-fixed border-collapse">
-          <thead className="bg-gradient-to-r from-indigo-500 to-purple-600 text-white sticky top-0 z-10">
+          <thead className="bg-gradient-to-r from-blue-500 to-blue-400 text-white sticky top-0 z-10 shadow">
             <tr>
-              <th className="w-24 border border-gray-600 px-2 text-left">Día/Hora</th>
+              <th className="w-28 border border-blue-600 px-2 text-left font-semibold tracking-wide">Día/Hora</th>
               {HOURS.map(hora => (
-                <th key={hora} className="w-20 border border-gray-600 text-center">
+                <th key={hora} className="w-20 border border-blue-600 text-center font-semibold">
                   {hora}:00
                 </th>
               ))}
@@ -352,13 +469,16 @@ const CalendarGantt: React.FC = () => {
             {WEEK_DAYS.map((dia, dayIndex) => {
               const fecha = currentWeek.add(dayIndex, 'day');
               const numeroDia = fecha.format('D');
-
+              const isSelected = selectedDate && fecha.isSame(selectedDate, 'day');
               return (
                 <tr key={dayIndex} className={dayIndex % 2 === 0 ? 'bg-gray-50' : 'bg-white'}>
-                  <td className="border border-gray-300 px-2 font-semibold text-gray-800 sticky left-0 bg-white z-10 text-center">
+                  <td
+                    className={`border border-gray-200 px-2 font-semibold text-gray-800 sticky left-0 z-10 text-center align-middle ${isSelected ? 'bg-blue-50 shadow-inner' : 'bg-white'
+                      }`}
+                  >
                     <div>
-                      {dia}
-                      <div className="text-blue-500 font-normal">{numeroDia}</div>
+                      <span className="block text-base">{dia}</span>
+                      <span className="text-blue-600 font-bold text-lg">{numeroDia}</span>
                     </div>
                   </td>
                   {HOURS.map(hora => renderCell(dayIndex, hora))}
@@ -368,34 +488,32 @@ const CalendarGantt: React.FC = () => {
           </tbody>
         </table>
       </div>
-
       {/* Modal */}
       {selectedEvent && (
         <AnimatePresence>
           <motion.div
-            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
           >
             <motion.div
-              initial={{ y: 40, opacity: 0, scale: 0.95 }}
+              initial={{ y: 40, opacity: 0, scale: 0.97 }}
               animate={{ y: 0, opacity: 1, scale: 1 }}
-              exit={{ y: 40, opacity: 0, scale: 0.95 }}
-              transition={{ duration: 0.4, ease: "easeOut" }}
-              className="relative w-full max-w-xl rounded-3xl border border-white/20 bg-white/70 dark:bg-zinc-900/60 backdrop-blur-2xl shadow-2xl overflow-hidden"
+              exit={{ y: 40, opacity: 0, scale: 0.97 }}
+              transition={{ duration: 0.3, ease: "easeOut" }}
+              className="relative w-full max-w-lg rounded-2xl border border-gray-200 bg-white shadow-2xl overflow-hidden"
             >
               {/* Botón cerrar */}
               <button
                 onClick={() => setSelectedEvent(null)}
-                className="absolute top-4 right-4 bg-white/80 dark:bg-zinc-800/70 hover:bg-white hover:dark:bg-zinc-700 text-zinc-700 dark:text-zinc-200 p-2 rounded-full shadow transition-colors"
+                className="absolute top-4 right-4 bg-white hover:bg-gray-100 text-gray-500 p-2 rounded-full shadow transition-colors"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
-
-              <div className="p-6 sm:p-8 space-y-8">
+              <div className="p-8 space-y-8">
                 {/* Header con animación */}
                 <motion.div
                   initial={{ opacity: 0, x: -10 }}
@@ -403,48 +521,42 @@ const CalendarGantt: React.FC = () => {
                   transition={{ delay: 0.1 }}
                   className="flex items-center gap-3"
                 >
-                  <Text type="title" color="text-white">{selectedEvent.title}</Text>
+                  <Text type="title" color="text-gray-900">{selectedEvent.title}</Text>
                 </motion.div>
-
                 {/* Detalles */}
                 <motion.div
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.2 }}
-                  className="rounded-2xl border border-indigo-200 dark:border-indigo-300/20 bg-white/50 dark:bg-indigo-900/30 backdrop-blur-md p-5 shadow-inner"
+                  className="rounded-xl border border-gray-100 bg-gray-50 p-6 shadow-inner"
                 >
-                  <div className="text-indigo-700 dark:text-indigo-300 font-medium text-sm flex items-center mb-3">
+                  <div className="text-blue-700 font-semibold text-base flex items-center mb-3">
                     <svg className="h-5 w-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
                       <path d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" />
                     </svg>
                     Detalles del evento
                   </div>
-                  <div className="space-y-3 text-sm text-zinc-700 dark:text-zinc-200">
-                    <div className="flex justify-between"><span className="text-white">Inicio:</span><span>{selectedEvent.startDate.format('DD/MM/YYYY HH:mm')}</span></div>
-                    <div className="flex justify-between"><span className="text-white">Fin:</span><span>{selectedEvent.endDate.format('DD/MM/YYYY HH:mm')}</span></div>
-                    <div className="flex justify-between"><span className="text-white">Duración:</span><span>{getFormattedDuration(Number(selectedEvent.minutes))} minutos</span></div>
+                  <div className="space-y-3 text-base text-gray-900">
+                    <div className="flex justify-between"><span className="font-semibold">Cliente:</span><span>{selectedEvent.clientName}</span></div>
+                    <div className="flex justify-between"><span className="font-semibold">Inicio:</span><span>{selectedEvent.startDate.format('DD/MM/YYYY HH:mm')}</span></div>
+                    <div className="flex justify-between"><span className="font-semibold">Fin:</span><span>{selectedEvent.endDate.format('DD/MM/YYYY HH:mm')}</span></div>
+                    <div className="flex justify-between"><span className="font-semibold">Duración:</span><span>{getFormattedDuration(Number(selectedEvent.minutes))}</span></div>
+                  </div>
+                  <div className="flex justify-between mt-6">
+                    <button
+                      onClick={goToPreviousEvent}
+                      className="text-sm bg-gray-200 hover:bg-gray-300 text-gray-700 px-4 py-2 rounded-lg"
+                    >
+                      ← Anterior
+                    </button>
+                    <button
+                      onClick={goToNextEvent}
+                      className="text-sm bg-gray-200 hover:bg-gray-300 text-gray-700 px-4 py-2 rounded-lg"
+                    >
+                      Siguiente →
+                    </button>
                   </div>
                 </motion.div>
-
-                {/* Información adicional */}
-                {/* <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.3 }}
-                  className="rounded-2xl border border-zinc-200 dark:border-zinc-600 bg-white/40 dark:bg-zinc-800/60 backdrop-blur-md p-5 shadow-inner"
-                >
-                  <div className="text-zinc-600 dark:text-zinc-300 font-medium text-sm flex items-center mb-3">
-                    <svg className="h-5 w-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-                    </svg>
-                    Información adicional
-                  </div>
-                  <div className="flex justify-between text-sm text-zinc-700 dark:text-zinc-200">
-                    <span className="text-zinc-500 dark:text-zinc-400">ID del evento:</span>
-                    <span>{selectedEvent.id}</span>
-                  </div>
-                </motion.div> */}
-
                 {/* Botón */}
                 <motion.div
                   initial={{ opacity: 0 }}
@@ -452,29 +564,23 @@ const CalendarGantt: React.FC = () => {
                   transition={{ delay: 0.4 }}
                   className="flex justify-center pt-2"
                 >
-                  <Button onClick={() => setSelectedEvent(null)} variant="cancel" label="Cancelar" />
+                  <Button onClick={() => setSelectedEvent(null)} variant="cancel" label="Cerrar" />
                 </motion.div>
               </div>
             </motion.div>
           </motion.div>
         </AnimatePresence>
       )}
-
       {/* Estilos */}
       <style jsx global>{`
-        @keyframes fadeInDown {
-          from {
-            opacity: 0;
-            transform: translateY(-15px) scale(0.98);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0) scale(1);
-          }
-        }
-        .animate-fade-in-down {
-          animation: fadeInDown 0.3s ease-out both;
-        }
+      @keyframes fadeInDown {
+        from { opacity: 0; transform: translateY(-15px) scale(0.98);}
+        to { opacity: 1; transform: translateY(0) scale(1);}
+      }
+      .animate-fade-in-down { animation: fadeInDown 0.3s ease-out both;}
+      .overflow-x-auto::-webkit-scrollbar { height: 8px;}
+      .overflow-x-auto::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 8px;}
+      .overflow-x-auto::-webkit-scrollbar-track { background: #f3f4f6;}
       `}</style>
     </div>
   );

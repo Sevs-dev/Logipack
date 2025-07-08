@@ -13,7 +13,7 @@ function Adaptation() {
         <WindowManager
             windowsData={[
                 { id: 1, title: "Ordenes de Acondicionamiento", component: <PermissionWrapper fallback={<NonePermission />} allowedRoles={["Administrador", "J_Calidad", "Calidad"]}><NewAdaptation /></PermissionWrapper>, isProtected: true },
-                { id: 2, title: "Planificación", component: <PermissionWrapper fallback={<NonePermission />}><EditPlanning /></PermissionWrapper>, isProtected: true },
+                { id: 2, title: "Gestión de Ordenes", component: <PermissionWrapper fallback={<NonePermission />}><EditPlanning /></PermissionWrapper>, isProtected: true },
             ]}
         />
     )

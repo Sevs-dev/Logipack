@@ -1,10 +1,10 @@
 import React, { useState } from "react";
-import { FaEdit, FaTrash, FaCheck, FaTimes, FaPlus, FaHistory, FaAngleLeft, FaAngleRight } from "react-icons/fa";
+import { FaEdit, FaTrash, FaCheck, FaTimes, FaPlus, FaHistory, FaAngleLeft, FaAngleRight, FaRegFilePdf  } from "react-icons/fa";
 import { motion } from "framer-motion";
 
 interface ButtonProps {
   type?: "button" | "submit" | "reset";
-  variant: "save" | "cancel" | "edit" | "delete" | "create" | "create2" | "terciario" | "history" | "after" | "before";
+  variant: "save" | "cancel" | "edit" | "delete" | "create" | "create2" | "terciario" | "history" | "after" | "before" | "pdf";
   onClick?: () => void;
   disabled?: boolean;
   label?: string;
@@ -19,6 +19,7 @@ const buttonStyles = {
   create2: "bg-yellow-500 hover:bg-yellow-600 focus:ring-yellow-400 shadow-lg shadow-yellow-500/40 text-gray-900 font-semibold px-3 py-1.5 rounded transition duration-300 ease-in-out",
   terciario: "bg-yellow-400 hover:bg-yellow-500 focus:ring-yellow-300 shadow-lg shadow-yellow-400/40 text-gray-900 font-semibold px-3 py-1.5 rounded transition duration-300 ease-in-out",
   history: "bg-purple-600 hover:bg-purple-700 focus:ring-purple-500 shadow-lg shadow-purple-500/50 text-white font-semibold px-3 py-1.5 rounded transition duration-300 ease-in-out",
+  pdf: "bg-cyan-500 hover:bg-cyan-600 focus:ring-cyan-400 shadow-lg shadow-cyan-400/40 text-white font-semibold px-3 py-1.5 rounded transition duration-300 ease-in-out",
   after: "bg-white text-black font-semibold px-4 py-2 rounded-lg border border-purple-500 shadow-sm transition-all duration-300 ease-in-out hover:bg-purple-600 hover:text-white hover:border-transparent focus:ring-2 focus:ring-purple-400 focus:ring-offset-2",
   before: "bg-white text-black font-semibold px-4 py-2 rounded-lg border border-purple-500 shadow-sm transition-all duration-300 ease-in-out hover:bg-purple-600 hover:text-white hover:border-transparent focus:ring-2 focus:ring-purple-400 focus:ring-offset-2",
 };
@@ -32,6 +33,7 @@ const icons = {
   create2: <FaPlus />,
   terciario: <FaPlus />,
   history: <FaHistory />,
+  pdf: <FaRegFilePdf />,
   after: <FaAngleRight />,
   before: <FaAngleLeft />,
 };
@@ -45,6 +47,7 @@ const labels: Record<ButtonProps["variant"], string> = {
   create2: "Finalizar",
   terciario: "Finalizar",
   history: "Historial",
+  pdf: "PDF",
   after: "Siguiente",
   before: "Anterior",
 };
@@ -71,7 +74,7 @@ const Button: React.FC<ButtonProps> = ({ type = "button", variant, onClick, disa
         ${buttonStyles[variant]} ${disabled ? "opacity-50 cursor-not-allowed" : ""}`}
     >
       {icons[variant]}
-      {variant !== "edit" && variant !== "delete" && variant !== "create2" && variant !== "history" ? (label ?? labels[variant] ?? "") : null}
+      {variant !== "edit" && variant !== "delete" && variant !== "create2" && variant !== "history" && variant !== "pdf" ? (label ?? labels[variant] ?? "") : null}
 
       {particles.map((_, i) => (
         <motion.span

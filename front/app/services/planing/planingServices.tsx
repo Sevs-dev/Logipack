@@ -49,3 +49,13 @@ export const getPlanningById = async (id: number) => {
         throw error;
     }
 }
+
+export const getPlanningByIdPDF = async (id: number) => {
+    try {
+        const response = await Planning.get(`/getPlanByIdPDF/${id}`);
+        return response.data;
+    } catch (error: unknown) {
+        console.error("Error en getPlanByIdPDF:", error);
+        throw error;
+    }
+}

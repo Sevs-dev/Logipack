@@ -57,6 +57,7 @@ class HistoryAuditController extends Controller
 
         return response()->json($audits);
     }
+    
     public function byModelAdaptation(string $model, int $id): JsonResponse
     {
         $modelClass = 'App\\Models\\' . ucfirst($model);
