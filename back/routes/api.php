@@ -199,13 +199,21 @@ Route::controller(LineaTipoAcondicionamientoController::class)->group(function (
     Route::get('/getSelectStages', 'getSelectStages'); // Obtener una lineas específica
 });
 
+// //Rutas Ordenes Ejecutadas
+// Route::controller(OrdenesEjecutadasController::class)->group(function () {
+//     Route::get('/getOrdenesEjecutadas', 'getAll'); // Obtener todas las lineas   
+//     Route::get('/validar_estado/{id}', 'validar_estado'); // Crear una nueva lineas 
+//     Route::get('/procesar_orden/{id}', 'procesar_orden'); // Crear una nueva lineas 
+//     Route::post('/next_line', 'nextLineOrden'); // Crear una nueva lineas 
+//     Route::post('/confirmarOrden', 'confirmarOrden'); // Crear una nueva lineas 
+// });
+
 //Rutas Ordenes Ejecutadas
 Route::controller(OrdenesEjecutadasController::class)->group(function () {
-    Route::get('/getOrdenesEjecutadas', 'getAll'); // Obtener todas las lineas   
     Route::get('/validar_estado/{id}', 'validar_estado'); // Crear una nueva lineas 
-    Route::get('/procesar_orden/{id}', 'procesar_orden'); // Crear una nueva lineas 
-    Route::post('/next_line', 'nextLineOrden'); // Crear una nueva lineas 
-    Route::post('/confirmarOrden', 'confirmarOrden'); // Crear una nueva lineas 
+    Route::get('/generar_orden/{id}', 'generar_orden'); // Crear una nueva lineas 
+    Route::get('/linea_procesos/{id}', 'linea_procesos'); // Listar linea procesos
+    Route::get('/siguiente_fase/{id}/{linea}/{tipo}', 'siguiente_fase'); // Listar linea procesos
 });
 
 //Rutas Historial de Audits

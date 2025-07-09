@@ -2,461 +2,505 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\OrdenesEjecutadas;
 use App\Models\ActividadesEjecutadas;
 use App\Models\AdaptationDate;
-use Illuminate\Http\Request;
+use App\Models\OrdenesEjecutadas;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class OrdenesEjecutadasController extends Controller
 {
-    /**
-     * Listar todas las ordenes ejecutadas
-     *
-     * @return JsonResponse
-     */
-    public function getAll(): JsonResponse
-    {
-        $response = OrdenesEjecutadas::all();
-        return response()->json($response);
-    }
-
-    /**
-     * Procesar siguiente linea de la orden
-     *
-     * @param Request $request
-     * @return JsonResponse
-     */
-    public function nextLineOrden(Request $request): JsonResponse
-    {
-        $resp = $request->all();
-
-        // Actualizar ActividadesEjecutadas
-        ActividadesEjecutadas::where('estado_form', false)->where('id', $resp['id'])->update([
-            'estado_form' => true,
-            'forms' => ($resp['forms'])
-        ]);
-
-        return response()->json([
-            'message' => 'Orden ejecutada procesada',
-            'estado' => true,
-            'data' => $resp['id'],
-        ]);
-    }
-
-    /**
-     * Confirmar orden
-     *
-     * @param Request $request
-     * @return JsonResponse
-     */
-    public function confirmarOrden(Request $request): JsonResponse
-    {
-        $resp = $request->all();
-
-        // Actualizar ActividadesEjecutadas
-        OrdenesEjecutadas::where('id', $resp['id'])->update([
-            'estado' => '11500',
-        ]);
-
-        // datos de la adaptacion
-        AdaptationDate::where('adaptation_id', $resp['adaptation_id'])->update([
-            'status_dates' => 'Ejecutado',
-        ]);
-
-        return response()->json([
-            'message' => 'Orden ejecutada procesada',
-            'estado' => 11500,
-            'data' => $resp['adaptation_id'],
-        ]);
-    }
-
     /**
      * Validar estado de la orden
      *
      * @param int $id
      * @return JsonResponse
      */
-    public function validar_estado($id): JsonResponse{
-     
+    public function validar_estado(
+        $id
+    ): JsonResponse {
         // validar si existe
-        $orden = OrdenesEjecutadas::where('adaptation_id', $id)->where('proceso', 'eject')->first();
+        $orden = OrdenesEjecutadas::where('adaptation_date_id', $id)
+            ->where('proceso', 'eject')
+            ->first();
+
+        // si la orden existe
         if ($orden) {
-           
-            // validar si el estado es 100
+            // Orden pendiente
             if ($orden->estado == '100') {
                 return response()->json([
                     'message' => 'Estado de la orden pendiente',
                     'estado' => 100,
-                    'url' => 'http://localhost:5173/' . $id,
                 ]);
             }
 
             // Orden ejecutada
+            $this->confirmar_orden($id);  // confirmar orden si es ejecutada
             return response()->json([
                 'message' => 'Estado de la orden ejecutada',
                 'estado' => 11500,
             ]);
         }
 
-        // orden no encontrada
+        // si la orden no existe
         return response()->json([
             'message' => 'Orden ejecutada no encontrada',
             'estado' => null,
-            'url' => 'http://localhost:5173/' . $id,
         ]);
     }
 
     /**
-     * Procesar orden
+     * Generar orden
      *
      * @param int $id
      * @return JsonResponse
      */
-    public function procesar_orden($id): JsonResponse{
-
-        // Obtener estado de la orden
-        $resp = $this->validar_estado($id);
-        $etsado_orden = json_decode($resp->getContent(), true); // true = array asociativo
-
-        // procesar plantilla existente
-        if ($etsado_orden['estado'] == 100) {
-
-            //  Consultar orden generada y su fase
-            $acondicionamiento = OrdenesEjecutadas::where('adaptation_id', $id)
-            ->where('proceso', 'eject')
-            ->select(
-                "id",
-                "adaptation_id",
-                "maestra_id",
-                "number_order",
-                "descripcion_maestra",
-                "maestra_fases_fk",
-                "maestra_tipo_acondicionamiento_fk",
-                "linea_produccion",
-                "proceso",
-                "estado",
-            )->first();
-
-            // obtener el id de la orden ejecutada
-            $acondicionamiento_id =  $acondicionamiento ? $acondicionamiento->id : null;
-
-            // Consultar fases del tipo de acondicionamiento
-            // $maestra_tipo_acondicionamiento_fk = DB::table('ordenes_ejecutadas as orden')
-            // ->join('actividades_ejecutadas as atc', function($join) {
-            //     $join->on('orden.id', '=', 'atc.orden_ejecutada')->whereRaw("
-            //         FIND_IN_SET(atc.tipo_acondicionamiento_fk,
-            //             REPLACE(REPLACE(REPLACE(REPLACE(COALESCE(orden.maestra_tipo_acondicionamiento_fk, ''), '[', ''), ']', ''), ' ', ''), '\"', '')
-            //         ) > 0
-            //     ");
-            // })
-            // ->Join('stages as std', 'std.id', '=', 'atc.fases_fk')
-            // ->where('orden.id', '=', $acondicionamiento_id)
-            // ->where('atc.tipo_acondicionamiento_fk', '!=', 0)
-            // ->select(
-            //     'atc.id',
-            //     'atc.orden_ejecutada',
-            //     'atc.adaptation_id',
-            //     'atc.tipo_acondicionamiento_fk',
-            //     'atc.fases_fk',
-            //     'std.description as description_fase',
-            //     'std.phase_type',
-            //     'atc.forms'
-            // )
-            // ->get();
-
-            // Consultar fases 
-            $maestra_fases_fk = DB::table('ordenes_ejecutadas as orden')
-            ->join('actividades_ejecutadas as atc', function($join) {
-                $join->on('orden.id', '=', 'atc.orden_ejecutada')->whereRaw("
-                    FIND_IN_SET(atc.fases_fk,
-                        REPLACE(REPLACE(REPLACE(REPLACE(COALESCE(orden.maestra_fases_fk, ''), '[', ''), ']', ''), ' ', ''), '\"', '')
-                    ) > 0
-                ");
-            })
-            ->Join('stages as std', 'std.id', '=', 'atc.fases_fk')
-            ->where('orden.id', '=', $acondicionamiento_id)
-            ->where('atc.tipo_acondicionamiento_fk','=', 0)
-            ->where('atc.estado_form', '=', false)
-            ->select(
-                'atc.id',
-                'atc.orden_ejecutada',
-                'atc.adaptation_id',
-                'atc.tipo_acondicionamiento_fk',
-                'atc.fases_fk',
-                'std.description as description_fase',
-                'atc.phase_type',
-                'atc.forms',
-            )->get();
-      
-
+    public function generar_orden(
+        $id
+    ): JsonResponse {
+        // validar si existe la orden
+        $validar_estado = $this->validar_estado($id);
+        $estado = json_decode($validar_estado->getContent(), true);
+        if ($estado['estado'] !== null) {
             return response()->json([
-                'message' => 'Estado de la orden pendiente',
-                'estado' => 100,
-                'acondicionamiento' => $acondicionamiento,
-                'maestra_tipo_acondicionamiento_fk' => [],
-                'maestra_fases_fk' => $maestra_fases_fk
+                'message' => 'Orden de acondicionamiento existe',
+                'estado' => 200,
             ]);
         }
 
-        // procesar plantilla nueva
-        if ($etsado_orden['estado'] == null) {
-            
-            // Crear cabecera de la orden
-            $this->crearCabeceraOrden($id);
-
-            //  Consultar orden generada y su fase
-            $ordenes = OrdenesEjecutadas::where('adaptation_id', $id)->where('proceso', 'eject')->first();
-
-            // Obtener lista de tipos de acondicionamiento y sus actividades
-            // $tipo_acondicionamiento = $this->getTipoAcondicionamiento((
-            //     DB::table('adaptations as ada')
-            // ->join('ordenes_ejecutadas as mae', 'mae.adaptation_id', '=', 'ada.id')
-            // ->leftJoin('tipo_acondicionamientos as tipo_acon', function($join) {
-            //     $join->on(DB::raw("FIND_IN_SET(tipo_acon.id, REPLACE(REPLACE(REPLACE(REPLACE(COALESCE(mae.maestra_tipo_acondicionamiento_fk, ''), '[', ''), ']', ''), ' ', ''), '\"', ''))"), '>', DB::raw('0'));
-            // })
-            // ->join('linea_tipo_acondicionamientos as lin_tipo_acon', 'tipo_acon.id', '=', 'lin_tipo_acon.tipo_acondicionamiento_id')
-            // ->Join('stages as std', 'std.id', '=', 'lin_tipo_acon.fase')
-            // ->where('ada.id', isset($ordenes->adaptation_id) ? $ordenes->adaptation_id : null)
-            // ->select(
-            //     'tipo_acon.id as tipo_acondicionamiento_id',
-            //     'tipo_acon.descripcion as descripcion_tipo_acondicionamiento',
-            //     'lin_tipo_acon.descripcion as descripcion_linea_tipo_acondicionamiento',
-            //     'lin_tipo_acon.fase AS fases_fk', 
-            //     'std.description AS description_fase',
-            //     'std.phase_type',
-            //     'std.repeat_line'
-            // )->get()), $ordenes);
-            
-            // obtener actividades de la fase
-            $fases = $this->getActividades((
-            DB::table('adaptations as ada')
-            ->join('ordenes_ejecutadas as mae', 'mae.adaptation_id', '=', 'ada.id')
-            ->leftJoin('stages as std', function ($join) {
-                $join->on(DB::raw("FIND_IN_SET(std.id, REPLACE(REPLACE(REPLACE(REPLACE(COALESCE(mae.maestra_fases_fk, ''), '[', ''), ']', ''), ' ', ''), '\"', ''))"), '>', DB::raw('0'));
-            })
-            ->where('ada.id', isset($ordenes->adaptation_id) ? $ordenes->adaptation_id : null)
-            ->where(DB::raw('LOWER(std.phase_type)'), '!=', DB::raw("LOWER('Control')"))
-            ->selectRaw("
-                0 as tipo_acondicionamiento_id,
-                NULL as descripcion_tipo_acondicionamiento,
-                NULL as descripcion_linea_tipo_acondicionamiento,
-                std.id as fases_fk,
-                std.description AS 'description_fase', 
-                std.phase_type,
-                std.repeat_line,
-                FIND_IN_SET(std.id, REPLACE(REPLACE(REPLACE(REPLACE(COALESCE(mae.maestra_fases_fk, ''), '[', ''), ']', ''), ' ', ''), '\"', '')) as orden_fase
-            ")
-            ->orderByRaw("orden_fase ASC")
-            ->get()), $ordenes);
-
-                // return response()->json([
-                //     'maestra_fases_fk' => ($fases),
-                // ]);
-                // exit();
-
-            // insertar actividades de la orden ejecutada
-            $this->crearActividadesOrden([], $fases);
-
-            // retornar estructra de respuesta
+        // Crear orden de acondicionamiento
+        $fases = [];
+        try {
+            $orden = $this->crear_orden_acondicionamiento($id);
+            $fases = $this->crear_actividades_orden($id, $orden);
+        } catch (\Exception $e) {
             return response()->json([
-                'message' => 'Orden procesada',
-                'acondicionamiento' => json_decode($ordenes, true),
-                'maestra_tipo_acondicionamiento_fk' => [],
-                'maestra_fases_fk' => $fases,
+                'message' => 'Error al crear la orden de acondicionamiento | ' . $e->getMessage(),
+                'estado' => 500,
             ]);
         }
 
-        // plantilla procesada
+        // obtener lineas de la orden
+        $lineas = $this->linea_procesos($id);
+        $lineas = json_decode($lineas->getContent(), true);
+
+        // Orden creada
         return response()->json([
-            'message' => 'Orden ejecutada procesada',
-            'estado' => 11500,
+            'message' => 'Orden de acondicionamiento creada',
+            'orden' => $orden,
+            'linea_procesos' => $lineas['linea_procesos'],
+            'estado' => 200,
         ]);
     }
 
     /**
-     * Funcion para obtener actividades de tipo acondicionamiento
-     * 
-     * @param array $tipo_acon
-     * @param object $ordenes
-     * @return array
+     * Linea procesos
+     *
+     * @param int $id
+     * @return JsonResponse
      */
-    private function getTipoAcondicionamiento($tipo_acon, $ordenes) : array 
-    {
-        $tipo_acondicionamiento = [];
-            foreach ($tipo_acon as $fase) {
-                $tipo_acondicionamiento = array_merge($tipo_acondicionamiento, $this->getActividades(json_encode([
-                    [
-                        "fases_fk" => $fase->fases_fk,
-                        "description_fase" => $fase->description_fase ?? "",
-                        "phase_type" => $fase->phase_type ?? "",
-                        "repeat_line" => $fase->repeat_line,
-                        "tipo_acondicionamiento_id" => $fase->tipo_acondicionamiento_id,
-                    ]
-                ]), $ordenes));
-            }
-        return $tipo_acondicionamiento;
-    }
-
-    /**
-     * Funcion para obtener actividades
-     * 
-     * @param array $fases
-     * @param object $ordenes
-     * @return array
-     */
-    private function getActividades($fases, $ordenes) : array 
-    {
-        // obtener actividades segun la fase
-        $acom = [];
-        foreach (json_decode($fases, true) as $count => $fase) {
-            // obtener lista si la actividades
-            $actividades =  DB::table('stages as std')
-            ->join('activities as atc', function ($join) {
-                $join->on(DB::raw("FIND_IN_SET(atc.id, REPLACE(REPLACE(REPLACE(REPLACE(COALESCE(std.activities, ''), '[', ''), ']', ''), ' ', ''), '\"', ''))"), '>', DB::raw('0'));
+    public function linea_procesos(
+        $id
+    ): JsonResponse {
+        // Obtener solo las fases de planificación
+        $linea_fases = DB::table('ordenes_ejecutadas as ada')
+            ->where('ada.adaptation_date_id', $id)
+            ->where('ada.proceso', 'eject')
+            ->join('stages as std', function ($join) {
+                $join->on(
+                    DB::raw(
+                        "FIND_IN_SET(std.id, REPLACE(REPLACE(REPLACE(REPLACE(COALESCE
+                        (ada.maestra_fases_fk, ''), '[', ''), ']', ''), ' ', ''), '\"', ''))"
+                    ), '>', DB::raw('0')
+                );
             })
-            ->where('std.id', $fase['fases_fk'])
-            ->where(DB::raw('LOWER(std.phase_type)'), '!=', DB::raw("LOWER('Control')"))
+            ->where(function ($query) {
+                $query
+                    ->where('std.phase_type', 'Planificación')
+                    ->orWhere('std.phase_type', 'Conciliación');
+            })
             ->select(
-                'atc.id as id_activitie',
-                'atc.description as descripcion_activitie',
-                'atc.config',
-                'atc.binding',
-            )->get();
+                'std.id',
+                'std.description as descripcion',
+                'std.phase_type',
+                DB::raw("FIND_IN_SET(std.id, REPLACE(REPLACE(REPLACE(REPLACE(COALESCE
+                        (ada.maestra_fases_fk, ''), '[', ''), ']', ''), ' ', ''), '\"', '')) as posicion")
+            )
+            ->orderByRaw('posicion ASC')
+            ->get();
+        // validar si existe
 
-            // define cuantas veces va a recorrer la lista de actividades
-            if(count(json_decode($actividades, true)) > 0){
-                $actividades = json_decode($actividades, true);
-                if ($fase['repeat_line'] == 1) {
-                    // define cuantas veces va a recorrer la lista de actividades repetidas
-                    $size_line = (json_decode($ordenes->linea_produccion, true) == "" ? 1 : count(json_decode($ordenes->linea_produccion, true)));
-                    for ($i=0; $i < ($size_line); $i++) {
-                        foreach ($actividades as $key => $value) {
-                            $clave = implode('', [
-                                $ordenes->id,
-                                $ordenes->adaptation_id,
-                                $fase['tipo_acondicionamiento_id'],
-                                $fase['fases_fk'],
-                                $value['id_activitie'],
-                                $count,
-                                $key + ($i + 1),
-                            ]);
-                            $value['orden_ejecutada'] = $ordenes->id;
-                            $value['adaptation_id'] = $ordenes->adaptation_id;
-                            $value['tipo_acondicionamiento_fk'] = $fase['tipo_acondicionamiento_id'];
-                            $value['fases_fk'] = $fase['fases_fk'];
-                            $value['description_fase'] = $fase['description_fase'] ?? "";
-                            $value['phase_type'] = $fase['phase_type'] ?? "";
-                            $value['actividad_fk'] = $value['id_activitie'];
-                            $value['secuencia'] = $count;
-                            $value['clave'] = $clave;
-                            $value['valor'] = "";
-                            $value['copia'] = 'si';
-                            $actividades[$key] = $value;
-                        }
-                        $acom[] = $actividades;
-                    }
-                }
-                foreach ($actividades as $key => $value) {
-                    $clave = implode('', [
-                        $ordenes->id,
-                        $ordenes->adaptation_id,
-                        $fase['tipo_acondicionamiento_id'],
-                        $fase['fases_fk'],
-                        $value['id_activitie'],
-                        $count,
-                        $key,
-                    ]);
-                    $value['orden_ejecutada'] = $ordenes->id;
-                    $value['adaptation_id'] = $ordenes->adaptation_id;
-                    $value['tipo_acondicionamiento_fk'] = $fase['tipo_acondicionamiento_id'];
-                    $value['fases_fk'] = $fase['fases_fk'];
-                    $value['description_fase'] = $fase['description_fase'] ?? "";
-                    $value['phase_type'] = $fase['phase_type'] ?? "";
-                    $value['actividad_fk'] = $value['id_activitie'];
-                    $value['secuencia'] = $count;
-                    $value['clave'] = $clave;
-                    $value['valor'] = "";
-                    $value['copia'] = 'no';
-                    $actividades[$key] = $value;
-                }
-                $acom[] = $actividades;
+        $orden = OrdenesEjecutadas::where('adaptation_date_id', $id)
+            ->where('proceso', 'eject')
+            ->first();
+
+        // Obtener lineas de procesos
+        $linea_procesos = DB::table('ordenes_ejecutadas as ada')
+            ->where('ada.adaptation_date_id', $id)
+            ->where('ada.proceso', 'eject')
+            ->join('manufacturings as man', function ($join) {
+                $join->on(
+                    DB::raw(
+                        "FIND_IN_SET(man.id, REPLACE(REPLACE(REPLACE(REPLACE(COALESCE
+                        (ada.linea_produccion, ''), '[', ''), ']', ''), ' ', ''), '\"', ''))"
+                    ), '>', DB::raw('0')
+                );
+            })
+            ->select(
+                'man.id',
+                'man.name as descripcion',
+                DB::raw("'linea' as phase_type"),
+                DB::raw("FIND_IN_SET(man.id, REPLACE(REPLACE(REPLACE(REPLACE(COALESCE
+                        (ada.linea_produccion, ''), '[', ''), ']', ''), ' ', ''), '\"', '')) as posicion")
+            )
+            ->orderByRaw('posicion ASC')
+            ->get();
+
+        // Recorrer para validar estado de la lineas
+        $lineas = [];
+        foreach ($linea_procesos as $item) {
+            // obtener tamaño de la linea
+            $linea = DB::table('actividades_ejecutadas as atc')
+                ->where('atc.adaptation_date_id', $id)
+                ->where('atc.linea', $item->id)
+                ->where('atc.estado_form', 0)
+                ->select(
+                    DB::raw('COUNT(*) as count')
+                )
+                ->first();
+
+            // Vlidar si la linea tiene todos los estados en 0
+            if ($linea->count > 0) {
+                $lineas[] = $item;
             }
         }
-        return $acom;
+
+        return response()->json([
+            'orden' => $orden,
+            'linea_procesos' => $lineas,
+            'linea_fases' => $linea_fases,
+            'estado' => 200,
+        ]);
     }
 
     /**
-     * Crear cabecera de la orden ejecutada
-     * 
+     * Condiciones de la orden
+     *
      * @param int $id
-     * @return void
+     * @return JsonResponse
      */
-    private function crearCabeceraOrden($id) : void
-    {
-       
-        // Obtener lista de adaptaciones
-        $acondicionamiento = DB::table('adaptations as ada')
-        ->join('adaptation_dates as ada_date', 'ada.id', '=', 'ada_date.adaptation_id')
-        ->join('maestras as mae', 'mae.id', '=', 'ada.master')
-        ->where('ada.id', $id)
-        ->select(
-            'ada.id as adaptation_id',
-            'ada.number_order',
-            'ada.master as maestra_id',
-            'mae.descripcion as descripcion_maestra',
-            'ada_date.line as linea_produccion',
-            // 'ada_date.activities as linea_actividades',
-            'mae.type_acondicionamiento as maestra_tipo_acondicionamiento_fk',
-            'mae.type_stage as maestra_fases_fk',
-            'ada_date.status_dates'
-        )->get();
+    public function siguiente_fase(
+        $id,
+        $linea,
+        $tipo
+    ): JsonResponse {
+        $fases = null;
+        // Validar tipo de linea
+        if ($tipo == 'linea') {
 
-        OrdenesEjecutadas::create([
-            'adaptation_id' => $acondicionamiento[0]->adaptation_id,
-            'maestra_id' => $acondicionamiento[0]->maestra_id,
-            'number_order' => $acondicionamiento[0]->number_order,
-            'descripcion_maestra' => $acondicionamiento[0]->descripcion_maestra,
-            'maestra_fases_fk' => $acondicionamiento[0]->maestra_fases_fk,
-            'maestra_tipo_acondicionamiento_fk' => $acondicionamiento[0]->maestra_tipo_acondicionamiento_fk,
-            'linea_produccion' => $acondicionamiento[0]->linea_produccion,
+            // Validar tipo de linea
+            // Validar si la linea tiene todos los estados en 0
+            $fases = DB::table('actividades_ejecutadas')
+                ->where('adaptation_date_id', $id)
+                ->where('linea', '=', $linea)
+                ->where('estado_form', false)
+                ->whereNotIn('phase_type', ['Planificación', 'Conciliación', 'Control'])
+                ->orderBy('id', 'asc')
+                ->first();
+        } else {
+
+            // Validar tipo de fase
+            // Validar si la linea tiene todos los estados en 0
+            $fases = DB::table('actividades_ejecutadas')
+                ->where('adaptation_date_id', $id)
+                ->where('linea', '=', 0)
+                ->where('fases_fk', $linea)
+                ->where('estado_form', false)
+                ->whereIn('phase_type', ['Planificación', 'Conciliación'])
+                ->orderBy('id', 'asc')
+                ->first();
+        }
+        return response()->json([
+            'fases' => $fases,
+            'estado' => 200,
         ]);
+    }
+
+    /**
+     * Crear Orden de acondicionamiento en la tabla OrdenesEjecutadas
+     *
+     * @param int $id
+     * @return object
+     */
+    private function crear_orden_acondicionamiento(
+        $id
+    ): object {
+        // Obtener Orden de acondicionamiento
+        $acondicionamiento = DB::table('adaptations as ada')
+            ->join('adaptation_dates as ada_date', 'ada.id', '=', 'ada_date.adaptation_id')
+            ->join('maestras as mae', 'mae.id', '=', 'ada.master')
+            ->where('ada.id', $id)
+            ->select(
+                'ada_date.id as adaptation_date_id',
+                'ada.id as adaptation_id',
+                'ada.number_order',
+                'ada.master as maestra_id',
+                'mae.descripcion as descripcion_maestra',
+                'ada_date.line as linea_produccion',
+                'mae.type_stage as maestra_fases_fk',
+                'ada_date.status_dates'
+            )
+            ->first();
+
+        // Disparar evento si no existen lineas de produccion
+        if (count(json_decode($acondicionamiento->linea_produccion)) < 1) {
+            throw new \Exception('No existen lineas de produccion');
+        }
+
+        // Crear orden en la tabla OrdenesEjecutadas
+        $acondicionamiento = OrdenesEjecutadas::create([
+            'id' => null,
+            'adaptation_date_id' => $acondicionamiento->adaptation_date_id,
+            'adaptation_id' => $acondicionamiento->adaptation_id,
+            'maestra_id' => $acondicionamiento->maestra_id,
+            'number_order' => $acondicionamiento->number_order,
+            'descripcion_maestra' => $acondicionamiento->descripcion_maestra,
+            'maestra_fases_fk' => $acondicionamiento->maestra_fases_fk,
+            'linea_produccion' => $acondicionamiento->linea_produccion,
+        ]);
+        return $acondicionamiento;
     }
 
     /**
      * Crear actividades de la orden ejecutada
-     * 
-     * @param array $tipo_acondicionamiento
-     * @param array $fases
-     * @return void
+     *
+     * @param int $id
+     * @return array
      */
-    private function crearActividadesOrden($tipo_acondicionamiento, $fases) : void
-    {
-        // insertar lineas de tipo acondicionamiento
-        foreach ($tipo_acondicionamiento as $tipo) {
+    private function crear_actividades_orden(
+        $id,
+        $orden
+    ): array {
+        // insertar lineas de fases
+        $fases = $this->generar_componentes(DB::table('ordenes_ejecutadas as ada')
+            ->where('ada.adaptation_date_id', $id)
+            ->where('ada.proceso', 'eject')
+            ->join('stages as std', function ($join) {
+                $join->on(
+                    DB::raw(
+                        "FIND_IN_SET(std.id, REPLACE(REPLACE(REPLACE(REPLACE(COALESCE
+                    (ada.maestra_fases_fk, ''), '[', ''), ']', ''), ' ', ''), '\"', ''))"
+                    ), '>', DB::raw('0')
+                );
+            })
+            ->select(
+                'std.id',
+                'std.description as descripcion',
+                'std.phase_type',
+                'std.repeat_line',
+                DB::raw("FIND_IN_SET(std.id, REPLACE(REPLACE(REPLACE(REPLACE(COALESCE
+                    (ada.maestra_fases_fk, ''), '[', ''), ']', ''), ' ', ''), '\"', '')) as posicion")
+            )
+            ->orderByRaw('posicion ASC')
+            ->get(), $orden);
+
+        // crear actividades de la orden ejecutada
+        foreach ($fases as $fase) {
             ActividadesEjecutadas::create([
-                "orden_ejecutada" => $tipo[0]['orden_ejecutada'],
-                "adaptation_id" => $tipo[0]['adaptation_id'],
-                "tipo_acondicionamiento_fk" => $tipo[0]['tipo_acondicionamiento_fk'],
-                "fases_fk" => $tipo[0]['fases_fk'],
-                "description_fase" => $tipo[0]['description_fase'] ?? "",
-                "phase_type" => $tipo[0]['phase_type'] ?? "",
-                "forms" => json_encode($tipo)
+                'orden_ejecutada' => $fase[0]->orden_ejecutada,
+                'adaptation_date_id' => $fase[0]->adaptation_date_id,
+                'adaptation_id' => $fase[0]->adaptation_id,
+                'fases_fk' => $fase[0]->fases_fk,
+                'description_fase' => $fase[0]->description_fase ?? '',
+                'phase_type' => $fase[0]->phase_type ?? '',
+                'linea' => $fase[0]->linea,
+                'repeat_line' => $fase[0]->repeat_line,
+                'forms' => json_encode($fase)
             ]);
         }
 
-        // insertar lineas de fases
-        foreach ($fases as $fase) {
-            ActividadesEjecutadas::create([
-                "orden_ejecutada" => $fase[0]['orden_ejecutada'],
-                "adaptation_id" => $fase[0]['adaptation_id'],
-                "tipo_acondicionamiento_fk" => $fase[0]['tipo_acondicionamiento_fk'],
-                "fases_fk" => $fase[0]['fases_fk'],
-                "description_fase" => $fase[0]['description_fase'] ?? "",
-                "phase_type" => $fase[0]['phase_type'] ?? "",
-                "forms" => json_encode($fase)
-            ]);
+        // Obtener solo las fases de planificación
+        $linea_fases = DB::table('actividades_ejecutadas as ada')
+            ->where('ada.adaptation_date_id', $id)
+            ->get();
+        return $fases;
+    }
+
+    /**
+     * Confirmar orden
+     *
+     * @param int $id
+     * @return void
+     */
+    private function confirmar_orden(
+        $id
+    ): void {
+        // Actualizar ActividadesEjecutadas
+        OrdenesEjecutadas::where('adaptation_date_id', $id)->update([
+            'estado' => '11500',
+        ]);
+
+        // datos de la adaptacion
+        AdaptationDate::where('id', $id)->update([
+            'status_dates' => 'Ejecutado',
+        ]);
+    }
+
+    /**
+     * Generar componentes de las actividades
+     *
+     * @param array $fases
+     * @param object $ordenes
+     * @return array
+     */
+    private function generar_componentes(
+        $fases,
+        $orden
+    ): array {
+        // obtener actividades segun la fase
+        $acom = [];
+        $lineas = json_decode($orden->linea_produccion, true);
+        foreach ($lineas as $linea) {
+            // obtener actividades de la fase
+            $actividades = [];
+            foreach ($fases->toArray() as $count => $fase) {
+                // verificar si la fase es Proceso
+                if ($fase->phase_type == 'Procesos') {
+                    $ref_act = DB::table('adaptation_dates as ada')
+                        ->where('ada.id', $orden->adaptation_date_id)
+                        ->select(
+                            'ada.activities',
+                        )
+                        ->first();
+                    $ref_act->activities = $ref_act->activities ?? [];
+                    foreach (json_decode($ref_act->activities, true) as $item) {
+                        if ($item['id'] == $linea) {
+                            $actividades = DB::table('activities as atc')
+                                ->whereIn('atc.id', $item['activities'])  // Filtra directamente los IDs del array
+                                ->select(
+                                    'atc.id as id_activitie',
+                                    'atc.description as descripcion_activitie',
+                                    'atc.config',
+                                    'atc.binding'
+                                )
+                                ->get();
+                        }
+                    }
+                } else {
+                    // obtener lista si la actividades
+                    $actividades = DB::table('stages as std')
+                        ->join('activities as atc', function ($join) {
+                            $join->on(
+                                DB::raw(
+                                    "FIND_IN_SET(atc.id, REPLACE(REPLACE(REPLACE(REPLACE(COALESCE
+                                    (std.activities, ''), '[', ''), ']', ''), ' ', ''), '\"', ''))"
+                                ), '>', DB::raw('0')
+                            );
+                        })
+                        ->where('std.id', $fase->id)
+                        ->where(DB::raw('LOWER(std.phase_type)'), '!=', DB::raw("LOWER('Control')"))
+                        ->where(DB::raw('LOWER(std.phase_type)'), '!=', DB::raw("LOWER('Planificación')"))
+                        ->where(DB::raw('LOWER(std.phase_type)'), '!=', DB::raw("LOWER('Conciliación')"))
+                        ->select(
+                            'atc.id as id_activitie',
+                            'atc.description as descripcion_activitie',
+                            'atc.config',
+                            'atc.binding',
+                        )
+                        ->get();
+                }
+                // armar actividades
+                $acom = $this->armar_actividades($actividades, $orden, $linea, $fase, $count, $acom);
+            }
         }
+
+        // armar actividades de planificación o conciliación
+        $actividades = [];
+        foreach ($fases->toArray() as $count => $fase) {
+            if ($fase->phase_type == 'Planificación' || $fase->phase_type == 'Conciliación') {
+                // obtener lista si la actividades especificos
+                $actividades = DB::table('stages as std')
+                    ->join('activities as atc', function ($join) {
+                        $join->on(
+                            DB::raw(
+                                "FIND_IN_SET(atc.id, REPLACE(REPLACE(REPLACE(REPLACE(COALESCE
+                             (std.activities, ''), '[', ''), ']', ''), ' ', ''), '\"', ''))"
+                            ), '>', DB::raw('0')
+                        );
+                    })
+                    ->where('std.id', $fase->id)
+                    ->where(function ($query) {
+                        $query
+                            ->where(DB::raw('LOWER(std.phase_type)'), '=', DB::raw("LOWER('Planificación')"))
+                            ->orWhere(DB::raw('LOWER(std.phase_type)'), '=', DB::raw("LOWER('Conciliación')"));
+                    })
+                    ->select(
+                        'atc.id as id_activitie',
+                        'atc.description as descripcion_activitie',
+                        'atc.config',
+                        'atc.binding',
+                    )
+                    ->get();
+                $acom = $this->armar_actividades($actividades, $orden, $linea, $fase, $count, $acom);
+            }
+        }
+        // echo gettype($acom) . "\n" . json_encode($acom);
+        // exit;
+        return $acom;
+    }
+
+    /**
+     * Armar actividades
+     *
+     * @param array $actividades
+     * @param object $orden
+     * @param int $linea
+     * @param object $fase
+     * @param int $count
+     * @param array $acom
+     * @return array
+     */
+    private function armar_actividades(
+        $actividades,
+        $orden,
+        $linea,
+        $fase,
+        $count,
+        $acom
+    ): array {
+        if (count($actividades->toArray()) > 0) {
+            $actividades = $actividades->toArray();
+            foreach ($actividades as $key => $value) {
+                $clave = implode('', [
+                    $orden->id,
+                    $orden->adaptation_date_id,
+                    $orden->adaptation_id,
+                    $linea,
+                    $fase->id,
+                    $value->id_activitie,
+                    $count,
+                    $key,
+                ]);
+
+                $value->orden_ejecutada = $orden->id;
+                $value->adaptation_date_id = $orden->adaptation_date_id;
+                $value->adaptation_id = $orden->adaptation_id;
+                $value->maestra_id = $orden->maestra_id;
+                $value->fases_fk = $fase->id;
+                $value->linea = ($fase->phase_type == 'Planificación' || $fase->phase_type == 'Conciliación') ? 0 : $linea;
+                $value->repeat_line = $fase->repeat_line;
+                $value->description_fase = $fase->descripcion ?? '';
+                $value->phase_type = $fase->phase_type ?? '';
+                $value->actividad_fk = $value->id_activitie;
+                $value->secuencia = $count;
+                $value->clave = $clave;
+                $value->valor = '';
+                $value->copia = 'no';
+                $actividades[$key] = $value;
+            }
+            $acom[] = $actividades;
+        }
+        return $acom;
     }
 }

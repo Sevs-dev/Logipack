@@ -49,3 +49,33 @@ export const getPlanningById = async (id: number) => {
         throw error;
     }
 }
+
+export const validate_orden = async (id: number) => {
+    try {
+        const response = await Planning.get(`/validar_estado/${id}`);
+        return response.data;
+    } catch (error: unknown) {
+        console.error("Error en getPlanId:", error);
+        throw error;
+    }
+}
+
+export const linea_procesos = async (id: number) => {
+    try {
+        const response = await Planning.get(`/linea_procesos/${id}`);
+        return response.data;
+    } catch (error: unknown) {
+        console.error("Error en getPlanId:", error);
+        throw error;
+    }
+}
+
+export const generar_orden = async (id: number) => {
+    try {
+        const response = await Planning.get(`/generar_orden/${id}`);
+        return response.data;
+    } catch (error: unknown) {
+        console.error("Error en generar_orden:", error);
+        throw error;
+    }
+}

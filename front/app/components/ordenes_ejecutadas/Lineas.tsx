@@ -1,6 +1,6 @@
 import React from "react";
 import WindowManager from "../windowManager/WindowManager";
-import Ordenes from "../ordenes_ejecutadas/NewOrden"
+import NewLineas from "../ordenes_ejecutadas/NewLineas"
 import useUserData from '../../hooks/useUserData';
 import PermissionWrapper from "../PermissionWrapper/PermissionWrapper";
 import NonePermission from "../loader/NonePermission";
@@ -12,7 +12,8 @@ function Maestras() {
         <div >
             <WindowManager
                 windowsData={[
-                    { id: 1, title: "Órdenes de Acondicionamiento", component: <PermissionWrapper fallback={<NonePermission />}><Ordenes /></PermissionWrapper>, isProtected: true },                ]}
+                    { id: 1, title: "Lineas", component: <PermissionWrapper fallback={<NonePermission />}><NewLineas /></PermissionWrapper>, isProtected: true },
+                ]}
             />
         </div>
     )

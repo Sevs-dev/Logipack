@@ -13,7 +13,7 @@ import { MachinePlanning } from "../../interfaces/NewMachine"
 import { UserPlaning } from "../../interfaces/CreateUser"
 import SelectorDual from "../SelectorDual/SelectorDual"
 // 🔹 Servicios 
-import { getPlanning, updatePlanning, getActivitiesByPlanning, getPlanningById } from "../../services/planing/planingServices";
+import { getPlanning, updatePlanning, getActivitiesByPlanning, getPlanningById, validate_orden } from "../../services/planing/planingServices";
 import { getActivitieId } from "../../services/maestras/activityServices"
 import { getClientsId } from "@/app/services/userDash/clientServices";
 import { getFactory } from "@/app/services/userDash/factoryServices";
@@ -419,34 +419,50 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
     const handleTerciario = useCallback(async (id: number) => {
         const { plan } = await getPlanningById(id);
 
-        if (plan.line === null) {
-            showError("Lineas de produccion no encontradas o no definidas.");
+        // Validar si la orden tiene linea asignada
+        if (plan.line === null || plan.line.length < 3) {
+            showError("No se asigno linea a la planificación");
             return;
         }
 
-        try {
-            const response = await fetch(`http://localhost:8000/api/validar_estado/${plan.adaptation_id}`);
-            const data = await response.json();
-            if (data.status === "error") {
-                showError(data.message);
+        // Validar si la orden tiene actividades asignadas
+        if (plan.status_dates === null || plan.status_dates === "En Creación") {
+            showError("Orden no planificada, debe completar la planificación");
+            return;
+        }
+
+        // Eliminar ejecutar si existe en localStorage
+        if (localStorage.getItem("ejecutar")) {
+            localStorage.removeItem("ejecutar");
+        }
+
+        // Validar estado de la orden
+        const data = await validate_orden(plan.id);
+        if (data.estado === 100 || data.estado === null) {
+
+            // obtener usuario de la cookie
+            const user = document.cookie
+                .split('; ')
+                .find(row => row.startsWith('name='))
+                ?.split('=')[1];
+
+            // Validar si se encontro usuario
+            if (!user) {
+                showError("No se encontro usuario");
                 return;
             }
 
-            if (localStorage.getItem("ejecutar")) {
-                localStorage.removeItem("ejecutar");
-            }
-
-            if (data.estado === 100 || data.estado === null) {
-                localStorage.setItem("ejecutar", JSON.stringify(plan.adaptation_id));
-                window.open("/pages/ordenes_ejecutadas", "_blank");
-            } else {
-                showError("La orden ya fué ejecutada  estado: " + data.estado);
-                fetchAll();
-            }
-        } catch (error) {
-            console.error("Error al validar estado:", error);
-            showError("Error al validar estado");
-            return;
+            // almacenar id y user en localStorage
+            localStorage.setItem("ejecutar", JSON.stringify({
+                id: plan.id,
+                user: user
+            }));
+            // abrir nueva pestaña con la ruta /pages/lineas
+            window.open("/pages/lineas", "_blank");
+            handleClose();
+        } else {
+            showError("La orden ya fué finalizada estado: " + data.estado);
+            fetchAll();
         }
     }, []);
 

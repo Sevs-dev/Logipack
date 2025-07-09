@@ -12,7 +12,9 @@ function Maestras() {
         <div >
             <WindowManager
                 windowsData={[
-                    { id: 1, title: "Órdenes de Acondicionamiento", component: <PermissionWrapper fallback={<NonePermission />}><Ordenes /></PermissionWrapper>, isProtected: true },                ]}
+                    { id: 1, title: "Órdenes de Acondicionamiento", component: <PermissionWrapper fallback={<NonePermission />}><Ordenes /></PermissionWrapper>, isProtected: true },
+
+                ]}
             />
         </div>
     )
