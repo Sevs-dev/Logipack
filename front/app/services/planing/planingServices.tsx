@@ -90,6 +90,16 @@ export const siguiente_fase = async (id: number, linea: number, tipo: string) =>
     }
 }
 
+export const fase_control = async (id: number) => {
+    try {
+        const response = await Planning.get(`/getFaseControl/${id}`);
+        return response.data;
+    } catch (error: unknown) {
+        console.error("Error en fase_control:", error);
+        throw error;
+    }
+}
+
 export const guardar_formulario = async (data: any) => {
     try {
         const response = await Planning.post(`/guardar_actividades`, JSON.stringify(data));

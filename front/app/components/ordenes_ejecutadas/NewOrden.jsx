@@ -1,7 +1,17 @@
 import { useEffect, useRef, useState } from "react";
-import { siguiente_fase, guardar_formulario, validate_orden } from "@/app/services/planing/planingServices";
+import {
+  siguiente_fase, guardar_formulario,
+  validate_orden, fase_control
+} from "@/app/services/planing/planingServices";
+import {
+  createTimer,
+  getTimerEjecutadaById,
+} from "../../services/timer/timerServices";
+import { getStageId } from "../../services/maestras/stageServices";
+
 import Text from "../text/Text";
 import { showError } from "../toastr/Toaster";
+import Timer from "../timer/Timer";
 
 // Configuración de la base de datos IndexedDB
 const DB_NAME = "FasesDB";
@@ -82,6 +92,8 @@ const App = () => {
   const [fase, setFase] = useState(null);
   const [sig, setSig] = useState(0);
   const [memoriaFase, setMemoriaFase] = useState({});
+  const [timerData, setTimerData] = useState(null);
+  const [timerReady, setTimerReady] = useState(false);
 
   // Cargar datos iniciales
   useEffect(() => {
@@ -110,7 +122,6 @@ const App = () => {
       try {
         const resp = await siguiente_fase(local.id, local.linea, local.tipo);
         setFase(resp.fases);
-        console.log(resp);
       } catch (error) {
         showError("No se pudo obtener la fase.");
       }
@@ -118,6 +129,65 @@ const App = () => {
 
     cargarFase();
   }, [local, sig]);
+
+  // Lógica principal: crear y cargar el timer
+  useEffect(() => {
+    const guardarTimer = async () => {
+      if (!fase) return;
+
+      try {
+        const stage = await getStageId(fase.fases_fk);
+        const {fase_control : control} = await fase_control(fase.orden_ejecutada);
+
+        // Validaciones
+        if (!stage?.id) return;
+        if (!control?.id) return;
+
+        // Obetenr id de la activiad ejecutada
+        const ejecutadaId = Number(fase.id);
+        if (!Number.isFinite(ejecutadaId) || ejecutadaId <= 0) return;
+
+        // Instancia de timer
+        const time = Number(stage.repeat_minutes ?? 0);
+        const createResult = await createTimer({
+          ejecutada_id: ejecutadaId,
+          stage_id: stage?.id,
+          control_id: control?.id,
+          orden_id: fase.orden_ejecutada,
+          time,
+        });
+
+        if (createResult?.exists) {
+          // console.log("⚠️ Timer ya existía para:", ejecutadaId);
+        }
+
+        const timerResult = await getTimerEjecutadaById(ejecutadaId);
+        if (
+          timerResult?.timer &&
+          timerResult.timer.id > 0 &&
+          timerResult.timer.stage_id > 0 &&
+          timerResult.timer.ejecutada_id === ejecutadaId
+        ) {
+          setTimerData({
+            ejecutadaId,
+            stageId: stage.id,
+            initialMinutes: Number(timerResult.timer.time),
+          });
+          setTimerReady(true);
+        } else {
+          setTimerData(null);
+          setTimerReady(false);
+        }
+      } catch (err) {
+        console.error("❌ Error en guardarTimer:", err);
+        setTimerData(null);
+        setTimerReady(false);
+      }
+    };
+
+    guardarTimer();
+  }, [fase]);
+
 
   // Manejador de cambio de inputs
   const inputChange = (e) => {

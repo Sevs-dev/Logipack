@@ -215,6 +215,7 @@ Route::controller(OrdenesEjecutadasController::class)->group(function () {
     Route::get('/linea_procesos/{id}', 'linea_procesos'); // Listar linea procesos
     Route::get('/siguiente_fase/{id}/{linea}/{tipo}', 'siguiente_fase'); // Listar linea procesos
     Route::post('/guardar_actividades', 'guardar_formulario');
+    Route::get('/getFaseControl/{id}', 'getFaseControl');
 });
 
 //Rutas Historial de Audits

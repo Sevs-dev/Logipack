@@ -29,14 +29,13 @@ class OrdenesEjecutadasController extends Controller
         if ($orden) {
             // Orden pendiente
             if ($orden->estado == '100') {
-
                 $fases = DB::table('actividades_ejecutadas')
-                ->where('adaptation_date_id', $id)
-                ->where('estado_form', false)
-                ->select(
-                    DB::raw('COUNT(*) as count')
-                )
-                ->first();
+                    ->where('adaptation_date_id', $id)
+                    ->where('estado_form', false)
+                    ->select(
+                        DB::raw('COUNT(*) as count')
+                    )
+                    ->first();
 
                 if ($fases->count > 0) {
                     return response()->json([
@@ -116,8 +115,8 @@ class OrdenesEjecutadasController extends Controller
     ): JsonResponse {
         // obtener orden
         $orden = OrdenesEjecutadas::where('adaptation_date_id', $id)
-        ->where('proceso', 'eject')
-        ->first();
+            ->where('proceso', 'eject')
+            ->first();
 
         // Obtener solo las fases de planificación
         $linea_fases = DB::table('ordenes_ejecutadas as ada')
@@ -263,6 +262,36 @@ class OrdenesEjecutadasController extends Controller
         }
         return response()->json([
             'fases' => $fases,
+            'estado' => 200,
+        ]);
+    }
+
+    public function getFaseControl($id): JsonResponse
+    {
+        $fases = DB::table('ordenes_ejecutadas as ada')
+        ->where('ada.id', $id)
+        ->where('ada.proceso', 'eject')
+        ->join('stages as std', function ($join) {
+            $join->on(
+                DB::raw(
+                    "FIND_IN_SET(std.id, REPLACE(REPLACE(REPLACE(REPLACE(COALESCE
+                    (ada.maestra_fases_fk, ''), '[', ''), ']', ''), ' ', ''), '\"', ''))"
+                ), '>', DB::raw('0')
+            );
+        })
+        ->whereIn('std.phase_type', ['Control'])
+        ->select(
+            'std.id',
+            'std.description as descripcion',
+            'std.phase_type',
+            DB::raw("FIND_IN_SET(std.id, REPLACE(REPLACE(REPLACE(REPLACE(COALESCE
+                    (ada.maestra_fases_fk, ''), '[', ''), ']', ''), ' ', ''), '\"', '')) as posicion")
+        )
+        ->orderByRaw('posicion ASC')
+        ->first();
+
+        return response()->json([
+            'fase_control' => $fases,
             'estado' => 200,
         ]);
     }
