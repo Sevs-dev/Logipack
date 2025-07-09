@@ -28,8 +28,8 @@ export default function NewActivity({ canEdit = false, canView = false }: Create
         Informativo: { type: "text", placeholder: "Escribe aquí..." },
         "Medir temperatura": {
             type: "temperature",
-            min: 35,
-            max: 42,
+            min: undefined,
+            max: undefined
         },
     };
     const [modalOpen, setModalOpen] = useState(false);

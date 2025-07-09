@@ -44,8 +44,8 @@ export const activityTypes: Record<string, ActivityType> = {
   Informativo: { type: "text", placeholder: "Escribe aquí..." },
   "Medir temperatura": {
     type: "temperature",
-    min: 35,
-    max: 42,
+    min: undefined,
+    max: undefined,
   },
 };
 
