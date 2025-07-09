@@ -972,7 +972,7 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
                 showTerciarioButton={true}
                 showTerciarioCondition={(row) => row.status_dates === "Planificación"} // 👈 Aquí va tu condición
                 onPDF={handlePDF}
-                showPDFCondition={(row) => row.status_dates === "Planificación"}
+                showPDFCondition={(row) => row.status_dates === "Ejecutado"}
             />
 
         </div>
