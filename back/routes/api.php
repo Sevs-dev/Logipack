@@ -23,8 +23,6 @@ use App\Http\Controllers\OrdenesEjecutadasController;
 use App\Http\Controllers\HistoryAuditController;
 use App\Http\Controllers\TimerController;
 use App\Http\Controllers\FaseTimerController;
-use App\Http\Controllers\PDFGeneral;
-use App\Http\Controllers\PDFGeneralController;
 use App\Http\Controllers\TimerControlController;
 
 Route::controller(AuthController::class)->group(function () {
@@ -169,7 +167,6 @@ Route::controller(AdaptationDateController::class)->group(function () {
     Route::post('/newPlan', 'newAPlan'); // Crear una nueva lineas 
     Route::put('/updatePlan/{id}', 'update'); // Crear una nueva lineas 
     Route::get('/getPlanId/{id}', 'getPlanById'); // Obtener una lineas específica  
-    Route::get('/getPlanByIdPDF/{id}', 'getPlanByIdPDF'); // Obtener una lineas específica  
     Route::get('/getPlannId/{id}', 'getPlanUnic'); // Obtener una lineas específica  
     Route::delete('/deletePlan/{id}', 'destroy'); // Eliminar una lineas
 });
@@ -217,6 +214,7 @@ Route::controller(OrdenesEjecutadasController::class)->group(function () {
     Route::get('/generar_orden/{id}', 'generar_orden'); // Crear una nueva lineas 
     Route::get('/linea_procesos/{id}', 'linea_procesos'); // Listar linea procesos
     Route::get('/siguiente_fase/{id}/{linea}/{tipo}', 'siguiente_fase'); // Listar linea procesos
+    Route::post('/guardar_actividades', 'guardar_formulario');
 });
 
 //Rutas Historial de Audits
@@ -251,4 +249,3 @@ Route::controller(FaseTimerController::class)->group(function () {
 Route::controller(TimerControlController::class)->group(function () {
     Route::post('/newTcontrol', 'store');    
 });
- 
