@@ -1,7 +1,7 @@
 // pages/pdf/PDFPage.tsx
 'use client';
 import React, { use, useEffect, useState, useRef } from 'react';
-import ReactFlow, { Background, Controls } from 'reactflow';
+import ReactFlow from 'reactflow';
 import 'reactflow/dist/style.css';
 import { getPlanningByIdPDF } from '../../../services/planing/planingServices';
 import withAuth from '../../../hooks/withAuth';

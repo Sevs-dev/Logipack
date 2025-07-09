@@ -19,6 +19,8 @@ type TableProps<T extends { id: number }> = {
     showTerciarioButton?: boolean;
     showHistory?: boolean;
     showPDF?: boolean;
+    showTerciarioCondition?: (row: T) => boolean;
+    showPDFCondition?: (row: T) => boolean;
 };
 
 const Header = ({
@@ -68,6 +70,8 @@ function Table<T extends { id: number }>({
     onTerciario,
     onHistory,
     onPDF,
+    showTerciarioCondition,
+    showPDFCondition,
     showDeleteButton = true,
     showEditButton = true,
     showTerciarioButton = true,
@@ -218,13 +222,13 @@ function Table<T extends { id: number }>({
                                             {showDeleteButton && onDelete && (
                                                 <Button onClick={() => onDelete(row.id)} variant="delete" />
                                             )}
-                                            {showTerciarioButton && onTerciario && (
+                                            {showTerciarioButton && onTerciario && (!showTerciarioCondition || showTerciarioCondition(row)) && (
                                                 <Button onClick={() => onTerciario(row.id)} variant="create2" />
                                             )}
                                             {showHistory && onHistory && (
                                                 <Button onClick={() => onHistory(row.id)} variant="history" />
                                             )}
-                                            {showPDF && onPDF && (
+                                            {showPDF && onPDF && (!showPDFCondition || showPDFCondition(row)) && (
                                                 <Button onClick={() => onPDF(row.id)} variant="pdf" />
                                             )}
                                         </td>

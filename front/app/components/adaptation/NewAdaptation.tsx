@@ -75,6 +75,11 @@ function NewAdaptation({ canEdit = false, canView = false }: CreateClientProps) 
     const [auditList, setAuditList] = useState<Audit[]>([]);
     const [, setSelectedAudit] = useState<Audit | null>(null);
 
+    const [search, setSearch] = useState("");
+    const filteredClients = clients.filter(c =>
+        c.name.toLowerCase().includes(search.toLowerCase())
+    );
+
     // Cargar Adaptaciones al montar si se puede ver
     useEffect(() => {
         if (canView) fetchAdaptations();
@@ -182,8 +187,12 @@ function NewAdaptation({ canEdit = false, canView = false }: CreateClientProps) 
     // Cargar BOM e Ingredientes si se requiere
     useEffect(() => {
         if (!selectedClient || selectedMaestras.length === 0) return;
+
         const selectedMaestraObj = maestra.find(m => m.id.toString() === selectedMaestras[0]);
+        console.log("🔍 selectedMaestraObj:", selectedMaestraObj);
+
         if (!selectedMaestraObj?.requiere_bom) {
+            console.log("⚠️ La maestra no requiere BOM");
             setBoms([]);
             setIngredients([]);
             return;
@@ -191,10 +200,26 @@ function NewAdaptation({ canEdit = false, canView = false }: CreateClientProps) 
 
         const fetchBom = async () => {
             try {
+                console.log("🚀 Fetching client ID:", selectedClient);
                 const clientData = await getClientsId(Number(selectedClient));
-                const articlesWithBom = await getArticleByClient(clientData.id);
-                const bomsExtraidos = articlesWithBom.map(a => a.bom).filter(bom => !!bom);
+                console.log("✅ Client data:", clientData);
+
+                const response = await getArticleByClient(clientData.id);
+                console.log("📦 Response de getArticleByClient:", response);
+
+                if (!Array.isArray(response.boms)) {
+                    console.error("❌ 'boms' no es un array:", response);
+                    setBoms([]);
+                    setIngredients([]);
+                    return;
+                }
+
+                const articlesWithBom = response.boms;
+                const bomsExtraidos = articlesWithBom.map(a => a).filter(bom => !!bom);
+                console.log("🧪 BOMs extraídos:", bomsExtraidos);
+
                 if (bomsExtraidos.length === 0) {
+                    console.log("ℹ️ No hay BOMs disponibles");
                     setBoms([]);
                     setIngredients([]);
                     return;
@@ -203,24 +228,29 @@ function NewAdaptation({ canEdit = false, canView = false }: CreateClientProps) 
                 setBoms(bomsExtraidos.map(b => ({ ...b, status: b.status ? 1 : 0 })));
 
                 const firstBom = bomsExtraidos[0];
+                console.log("🥇 Primer BOM:", firstBom);
+
                 if (firstBom.ingredients) {
                     try {
                         const parsed = JSON.parse(firstBom.ingredients);
+                        console.log("🍲 Ingredientes parseados:", parsed);
                         setIngredients(parsed);
                     } catch (e) {
-                        console.warn("Ingredientes mal formateados", e);
+                        console.warn("⚠️ Ingredientes mal formateados", e);
                         setIngredients([]);
                     }
                 } else {
+                    console.log("📭 El primer BOM no tiene ingredientes");
                     setIngredients([]);
                 }
             } catch (err) {
                 showError("Error al obtener BOM.");
-                console.error(err);
+                console.error("💥 Error en fetchBom:", err);
                 setBoms([]);
                 setIngredients([]);
             }
         };
+
         fetchBom();
     }, [selectedClient, selectedMaestras, maestra]);
 
@@ -594,23 +624,33 @@ function NewAdaptation({ canEdit = false, canView = false }: CreateClientProps) 
                                 </div>
 
                                 <div className="w-1/2">
-                                    <Text type="subtitle" color="#000">Cliente:</Text>
-                                    <select
+                                    <Text type="subtitle" color="#000">Buscar Cliente:</Text>
+                                    <input
+                                        type="text"
                                         className="w-full border p-3 rounded-lg text-gray-800 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500 text-center"
-                                        value={selectedClient}
-                                        onChange={e => {
-                                            setSelectedClient(Number(e.target.value));
-                                            setIngredients([]);
-                                        }}
+                                        placeholder="Buscar cliente..."
+                                        value={search}
+                                        onChange={e => setSearch(e.target.value)}
                                         disabled={!canEdit}
-                                    >
-                                        <option value="">Seleccione...</option>
-                                        {clients.map(client => (
-                                            <option key={client.id} value={client.id.toString()}>
+                                    />
+                                </div>
+                                <div className="w-1/2">
+                                    <Text type="subtitle" color="#000">Cliente Seleccionado</Text>
+                                    <ul className="border rounded-lg mt-1 max-h-40 overflow-auto bg-white">
+                                        {filteredClients.map(client => (
+                                            <li
+                                                key={client.id}
+                                                onClick={() => {
+                                                    setSelectedClient(client.id);
+                                                    setIngredients([]);
+                                                    setSearch(client.name); // opcional: para mostrar el nombre seleccionado
+                                                }}
+                                                className="w-full border p-3 rounded-lg text-gray-800 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500 text-center"
+                                            >
                                                 {client.name}
-                                            </option>
+                                            </li>
                                         ))}
-                                    </select>
+                                    </ul>
                                 </div>
                                 <div className="w-full max-w-md relative group space-y-2">
                                     {/* Label */}
