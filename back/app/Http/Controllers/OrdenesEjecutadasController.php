@@ -29,10 +29,21 @@ class OrdenesEjecutadasController extends Controller
         if ($orden) {
             // Orden pendiente
             if ($orden->estado == '100') {
-                return response()->json([
-                    'message' => 'Estado de la orden pendiente',
-                    'estado' => 100,
-                ]);
+
+                $fases = DB::table('actividades_ejecutadas')
+                ->where('adaptation_date_id', $id)
+                ->where('estado_form', false)
+                ->select(
+                    DB::raw('COUNT(*) as count')
+                )
+                ->first();
+
+                if ($fases->count > 0) {
+                    return response()->json([
+                        'message' => 'Estado de la orden pendiente',
+                        'estado' => 100,
+                    ]);
+                }
             }
 
             // Orden ejecutada
@@ -103,6 +114,11 @@ class OrdenesEjecutadasController extends Controller
     public function linea_procesos(
         $id
     ): JsonResponse {
+        // obtener orden
+        $orden = OrdenesEjecutadas::where('adaptation_date_id', $id)
+        ->where('proceso', 'eject')
+        ->first();
+
         // Obtener solo las fases de planificación
         $linea_fases = DB::table('ordenes_ejecutadas as ada')
             ->where('ada.adaptation_date_id', $id)
@@ -115,10 +131,14 @@ class OrdenesEjecutadasController extends Controller
                     ), '>', DB::raw('0')
                 );
             })
-            ->where(function ($query) {
+            ->whereIn('std.phase_type', ['Planificación', 'Conciliación'])
+            ->whereNotExists(function ($query) use ($id) {
                 $query
-                    ->where('std.phase_type', 'Planificación')
-                    ->orWhere('std.phase_type', 'Conciliación');
+                    ->select(DB::raw(1))
+                    ->from('actividades_ejecutadas')
+                    ->where('adaptation_date_id', $id)
+                    ->where('estado_form', false)
+                    ->whereIn('phase_type', ['Actividades', 'Procesos']);
             })
             ->select(
                 'std.id',
@@ -129,11 +149,25 @@ class OrdenesEjecutadasController extends Controller
             )
             ->orderByRaw('posicion ASC')
             ->get();
-        // validar si existe
 
-        $orden = OrdenesEjecutadas::where('adaptation_date_id', $id)
-            ->where('proceso', 'eject')
-            ->first();
+        // Recorrer para validar estado de la lineas
+        $fases = [];
+        foreach ($linea_fases as $item) {
+            // obtener tamaño de la linea
+            $linea = DB::table('actividades_ejecutadas as atc')
+                ->where('atc.adaptation_date_id', $id)
+                ->where('atc.fases_fk', $item->id)
+                ->where('atc.estado_form', 0)
+                ->select(
+                    DB::raw('COUNT(*) as count')
+                )
+                ->first();
+
+            // Vlidar si la linea tiene todos los estados en 0
+            if ($linea->count > 0) {
+                $fases[] = $item;
+            }
+        }
 
         // Obtener lineas de procesos
         $linea_procesos = DB::table('ordenes_ejecutadas as ada')
@@ -179,7 +213,7 @@ class OrdenesEjecutadasController extends Controller
         return response()->json([
             'orden' => $orden,
             'linea_procesos' => $lineas,
-            'linea_fases' => $linea_fases,
+            'linea_fases' => $fases,
             'estado' => 200,
         ]);
     }
@@ -198,26 +232,32 @@ class OrdenesEjecutadasController extends Controller
         $fases = null;
         // Validar tipo de linea
         if ($tipo == 'linea') {
-
             // Validar tipo de linea
             // Validar si la linea tiene todos los estados en 0
             $fases = DB::table('actividades_ejecutadas')
                 ->where('adaptation_date_id', $id)
-                ->where('linea', '=', $linea)
+                ->where('linea', $linea)
                 ->where('estado_form', false)
                 ->whereNotIn('phase_type', ['Planificación', 'Conciliación', 'Control'])
                 ->orderBy('id', 'asc')
                 ->first();
         } else {
-
             // Validar tipo de fase
             // Validar si la linea tiene todos los estados en 0
             $fases = DB::table('actividades_ejecutadas')
                 ->where('adaptation_date_id', $id)
-                ->where('linea', '=', 0)
+                ->where('linea', 0)
                 ->where('fases_fk', $linea)
                 ->where('estado_form', false)
                 ->whereIn('phase_type', ['Planificación', 'Conciliación'])
+                ->whereNotExists(function ($query) use ($id) {
+                    $query
+                        ->select(DB::raw(1))
+                        ->from('actividades_ejecutadas')
+                        ->where('adaptation_date_id', $id)
+                        ->where('estado_form', false)
+                        ->whereIn('phase_type', ['Actividades', 'Procesos']);
+                })
                 ->orderBy('id', 'asc')
                 ->first();
         }
@@ -225,6 +265,37 @@ class OrdenesEjecutadasController extends Controller
             'fases' => $fases,
             'estado' => 200,
         ]);
+    }
+
+    /**
+     * Guardar formulario
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function guardar_formulario(
+        Request $request
+    ): JsonResponse {
+        try {
+            $data = $request->all();
+            $id = $data['id'];
+            $forms = $data['forms'];
+
+            // Validar si existe la fase
+            ActividadesEjecutadas::where('id', $id)->update([
+                'forms' => $forms,
+                'estado_form' => true,
+            ]);
+            return response()->json([
+                'message' => 'Formulario guardado correctamente',
+                'estado' => 200,
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Error al guardar el formulario | ' . $e->getMessage(),
+                'estado' => 500,
+            ]);
+        }
     }
 
     /**
