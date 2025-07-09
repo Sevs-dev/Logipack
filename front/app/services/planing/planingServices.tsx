@@ -80,6 +80,27 @@ export const generar_orden = async (id: number) => {
     }
 }
 
+export const siguiente_fase = async (id: number, linea: number, tipo: string) => {
+    try {
+        const response = await Planning.get(`/siguiente_fase/${id}/${linea}/${tipo}`);
+        return response.data;
+    } catch (error: unknown) {
+        console.error("Error en siguiente_fase:", error);
+        throw error;
+    }
+}
+
+export const guardar_formulario = async (data: any) => {
+    try {
+        const response = await Planning.post(`/guardar_actividades`, JSON.stringify(data));
+        console.log(response.data);
+        return response.data;
+    } catch (error: unknown) {
+        console.error("Error en guardar_formulario:", error);
+        throw error;
+    }
+}
+
 export const getPlanningByIdPDF = async (id: number) => {
     try {
         const response = await Planning.get(`/getPlanByIdPDF/${id}`);

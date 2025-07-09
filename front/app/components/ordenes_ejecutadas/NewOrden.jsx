@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
+import { siguiente_fase, guardar_formulario, validate_orden } from "@/app/services/planing/planingServices";
 import Text from "../text/Text";
 import { showError } from "../toastr/Toaster";
-import { siguiente_fase, guardar_formulario, validate_orden } from "@/app/services/planing/planingServices";
 
 // Configuración de la base de datos IndexedDB
 const DB_NAME = "FasesDB";
@@ -110,6 +110,7 @@ const App = () => {
       try {
         const resp = await siguiente_fase(local.id, local.linea, local.tipo);
         setFase(resp.fases);
+        console.log(resp);
       } catch (error) {
         showError("No se pudo obtener la fase.");
       }
