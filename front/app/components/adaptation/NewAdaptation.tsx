@@ -204,18 +204,12 @@ function NewAdaptation({ canEdit = false, canView = false }: CreateClientProps) 
                 const clientData = await getClientsId(Number(selectedClient));
                 console.log("✅ Client data:", clientData);
 
-                const response = await getArticleByClient(clientData.id);
-                console.log("📦 Response de getArticleByClient:", response);
+                const articles: Article[] = await getArticleByClient(clientData.id);
+                console.log("📦 Artículos del cliente:", articles);
 
-                if (!Array.isArray(response.boms)) {
-                    console.error("❌ 'boms' no es un array:", response);
-                    setBoms([]);
-                    setIngredients([]);
-                    return;
-                }
-
-                const articlesWithBom = response.boms;
-                const bomsExtraidos = articlesWithBom.map(a => a).filter(bom => !!bom);
+                const bomsExtraidos = articles
+                    .map(article => article.bom)
+                    .filter((bom): bom is Bom & { ingredients?: string } => !!bom);
                 console.log("🧪 BOMs extraídos:", bomsExtraidos);
 
                 if (bomsExtraidos.length === 0) {
