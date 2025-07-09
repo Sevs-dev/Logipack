@@ -39,7 +39,6 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
     const [selectedMachines, setSelectedMachines] = useState<MachinePlanning[]>([]);
     const [selectedUsers, setSelectedUsers] = useState<UserPlaning[]>([]);
 
-    // Extraer fetchAll para poder reutilizarlo
     const fetchAll = useCallback(async () => {
         try {
             const [planningData, factoriesData, manuData, machineData, userData] = await Promise.all([
@@ -49,22 +48,27 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
                 getMachin(),
                 getUsers(),
             ]);
-
+            const clientCache = new Map<number, { name: string }>();
             const updatedPlanning = await Promise.all(
                 planningData.map(async (plan: Plan) => {
-                    const clientData = await getClientsId(plan.client_id);
-                    return { ...plan, client_name: clientData.name };
+                    if (!clientCache.has(plan.client_id)) {
+                        const clientData = await getClientsId(plan.client_id);
+                        clientCache.set(plan.client_id, clientData);
+                    }
+                    return {
+                        ...plan,
+                        client_name: clientCache.get(plan.client_id)!.name,
+                    };
                 })
             );
-
             setPlanning(updatedPlanning);
             setFactories(factoriesData);
             setManu(manuData);
             setMachine(machineData);
-            setUser(userData)
-        } catch {
+            setUser(userData);
+        } catch (error) {
             showError("Error cargando datos iniciales");
-            console.error("Error cargando datos iniciales en fetchAll");
+            console.error("Error en fetchAll:", error);
         }
     }, []);
 
@@ -170,9 +174,16 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
         }
         try {
             const cleanedPlan = sanitizePlan(updatedPlan);
-
             const lines: number[] = getLinesArray(updatedPlan.line);
+            const hasEmptyLines = lines.some(lineId => {
+                const activityIds = lineActivities[lineId] || [];
+                return activityIds.length === 0;
+            });
 
+            if (hasEmptyLines) {
+                showError("Hay líneas sin actividades asignadas. Por favor, completa todas antes de guardar.");
+                return;
+            }
             const formattedLines = lines.map(lineId => {
                 const activityIdsInLine = lineActivities[lineId] || [];
                 const filteredActivities = (activitiesDetails || []).filter(activity =>
@@ -183,11 +194,6 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
                     activities: filteredActivities.map(activity => ({ id: activity.id })),
                 };
             });
-
-            const safeActivities = formattedLines.length > 0
-                ? formattedLines
-                : lines.map(lineId => ({ id: lineId, activities: [] }));
-
             const planToSave: PlanServ = {
                 ...cleanedPlan,
                 adaptation_id: updatedPlan.adaptation_id,
@@ -197,7 +203,7 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
                 color: currentPlan?.color ?? undefined,
                 icon: currentPlan?.icon ?? undefined,
                 line: lines,
-                activities: safeActivities,
+                activities: formattedLines,
                 users: selectedUsers.map(u => u.id),
                 machine: selectedMachines.map(m => m.id),
                 duration: updatedPlan.duration?.toString() ?? undefined,
@@ -210,17 +216,13 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
                 activitiesDetails: updatedPlan.activitiesDetails,
                 lineActivities: updatedPlan.lineActivities,
             };
-
             await updatePlanning(updatedPlan.id, planToSave);
-
-            // Refrescar la data desde el servidor después de guardar
             await fetchAll();
-
             setIsOpen(false);
             handleClose();
             showSuccess("Planificación guardada correctamente");
-        } catch {
-            console.error("Error al guardar cambios:");
+        } catch (error) {
+            console.error("Error al guardar cambios:", error);
             showError("Error al guardar la planificación");
         }
     };
@@ -486,6 +488,10 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
     const removerUser = (id: number) => {
         setSelectedUsers(selectedUsers.filter(m => m.id !== id));
     };
+
+    const handlePDF = useCallback((id: number) => {
+        window.open(`/pages/pdfGeneral/${id}`,);
+    }, []);
 
     return (
         <div>
@@ -942,7 +948,7 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
                         </div>
                     </div>
 
-                    <div className="flex justify-end gap-2 mt-6">
+                    <div className="flex justify-center gap-2 mt-6">
                         <Button onClick={() => setIsOpen(false)} variant="cancel" label="Cancelar" />
                         <Button onClick={() => handleSave(currentPlan)} variant="save" label="Guardar" />
                     </div>
@@ -950,7 +956,7 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
             )}
 
             <Table
-                columns={["client_name", "number_order", "codart", "factory", "status_dates",]}
+                columns={["client_name", "number_order", "codart", "factory", "status_dates"]}
                 rows={planning}
                 columnLabels={{
                     client_name: "Cliente",
@@ -963,7 +969,12 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
                 showDeleteButton={false}
                 onEdit={handleEdit}
                 onTerciario={handleTerciario}
+                showTerciarioButton={true}
+                showTerciarioCondition={(row) => row.status_dates === "Planificación"} // 👈 Aquí va tu condición
+                onPDF={handlePDF}
+                showPDFCondition={(row) => row.status_dates === "Planificación"}
             />
+
         </div>
     );
 }

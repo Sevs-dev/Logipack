@@ -9,35 +9,78 @@ use Illuminate\Database\Eloquent\Model;
 class AdaptationDate extends Model
 {
     use HasFactory;
-    
 
+    // ✅ Permitir asignación masiva
     protected $guarded = [];
 
+    // ✅ Convertir 'activities' automáticamente a array
     protected $casts = [
         'activities' => 'array',
-        // otros casts...
     ];
 
-    // ✅ Relación con Adaptation (asumiendo que tiene adaptation_id)
+    /*
+    |--------------------------------------------------------------------------
+    | Relaciones
+    |--------------------------------------------------------------------------
+    */
+
+    // 🔗 Relación con la tabla Adaptation
     public function adaptation()
     {
         return $this->belongsTo(Adaptation::class);
     }
 
-    // ✅ Relación con Cliente (asumiendo que tiene client_id)
+    // 🔗 Relación con la tabla Clients (cliente)
     public function client()
     {
         return $this->belongsTo(Clients::class);
     }
 
-    // ✅ Relación con Maestra (clave foránea 'master')
+    // 🔗 Relación con la tabla Maestra (clave foránea 'master')
     public function maestra()
     {
         return $this->belongsTo(Maestra::class, 'master');
     }
 
+    // 🔗 Relación con la tabla OrdenesEjecutadas
+    public function ordenadas()
+    {
+        return $this->belongsTo(OrdenesEjecutadas::class);
+    }
+
+    // 🔗 Relación con la tabla Actividades Ejecutadas
+    public function actividadesEjecutadas()
+    {
+        return $this->hasMany(ActividadesEjecutadas::class, 'adaptation_date_id');
+    }
+
+    // 🔗 Relación con líneas de manufactura
+    public function lines()
+    {
+        return $this->hasMany(Manufacturing::class, 'id', 'line');
+    }
+
+    // 🔗 Relación con máquinas
+    public function machines()
+    {
+        return $this->hasMany(Factory::class, 'id', 'machine');
+    }
+
+    // 🔗 Relación con usuarios asignados
+    public function assignedUsers()
+    {
+        return $this->hasMany(User::class, 'id', 'users');
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Método personalizado para obtener fases y actividades del plan
+    |--------------------------------------------------------------------------
+    */
     public static function getPlanByIdEloquent($id)
     {
+        // ✅ Cargar adaptación con su maestra
         $adaptationDate = self::with('adaptation.maestra')->find($id);
         if (!$adaptationDate) return null;
 
@@ -47,7 +90,7 @@ class AdaptationDate extends Model
         $maestra = $adaptation->maestra;
         if (!$maestra) return null;
 
-        // Para type_stage
+        // ✅ Decodificar type_stage
         $typeStagesRaw = $maestra->type_stage ?? '[]';
         if (is_string($typeStagesRaw)) {
             $typeStages = json_decode($typeStagesRaw, true) ?: [];
@@ -57,7 +100,7 @@ class AdaptationDate extends Model
             $typeStages = [];
         }
 
-        // Para type_acondicionamiento
+        // ✅ Decodificar type_acondicionamiento
         $typeAcomRaw = $maestra->type_acondicionamiento ?? '[]';
         if (is_string($typeAcomRaw)) {
             $typeAcom = json_decode($typeAcomRaw, true) ?: [];
@@ -67,14 +110,21 @@ class AdaptationDate extends Model
             $typeAcom = [];
         }
 
+        // ✅ Obtener las fases (stages) de tipo 'Procesos'
         $stages = Stage::whereIn('id', $typeStages)
             ->where('phase_type', 'Procesos')
             ->get();
 
+        // ✅ Obtener líneas de tipo de acondicionamiento
         $lineaAcoms = LineaTipoAcondicionamiento::whereIn('tipo_acondicionamiento_id', $typeAcom)->get();
 
         $result = collect();
 
+        /*
+        |--------------------------------------------------------------------------
+        | Recorrer stages de procesos y agregar al resultado
+        |--------------------------------------------------------------------------
+        */
         foreach ($stages as $stage) {
             $activityIds = $stage->activities->pluck('id')->toArray();
 
@@ -89,12 +139,15 @@ class AdaptationDate extends Model
             ]);
         }
 
-
+        /*
+        |--------------------------------------------------------------------------
+        | Recorrer líneas de acondicionamiento y agregar fases adicionales
+        |--------------------------------------------------------------------------
+        */
         foreach ($lineaAcoms as $linAcom) {
             $faseIds = json_decode($linAcom->fase ?? '[]', true);
-            if (!is_array($faseIds)) {
-                $faseIds = [];
-            }
+            if (!is_array($faseIds)) $faseIds = [];
+
             foreach ($faseIds as $faseId) {
                 $stage = $stages->firstWhere('id', $faseId);
                 if ($stage) {
@@ -111,11 +164,16 @@ class AdaptationDate extends Model
             }
         }
 
-        // Agrupamos solo por ID_FASE para que no haya repeticiones
+        /*
+        |--------------------------------------------------------------------------
+        | Agrupar por ID_FASE para evitar duplicados y combinar datos
+        |--------------------------------------------------------------------------
+        */
         $grouped = $result->groupBy('ID_FASE')->map(function ($items) {
             $esEditableMax = collect($items)->max('ES_EDITABLE');
             $countTipoAcom = collect($items)->whereNotNull('ID_TIPO_ACOM')->count();
 
+            // Unificar actividades únicas
             $allActivityIds = collect($items)
                 ->flatMap(fn($i) => $i['ID_ACTIVITIES'])
                 ->unique()
@@ -132,11 +190,9 @@ class AdaptationDate extends Model
                 'DESCRIPCION_FASE' => $items[0]['DESCRIPCION_FASE'],
                 'ES_EDITABLE' => $esEditableMax,
                 'ES_EDITABLE_2' => $esEditable2,
-                // Si ni ES_EDITABLE ni ES_EDITABLE_2 son 1, vacía las actividades
                 'ID_ACTIVITIES' => ($esEditableMax === 1 || $esEditable2 === 1) ? $allActivityIds : [],
             ];
         })->values();
-
 
         return $grouped;
     }
