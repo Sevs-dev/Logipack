@@ -137,7 +137,7 @@ const App = () => {
 
       try {
         const stage = await getStageId(fase.fases_fk);
-        const {fase_control : control} = await fase_control(fase.orden_ejecutada);
+        const { fase_control: control } = await fase_control(fase.orden_ejecutada);
 
         // Validaciones
         if (!stage?.id) return;
@@ -187,7 +187,6 @@ const App = () => {
 
     guardarTimer();
   }, [fase]);
-
 
   // Manejador de cambio de inputs
   const inputChange = (e) => {
@@ -295,6 +294,37 @@ const App = () => {
       };
     });
   }
+
+  const refetchTimer = async () => {
+    if (!fase) return;
+
+    const stage = await getStageId(fase.fases_fk);
+    if (!stage?.id) return;
+
+    const ejecutadaId = Number(fase.id);
+    if (!Number.isFinite(ejecutadaId) || ejecutadaId <= 0) return;
+
+    const timerResult = await getTimerEjecutadaById(ejecutadaId);
+
+    if (
+      timerResult?.timer &&
+      timerResult.timer.id > 0 &&
+      timerResult.timer.stage_id > 0 &&
+      timerResult.timer.ejecutada_id === ejecutadaId
+    ) {
+      setTimerData({
+        ejecutadaId,
+        stageId: stage.id,
+        initialMinutes: Number(
+          timerResult.timer.pause_time ?? timerResult.timer.time
+        ),
+      });
+      setTimerReady(true);
+    } else {
+      setTimerData(null);
+      setTimerReady(false);
+    }
+  };
   return (
     <>
       {/* Información de la orden */}
@@ -314,6 +344,20 @@ const App = () => {
               Fase de {fase?.description_fase} ({fase?.phase_type})
             </Text>
           </div>
+
+          {/* Timer */}
+          {!timerReady || !timerData ? (
+            <div className="text-center text-sm text-gray-600 animate-pulse py-4">
+              ⏳ Cargando datos del temporizador...
+            </div>
+          ) : (
+            <Timer
+              ejecutadaId={timerData.ejecutadaId}
+              stageId={timerData.stageId}
+              initialMinutes={timerData.initialMinutes}
+              refetchTimer={refetchTimer}
+            />
+          )}
 
           {/* Formulario */}
           <form ref={formRef} onSubmit={handleSubmit} className="space-y-8">
