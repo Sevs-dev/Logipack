@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Activitie;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Log;
 
 
 class ActivitiesController extends Controller
@@ -73,49 +74,68 @@ class ActivitiesController extends Controller
      */
     public function updateActividad(Request $request, $id)
     {
+        Log::info('Petición recibida para actualizar actividad', [
+            'id' => $id,
+            'payload' => $request->all()
+        ]);
+
         $original = Activitie::find($id);
 
         if (!$original) {
+            Log::warning("Actividad con ID $id no encontrada.");
             return response()->json(['message' => 'Actividad no encontrada'], 404);
         }
 
-        $request->validate([
-            'description' => 'string',
-            'config' => 'json',
-            'binding' => 'boolean',
-            'has_time' => 'boolean',
-            'duration' => 'nullable',
-            'user' => 'string|nullable',
-        ]);
+        try {
+            $request->validate([
+                'description' => 'string',
+                'config' => 'json',
+                'binding' => 'boolean',
+                'has_time' => 'boolean',
+                'duration' => 'nullable',
+                'user' => 'string|nullable',
+            ]);
 
-        // Clonar el registro original
-        $newActividad = $original->replicate();
+            Log::info('Validación exitosa', $request->all());
 
-        // Mantener el mismo reference_id para vincular versiones
-        $newActividad->reference_id = $original->reference_id;
+            // Clonar el registro original
+            $newActividad = $original->replicate();
 
-        // Incrementar la versión
-        $newActividad->version = (int)$original->version + 1;
+            // Mantener el mismo reference_id para vincular versiones
+            $newActividad->reference_id = $original->reference_id;
 
-        // Actualizar con los valores nuevos si vienen, si no, dejar el original
-        $newActividad->description = $request->description ?? $original->description;
-        $newActividad->config = $request->config ? json_decode($request->config, true) : $original->config;
-        $newActividad->binding = $request->binding ?? $original->binding;
-        $newActividad->has_time = $request->has_time ?? $original->has_time;
-        $newActividad->duration = $request->duration ?? $original->duration;
-        $newActividad->user = $request->user ?? $original->user;
+            // Incrementar la versión
+            $newActividad->version = (int)$original->version + 1;
 
-        // Guardar la nueva versión
-        $newActividad->save();
+            // Actualizar con los valores nuevos si vienen, si no, dejar el original
+            $newActividad->description = $request->description ?? $original->description;
+            $newActividad->config = $request->config ? json_decode($request->config, true) : $original->config;
+            $newActividad->binding = $request->binding ?? $original->binding;
+            $newActividad->has_time = $request->has_time ?? $original->has_time;
+            $newActividad->duration = $request->duration ?? $original->duration;
+            $newActividad->user = $request->user ?? $original->user;
 
-        // Opcional: Podés marcar la versión anterior como inactive
-        $original->active = false;
-        $original->save();
+            // Guardar la nueva versión
+            $newActividad->save();
 
-        return response()->json([
-            'message' => 'Actividad actualizada. Nueva versión creada.',
-            'data' => $newActividad
-        ], 200);
+            // Marcar original como inactivo
+            $original->active = false;
+            $original->save();
+
+            Log::info("Actividad actualizada correctamente. Nueva ID: {$newActividad->id}");
+
+            return response()->json([
+                'message' => 'Actividad actualizada. Nueva versión creada.',
+                'data' => $newActividad
+            ], 200);
+        } catch (\Exception $e) {
+            Log::error('Error al actualizar actividad', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return response()->json(['error' => 'Error interno del servidor: ' . $e->getMessage()], 500);
+        }
     }
 
     /**

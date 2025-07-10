@@ -15,6 +15,8 @@ import { CreateClientProps } from "../../interfaces/CreateClientProps";
 import ModalSection from "../modal/ModalSection";
 import AuditModal from "../history/AuditModal";
 import { Audit } from "../../interfaces/Audit";
+import { getRole } from "../../services/userDash/authservices";
+import { Role } from "@/app/interfaces/CreateUser";
 
 function NewStage({ canEdit = false, canView = false }: CreateClientProps) {
     // === useState (Modal & Edición) ===
@@ -25,6 +27,8 @@ function NewStage({ canEdit = false, canView = false }: CreateClientProps) {
     const [description, setDescription] = useState("");
     const [duration, setDuration] = useState("");
     const [durationUser, setDurationUser] = useState("");
+    const [role, setRole] = useState("");
+    const [roles, setRoles] = useState<Role[]>([]);
     const [phaseType, setPhaseType] = useState<string>("");
     // === useState (Flags) ===
     const [repeat, setRepeat] = useState(false);
@@ -72,6 +76,17 @@ function NewStage({ canEdit = false, canView = false }: CreateClientProps) {
             setSelectedActivities([]);
         }
     }, [phaseType]);
+    useEffect(() => {
+        const fetchActivities = async () => {
+            try {
+                const role = await getRole();
+                setRoles(role);
+            } catch (error) {
+                showError("Error al cargar los roles");
+            }
+        };
+        fetchActivities();
+    }, []);
 
     useEffect(() => {
         if (
@@ -134,6 +149,7 @@ function NewStage({ canEdit = false, canView = false }: CreateClientProps) {
             status,
             multi,
             duration_user: durationUser,
+            role: role,
             duration,
             activities: [],
         };
@@ -174,6 +190,7 @@ function NewStage({ canEdit = false, canView = false }: CreateClientProps) {
             setCanPause(data.can_pause);
             setDuration(data.duration);
             setDurationUser(data.duration_user);
+            setRole(data.role)
             setIsEditOpen(true);
         } catch {
             console.error("Error obteniendo datos de la fase:");
@@ -202,6 +219,7 @@ function NewStage({ canEdit = false, canView = false }: CreateClientProps) {
             multi: Boolean(multi),
             activities: activityIds,
             duration_user: durationUser ?? "",
+            role: role ?? "",
             duration,
         };
         try {
@@ -318,32 +336,50 @@ function NewStage({ canEdit = false, canView = false }: CreateClientProps) {
                         </div>
 
                         {/* Tipo de Fase */}
-                        <div>
-                            <Text type="subtitle" color="#000">Tipo de Fase</Text>
-                            <select
-                                value={phaseType}
-                                onChange={(e) =>
-                                    setPhaseType(
-                                        e.target.value as
-                                        | "Planificación"
-                                        | "Conciliación"
-                                        | "Control"
-                                        | "Actividades"
-                                        | "Procesos"
-                                    )
-                                }
-                                className="mt-1 w-full text-center p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 text-black"
-                                disabled={!canEdit}
-                            >
-                                <option value="" disabled>
-                                    Seleccione un tipo de Fase
-                                </option>
-                                {phases.map((phase) => (
-                                    <option key={phase} value={phase}>
-                                        {phase}
+                        <div className="flex flex-col md:flex-row gap-4">
+                            <div className="w-full md:w-1/2">
+                                <Text type="subtitle" color="#000">Tipo de Fase</Text>
+                                <select
+                                    value={phaseType}
+                                    onChange={(e) =>
+                                        setPhaseType(
+                                            e.target.value as
+                                            | "Planificación"
+                                            | "Conciliación"
+                                            | "Control"
+                                            | "Actividades"
+                                            | "Procesos"
+                                        )
+                                    }
+                                    className="mt-1 w-full text-center p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 text-black"
+                                    disabled={!canEdit}
+                                >
+                                    <option value="" disabled>
+                                        Seleccione un tipo de Fase
                                     </option>
-                                ))}
-                            </select>
+                                    {phases.map((phase) => (
+                                        <option key={phase} value={phase}>
+                                            {phase}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div className="w-full md:w-1/2">
+                                <Text type="subtitle" color="#000">Rol</Text>
+                                <select
+                                    value={role}
+                                    onChange={(e) => setRole(e.target.value)}
+                                    className="w-full text-black border border-gray-300 rounded p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    disabled={!canEdit}
+                                >
+                                    <option value="">Selecciona un rol</option>
+                                    {roles.map((r) => (
+                                        <option key={r.id} value={r.name}>
+                                            {r.name}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
                         </div>
 
                         {/* Actividades (solo si Tipo de Fase es Actividades) */}

@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import {
-  siguiente_fase, guardar_formulario,
-  validate_orden, fase_control
+  siguiente_fase,
+  guardar_formulario,
+  validate_orden,
+  fase_control,
 } from "@/app/services/planing/planingServices";
 import {
   createTimer,
@@ -12,7 +14,7 @@ import { getStageId } from "../../services/maestras/stageServices";
 import Text from "../text/Text";
 import { showError } from "../toastr/Toaster";
 import Timer from "../timer/Timer";
-
+import DateLoader from "@/app/components/loader/DateLoader";
 // Configuración de la base de datos IndexedDB
 const DB_NAME = "FasesDB";
 const DB_VERSION = 1;
@@ -137,7 +139,9 @@ const App = () => {
 
       try {
         const stage = await getStageId(fase.fases_fk);
-        const { fase_control: control } = await fase_control(fase.orden_ejecutada);
+        const { fase_control: control } = await fase_control(
+          fase.orden_ejecutada
+        );
 
         // Validaciones
         if (!stage?.id) return;
@@ -246,11 +250,11 @@ const App = () => {
   // Mostrar mensaje si no hay datos
   if (!local || !local.orden) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-900">
-        <p className="text-white text-xl font-semibold">
-          No hay datos de la orden
-        </p>
-      </div>
+      <DateLoader
+        message=" No hay datos de la orden o líneas de procesos"
+        backgroundColor="#242424"
+        color="#ffff"
+      />
     );
   }
 
@@ -258,15 +262,14 @@ const App = () => {
   if (!fase) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-gray-900 gap-4">
-        <p className="text-white text-xl font-semibold">
-          Fase finalizada.
-        </p>
+        <p className="text-white text-xl font-semibold">Fase finalizada.</p>
         <button
           className="w-20 bg-blue-600 text-white p-2 rounded-xl hover:bg-blue-700 transition-colors"
           onClick={async () => {
             await validate_orden(local.id);
             window.close();
-          }}>
+          }}
+        >
           Cerrar
         </button>
       </div>
@@ -326,21 +329,53 @@ const App = () => {
     }
   };
   return (
-    <>
-      {/* Información de la orden */}
-      <div className="mb-6 p-4 bg-white shadow rounded-xl border">
-        <p className="text-gray-700"><span className="font-semibold">Orden N°:</span> {orden?.number_order}</p>
-        <p className="text-gray-700"><span className="font-semibold">Descripción:</span> {orden?.descripcion_maestra}</p>
-        <p className="text-gray-700"><span className="font-semibold">Proceso:</span> {orden?.proceso}</p>
-        <p className="text-gray-700"><span className="font-semibold">Línea:</span> {linea} ({local.descripcion})</p>
-        <p className="text-gray-700"><span className="font-semibold">Estado:</span> {orden?.estado}</p>
-      </div>
+    <div className="w-full rounded-2xl bg-white shadow-2xl border border-gray-100 overflow-hidden">
+      {/* Información de la Orden */}
+      <div className="mx-auto max-w-6xl rounded-2xl bg-white">
+        <div className="px-3 py-5 border-b border-gray-200">
+          <Text type="title" color="text-black">
+            Información de la Orden
+          </Text>
+        </div>
 
+        <div className="px-8 py-6 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6 text-sm text-gray-700">
+          <div>
+            <p className="text-gray-500 text-center">Orden N°</p>
+            <p className="font-medium text-gray-900 text-center">
+              {orden?.number_order}
+            </p>
+          </div>
+          <div>
+            <p className="text-gray-500 text-center">Maestra</p>
+            <p className="font-medium text-gray-900 text-center">
+              {orden?.descripcion_maestra}
+            </p>
+          </div>
+          <div>
+            <p className="text-gray-500 text-center">Proceso</p>
+            <p className="font-medium text-gray-900 text-center">
+              {orden?.proceso}
+            </p>
+          </div>
+          <div>
+            <p className="text-gray-500 text-center">Línea</p>
+            <p className="font-medium text-gray-900 text-center">
+              {linea} ({local.descripcion})
+            </p>
+          </div>
+          <div>
+            <p className="text-gray-500 text-center">Estado</p>
+            <p className="font-medium text-gray-900 text-center">
+              {orden?.estado}
+            </p>
+          </div>
+        </div>
+      </div>
       {/* Fase */}
       <div className="mb-6 p-4 bg-white shadow rounded-xl border">
         <div className="w-full border border-gray-200 rounded-xl p-6 md:p-10 space-y-8">
           <div className="bg-gradient-to-r from-purple-600 to-purple-500 text-white p-5 rounded-xl shadow">
-            <Text type="title" color="text-[#ffff]">
+            <Text type="title" color="text-white">
               Fase de {fase?.description_fase} ({fase?.phase_type})
             </Text>
           </div>
@@ -381,7 +416,7 @@ const App = () => {
                   const clave = item.clave;
                   return (
                     <div key={index}>
-                      <Text type="title" color="text-[#ffff]">
+                      <Text type="subtitle" color="text-[#ffff]">
                         {item.descripcion_activitie}
                       </Text>
 
@@ -447,7 +482,8 @@ const App = () => {
                           name={clave}
                           value={memoriaFase[linea]?.[clave] ?? ""}
                           required={item.binding}
-                          onChange={inputChange}>
+                          onChange={inputChange}
+                        >
                           <option value="">Seleccione</option>
                           {options.map((opt, k) => (
                             <option key={`opt-${k}`} value={opt}>
@@ -458,66 +494,78 @@ const App = () => {
                       )}
 
                       {/* RADIO */}
-                      {type === "radio" && options.map((opt, idx) => (
-                        <label key={idx} className="inline-flex items-center gap-2 mr-4">
-                          <input
-                            type="radio"
-                            name={clave}
-                            value={opt}
-                            required={item.binding}
-                            checked={memoriaFase[linea]?.[clave] === opt}
-                            onChange={inputChange}
-                            className="h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500"
-                          />
-                          <span className="text-sm text-gray-700">{opt}</span>
-                        </label>
-                      ))}
+                      {type === "radio" &&
+                        options.map((opt, idx) => (
+                          <label
+                            key={idx}
+                            className="inline-flex items-center gap-2 mr-4"
+                          >
+                            <input
+                              type="radio"
+                              name={clave}
+                              value={opt}
+                              required={item.binding}
+                              checked={memoriaFase[linea]?.[clave] === opt}
+                              onChange={inputChange}
+                              className="h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500"
+                            />
+                            <span className="text-sm text-gray-700">{opt}</span>
+                          </label>
+                        ))}
 
                       {/* CHECKBOX */}
-                      {type === "checkbox" && options.map((opt, idx) => (
-                        <label key={idx} className="inline-flex items-center gap-2 mr-4">
-                          <input
-                            type="checkbox"
-                            name={clave}
-                            required={
-                              item.binding &&
-                              (!Array.isArray(memoriaFase[linea]?.[clave]) ||
-                                memoriaFase[linea][clave].length === 0)
-                            }
-                            checked={
-                              Array.isArray(memoriaFase[linea]?.[clave]) &&
-                              memoriaFase[linea][clave].includes(opt)
-                            }
-                            onChange={(e) => {
-                              const checked = e.target.checked;
-                              setMemoriaFase((prev) => {
-                                const prevArr = Array.isArray(prev[linea]?.[clave])
-                                  ? prev[linea][clave]
-                                  : [];
-                                const newArr = checked
-                                  ? [...prevArr, opt]
-                                  : prevArr.filter((val) => val !== opt);
-                                const actualizado = {
-                                  ...prev,
-                                  [linea]: {
-                                    ...prev[linea],
-                                    [clave]: newArr,
-                                  },
-                                };
-                                saveToDB("memoria_fase", actualizado);
-                                return actualizado;
-                              });
-                            }}
-                            className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                          />
-                          <span className="text-sm text-gray-700">{opt}</span>
-                        </label>
-                      ))}
+                      {type === "checkbox" &&
+                        options.map((opt, idx) => (
+                          <label
+                            key={idx}
+                            className="inline-flex items-center gap-2 mr-4"
+                          >
+                            <input
+                              type="checkbox"
+                              name={clave}
+                              required={
+                                item.binding &&
+                                (!Array.isArray(memoriaFase[linea]?.[clave]) ||
+                                  memoriaFase[linea][clave].length === 0)
+                              }
+                              checked={
+                                Array.isArray(memoriaFase[linea]?.[clave]) &&
+                                memoriaFase[linea][clave].includes(opt)
+                              }
+                              onChange={(e) => {
+                                const checked = e.target.checked;
+                                setMemoriaFase((prev) => {
+                                  const prevArr = Array.isArray(
+                                    prev[linea]?.[clave]
+                                  )
+                                    ? prev[linea][clave]
+                                    : [];
+                                  const newArr = checked
+                                    ? [...prevArr, opt]
+                                    : prevArr.filter((val) => val !== opt);
+                                  const actualizado = {
+                                    ...prev,
+                                    [linea]: {
+                                      ...prev[linea],
+                                      [clave]: newArr,
+                                    },
+                                  };
+                                  saveToDB("memoria_fase", actualizado);
+                                  return actualizado;
+                                });
+                              }}
+                              className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                            />
+                            <span className="text-sm text-gray-700">{opt}</span>
+                          </label>
+                        ))}
 
                       {/* FILE (PDF) */}
                       {type === "file" && (
                         <div>
-                          {memoriaFase[linea]?.[clave]?.startsWith("data:application/pdf") && (
+                          {memoriaFase[linea]?.[clave]?.startsWith(
+                            "data:application/pdf"
+                          ) && (
                             <div className="mb-2">
                               <object
                                 data={memoriaFase[linea][clave]}
@@ -546,8 +594,9 @@ const App = () => {
                             type="file"
                             accept="application/pdf"
                             required={
-                              !memoriaFase[linea]?.[clave]?.startsWith("data:application/pdf") &&
-                              item.binding
+                              !memoriaFase[linea]?.[clave]?.startsWith(
+                                "data:application/pdf"
+                              ) && item.binding
                             }
                             name={clave}
                             onChange={(e) => {
@@ -578,7 +627,9 @@ const App = () => {
                       {/* IMAGE */}
                       {type === "image" && (
                         <div>
-                          {memoriaFase[linea]?.[clave]?.startsWith("data:image") && (
+                          {memoriaFase[linea]?.[clave]?.startsWith(
+                            "data:image"
+                          ) && (
                             <div className="mb-2">
                               <img
                                 src={memoriaFase[linea][clave]}
@@ -594,8 +645,9 @@ const App = () => {
                             type="file"
                             accept="image/*"
                             required={
-                              !memoriaFase[linea]?.[clave]?.startsWith("data:image") &&
-                              item.binding
+                              !memoriaFase[linea]?.[clave]?.startsWith(
+                                "data:image"
+                              ) && item.binding
                             }
                             name={clave}
                             onChange={(e) => {
@@ -643,13 +695,14 @@ const App = () => {
             <button
               type="submit"
               className="w-full bg-blue-600 text-white p-2 
-              rounded-xl hover:bg-blue-700 transition-colors">
+              rounded-xl hover:bg-blue-700 transition-colors"
+            >
               Siguiente Fase
             </button>
           </form>
         </div>
       </div>
-    </>
+    </div>
   );
 };
 

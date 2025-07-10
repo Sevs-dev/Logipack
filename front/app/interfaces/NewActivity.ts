@@ -42,7 +42,7 @@ export const activityTypes: Record<string, ActivityType> = {
   "Selección múltiple": { type: "checkbox", options: ["Opción A", "Opción B"] },
   Firma: { type: "signature" },
   Informativo: { type: "text", placeholder: "Escribe aquí..." },
-  "Medir temperatura": {
+  Rangos: {
     type: "temperature",
     min: undefined,
     max: undefined,

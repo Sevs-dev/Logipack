@@ -12,6 +12,7 @@ export interface Stage {
   activities: string;
   duration: string;
   duration_user: string;
+  role: string;
 }
 
 export interface Data {
@@ -28,6 +29,7 @@ export interface Data {
   duration: string;
   duration_user: string;
   user?: string;
+  role?: string;
 }
 
 export interface StageResponse {

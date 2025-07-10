@@ -26,7 +26,7 @@ export default function NewActivity({ canEdit = false, canView = false }: Create
         "Selección múltiple": { type: "checkbox", options: ["Opción A", "Opción B"] },
         Firma: { type: "signature" },
         Informativo: { type: "text", placeholder: "Escribe aquí..." },
-        "Medir temperatura": {
+        "Rangos": {
             type: "temperature",
             min: undefined,
             max: undefined
@@ -194,7 +194,7 @@ export default function NewActivity({ canEdit = false, canView = false }: Create
                 const def = activityTypes[key];
                 if (def.type !== parsed.type) return false;
                 if (def.type === "temperature") return true;
-                if (parsed.type === "text" && parsed.min && parsed.max) return key === "Medir temperatura";
+                if (parsed.type === "text" && parsed.min && parsed.max) return key === "Rangos";
                 return JSON.stringify(def) === JSON.stringify(parsed);
             }) || "Texto corto";
             setEditingId(data.id);
@@ -383,15 +383,15 @@ export default function NewActivity({ canEdit = false, canView = false }: Create
                         )}
 
                         {/* Rango de temperatura */}
-                        {selectedType === "Medir temperatura" && (
+                        {selectedType === "Rangos" && (
                             <div className="flex items-center gap-2">
                                 <label htmlFor="duration" className="text-sm text-black flex items-center gap-1">
                                     Rangos de la temperatura a medir
                                     <InfoPopover
                                         content={
                                             <>
-                                                Establece el rango de temperatura permitida para esta actividad.<br />
-                                                Puedes usar decimales (por ejemplo: <code>36.5</code> °C).<br />
+                                                Establece un rango numerico permitido para esta actividad.<br />
+                                                Puedes usar decimales (por ejemplo: <code>36.5</code>).<br />
                                                 El valor mínimo debe ser menor que el máximo.
                                             </>
                                         }

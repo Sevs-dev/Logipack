@@ -41,6 +41,7 @@ class StagesController extends Controller
             'duration' => 'nullable|string',
             'duration_user' => 'nullable|string',
             'user' => 'string|nullable',
+            'role' => 'string|nullable',
         ]);
 
         // Normalizar activities (por ejemplo, convertir a enteros)
@@ -106,6 +107,7 @@ class StagesController extends Controller
             'duration'        => 'nullable|string',
             'duration_user'   => 'nullable|string',
             'user'            => 'string|nullable',
+            'role'            => 'string|nullable',
         ]);
 
         Log::info('✅ Datos validados correctamente', $validatedData);
