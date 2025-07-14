@@ -141,20 +141,24 @@ class AdaptationDateController extends Controller
     public function getPlanById($id)
     {
         try {
-            $plan = AdaptationDate::find($id); 
+            $plan = AdaptationDate::getPlanByIdEloquent($id);
+
+            // Log para inspeccionar el contenido de $plan
+            Log::info('Contenido de $plan en getPlanById:', ['plan' => $plan]);
 
             if (!$plan) {
                 return response()->json(['error' => 'Adaptation not found'], 404);
             }
+
             return response()->json(['plan' => $plan], 200);
         } catch (\Exception $e) {
+            Log::error('Error retrieving plan: ' . $e->getMessage());
             return response()->json([
                 'error' => 'Error retrieving plan',
                 'details' => $e->getMessage(),
             ], 500);
         }
     }
-
 
     public function getPlanUnic($id)
     {

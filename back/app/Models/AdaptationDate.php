@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Traits\AdaptationAuditable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Log;
 
 class AdaptationDate extends Model
 {
@@ -78,55 +79,70 @@ class AdaptationDate extends Model
     | Método personalizado para obtener fases y actividades del plan
     |--------------------------------------------------------------------------
     */
+
     public static function getPlanByIdEloquent($id)
     {
-        // ✅ Cargar adaptación con su maestra
+        Log::info("🔍 Buscando planificación con ID: {$id}");
+
         $adaptationDate = self::with('adaptation.maestra')->find($id);
-        if (!$adaptationDate) return null;
+        if (!$adaptationDate) {
+            Log::warning("⚠️ No se encontró adaptación con ID: {$id}");
+            return null;
+        }
 
         $adaptation = $adaptationDate->adaptation;
-        if (!$adaptation) return null;
+        if (!$adaptation) {
+            Log::warning("⚠️ No se encontró 'adaptation' asociada al ID: {$id}");
+            return null;
+        }
 
         $maestra = $adaptation->maestra;
-        if (!$maestra) return null;
+        if (!$maestra) {
+            Log::warning("⚠️ No se encontró 'maestra' asociada a la adaptación ID: {$adaptation->id}");
+            return null;
+        }
 
-        // ✅ Decodificar type_stage
+        // Type Stage
         $typeStagesRaw = $maestra->type_stage ?? '[]';
+        Log::info("📦 type_stage (raw):", ['raw' => $typeStagesRaw]);
+
         if (is_string($typeStagesRaw)) {
-            $typeStages = json_decode($typeStagesRaw, true) ?: [];
+            $decoded = json_decode($typeStagesRaw, true) ?: [];
+            $typeStages = isset($decoded['raw']) ? $decoded['raw'] : $decoded;
         } elseif (is_array($typeStagesRaw)) {
             $typeStages = $typeStagesRaw;
         } else {
             $typeStages = [];
         }
+        Log::info("✅ type_stage (decodificado):", $typeStages);
 
-        // ✅ Decodificar type_acondicionamiento
+        // Type Acondicionamiento
         $typeAcomRaw = $maestra->type_acondicionamiento ?? '[]';
+        Log::info("📦 type_acondicionamiento (raw):", ['raw' => $typeAcomRaw]);
+
         if (is_string($typeAcomRaw)) {
-            $typeAcom = json_decode($typeAcomRaw, true) ?: [];
+            $decodedAcom = json_decode($typeAcomRaw, true) ?: [];
+            $typeAcom = isset($decodedAcom['raw']) ? $decodedAcom['raw'] : $decodedAcom;
         } elseif (is_array($typeAcomRaw)) {
             $typeAcom = $typeAcomRaw;
         } else {
             $typeAcom = [];
         }
+        Log::info("✅ type_acondicionamiento (decodificado):", $typeAcom);
 
-        // ✅ Obtener las fases (stages) de tipo 'Procesos'
         $stages = Stage::whereIn('id', $typeStages)
             ->where('phase_type', 'Procesos')
             ->get();
+        Log::info("📌 Stages encontrados:", $stages->pluck('id', 'description')->toArray());
 
-        // ✅ Obtener líneas de tipo de acondicionamiento
         $lineaAcoms = LineaTipoAcondicionamiento::whereIn('tipo_acondicionamiento_id', $typeAcom)->get();
+        Log::info("📌 Líneas de acondicionamiento encontradas:", $lineaAcoms->pluck('id', 'tipo_acondicionamiento_id')->toArray());
 
         $result = collect();
 
-        /*
-        |--------------------------------------------------------------------------
-        | Recorrer stages de procesos y agregar al resultado
-        |--------------------------------------------------------------------------
-        */
         foreach ($stages as $stage) {
             $activityIds = $stage->activities->pluck('id')->toArray();
+            Log::info("🧩 Actividades para Stage {$stage->id} - {$stage->description}:", $activityIds);
 
             $result->push([
                 'ID_ADAPTACION' => $adaptation->id,
@@ -139,14 +155,13 @@ class AdaptationDate extends Model
             ]);
         }
 
-        /*
-        |--------------------------------------------------------------------------
-        | Recorrer líneas de acondicionamiento y agregar fases adicionales
-        |--------------------------------------------------------------------------
-        */
         foreach ($lineaAcoms as $linAcom) {
             $faseIds = json_decode($linAcom->fase ?? '[]', true);
-            if (!is_array($faseIds)) $faseIds = [];
+            if (!is_array($faseIds)) {
+                $faseIds = [];
+            }
+
+            Log::info("🔄 Recorriendo fases de línea de acondicionamiento {$linAcom->tipo_acondicionamiento_id}:", $faseIds);
 
             foreach ($faseIds as $faseId) {
                 $stage = $stages->firstWhere('id', $faseId);
@@ -156,7 +171,7 @@ class AdaptationDate extends Model
                         'ID_MAESTRA' => $maestra->id,
                         'ID_TIPO_ACOM' => $linAcom->tipo_acondicionamiento_id,
                         'ID_FASE' => $stage->id,
-                        'ID_ACTIVITIES' => $activityIds,
+                        'ID_ACTIVITIES' => $stage->activities->pluck('id')->toArray(),
                         'DESCRIPCION_FASE' => $stage->description,
                         'ES_EDITABLE' => $linAcom->editable,
                     ]);
@@ -164,16 +179,12 @@ class AdaptationDate extends Model
             }
         }
 
-        /*
-        |--------------------------------------------------------------------------
-        | Agrupar por ID_FASE para evitar duplicados y combinar datos
-        |--------------------------------------------------------------------------
-        */
+        Log::info("🗃️ Resultado sin agrupar (raw):", $result->toArray());
+
         $grouped = $result->groupBy('ID_FASE')->map(function ($items) {
             $esEditableMax = collect($items)->max('ES_EDITABLE');
             $countTipoAcom = collect($items)->whereNotNull('ID_TIPO_ACOM')->count();
 
-            // Unificar actividades únicas
             $allActivityIds = collect($items)
                 ->flatMap(fn($i) => $i['ID_ACTIVITIES'])
                 ->unique()
@@ -193,6 +204,8 @@ class AdaptationDate extends Model
                 'ID_ACTIVITIES' => ($esEditableMax === 1 || $esEditable2 === 1) ? $allActivityIds : [],
             ];
         })->values();
+
+        Log::info("✅ Resultado final agrupado:", $grouped->toArray());
 
         return $grouped;
     }
