@@ -10,6 +10,7 @@ import {
   getTimerEjecutadaById,
 } from "../../services/timer/timerServices";
 import { getStageId } from "../../services/maestras/stageServices";
+import Firma from "../firma/Firma";
 
 import Text from "../text/Text";
 import { showError } from "../toastr/Toaster";
