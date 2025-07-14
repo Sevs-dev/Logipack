@@ -217,6 +217,7 @@ Route::controller(OrdenesEjecutadasController::class)->group(function () {
     Route::post('/guardar_actividades', 'guardar_formulario');
     Route::get('/getFaseControl/{id}', 'getFaseControl');
     Route::get('/validate_rol/{id}', 'validateRol');
+    Route::get('/condiciones_fase/{id}/{fase}', 'condicionesFase');
 });
 
 //Rutas Historial de Audits

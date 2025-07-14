@@ -275,26 +275,26 @@ class OrdenesEjecutadasController extends Controller
     public function getFaseControl($id): JsonResponse
     {
         $fases = DB::table('ordenes_ejecutadas as ada')
-        ->where('ada.id', $id)
-        ->where('ada.proceso', 'eject')
-        ->join('stages as std', function ($join) {
-            $join->on(
-                DB::raw(
-                    "FIND_IN_SET(std.id, REPLACE(REPLACE(REPLACE(REPLACE(COALESCE
+            ->where('ada.id', $id)
+            ->where('ada.proceso', 'eject')
+            ->join('stages as std', function ($join) {
+                $join->on(
+                    DB::raw(
+                        "FIND_IN_SET(std.id, REPLACE(REPLACE(REPLACE(REPLACE(COALESCE
                     (ada.maestra_fases_fk, ''), '[', ''), ']', ''), ' ', ''), '\"', ''))"
-                ), '>', DB::raw('0')
-            );
-        })
-        ->whereIn('std.phase_type', ['Control'])
-        ->select(
-            'std.id',
-            'std.description as descripcion',
-            'std.phase_type',
-            DB::raw("FIND_IN_SET(std.id, REPLACE(REPLACE(REPLACE(REPLACE(COALESCE
+                    ), '>', DB::raw('0')
+                );
+            })
+            ->whereIn('std.phase_type', ['Control'])
+            ->select(
+                'std.id',
+                'std.description as descripcion',
+                'std.phase_type',
+                DB::raw("FIND_IN_SET(std.id, REPLACE(REPLACE(REPLACE(REPLACE(COALESCE
                     (ada.maestra_fases_fk, ''), '[', ''), ']', ''), ' ', ''), '\"', '')) as posicion")
-        )
-        ->orderByRaw('posicion ASC')
-        ->first();
+            )
+            ->orderByRaw('posicion ASC')
+            ->first();
 
         return response()->json([
             'fase_control' => $fases,
@@ -302,11 +302,17 @@ class OrdenesEjecutadasController extends Controller
         ]);
     }
 
+    /**
+     * Validar rol
+     *
+     * @param int $id
+     * @return JsonResponse
+     */
     public function validateRol($id): JsonResponse
     {
         $fases = DB::table('stages as std')
-        ->where('std.id', $id)
-        ->first();
+            ->where('std.id', $id)
+            ->first();
 
         return response()->json([
             'fase' => $fases,
@@ -314,6 +320,44 @@ class OrdenesEjecutadasController extends Controller
         ]);
     }
 
+    /**
+     * Condiciones de la fase
+     *
+     * @param int $id
+     * @return JsonResponse
+     */
+    public function condicionesFase($id, $fase): JsonResponse
+    {
+        $datos = DB::table('actividades_ejecutadas')
+            ->where('adaptation_date_id', $id)
+            ->whereIn('fases_fk', function ($query) use ($id, $fase) {
+                $query
+                    ->select('fases_fk')
+                    ->from('actividades_ejecutadas')
+                    ->where('adaptation_date_id', $id)
+                    ->where('id', '<', function ($subquery) use ($id, $fase) {
+                        $subquery
+                            ->select('id')
+                            ->from('actividades_ejecutadas')
+                            ->where('adaptation_date_id', $id)
+                            ->where('repeat_line', 0)
+                            ->where('fases_fk', $fase)
+                            ->orderBy('id')
+                            ->limit(1);
+                    });
+            })
+            ->where('phase_type', '!=', 'Conciliación')
+            ->where('estado_form', 0)
+            ->select(
+                DB::raw('COUNT(*) as count')
+            )
+            ->first();
+
+        return response()->json([
+            'condicion_1' => $datos->count, 
+            'estado' => 200,
+        ]);
+    }
 
     /**
      * Guardar formulario
