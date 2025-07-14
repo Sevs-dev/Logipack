@@ -266,6 +266,12 @@ class OrdenesEjecutadasController extends Controller
         ]);
     }
 
+    /**
+     * Fase de control
+     *
+     * @param int $id
+     * @return JsonResponse
+     */
     public function getFaseControl($id): JsonResponse
     {
         $fases = DB::table('ordenes_ejecutadas as ada')
@@ -295,6 +301,19 @@ class OrdenesEjecutadasController extends Controller
             'estado' => 200,
         ]);
     }
+
+    public function validateRol($id): JsonResponse
+    {
+        $fases = DB::table('stages as std')
+        ->where('std.id', $id)
+        ->first();
+
+        return response()->json([
+            'fase' => $fases,
+            'estado' => 200,
+        ]);
+    }
+
 
     /**
      * Guardar formulario
