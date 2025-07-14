@@ -22,7 +22,7 @@ export const getPlanning = async () => {
 
 export const getActivitiesByPlanning = async (id: number) => {
     try {
-        const response = await Planning.get(`/getPlanId/${id}`);
+        const response = await Planning.get(`/getPlanId/${id}`); 
         return response.data;
     } catch (error: unknown) {
         console.error("Error en getPlanId:", error);

@@ -398,23 +398,36 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
     const assignedActivityIds = useMemo(() => Object.values(lineActivities).flat(), [lineActivities]);
     const availableActivities = useMemo(() => activitiesDetails, [activitiesDetails]);
 
-    async function fetchAndProcessPlans(id: number) {
-        console.log("Planes desde servidor:", id);
-        const { plan: serverPlans = [] } = await getActivitiesByPlanning(id);
-
-        if (!Array.isArray(serverPlans) || serverPlans.length === 0) {
-            throw new Error("Planificación no encontrada desde servidor");
+    async function fetchAndProcessPlans(id: number) { 
+        const response = await getActivitiesByPlanning(id); 
+        const planData = response.plan;
+        let serverPlans: any[] = [];
+        if (Array.isArray(planData)) {
+            serverPlans = planData;
+        } else if (planData && typeof planData === 'object') {
+            // Si es un solo objeto, lo convertimos en array para procesar igual
+            serverPlans = [planData];
+        } else {
+            console.warn("⚠️ planData no es un objeto ni un array válido");
+            throw new Error("Respuesta inválida del servidor");
+        } 
+        if (serverPlans.length === 0) {
+            console.info("📭 No hay planes asociados a este ID, devolviendo []");
+            return [];
         }
-
         const serverPlansWithDetails = await Promise.all(
             serverPlans.map(async (line) => {
+                console.log("🔍 Línea de planificación:", line);
                 const activitiesDetails = Array.isArray(line.ID_ACTIVITIES)
                     ? await Promise.all(line.ID_ACTIVITIES.map(getActivitieId))
                     : [];
+
+                console.log("🧩 Actividades detalladas:", activitiesDetails);
                 return { ...line, activitiesDetails };
             })
         );
 
+        console.log("✅ Planes procesados completamente:", serverPlansWithDetails);
         return serverPlansWithDetails;
     }
 
