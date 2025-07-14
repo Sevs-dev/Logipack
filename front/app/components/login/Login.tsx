@@ -9,28 +9,26 @@ import { FiEye, FiEyeOff } from 'react-icons/fi';
 import { showError } from '../toastr/Toaster';
 
 const cookieOptions = {
-  maxAge: 3600, // 2 horas
+  maxAge: 60 * 60 * 2, // 2 horas
   path: '/',
   secure: process.env.NODE_ENV === 'production',
-  sameSite: 'strict',
+  sameSite: 'lax', // ✅ cambiado de strict a lax
 };
 
 export default function Login() {
   const router = useRouter();
-  const [email, setEmail] = useState(''); // valores por defecto para testing
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState('admin@logismart.com');
+  const [password, setPassword] = useState('Logismart123*');
   const [loading, setLoading] = useState(false);
 
-  // 🧠 Manejo del envío del formulario de login
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
     try {
-      const response = await login(email, password); // Lanza error si falla (401, 422, etc.)
+      const response = await login(email, password);
 
       if (response.success) {
-        // 🧠 Desestructuramos token y usuario
         const data = response.data as {
           autorización: { token: string };
           usuario: { email: string; role: string; name: string };
@@ -39,17 +37,18 @@ export default function Login() {
         const { token } = data.autorización;
         const { email, role, name } = data.usuario;
 
-        // 🍪 Guardamos en cookies
+        // 🍪 Guardar cookies
         nookies.set(null, 'token', token, cookieOptions);
         nookies.set(null, 'email', email, cookieOptions);
         nookies.set(null, 'role', role, cookieOptions);
         nookies.set(null, 'name', name, cookieOptions);
 
-        window.location.href = '/pages/dashboard';
-
+        // ✅ Esperar un poco para asegurar propagación
+        setTimeout(() => {
+          window.location.href = '/pages/dashboard';
+        }, 100);
       }
     } catch (err) {
-      // console.log('Error capturado:', err);
       if (err instanceof Error) {
         showError(err.message);
       } else {
@@ -60,7 +59,6 @@ export default function Login() {
     }
   };
 
-  // ✨ Animación simple para entrada
   const fadeIn = {
     hidden: { opacity: 0, y: 20 },
     visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: 'easeOut' } },
@@ -133,7 +131,6 @@ export default function Login() {
   );
 }
 
-// 💡 Input reutilizable para email/contraseña
 const Input = ({
   id,
   label,
@@ -170,7 +167,6 @@ const Input = ({
           required
         />
 
-        {/* 👁 Icono para mostrar/ocultar contraseña */}
         {isPassword && (
           <button
             type="button"

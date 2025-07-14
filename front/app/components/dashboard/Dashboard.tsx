@@ -1,16 +1,25 @@
 'use client';
-import React from 'react';
+import React, { useState } from "react";
 import useUserData from '../../hooks/useUserData';
 import { FaUserCircle } from 'react-icons/fa';
+import ModalBlock from '../modal/ModalBlock';
 
 const Dashboard = () => {
   const { userName } = useUserData();
+  const isBlocked = false; // Cámbialo por tu lógica real
+  const [showModal, setShowModal] = useState(isBlocked);
 
   if (!userName) return <p>No estás logueado. Por favor, inicia sesión.</p>;
 
   return (
     <div className="flex min-h-screen bg-gray-100">
       {/* Contenido principal */}
+      <ModalBlock
+        isOpen={showModal}
+        onClose={() => setShowModal(false)}
+        message="Tu acceso está bloqueado temporalmente. Contacta al administrador."
+      />
+
       <main className="flex-1 p-6 md:p-10 overflow-auto">
         <header className="flex justify-between items-center mb-8">
           <div>
