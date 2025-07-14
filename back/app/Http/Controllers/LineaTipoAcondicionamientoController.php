@@ -123,6 +123,7 @@ class LineaTipoAcondicionamientoController extends Controller
     {
         $lineas  = DB::table('linea_tipo_acondicionamientos as lta')
         ->leftJoin('stages as std', 'std.id', '=', 'lta.fase')
+        ->leftJoin('stages as cnt', 'cnt.id', '=', 'lta.fase_control')
         ->leftJoin('tipo_acondicionamientos as ta', 'ta.id', '=', 'lta.tipo_acondicionamiento_id')
         ->select([
             'lta.id',
@@ -136,6 +137,7 @@ class LineaTipoAcondicionamientoController extends Controller
             'lta.editable',
             'lta.control',
             'lta.fase_control',
+            'cnt.description as descripcion_fase_control',
             'lta.created_at',
             'lta.updated_at'
         ])
