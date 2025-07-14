@@ -87,6 +87,7 @@ export const getLineaTipoAcondicionamientoById = async (id: number) => {
 export const getListTipoyLineas = async (id: number) => {
     try {
         const response = await Stage.get(`/getListTipoyLineas/${id}`);
+        console.log(response.data);
         return response.data;
     } catch (error) {
         console.error('Error en getListTipoyLineas:', error);

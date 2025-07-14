@@ -41,6 +41,7 @@ export default function NewTipoAcondicionamiento({ canEdit = false, canView = fa
     });
     const [listTipoAcom, setListTipoAcom] = useState<DataTipoAcondicionamiento[]>([]);
     const [listLinaTipoAcom, setLineaTipoAcom] = useState<DataLineaTipoAcondicionamiento[]>([]);
+    const [listLinaTipoAcomEdit, setLineaTipoAcomEdit] = useState<DataLineaTipoAcondicionamiento[]>([]);
     const [listStages, setListStages] = useState<Stage[]>([]);
     const [listStagesControls, setListStagesControls] = useState<Stage[]>([]);
 
@@ -168,7 +169,7 @@ export default function NewTipoAcondicionamiento({ canEdit = false, canView = fa
             fase_control: "",
             descripcion_fase_control: "",
         }));
-        setLineaTipoAcom(response.lineas);
+        setLineaTipoAcomEdit(response.lineas);
         setIsOpenEdit(true);
     };
 
@@ -298,7 +299,8 @@ export default function NewTipoAcondicionamiento({ canEdit = false, canView = fa
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-gray-200">
-                                            {listLinaTipoAcom.map((item) => (
+                                            {/* {JSON.stringify(listLinaTipoAcomEdit)} */}
+                                            {listLinaTipoAcomEdit.map((item) => (
                                                 <tr key={item.id} className="hover:bg-gray-50 transition-colors border-b border-gray-200">
                                                     <td className="px-4 py-3 border-r border-gray-200">{item.orden}</td>
                                                     <td className="px-4 py-3 border-r border-gray-200">{item.descripcion}</td>
