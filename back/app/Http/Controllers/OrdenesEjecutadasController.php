@@ -308,10 +308,10 @@ class OrdenesEjecutadasController extends Controller
      * @param int $id
      * @return JsonResponse
      */
-    public function validateRol($id): JsonResponse
+    public function validateRol($fase): JsonResponse
     {
         $fases = DB::table('stages as std')
-            ->where('std.id', $id)
+            ->where('std.id', $fase)
             ->select(
                 'std.id',
                 'std.description as descripcion',

@@ -430,7 +430,7 @@ const App = () => {
                   } catch (error) {
                     config = {};
                   }
-                  const { type, options } = config;
+                  const { type, options, min, max } = config;
                   const clave = item.clave;
                   return (
                     <div key={index}>
@@ -704,6 +704,30 @@ const App = () => {
                           saveToDB={saveToDB}
                           typeMem="memoria_fase"
                         />
+                      )}
+
+                      {/* TEMPERATURE */}
+                      {type === "temperature" && (
+                        <>
+                          <input
+                            type="number"
+                            className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm 
+                          focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-gray-700"
+                            min={min}
+                            max={max}
+                            placeholder={item.descripcion_activitie}
+                            name={clave}
+                            value={memoriaFase[linea]?.[clave] ?? ""}
+                            required={item.binding}
+                            onChange={inputChange}
+                          />
+                          {memoriaFase[linea]?.[clave] !== undefined &&
+                            (memoriaFase[linea][clave] < min || memoriaFase[linea][clave] > max) && (
+                              <p className="mt-1 text-sm text-red-600">
+                                Valor ingresado debe estar entre {min} y {max}.
+                              </p>
+                            )}
+                        </>
                       )}
                     </div>
                   );
