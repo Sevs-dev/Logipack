@@ -312,6 +312,12 @@ class OrdenesEjecutadasController extends Controller
     {
         $fases = DB::table('stages as std')
             ->where('std.id', $id)
+            ->select(
+                'std.id',
+                'std.description as descripcion',
+                'std.phase_type',
+                'std.role',
+            )
             ->first();
 
         return response()->json([
