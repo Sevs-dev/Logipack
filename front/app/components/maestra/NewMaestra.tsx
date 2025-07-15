@@ -288,22 +288,35 @@ const Maestra = ({ canEdit = false, canView = false }: CreateClientProps) => {
 
     // Validación y envío del formulario
     const handleSubmit = async () => {
-        console.log("📥 Enviando datos para crear Maestra:", tipoSeleccionado)
         if (isSaving) return;
         setIsSaving(true);
         if (!descripcion.trim()) {
             showError("La descripción es obligatoria");
+            setIsSaving(false);
             return;
         }
         if (tipoSeleccionado.length === 0) {
             showError("Debes seleccionar al menos un tipo de producto");
+            setIsSaving(false);
             return;
         }
         if (selectedStages.length === 0) {
             showError("Debes seleccionar al menos una fase");
+            setIsSaving(false);
             return;
         }
 
+        if (!selectedStages.some(stage => stage.phase_type === "Procesos")) {
+            showError("Debes incluir al menos una fase de tipo 'Procesos'");
+            setIsSaving(false);
+            return;
+        }
+
+        if (!selectedStages.some(stage => stage.phase_type === "Control")) {
+            showError("Debes incluir al menos una fase de tipo 'Control'");
+            setIsSaving(false);
+            return;
+        } 
         const payload = {
             descripcion,
             requiere_bom: requiereBOM,
@@ -315,13 +328,9 @@ const Maestra = ({ canEdit = false, canView = false }: CreateClientProps) => {
             duration,
             duration_user: durationUser,
             ...(tipoSeleccionadoAcon != null && {
-                // Sin convertir a número, enviamos el array tal cual
                 type_acondicionamiento: tipoSeleccionadoAcon,
             }),
         };
-
-        // console.log(payload);
-        // console.groupCollapsed("📤 Enviando datos para crear Maestra");
         console.groupEnd();
 
         try {
@@ -482,14 +491,29 @@ const Maestra = ({ canEdit = false, canView = false }: CreateClientProps) => {
         setIsSaving(true);
         if (!descripcion.trim()) {
             showError("La descripción es obligatoria");
+            setIsSaving(false);
             return;
         }
         if (tipoSeleccionado.length === 0) {
             showError("Debes seleccionar al menos un tipo de producto");
+            setIsSaving(false);
             return;
         }
         if (selectedStages.length === 0) {
             showError("Debes seleccionar al menos una fase");
+            setIsSaving(false);
+            return;
+        }
+
+        if (!selectedStages.some(stage => stage.phase_type === "Procesos")) {
+            showError("Debes incluir al menos una fase de tipo 'Procesos'");
+            setIsSaving(false);
+            return;
+        }
+
+        if (!selectedStages.some(stage => stage.phase_type === "Control")) {
+            showError("Debes incluir al menos una fase de tipo 'Control'");
+            setIsSaving(false);
             return;
         }
 
@@ -505,7 +529,6 @@ const Maestra = ({ canEdit = false, canView = false }: CreateClientProps) => {
                 duration,
                 duration_user: durationUser,
                 ...(tipoSeleccionadoAcon != null && {
-                    // Sin convertir a número, enviamos el array tal cual
                     type_acondicionamiento: tipoSeleccionadoAcon,
                 }),
             });
