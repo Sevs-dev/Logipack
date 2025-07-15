@@ -368,17 +368,29 @@ export default function NewTipoAcondicionamiento({ canEdit = false, canView = fa
                                                             disabled={!canEdit}
                                                         >
                                                             <option value="">Seleccione una fase</option>
+
+                                                            {/* Fase seleccionada pero no encontrada en la lista actual */}
                                                             {unknown.fase &&
-                                                                !listStages.find((item) => item.id === Number(unknown.fase)) && (
+                                                                !listStages.some((item) => item.id === Number(unknown.fase)) && (
                                                                     <option value={unknown.fase}>
                                                                         {getStageId(unknown.fase)?.description || 'Fase desconocida'}
                                                                     </option>
                                                                 )}
+
+                                                            {/* Mostrar solo última versión por descripción (agrupada) */}
                                                             {listStages
-                                                                .filter((item) => item.phase_type !== 'Control')
+                                                                .reduce((acc, current) => {
+                                                                    const existing = acc.find((item) => item.description === current.description);
+                                                                    if (!existing || current.version > existing.version) {
+                                                                        return [...acc.filter((item) => item.description !== current.description), current];
+                                                                    }
+                                                                    return acc;
+                                                                }, [] as typeof listStages)
+                                                                .filter((item) => item.phase_type !== 'Control') // ❌ O quítalo si quieres incluir todos
+                                                                .sort((a, b) => a.description.localeCompare(b.description)) // Opcional: orden alfabético
                                                                 .map((item) => (
                                                                     <option key={item.id} value={item.id}>
-                                                                        {item.description}
+                                                                        {item.description} {Number(item.version) > 1 ? `(v${item.version})` : ''}
                                                                     </option>
                                                                 ))}
                                                         </select>

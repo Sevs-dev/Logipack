@@ -233,51 +233,40 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
             showError("Planificación no encontrada localmente");
             return;
         }
-
         try {
             const serverPlansWithDetails: ServerPlan[] = await fetchAndProcessPlans(id);
-
             if (!serverPlansWithDetails || serverPlansWithDetails.length === 0) {
                 showError("No se encontró información detallada en el servidor.");
                 return;
             }
-
             const matchedPlan = serverPlansWithDetails.find(
                 p => p.ID_ADAPTACION === selectedPlan.id
             ) || serverPlansWithDetails[0];
-
             if (!matchedPlan || !matchedPlan.activitiesDetails) {
                 showError("No se encontraron detalles de actividades en el plan seleccionado.");
                 return;
             }
-
             const newLineActivities: Record<number, number[]> = {};
+            // ✅ Ahora recorremos las activitiesDetails que SÍ tienen binding correcto
+            if (Array.isArray(matchedPlan.activitiesDetails)) {
+                matchedPlan.activitiesDetails.forEach((activity: any) => {
+                    const binding = activity.binding;
 
-            if (selectedPlan.activities && Array.isArray(selectedPlan.activities)) {
-                selectedPlan.activities.forEach((activityDetail: ActivityDetail) => {
-                    const binding = activityDetail.binding;
                     if (Array.isArray(binding)) {
                         binding.forEach(lineId => {
-                            if (!newLineActivities[lineId]) newLineActivities[lineId] = [];
-                            newLineActivities[lineId].push(activityDetail.id);
+                            const lineKey = Number(lineId);
+                            if (!newLineActivities[lineKey]) newLineActivities[lineKey] = [];
+                            newLineActivities[lineKey].push(activity.id);
                         });
-                    } else if (typeof binding === "number") {
-                        if (!newLineActivities[binding]) newLineActivities[binding] = [];
-                        newLineActivities[binding].push(activityDetail.id);
-                    }
-                });
-            } else {
-                serverPlansWithDetails.forEach((line: ServerPlan) => {
-                    const lineId = line.ID_LINEA ?? line.ID_LINE ?? null;
-                    const activityIds = Array.isArray(line.ID_ACTIVITIES) ? line.ID_ACTIVITIES : [];
-                    if (lineId !== null) {
-                        newLineActivities[lineId] = activityIds;
+                    } else if (typeof binding === "number" || typeof binding === "string") {
+                        const lineKey = Number(binding);
+                        if (!newLineActivities[lineKey]) newLineActivities[lineKey] = [];
+                        newLineActivities[lineKey].push(activity.id);
                     }
                 });
             }
-
+            // ✅ Seteamos todo lo necesario
             setLineActivities(newLineActivities);
-
             setActivitiesDetails(matchedPlan.activitiesDetails);
             setSelectedMachines(
                 machine.filter(m => (selectedPlan.machine || []).includes(m.id))
@@ -285,18 +274,17 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
             setSelectedUsers(
                 user.filter(u => (selectedPlan.users || []).includes(u.id))
             );
-
-            setCurrentPlan({
+            // ✅ Completamos el plan que se mostrará en pantalla
+            const fullPlan = {
                 ...selectedPlan,
                 activitiesDetails: matchedPlan.activitiesDetails,
                 lineActivities: newLineActivities,
                 line: getLinesArray(selectedPlan.line),
-            });
-
+            };
+            setCurrentPlan(fullPlan);
             setIsOpen(true);
-
         } catch (error) {
-            console.error("Error fetching plan:", error);
+            console.error("❌ Error fetching plan:", error);
             showError("Error al cargar la planificación para edición");
         }
     }, [planning, machine, user]);
@@ -399,13 +387,10 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
     const availableActivities = useMemo(() => activitiesDetails, [activitiesDetails]);
 
     async function fetchAndProcessPlans(id: number) {
-        console.log("Planes desde servidor:", id);
         const { plan: serverPlans = [] } = await getActivitiesByPlanning(id);
-
         if (!Array.isArray(serverPlans) || serverPlans.length === 0) {
             throw new Error("Planificación no encontrada desde servidor");
         }
-
         const serverPlansWithDetails = await Promise.all(
             serverPlans.map(async (line) => {
                 const activitiesDetails = Array.isArray(line.ID_ACTIVITIES)
@@ -414,7 +399,6 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
                 return { ...line, activitiesDetails };
             })
         );
-
         return serverPlansWithDetails;
     }
 
@@ -754,7 +738,10 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
                                 <p>No hay líneas disponibles.</p>
                             ) : (
                                 getLinesArray(currentPlan.line).map((lineId) => {
-                                    // console.log("Render línea:", lineId, "Actividades:", lineActivities[lineId]);
+                                    const activitiesForLine = lineActivities[lineId];
+                                    console.log(`🟦 Renderizando línea: ${lineId}`);
+                                    console.log(`🔸 Actividades para línea ${lineId}:`, activitiesForLine);
+
                                     return (
                                         <div
                                             key={lineId}
@@ -765,10 +752,13 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
                                             <Text type="subtitle" color="#000">
                                                 {lineDetails[lineId]?.name || `Línea ${lineId}`}
                                             </Text>
-                                            {Array.isArray(lineActivities[lineId]) && lineActivities[lineId].length > 0 ? (
-                                                lineActivities[lineId].map((actId) => {
-                                                    const act = activitiesDetails.find(a => a.id === actId);
-                                                    // console.log("Buscando actividad con ID:", actId, "Encontrada:", act);
+
+                                            {Array.isArray(activitiesForLine) && activitiesForLine.length > 0 ? (
+                                                activitiesForLine.map((actId) => {
+                                                    const act = activitiesDetails.find((a) => a.id === actId);
+                                                    console.log(`🔍 Buscando actividad con ID: ${actId}`);
+                                                    console.log(`📎 Actividad encontrada:`, act);
+
                                                     if (!act) {
                                                         return (
                                                             <p key={actId} className="text-red-400 italic">
@@ -776,6 +766,7 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
                                                             </p>
                                                         );
                                                     }
+
                                                     return (
                                                         <div
                                                             key={act.id}
@@ -803,7 +794,6 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
                                         </div>
                                     );
                                 })
-
                             )}
                         </div>
 
@@ -972,7 +962,7 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
                 showTerciarioButton={true}
                 showTerciarioCondition={(row) => row.status_dates === "Planificación"} // 👈 Aquí va tu condición
                 onPDF={handlePDF}
-                showPDFCondition={(row) => row.status_dates === "Ejecutado"}
+                showPDFCondition={(row) => row.status_dates === "Finalizado"}
             />
 
         </div>
