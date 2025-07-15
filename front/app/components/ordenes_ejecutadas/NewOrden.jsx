@@ -356,11 +356,24 @@ const App = () => {
           />
         </div>
 
-        <div className="px-8 py-6 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6 text-sm text-gray-700">
+        <div className="px-8 py-6 grid grid-cols-1 sm:grid-cols-2 
+          md:grid-cols-3 lg:grid-cols-5 gap-6 text-sm text-gray-700">
           <div>
             <p className="text-gray-500 text-center">Orden N°</p>
             <p className="font-medium text-gray-900 text-center">
               {orden?.number_order}
+            </p>
+          </div>
+          <div>
+            <p className="text-gray-500 text-center">Cliente</p>
+            <p className="font-medium text-gray-900 text-center">
+              {orden?.cliente}
+            </p>
+          </div>
+          <div>
+            <p className="text-gray-500 text-center">Planta</p>
+            <p className="font-medium text-gray-900 text-center">
+              {orden?.planta}
             </p>
           </div>
           <div>
@@ -370,21 +383,9 @@ const App = () => {
             </p>
           </div>
           <div>
-            {/* <p className="text-gray-500 text-center">Proceso</p> */}
-            <p className="font-medium text-gray-900 text-center">
-              {/* {orden?.proceso} */}
-            </p>
-          </div>
-          <div>
             <p className="text-gray-500 text-center">Línea</p>
             <p className="font-medium text-gray-900 text-center">
               {linea} ({local.descripcion})
-            </p>
-          </div>
-          <div>
-            <p className="text-gray-500 text-center">Estado</p>
-            <p className="font-medium text-gray-900 text-center">
-              {orden?.estado}
             </p>
           </div>
         </div>
