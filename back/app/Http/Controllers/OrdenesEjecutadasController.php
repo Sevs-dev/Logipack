@@ -130,13 +130,14 @@ class OrdenesEjecutadasController extends Controller
                     ), '>', DB::raw('0')
                 );
             })
-            ->whereIn('std.phase_type', ['Planificación', 'Conciliación'])
+            ->whereIn('std.phase_type', ['Planificación', 'Conciliación', 'Actividades'])
             ->whereNotExists(function ($query) use ($id) {
                 $query
                     ->select(DB::raw(1))
                     ->from('actividades_ejecutadas')
                     ->where('adaptation_date_id', $id)
                     ->where('estado_form', false)
+                    ->where('repeat_line', 1)
                     ->whereIn('phase_type', ['Actividades', 'Procesos']);
             })
             ->select(
@@ -248,12 +249,13 @@ class OrdenesEjecutadasController extends Controller
                 ->where('linea', 0)
                 ->where('fases_fk', $linea)
                 ->where('estado_form', false)
-                ->whereIn('phase_type', ['Planificación', 'Conciliación'])
+                ->whereIn('phase_type', ['Planificación', 'Conciliación', 'Actividades'])
                 ->whereNotExists(function ($query) use ($id) {
                     $query
                         ->select(DB::raw(1))
                         ->from('actividades_ejecutadas')
                         ->where('adaptation_date_id', $id)
+                        ->where('repeat_line', 1)
                         ->where('estado_form', false)
                         ->whereIn('phase_type', ['Actividades', 'Procesos']);
                 })
@@ -360,7 +362,7 @@ class OrdenesEjecutadasController extends Controller
             ->first();
 
         return response()->json([
-            'condicion_1' => $datos->count, 
+            'condicion_1' => $datos->count,
             'estado' => 200,
         ]);
     }
@@ -409,6 +411,8 @@ class OrdenesEjecutadasController extends Controller
         $acondicionamiento = DB::table('adaptations as ada')
             ->join('adaptation_dates as ada_date', 'ada.id', '=', 'ada_date.adaptation_id')
             ->join('maestras as mae', 'mae.id', '=', 'ada.master')
+            ->join('clients as cli', 'cli.id', '=', 'ada.client_id')
+            ->join('factories as fac', 'fac.id', '=', 'ada.factory_id')
             ->where('ada.id', $id)
             ->select(
                 'ada_date.id as adaptation_date_id',
@@ -418,7 +422,9 @@ class OrdenesEjecutadasController extends Controller
                 'mae.descripcion as descripcion_maestra',
                 'ada_date.line as linea_produccion',
                 'mae.type_stage as maestra_fases_fk',
-                'ada_date.status_dates'
+                'ada_date.status_dates',
+                'cli.name as client_name',
+                'fac.name as factory_name'
             )
             ->first();
 
@@ -437,6 +443,8 @@ class OrdenesEjecutadasController extends Controller
             'descripcion_maestra' => $acondicionamiento->descripcion_maestra,
             'maestra_fases_fk' => $acondicionamiento->maestra_fases_fk,
             'linea_produccion' => $acondicionamiento->linea_produccion,
+            'cliente' => $acondicionamiento->client_name,
+            'planta' => $acondicionamiento->factory_name
         ]);
         return $acondicionamiento;
     }
@@ -571,6 +579,8 @@ class OrdenesEjecutadasController extends Controller
                         ->where(DB::raw('LOWER(std.phase_type)'), '!=', DB::raw("LOWER('Control')"))
                         ->where(DB::raw('LOWER(std.phase_type)'), '!=', DB::raw("LOWER('Planificación')"))
                         ->where(DB::raw('LOWER(std.phase_type)'), '!=', DB::raw("LOWER('Conciliación')"))
+                        ->where(DB::raw('LOWER(std.phase_type)'), '!=', DB::raw("LOWER('Procesos')"))
+                        ->where('std.repeat_line', 1)
                         ->select(
                             'atc.id as id_activitie',
                             'atc.description as descripcion_activitie',
@@ -579,7 +589,6 @@ class OrdenesEjecutadasController extends Controller
                         )
                         ->get();
                 }
-                // armar actividades
                 $acom = $this->armar_actividades($actividades, $orden, $linea, $fase, $count, $acom);
             }
         }
@@ -587,7 +596,8 @@ class OrdenesEjecutadasController extends Controller
         // armar actividades de planificación o conciliación
         $actividades = [];
         foreach ($fases->toArray() as $count => $fase) {
-            if ($fase->phase_type == 'Planificación' || $fase->phase_type == 'Conciliación') {
+            if ($fase->phase_type == 'Planificación' || $fase->phase_type == 'Conciliación'
+                || $fase->phase_type == 'Actividades') {
                 // obtener lista si la actividades especificos
                 $actividades = DB::table('stages as std')
                     ->join('activities as atc', function ($join) {
@@ -599,11 +609,17 @@ class OrdenesEjecutadasController extends Controller
                         );
                     })
                     ->where('std.id', $fase->id)
-                    ->where(function ($query) {
-                        $query
-                            ->where(DB::raw('LOWER(std.phase_type)'), '=', DB::raw("LOWER('Planificación')"))
-                            ->orWhere(DB::raw('LOWER(std.phase_type)'), '=', DB::raw("LOWER('Conciliación')"));
-                    })
+                    ->whereIn('std.phase_type', ['Planificación', 'Conciliación', 'Actividades'])
+                    // ->where(function ($query) {
+                    //     $query
+                    //         ->where(DB::raw('LOWER(std.phase_type)'), '=', DB::raw("LOWER('Planificación')"))
+                    //         ->orWhere(DB::raw('LOWER(std.phase_type)'), '=', DB::raw("LOWER('Conciliación')"))
+                    //         ->orWhere(function ($q) {
+                    //             $q->whereRaw(DB::raw('LOWER(std.phase_type)'), '=', DB::raw("LOWER('Actividades')"))
+                    //               ->where(DB::raw('std.repeat_line'), '=', DB::raw(0));
+                    //         });
+                    // })
+                    ->where(DB::raw('std.repeat_line'), '=', DB::raw(0))
                     ->select(
                         'atc.id as id_activitie',
                         'atc.description as descripcion_activitie',
@@ -611,7 +627,7 @@ class OrdenesEjecutadasController extends Controller
                         'atc.binding',
                     )
                     ->get();
-                $acom = $this->armar_actividades($actividades, $orden, $linea, $fase, $count, $acom);
+                $acom = $this->armar_actividades($actividades, $orden, 0, $fase, $count, $acom);
             }
         }
         // echo gettype($acom) . "\n" . json_encode($acom);
@@ -657,7 +673,7 @@ class OrdenesEjecutadasController extends Controller
                 $value->adaptation_id = $orden->adaptation_id;
                 $value->maestra_id = $orden->maestra_id;
                 $value->fases_fk = $fase->id;
-                $value->linea = ($fase->phase_type == 'Planificación' || $fase->phase_type == 'Conciliación') ? 0 : $linea;
+                $value->linea = $linea > 0 ? $linea : 0;
                 $value->repeat_line = $fase->repeat_line;
                 $value->description_fase = $fase->descripcion ?? '';
                 $value->phase_type = $fase->phase_type ?? '';
