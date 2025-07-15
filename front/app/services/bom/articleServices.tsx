@@ -1,6 +1,6 @@
 import axios from 'axios';
 import { API_URL } from '../../config/api';
-import { Article, Bom, BomPayload, ArticleResponse } from '@/app/interfaces/BOM';
+import { Article, Bom, BomPayload, BomResponse } from '@/app/interfaces/BOM';
 
 // Instancia axios base
 const Articles = axios.create({
@@ -42,7 +42,7 @@ export const newArticle = async (bom: BomPayload): Promise<Bom> => {
         if (name) {
             bom.user = decodeURIComponent(name);
         }
-        const response = await Articles.post<Bom>('/newArticle', bom); 
+        const response = await Articles.post<Bom>('/newArticle', bom);
         return response.data;
     } catch (error: unknown) {
         console.error("Error en newArticle:", error);
@@ -60,14 +60,14 @@ export const getArticlesId = async (id: number): Promise<Article> => {
     }
 };
 
-export const getArticleByClient = async (id: number): Promise<Article[]> => {
-    try {
-        const response = await Articles.get<Article[]>(`/getArticleByClientId/${id}`);
-        return response.data;
-    } catch (error: unknown) {
-        console.error("Error en getArticleByClient:", error);
-        throw error;
-    }
+export const getArticleByClient = async (id: number): Promise<Bom[]> => {
+  try {
+    const response = await Articles.get<BomResponse>(`/getArticleByClientId/${id}`);
+    return response.data.boms;
+  } catch (error: unknown) {
+    console.error("Error en getArticleByClient:", error);
+    throw error;
+  }
 };
 
 export const updateArticle = async (id: number, bom: BomPayload): Promise<Bom> => {

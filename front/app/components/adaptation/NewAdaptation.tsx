@@ -21,7 +21,7 @@ import AuditModal from "../history/AuditModal";
 import { showSuccess, showError } from "../toastr/Toaster";
 // 🔹 Interfaces
 import { Client } from "@/app/interfaces/Client";
-import { Article, Ingredient, Bom } from "@/app/interfaces/BOM";
+import { Article, Ingredient, Bom, ArticleResponse } from "@/app/interfaces/BOM";
 import { MaestraBase } from "@/app/interfaces/NewMaestra";
 import { BOM, Adaptation, ArticleFormData, Plant } from "@/app/interfaces/NewAdaptation";
 import { Audit } from "../../interfaces/Audit";
@@ -187,79 +187,75 @@ function NewAdaptation({ canEdit = false, canView = false }: CreateClientProps) 
     // Cargar BOM e Ingredientes si se requiere
     useEffect(() => {
         if (!selectedClient || selectedMaestras.length === 0) return;
-
         const selectedMaestraObj = maestra.find(m => m.id.toString() === selectedMaestras[0]);
-        console.log("🔍 selectedMaestraObj:", selectedMaestraObj);
-
         if (!selectedMaestraObj?.requiere_bom) {
-            console.log("⚠️ La maestra no requiere BOM");
             setBoms([]);
             setIngredients([]);
             return;
         }
-
         const fetchBom = async () => {
             try {
-                console.log("🚀 Fetching client ID:", selectedClient);
                 const clientData = await getClientsId(Number(selectedClient));
-                console.log("✅ Client data:", clientData);
-
-                const articles: Article[] = await getArticleByClient(clientData.id);
-                console.log("📦 Artículos del cliente:", articles);
-
-                const bomsExtraidos = articles
-                    .map(article => article.bom)
-                    .filter((bom): bom is Bom & { ingredients?: string } => !!bom);
-                console.log("🧪 BOMs extraídos:", bomsExtraidos);
-
-                if (bomsExtraidos.length === 0) {
-                    console.log("ℹ️ No hay BOMs disponibles");
+                const boms: Bom[] = await getArticleByClient(clientData.id);
+                if (!Array.isArray(boms)) {
+                    console.error("❌ La respuesta de BOMs no es un array:", boms);
                     setBoms([]);
                     setIngredients([]);
                     return;
                 }
+                // Filtrar solo BOMs activos (status === 1)
+                const bomsActivos = boms.filter(b => b.status);
+                if (bomsActivos.length === 0) {
+                    setBoms([]);
+                    setIngredients([]);
+                    return;
+                }
+                // Ordenar por versión descendente (más reciente primero)
+                const bomsOrdenados = [...bomsActivos].sort(
+                    (a, b) => Number(b.version) - Number(a.version)
+                );
+                const latestBom = bomsOrdenados[0];
+                // Setear solo los activos con status 1
+                setBoms(bomsActivos.map(b => ({ ...b, status: 1 })));
 
-                setBoms(bomsExtraidos.map(b => ({ ...b, status: b.status ? 1 : 0 })));
-
-                const firstBom = bomsExtraidos[0];
-                console.log("🥇 Primer BOM:", firstBom);
-
-                if (firstBom.ingredients) {
+                if (latestBom.ingredients) {
                     try {
-                        const parsed = JSON.parse(firstBom.ingredients);
-                        console.log("🍲 Ingredientes parseados:", parsed);
+                        const parsed = JSON.parse(latestBom.ingredients);
                         setIngredients(parsed);
                     } catch (e) {
-                        console.warn("⚠️ Ingredientes mal formateados", e);
                         setIngredients([]);
                     }
                 } else {
-                    console.log("📭 El primer BOM no tiene ingredientes");
                     setIngredients([]);
                 }
             } catch (err) {
                 showError("Error al obtener BOM.");
-                console.error("💥 Error en fetchBom:", err);
                 setBoms([]);
                 setIngredients([]);
             }
         };
-
         fetchBom();
     }, [selectedClient, selectedMaestras, maestra]);
 
     // Recalcular ingredientes cuando cambia cantidad
     useEffect(() => {
         if (quantityToProduce === "") return;
+
         const qty = Number(quantityToProduce);
         if (!ingredients.length || isNaN(qty)) return;
-        const recalculated = ingredients.map((ing) => {
-            const merma = parseFloat(ing.merma);
-            const teorica = qty + qty * merma;
-            return { ...ing, teorica: teorica.toFixed(4) };
-        });
-        setIngredients(recalculated);
-    }, [quantityToProduce, ingredients]);
+
+        setIngredients(prevIngredients =>
+            prevIngredients.map((ing) => {
+                const merma = parseFloat(ing.merma || "0"); // 🛡️ por si viene vacío
+                const teorica = qty + qty * merma;
+                return {
+                    ...ing,
+                    teorica: isNaN(teorica) ? "" : teorica.toFixed(4),
+                };
+            })
+        );
+    }, [quantityToProduce]);
+
 
     // ======================= 🔁 Funciones de cambio y copia =======================
 
@@ -317,7 +313,12 @@ function NewAdaptation({ canEdit = false, canView = false }: CreateClientProps) 
 
     const handleChange = (index: number, field: keyof Ingredient, value: string): void => {
         const updated = [...ingredients];
-        updated[index][field] = value;
+
+        updated[index] = {
+            ...updated[index],
+            [field]: value,
+            ...(field === "teorica" ? { manualEdit: true } : {})
+        };
         setIngredients(updated);
     };
 
@@ -454,7 +455,11 @@ function NewAdaptation({ canEdit = false, canView = false }: CreateClientProps) 
     const handleEdit = async (id: number) => {
         try {
             const { adaptation } = await getAdaptationsId(id);
-            if (!adaptation) return showError("La adaptación no existe");
+            if (!adaptation) {
+                showError("La adaptación no existe");
+                console.warn("⚠️ Adaptation no encontrada con ID:", id);
+                return;
+            }
             setIsEditMode(true);
             setEditAdaptationId(id);
             setSelectedClient(adaptation.client_id?.toString() ?? "");
@@ -464,6 +469,7 @@ function NewAdaptation({ canEdit = false, canView = false }: CreateClientProps) 
             const parsedArticles = adaptation.article_code ? JSON.parse(adaptation.article_code) : [];
             setSelectedArticles(parsedArticles.map((a: { codart: string }) => ({ codart: a.codart })));
             setClientOrder(adaptation.number_order || "");
+
             if (adaptation.bom) {
                 const general = parsedArticles[0] || {};
                 setOrderNumber(general.orderNumber ?? "");
@@ -499,25 +505,35 @@ function NewAdaptation({ canEdit = false, canView = false }: CreateClientProps) 
                 });
                 setArticleFields(fieldsMap);
             }
+
             if (adaptation.ingredients) {
                 try {
                     const parsed = JSON.parse(adaptation.ingredients) as Ingredient[];
-                    const enriched = parsed.map(i => ({
-                        ...i,
-                        teorica: (Number(i.quantity || 0) * (1 + Number(i.merma || 0))).toFixed(4),
-                    }));
+                    const enriched = parsed.map(i => {
+                        const hasValidTeorica =
+                            i.teorica !== undefined &&
+                            i.teorica !== null &&
+                            !isNaN(Number(i.teorica));
+
+                        const teoricaCalculada = (Number(i.quantity || 0) * (1 + Number(i.merma || 0))).toFixed(4);
+
+                        return {
+                            ...i,
+                            teorica: hasValidTeorica ? Number(i.teorica).toFixed(4) : teoricaCalculada,
+                        };
+                    });
                     setIngredients(enriched);
                 } catch (e) {
-                    console.error("❌ Error al parsear ingredientes:", e);
                     setIngredients([]);
                 }
             } else {
                 setIngredients([]);
             }
+
             setIsOpen(true);
         } catch (error) {
             showError("Error al cargar la adaptación.");
-            console.error(error);
+            console.error("💥 Error en handleEdit:", error);
         }
     };
 
@@ -861,14 +877,14 @@ function NewAdaptation({ canEdit = false, canView = false }: CreateClientProps) 
                                     <input
                                         type="number"
                                         className="w-full border p-3 rounded-lg text-gray-800 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500 text-center"
-                                        value={quantityToProduce}
+                                        value={quantityToProduce ?? ""} // Evita undefined
                                         onChange={e => setQuantityToProduce(e.target.value)}
                                         min={1}
                                         disabled={!canEdit}
                                     />
                                 </div>
-                                {/* Lote */}
 
+                                {/* Lote */}
                                 <div>
                                     <Text type="subtitle" color="#000">Lote:</Text>
                                     <input
@@ -994,8 +1010,8 @@ function NewAdaptation({ canEdit = false, canView = false }: CreateClientProps) 
                                                 <th className="border border-black p-2 text-center">Codart</th>
                                                 <th className="border border-black p-2 text-center">Desart</th>
                                                 <th className="border border-black p-2 text-center">Merma%</th>
-                                                <th className="border border-black p-2 text-center">Cantidad Teorica</th>
-                                                <th className="border border-black p-2 text-center">Validar </th>
+                                                <th className="border border-black p-2 text-center">Cantidad Teórica</th>
+                                                <th className="border border-black p-2 text-center">Validar</th>
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -1004,23 +1020,44 @@ function NewAdaptation({ canEdit = false, canView = false }: CreateClientProps) 
                                                     <td className="border border-black p-2 text-center">{ing.codart}</td>
                                                     <td className="border border-black p-2 text-center">{ing.desart}</td>
                                                     <td className="border border-black p-2 text-center">
-                                                        {(Number(ing.merma) * 100).toFixed(0)}%
+                                                        {ing.merma && !isNaN(Number(ing.merma))
+                                                            ? `${(Number(ing.merma) * 100).toFixed(0)}%`
+                                                            : "0%"}
                                                     </td>
                                                     <td className="border border-black p-2 text-center">
                                                         <input
                                                             type="number"
+                                                            step="0.01"
                                                             className="text-black p-1 border border-gray-300 rounded text-center"
-                                                            value={Number(ing.teorica).toFixed(2)}
-                                                            onChange={(e) => handleChange(index, "teorica", e.target.value)}
+                                                            value={
+                                                                ing.teorica !== undefined &&
+                                                                    ing.teorica !== null &&
+                                                                    ing.teorica !== "" &&
+                                                                    !isNaN(Number(ing.teorica))
+                                                                    ? Number(ing.teorica)
+                                                                    : ""
+                                                            }
+                                                            onChange={(e) =>
+                                                                handleChange(index, "teorica", e.target.value)
+                                                            }
                                                             disabled={!canEdit}
                                                         />
                                                     </td>
-                                                    <td className="border border-black p-2">
+                                                    <td className="border border-black p-2 text-center">
                                                         <input
                                                             type="number"
+                                                            step="0.01"
                                                             className="text-black p-1 border border-gray-300 rounded text-center"
-                                                            value={ing.validar}
-                                                            onChange={(e) => handleChange(index, "validar", e.target.value)}
+                                                            value={
+                                                                ing.validar !== undefined &&
+                                                                    ing.validar !== null &&
+                                                                    !isNaN(Number(ing.validar))
+                                                                    ? Number(ing.validar)
+                                                                    : ""
+                                                            }
+                                                            onChange={(e) =>
+                                                                handleChange(index, "validar", e.target.value)
+                                                            }
                                                             disabled={!canEdit}
                                                         />
                                                     </td>
@@ -1031,7 +1068,7 @@ function NewAdaptation({ canEdit = false, canView = false }: CreateClientProps) 
                                     <br />
                                 </div>
                             </div>
-                        ) : (null)}
+                        ) : null}
                     </div>
 
                     {/* Botones */}

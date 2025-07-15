@@ -83,7 +83,7 @@ const NewLineas = () => {
     }, [local]);
 
     if (!local || !lista) {
-        return ( 
+        return (
             <DateLoader message=" No hay datos de la orden o líneas de procesos" backgroundColor="#242424" color="#ffff" />
         );
     }
@@ -126,7 +126,8 @@ const NewLineas = () => {
                         <div className="bg-gray-50 px-6 py-4 border-b border-gray-200">
                             <Text type="subtitle" color="text-black">Información de la Orden</Text>
                         </div>
-                        <div className="px-6 py-6 grid grid-cols-2 sm:grid-cols-3 gap-6 text-gray-700 text-base text-center">
+                        <div className="px-6 py-6 grid grid-cols-1 sm:grid-cols-2 
+                            md:grid-cols-3 lg:grid-cols-5 gap-6 text-gray-700 text-base text-center">
                             <div>
                                 <p className="text-sm text-gray-500">Orden N°</p>
                                 <p className="font-semibold text-gray-800">{orden?.number_order}</p>
@@ -135,14 +136,19 @@ const NewLineas = () => {
                                 <p className="text-sm text-gray-500">Descripción</p>
                                 <p className="font-semibold text-gray-800">{orden?.descripcion_maestra}</p>
                             </div>
-                                {/* <div>
-                                    <p className="text-sm text-gray-500">Proceso</p>
-                                    <p className="font-semibold text-gray-800">{orden?.proceso}</p>
-                                </div> */}
+                            <div>
+                                <p className="text-sm text-gray-500">Cliente</p>
+                                <p className="font-semibold text-gray-800">{orden?.cliente}</p>
+                            </div>
+                            <div>
+                                <p className="text-sm text-gray-500">Planta</p>
+                                <p className="font-semibold text-gray-800">{orden?.planta}</p>
+                            </div>
                             <div>
                                 <p className="text-sm text-gray-500">Estado</p>
                                 <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium 
-                  ${orden?.estado === 'Activo' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
+                                    ${orden?.estado === 'Activo' ? 'bg-green-100 text-green-800' :
+                                        'bg-yellow-100 text-yellow-800'}`}>
                                     {orden?.estado}
                                 </span>
                             </div>
