@@ -4,13 +4,16 @@ import {
   guardar_formulario,
   validate_orden,
   fase_control,
+  condiciones_fase,
 } from "@/app/services/planing/planingServices";
 import {
   createTimer,
   getTimerEjecutadaById,
 } from "../../services/timer/timerServices";
 import { getStageId } from "../../services/maestras/stageServices";
-import Firma from "./Firma";
+import Firma from "../ordenes_ejecutadas/Firma";
+import ModalBlock from '../modal/ModalBlock';
+
 import Text from "../text/Text";
 import { showError } from "../toastr/Toaster";
 import Timer from "../timer/Timer";
@@ -96,6 +99,7 @@ const App = () => {
   const [memoriaFase, setMemoriaFase] = useState({});
   const [timerData, setTimerData] = useState(null);
   const [timerReady, setTimerReady] = useState(false);
+  const [showModal, setShowModal] = useState(false);
 
   // Cargar datos iniciales
   useEffect(() => {
@@ -189,6 +193,13 @@ const App = () => {
       }
     };
 
+    const condicionFase = async () => {
+      if (!fase) return;
+      const resp = await condiciones_fase(fase.adaptation_date_id, fase.fases_fk);
+      setShowModal(resp.condicion_1 > 0);
+    };
+
+    condicionFase();
     guardarTimer();
   }, [fase]);
 
@@ -336,6 +347,13 @@ const App = () => {
           <Text type="title" color="text-black">
             Información de la Orden
           </Text>
+
+          {/* Contenido principal */}
+          <ModalBlock
+            isOpen={showModal}
+            onClose={() => setShowModal(false)}
+            message="Tu acceso está bloqueado temporalmente. Contacta al administrador."
+          />
         </div>
 
         <div className="px-8 py-6 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6 text-sm text-gray-700">
@@ -352,9 +370,9 @@ const App = () => {
             </p>
           </div>
           <div>
-            <p className="text-gray-500 text-center">Proceso</p>
+            {/* <p className="text-gray-500 text-center">Proceso</p> */}
             <p className="font-medium text-gray-900 text-center">
-              {orden?.proceso}
+              {/* {orden?.proceso} */}
             </p>
           </div>
           <div>
@@ -566,27 +584,27 @@ const App = () => {
                           {memoriaFase[linea]?.[clave]?.startsWith(
                             "data:application/pdf"
                           ) && (
-                            <div className="mb-2">
-                              <object
-                                data={memoriaFase[linea][clave]}
-                                type="application/pdf"
-                                width="100%"
-                                height="400px"
-                              >
-                                <p className="text-gray-600">
-                                  No se pudo mostrar el PDF.{" "}
-                                  <a
-                                    href={memoriaFase[linea][clave]}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="text-blue-600 underline"
-                                  >
-                                    Haz clic aquí para verlo
-                                  </a>
-                                </p>
-                              </object>
-                            </div>
-                          )}
+                              <div className="mb-2">
+                                <object
+                                  data={memoriaFase[linea][clave]}
+                                  type="application/pdf"
+                                  width="100%"
+                                  height="400px"
+                                >
+                                  <p className="text-gray-600">
+                                    No se pudo mostrar el PDF.{" "}
+                                    <a
+                                      href={memoriaFase[linea][clave]}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="text-blue-600 underline"
+                                    >
+                                      Haz clic aquí para verlo
+                                    </a>
+                                  </p>
+                                </object>
+                              </div>
+                            )}
 
                           <input
                             className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm 
@@ -630,14 +648,14 @@ const App = () => {
                           {memoriaFase[linea]?.[clave]?.startsWith(
                             "data:image"
                           ) && (
-                            <div className="mb-2">
-                              <img
-                                src={memoriaFase[linea][clave]}
-                                alt="Imagen guardada"
-                                className="max-h-48 rounded shadow object-contain"
-                              />
-                            </div>
-                          )}
+                              <div className="mb-2">
+                                <img
+                                  src={memoriaFase[linea][clave]}
+                                  alt="Imagen guardada"
+                                  className="max-h-48 rounded shadow object-contain"
+                                />
+                              </div>
+                            )}
 
                           <input
                             className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm 

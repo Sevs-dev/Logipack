@@ -120,3 +120,14 @@ export const getPlanningByIdPDF = async (id: number) => {
         throw error;
     }
 }
+
+
+export const condiciones_fase = async (id: number, fase: number) => {
+    try {
+        const response = await Planning.get(`/condiciones_fase/${id}/${fase}`);
+        return response.data;
+    } catch (error: unknown) {
+        console.error("Error en condiciones_fase:", error);
+        throw error;
+    }
+}
