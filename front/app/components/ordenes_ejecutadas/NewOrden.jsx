@@ -194,6 +194,7 @@ const App = () => {
     };
 
     const condicionFase = async () => {
+      if (!fase) return;
       const resp = await condiciones_fase(fase.adaptation_date_id, fase.fases_fk);
       setShowModal(resp.condicion_1 > 0);
     };

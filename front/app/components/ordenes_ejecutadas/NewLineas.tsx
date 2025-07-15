@@ -155,8 +155,6 @@ const NewLineas = () => {
                     <Text type="title" color="text-black">Líneas</Text>
                     <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
                         {lista_procesos.map((linea: any, index: number) => (
-                            <>
-                            
                             <LineaCard
                                 key={linea.id}
                                 id={linea.id}
@@ -164,7 +162,6 @@ const NewLineas = () => {
                                 index={index}
                                 onClick={() => handleLinea(linea.id, "linea", linea.descripcion)}
                             />
-                            </>
                         ))}
                     </div>
                 </section>
