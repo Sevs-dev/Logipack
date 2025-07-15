@@ -380,10 +380,12 @@ class OrdenesEjecutadasController extends Controller
             $data = $request->all();
             $id = $data['id'];
             $forms = $data['forms'];
+            $user = $data['user'];
 
             // Validar si existe la fase
             ActividadesEjecutadas::where('id', $id)->update([
                 'forms' => $forms,
+                'user' => $user,
                 'estado_form' => true,
             ]);
             return response()->json([
