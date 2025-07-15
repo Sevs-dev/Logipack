@@ -13,6 +13,7 @@ export interface Stage {
   duration: string;
   duration_user: string;
   role: string;
+  version:string;
 }
 
 export interface Data {

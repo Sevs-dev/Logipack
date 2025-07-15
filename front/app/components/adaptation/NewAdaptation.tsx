@@ -618,35 +618,25 @@ function NewAdaptation({ canEdit = false, canView = false }: CreateClientProps) 
                                 </div>
 
                                 <div className="w-1/2">
-                                    <Text type="subtitle" color="#000">Buscar Cliente:</Text>
-                                    <input
-                                        type="text"
+                                    <Text type="subtitle" color="#000">Cliente:</Text>
+                                    <select
                                         className="w-full border p-3 rounded-lg text-gray-800 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500 text-center"
-                                        placeholder="Buscar cliente..."
-                                        value={search}
-                                        onChange={e => setSearch(e.target.value)}
+                                        value={selectedClient}
+                                        onChange={e => {
+                                            setSelectedClient(Number(e.target.value));
+                                            setIngredients([]);
+                                        }}
                                         disabled={!canEdit}
-                                    />
-                                </div>
-                                <div className="w-1/2">
-                                    <Text type="subtitle" color="#000">Cliente Seleccionado</Text>
-                                    <ul className="border rounded-lg mt-1 max-h-40 overflow-auto bg-white">
-                                        {filteredClients.map(client => (
-                                            <li
-                                                key={client.id}
-                                                onClick={() => {
-                                                    setSelectedClient(client.id);
-                                                    setIngredients([]);
-                                                    setSearch(client.name); // opcional: para mostrar el nombre seleccionado
-                                                }}
-                                                className="w-full border p-3 rounded-lg text-gray-800 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500 text-center"
-                                            >
+                                    >
+                                        <option value="">Seleccione...</option>
+                                        {clients.map(client => (
+                                            <option key={client.id} value={client.id.toString()}>
                                                 {client.name}
-                                            </li>
+                                            </option>
                                         ))}
-                                    </ul>
+                                    </select>
                                 </div>
-                                <div className="w-full max-w-md relative group space-y-2">
+                                <div className="w-1/2 max-w-md relative group space-y-2 mt-1">
                                     {/* Label */}
                                     <Text type="subtitle" color="#000">
                                         Orden:

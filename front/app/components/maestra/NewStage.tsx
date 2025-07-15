@@ -264,6 +264,7 @@ function NewStage({ canEdit = false, canView = false }: CreateClientProps) {
         setDuration("");
         setDurationUser("");
         setMulti(false);
+        setrepeat_line(false);
     };
 
     const getFormattedDuration = (raw: number): string => {
