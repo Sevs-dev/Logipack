@@ -126,7 +126,7 @@ const NewLineas = () => {
                         <div className="bg-gray-50 px-6 py-4 border-b border-gray-200">
                             <Text type="subtitle" color="text-black">Información de la Orden</Text>
                         </div>
-                        <div className="px-6 py-6 grid grid-cols-2 sm:grid-cols-4 gap-6 text-gray-700 text-base text-center">
+                        <div className="px-6 py-6 grid grid-cols-2 sm:grid-cols-3 gap-6 text-gray-700 text-base text-center">
                             <div>
                                 <p className="text-sm text-gray-500">Orden N°</p>
                                 <p className="font-semibold text-gray-800">{orden?.number_order}</p>
@@ -135,10 +135,10 @@ const NewLineas = () => {
                                 <p className="text-sm text-gray-500">Descripción</p>
                                 <p className="font-semibold text-gray-800">{orden?.descripcion_maestra}</p>
                             </div>
-                            <div>
-                                <p className="text-sm text-gray-500">Proceso</p>
-                                <p className="font-semibold text-gray-800">{orden?.proceso}</p>
-                            </div>
+                                {/* <div>
+                                    <p className="text-sm text-gray-500">Proceso</p>
+                                    <p className="font-semibold text-gray-800">{orden?.proceso}</p>
+                                </div> */}
                             <div>
                                 <p className="text-sm text-gray-500">Estado</p>
                                 <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium 
