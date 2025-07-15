@@ -369,9 +369,9 @@ const App = () => {
             </p>
           </div>
           <div>
-            <p className="text-gray-500 text-center">Proceso</p>
+            {/* <p className="text-gray-500 text-center">Proceso</p> */}
             <p className="font-medium text-gray-900 text-center">
-              {orden?.proceso}
+              {/* {orden?.proceso} */}
             </p>
           </div>
           <div>

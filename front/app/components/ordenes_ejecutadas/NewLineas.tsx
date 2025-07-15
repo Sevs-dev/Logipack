@@ -97,10 +97,11 @@ const NewLineas = () => {
         window.location.reload();
     }
 
-    const handleLinea = (id: number, tipo: string) => {
+    const handleLinea = (id: number, tipo: string, descripcion: string) => {
         if (!local) return;
         local.linea = id;
         local.tipo = tipo;
+        local.descripcion = descripcion;
         local.orden = orden;
         localStorage.setItem("ejecutar", JSON.stringify(local));
         window.open("/pages/ordenes_ejecutadas", "_blank");
@@ -154,13 +155,16 @@ const NewLineas = () => {
                     <Text type="title" color="text-black">Líneas</Text>
                     <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
                         {lista_procesos.map((linea: any, index: number) => (
+                            <>
+                            
                             <LineaCard
                                 key={linea.id}
                                 id={linea.id}
                                 descripcion={linea.descripcion}
                                 index={index}
-                                onClick={() => handleLinea(linea.id, "linea")}
+                                onClick={() => handleLinea(linea.id, "linea", linea.descripcion)}
                             />
+                            </>
                         ))}
                     </div>
                 </section>
