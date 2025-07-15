@@ -176,7 +176,7 @@ const NewLineas = () => {
                                 id={linea.id}
                                 descripcion={linea.descripcion}
                                 index={index}
-                                onClick={() => handleLinea(linea.id, "fase")}
+                                onClick={() => handleLinea(linea.id, "fase", linea.descripcion)}
                             />
                         ))}
                     </div>
