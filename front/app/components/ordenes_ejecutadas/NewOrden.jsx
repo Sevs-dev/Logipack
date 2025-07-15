@@ -715,6 +715,7 @@ const App = () => {
                           focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-gray-700"
                             min={min}
                             max={max}
+                            step="0.01"
                             placeholder={item.descripcion_activitie}
                             name={clave}
                             value={memoriaFase[linea]?.[clave] ?? ""}
