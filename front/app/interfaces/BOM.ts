@@ -18,9 +18,10 @@ export interface Ingredient {
   desart: string;
   quantity: string;
   merma: string;
-  theoreticalQuantity?: string; // New field
+  theoreticalQuantity?: string; // New fieldArticleResponse
   teorica: string;
   validar?: string;
+  manualEdit?: boolean;
 }
 
 export interface Bom {
@@ -32,6 +33,7 @@ export interface Bom {
   base_quantity: string;
   details: string;
   status: boolean;
+  version: string;
 }
 
 export interface BomView extends Bom {
@@ -60,3 +62,8 @@ export interface ArticleResponse {
   message?: string;
   data: Article[];
 }
+
+export interface BomResponse {
+  boms: Bom[];
+}
+
