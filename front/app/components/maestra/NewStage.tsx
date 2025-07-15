@@ -575,8 +575,9 @@ function NewStage({ canEdit = false, canView = false }: CreateClientProps) {
                                     className="h-5 w-5 text-blue-600"
                                     disabled={!canEdit}
                                 />
-                                <span className="text-sm text-black">¿Es Multi?
-                                    <InfoPopover content="Se selecciona para indicarle al sistema que al tener multiples unidades se pultiplique el tiempo" />
+                                <span className="text-sm text-black">
+                                    ¿Mult. por unidades?
+                                    <InfoPopover content="Si se activa, el sistema multiplica el tiempo según la cantidad de unidades. Ej: 3 unidades → 3x el tiempo." />
                                 </span>
                             </div>
 

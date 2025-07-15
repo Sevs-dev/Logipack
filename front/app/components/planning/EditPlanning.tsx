@@ -242,42 +242,60 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
             const matchedPlan = serverPlansWithDetails.find(
                 p => p.ID_ADAPTACION === selectedPlan.id
             ) || serverPlansWithDetails[0];
-            if (!matchedPlan || !matchedPlan.activitiesDetails) {
-                showError("No se encontraron detalles de actividades en el plan seleccionado.");
+            if (!matchedPlan) {
+                showError("No se encontraron detalles del plan.");
                 return;
             }
+            const activitiesDetails = matchedPlan.activitiesDetails ?? [];
+            const planActivities = selectedPlan.activities ?? [];
             const newLineActivities: Record<number, number[]> = {};
-            // ✅ Ahora recorremos las activitiesDetails que SÍ tienen binding correcto
-            if (Array.isArray(matchedPlan.activitiesDetails)) {
-                matchedPlan.activitiesDetails.forEach((activity: any) => {
-                    const binding = activity.binding;
+            // ✅ Usamos plan.activities que tiene la relación correcta línea → actividades
+            planActivities.forEach((line: any) => {
+                const lineId = Number(line.id);
+                const acts = Array.isArray(line.activities) ? line.activities : [];
+                if (!newLineActivities[lineId]) newLineActivities[lineId] = [];
+                acts.forEach((a: any) => {
+                    const actId = a.id;
+                    if (!newLineActivities[lineId].includes(actId)) {
+                        newLineActivities[lineId].push(actId);
+                        console.log(`🧩 Agregada actividad ${actId} a línea ${lineId}`);
+                    }
+                });
+            });
 
+            // 🧲 Ahora complementamos con los bindings directos de activitiesDetails
+            if (Array.isArray(activitiesDetails)) {
+                activitiesDetails.forEach((activity: any) => {
+                    const binding = activity.binding;
                     if (Array.isArray(binding)) {
                         binding.forEach(lineId => {
                             const lineKey = Number(lineId);
                             if (!newLineActivities[lineKey]) newLineActivities[lineKey] = [];
-                            newLineActivities[lineKey].push(activity.id);
+                            if (!newLineActivities[lineKey].includes(activity.id)) {
+                                newLineActivities[lineKey].push(activity.id);
+                            }
                         });
                     } else if (typeof binding === "number" || typeof binding === "string") {
                         const lineKey = Number(binding);
                         if (!newLineActivities[lineKey]) newLineActivities[lineKey] = [];
-                        newLineActivities[lineKey].push(activity.id);
+                        if (!newLineActivities[lineKey].includes(activity.id)) {
+                            newLineActivities[lineKey].push(activity.id);
+                        }
                     }
                 });
             }
             // ✅ Seteamos todo lo necesario
             setLineActivities(newLineActivities);
-            setActivitiesDetails(matchedPlan.activitiesDetails);
+            setActivitiesDetails(activitiesDetails);
             setSelectedMachines(
                 machine.filter(m => (selectedPlan.machine || []).includes(m.id))
             );
             setSelectedUsers(
                 user.filter(u => (selectedPlan.users || []).includes(u.id))
             );
-            // ✅ Completamos el plan que se mostrará en pantalla
             const fullPlan = {
                 ...selectedPlan,
-                activitiesDetails: matchedPlan.activitiesDetails,
+                activitiesDetails: activitiesDetails,
                 lineActivities: newLineActivities,
                 line: getLinesArray(selectedPlan.line),
             };
@@ -739,9 +757,6 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
                             ) : (
                                 getLinesArray(currentPlan.line).map((lineId) => {
                                     const activitiesForLine = lineActivities[lineId];
-                                    console.log(`🟦 Renderizando línea: ${lineId}`);
-                                    console.log(`🔸 Actividades para línea ${lineId}:`, activitiesForLine);
-
                                     return (
                                         <div
                                             key={lineId}
@@ -756,9 +771,6 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
                                             {Array.isArray(activitiesForLine) && activitiesForLine.length > 0 ? (
                                                 activitiesForLine.map((actId) => {
                                                     const act = activitiesDetails.find((a) => a.id === actId);
-                                                    console.log(`🔍 Buscando actividad con ID: ${actId}`);
-                                                    console.log(`📎 Actividad encontrada:`, act);
-
                                                     if (!act) {
                                                         return (
                                                             <p key={actId} className="text-red-400 italic">
