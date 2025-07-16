@@ -357,7 +357,7 @@ const App = () => {
         </div>
 
         <div className="px-8 py-6 grid grid-cols-1 sm:grid-cols-2 
-          md:grid-cols-3 lg:grid-cols-5 gap-6 text-sm text-gray-700">
+          md:grid-cols-3 lg:grid-cols-6 gap-6 text-sm text-gray-700">
           <div>
             <p className="text-gray-500 text-center">Orden N°</p>
             <p className="font-medium text-gray-900 text-center">
@@ -386,6 +386,12 @@ const App = () => {
             <p className="text-gray-500 text-center">Línea</p>
             <p className="font-medium text-gray-900 text-center">
               {linea} ({local.descripcion})
+            </p>
+          </div>
+          <div>
+            <p className="text-gray-500 text-center">Cantidad a producir</p>
+            <p className="font-medium text-gray-900 text-center">
+              {orden?.cantidad_producir}
             </p>
           </div>
         </div>
