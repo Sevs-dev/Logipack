@@ -127,7 +127,7 @@ const NewLineas = () => {
                             <Text type="subtitle" color="text-black">Información de la Orden</Text>
                         </div>
                         <div className="px-6 py-6 grid grid-cols-1 sm:grid-cols-2 
-                            md:grid-cols-3 lg:grid-cols-5 gap-6 text-gray-700 text-base text-center">
+                            md:grid-cols-3 lg:grid-cols-6 gap-6 text-gray-700 text-base text-center">
                             <div>
                                 <p className="text-sm text-gray-500">Orden N°</p>
                                 <p className="font-semibold text-gray-800">{orden?.number_order}</p>
@@ -143,6 +143,10 @@ const NewLineas = () => {
                             <div>
                                 <p className="text-sm text-gray-500">Planta</p>
                                 <p className="font-semibold text-gray-800">{orden?.planta}</p>
+                            </div>
+                            <div>
+                                <p className="text-sm text-gray-500">Cantidad a producir</p>
+                                <p className="font-semibold text-gray-800">{orden?.cantidad_producir}</p>
                             </div>
                             <div>
                                 <p className="text-sm text-gray-500">Estado</p>
