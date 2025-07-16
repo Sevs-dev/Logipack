@@ -5,6 +5,8 @@ export type ActivityType = {
   options?: string[];
   min?: number;
   max?: number;
+  valor?: number;
+  items?: Array<{ min?: number; max?: number; valor?: number }>;
 };
 
 export interface NewActivity {
@@ -46,6 +48,13 @@ export const activityTypes: Record<string, ActivityType> = {
     type: "temperature",
     min: undefined,
     max: undefined,
+  },
+  Muestreo: {
+    type: "muestreo",
+    items: [
+      { min: undefined, max: undefined, valor: undefined },
+      // más objetos iguales...
+    ],
   },
 };
 

@@ -31,6 +31,13 @@ export default function NewActivity({ canEdit = false, canView = false }: Create
             min: undefined,
             max: undefined
         },
+
+        Muestreo: {
+            type: "muestreo",
+            items: [
+                { min: undefined, max: undefined, valor: undefined },
+            ]
+        }
     };
     const [modalOpen, setModalOpen] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
@@ -192,9 +199,12 @@ export default function NewActivity({ canEdit = false, canView = false }: Create
             const parsed = typeof data.config === "string" ? JSON.parse(data.config) : data.config;
             const activityType = Object.keys(activityTypes).find((key) => {
                 const def = activityTypes[key];
+
                 if (def.type !== parsed.type) return false;
                 if (def.type === "temperature") return true;
+                if (def.type === "muestreo") return true;
                 if (parsed.type === "text" && parsed.min && parsed.max) return key === "Rangos";
+                if (parsed.type === "text" && parsed.min && parsed.max && parsed.valor) return key === "Muestreo";
                 return JSON.stringify(def) === JSON.stringify(parsed);
             }) || "Texto corto";
             setEditingId(data.id);
@@ -422,6 +432,85 @@ export default function NewActivity({ canEdit = false, canView = false }: Create
                                 />
                             </div>
                         )}
+
+                        {selectedType === "Muestreo" && (
+                            <div className="flex flex-col gap-4">
+                                <label className="text-sm font-medium text-black">
+                                    Rangos de muestreo con valor
+                                    <InfoPopover
+                                        content={
+                                            <>
+                                                Puedes agregar varios rangos definidos por <code>min</code>, <code>max</code> y su <code>valor</code> correspondiente.<br />
+                                                Útil para medir múltiples puntos o escenarios.
+                                            </>
+                                        }
+                                    />
+                                </label>
+
+                                {(parsedConfig?.items || []).map((item, index) => (
+                                    <div key={index} className="flex items-center gap-2">
+                                        <input
+                                            type="number"
+                                            step="0.1"
+                                            value={item.min ?? ""}
+                                            onChange={(e) => {
+                                                const items = [...(parsedConfig?.items ?? [])];
+                                                items[index].min = parseFloat(e.target.value);
+                                                setFormData({ ...formData, config: JSON.stringify({ ...parsedConfig, items }, null, 2) });
+                                            }}
+                                            placeholder="Min"
+                                            className="w-[80px] border p-2 rounded-md text-black text-center"
+                                        />
+                                        <input
+                                            type="number"
+                                            step="0.1"
+                                            value={item.max ?? ""}
+                                            onChange={(e) => {
+                                                const items = [...(parsedConfig?.items ?? [])];
+                                                items[index].max = parseFloat(e.target.value);
+                                                setFormData({ ...formData, config: JSON.stringify({ ...parsedConfig, items }, null, 2) });
+                                            }}
+                                            placeholder="Max"
+                                            className="w-[80px] border p-2 rounded-md text-black text-center"
+                                        />
+                                        <input
+                                            type="number"
+                                            step="0.1"
+                                            value={item.valor ?? ""}
+                                            onChange={(e) => {
+                                                const items = [...(parsedConfig?.items ?? [])];
+                                                items[index].valor = parseFloat(e.target.value);
+                                                setFormData({ ...formData, config: JSON.stringify({ ...parsedConfig, items }, null, 2) });
+                                            }}
+                                            placeholder="Valor"
+                                            className="w-[80px] border p-2 rounded-md text-black text-center"
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                const items = (parsedConfig?.items ?? []).filter((_, i) => i !== index);
+                                                setFormData({ ...formData, config: JSON.stringify({ ...parsedConfig, items }, null, 2) });
+                                            }}
+                                            className="text-red-500 hover:underline text-sm"
+                                        >
+                                            Eliminar
+                                        </button>
+                                    </div>
+                                ))}
+
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        const items = [...(parsedConfig?.items || []), { min: undefined, max: undefined, valor: undefined }];
+                                        setFormData({ ...formData, config: JSON.stringify({ ...parsedConfig, items }, null, 2) });
+                                    }}
+                                    className="text-blue-600 hover:underline text-sm"
+                                >
+                                    + Agregar otro rango
+                                </button>
+                            </div>
+                        )}
+
                     </div>
 
 
