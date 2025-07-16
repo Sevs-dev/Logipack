@@ -304,6 +304,19 @@ class OrdenesEjecutadasController extends Controller
         ]);
     }
 
+        /**
+     * Fase de control
+     *
+     * @param int $id
+     * @return JsonResponse
+     */
+    public function getActividadesEjecutadas($id): JsonResponse
+    {
+  
+    }
+
+
+
     /**
      * Validar rol
      *

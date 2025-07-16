@@ -23,6 +23,7 @@ return new class extends Migration
             $table->string('linea_produccion')->nullable();
             $table->string('cliente')->nullable();
             $table->string('planta')->nullable();
+            $table->integer('cantidad_producir')->nullable()->default(0);
             $table->string('proceso')->nullable()->default('eject');
             $table->string('estado')->nullable()->default('100');
             $table->timestamps();
