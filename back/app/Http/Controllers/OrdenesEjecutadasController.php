@@ -304,18 +304,13 @@ class OrdenesEjecutadasController extends Controller
         ]);
     }
 
-        /**
+    /**
      * Fase de control
      *
      * @param int $id
      * @return JsonResponse
      */
-    public function getActividadesEjecutadas($id): JsonResponse
-    {
-  
-    }
-
-
+    public function getActividadesEjecutadas($id): JsonResponse {}
 
     /**
      * Validar rol
@@ -439,7 +434,8 @@ class OrdenesEjecutadasController extends Controller
                 'mae.type_stage as maestra_fases_fk',
                 'ada_date.status_dates',
                 'cli.name as client_name',
-                'fac.name as factory_name'
+                'fac.name as factory_name',
+                'ada_date.quantityToProduce',
             )
             ->first();
 
@@ -459,7 +455,8 @@ class OrdenesEjecutadasController extends Controller
             'maestra_fases_fk' => $acondicionamiento->maestra_fases_fk,
             'linea_produccion' => $acondicionamiento->linea_produccion,
             'cliente' => $acondicionamiento->client_name,
-            'planta' => $acondicionamiento->factory_name
+            'planta' => $acondicionamiento->factory_name,
+            'cantidad_producir' => $acondicionamiento->quantityToProduce,
         ]);
         return $acondicionamiento;
     }
@@ -611,8 +608,9 @@ class OrdenesEjecutadasController extends Controller
         // armar actividades de planificación o conciliación
         $actividades = [];
         foreach ($fases->toArray() as $count => $fase) {
-            if ($fase->phase_type == 'Planificación' || $fase->phase_type == 'Conciliación'
-                || $fase->phase_type == 'Actividades') {
+            if ($fase->phase_type == 'Planificación' ||
+                    $fase->phase_type == 'Conciliación' ||
+                    $fase->phase_type == 'Actividades') {
                 // obtener lista si la actividades especificos
                 $actividades = DB::table('stages as std')
                     ->join('activities as atc', function ($join) {
