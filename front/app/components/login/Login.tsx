@@ -1,8 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { login } from '../../services/userDash/authservices';
-import { useRouter } from 'next/navigation';
+import { login } from '../../services/userDash/authservices'; 
 import nookies from 'nookies';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FiEye, FiEyeOff } from 'react-icons/fi';
@@ -15,8 +14,7 @@ const cookieOptions = {
   sameSite: 'lax', // ✅ cambiado de strict a lax
 };
 
-export default function Login() {
-  const router = useRouter();
+export default function Login() { 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);

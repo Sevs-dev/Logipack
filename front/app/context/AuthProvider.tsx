@@ -11,7 +11,7 @@ import nookies from "nookies";
 import { useRouter, usePathname } from "next/navigation";
 import { getUserByEmail } from "../services/userDash/authservices";
 import Loader from "../components/loader/Loader";
-import { showError } from "../components/toastr/Toaster"; // ✅ IMPORTANTE
+import { showWarning } from "../components/toastr/Toaster";
 
 type User = {
   id: number;
@@ -31,7 +31,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [role, setRole] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const [hasNotified, setHasNotified] = useState(false); // ✅ para evitar spam de toast
+  const [hasNotified, setHasNotified] = useState(false);
 
   const router = useRouter();
   const pathname = usePathname();
@@ -44,7 +44,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setUser(null);
       setRole(null);
       if (showToast && !hasNotified) {
-        showError("Tu sesión ha expirado. Por favor inicia sesión nuevamente.");
+        showWarning("Tu sesión ha expirado. Por favor inicia sesión nuevamente.");
         setHasNotified(true);
       }
       router.push("/pages/login");
@@ -52,7 +52,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     [router, hasNotified]
   );
 
-  const parseJwt = (token: string) => {
+  const parseJwt = useCallback((token: string) => {
     try {
       const base64Url = token.split(".")[1];
       const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
@@ -63,16 +63,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           .join("")
       );
       return JSON.parse(jsonPayload);
-    } catch (error) {
+    } catch {
       return null;
     }
-  };
+  }, []);
 
-  const isTokenExpired = (token: string): boolean => {
-    const decoded = parseJwt(token);
-    if (!decoded || decoded.exp < Date.now() / 1000) return true;
-    return false;
-  };
+  const isTokenExpired = useCallback(
+    (token: string): boolean => {
+      const decoded = parseJwt(token);
+      return !decoded || decoded.exp < Date.now() / 1000;
+    },
+    [parseJwt]
+  );
 
   useEffect(() => {
     const cookies = nookies.get();
@@ -81,7 +83,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const storedRole = cookies.role || null;
 
     if (!token || !email || isTokenExpired(token)) {
-      logout(true); // ✅ con toast
+      logout(true);
       setLoading(false);
       return;
     }
@@ -93,23 +95,22 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setRole(res.role || storedRole);
       })
       .catch(() => {
-        logout(true); // ✅ con toast
+        logout(true);
       })
       .finally(() => {
         setLoading(false);
       });
 
-    // ⏰ Verificación periódica de expiración de token
     const interval = setInterval(() => {
       const currentCookies = nookies.get();
       const currentToken = currentCookies.token;
       if (!currentToken || isTokenExpired(currentToken)) {
-        logout(true); // ✅ con toast
+        logout(true);
       }
-    }, 30 * 1000); // Cada 30 segundos
+    }, 30 * 1000);
 
     return () => clearInterval(interval);
-  }, [pathname, logout]);
+  }, [pathname, logout, isTokenExpired]);
 
   if (loading) return <Loader />;
 
