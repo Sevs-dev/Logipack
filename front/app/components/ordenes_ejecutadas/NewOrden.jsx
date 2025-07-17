@@ -5,6 +5,7 @@ import {
   validate_orden,
   fase_control,
   condiciones_fase,
+  validate_rol
 } from "@/app/services/planing/planingServices";
 import {
   createTimer,
@@ -196,7 +197,15 @@ const App = () => {
     const condicionFase = async () => {
       if (!fase) return;
       const resp = await condiciones_fase(fase.adaptation_date_id, fase.fases_fk);
-      setShowModal(resp.condicion_1 > 0);
+      const { role } = await validate_rol(fase.fases_fk);
+      const perfil = document.cookie
+        .split('; ')
+        .find(row => row.startsWith('role='))
+        ?.split('=')[1];
+      setShowModal(
+        (resp.condicion_1 > 0) || ((role || "") === "") ||
+        ((perfil || "") === "") || (role !== perfil)
+      );
     };
 
     condicionFase();
@@ -357,7 +366,7 @@ const App = () => {
         </div>
 
         <div className="px-8 py-6 grid grid-cols-1 sm:grid-cols-2 
-          md:grid-cols-3 lg:grid-cols-6 gap-6 text-sm text-gray-700">
+          md:grid-cols-3 lg:grid-cols-s gap-6 text-sm text-gray-700">
           <div>
             <p className="text-gray-500 text-center">Orden N°</p>
             <p className="font-medium text-gray-900 text-center">
@@ -437,13 +446,24 @@ const App = () => {
                   } catch (error) {
                     config = {};
                   }
-                  const { type, options, min, max } = config;
+                  const { type, options, min, max, items } = config;
                   const clave = item.clave;
                   return (
                     <div key={index}>
                       <Text type="subtitle" color="text-[#ffff]">
                         {item.descripcion_activitie}
                       </Text>
+
+                      {/* MUESTREO */}
+                      {type === "muestreo" && (
+                        <p className="text-red-500">
+                          {items.map(({ min, max, valor }) => {
+                            if (min <= orden.cantidad_producir && orden.cantidad_producir <= max) {
+                              return valor;
+                            }
+                          })}
+                        </p>
+                      )}
 
                       {/* TEXT */}
                       {type === "text" && (
