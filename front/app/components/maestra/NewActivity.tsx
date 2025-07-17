@@ -510,10 +510,8 @@ export default function NewActivity({ canEdit = false, canView = false }: Create
                                 </button>
                             </div>
                         )}
-
                     </div>
-
-
+                    
                     {/* Botones */}
                     <div className="flex justify-center gap-4 mt-6">
                         <Button onClick={handleModalClose} variant="cancel" label="Cancelar" />
