@@ -38,6 +38,7 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
     const [lineDetails, setLineDetails] = useState<Record<number, { name: string }>>({});
     const [selectedMachines, setSelectedMachines] = useState<MachinePlanning[]>([]);
     const [selectedUsers, setSelectedUsers] = useState<UserPlaning[]>([]);
+    const [isSaving, setIsSaving] = useState(false);
 
     const fetchAll = useCallback(async () => {
         try {
@@ -168,8 +169,11 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
     }
 
     const handleSave = async (updatedPlan: Plan) => {
+        if (isSaving) return;
+        setIsSaving(true);
         if (!updatedPlan) {
             showError("No hay datos para guardar.");
+            setIsSaving(false);
             return;
         }
         try {
@@ -182,6 +186,7 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
 
             if (hasEmptyLines) {
                 showError("Hay líneas sin actividades asignadas. Por favor, completa todas antes de guardar.");
+                setIsSaving(false);
                 return;
             }
             const formattedLines = lines.map(lineId => {
@@ -224,6 +229,8 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
         } catch (error) {
             console.error("Error al guardar cambios:", error);
             showError("Error al guardar la planificación");
+        } finally {
+            setIsSaving(false); // Desactiva loading
         }
     };
 
@@ -448,7 +455,7 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
 
     const handleTerciario = useCallback(async (id: number) => {
         const { plan } = await getPlanningById(id);
-        
+
         // Validar si la orden tiene linea asignada
         if (plan.line === null || plan.line.length < 3) {
             showError("No se asignó línea a la planificación");
@@ -630,22 +637,6 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
                                 }
                                 disabled={!canEdit}
                             />
-                        </div>
-                        {/* 🔹 Estado */}
-                        <div className="break-inside-avoid mb-4">
-                            <Text type="subtitle" color="#000">Estado</Text>
-                            <select
-                                className="w-full border p-3 rounded-lg text-gray-800 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500 text-center"
-                                value={currentPlan.status_dates}
-                                onChange={(e) =>
-                                    setCurrentPlan({ ...currentPlan, status_dates: e.target.value })
-                                }
-                                disabled={!canEdit}
-                            >
-                                <option value="">Seleccione una opción</option>
-                                <option value="En Creación">En Creación</option>
-                                <option value="Planificación">Planificación</option>
-                            </select>
                         </div>
                         {/* 🔹 Planta */}
                         <div className="break-inside-avoid mb-4">
@@ -919,15 +910,6 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
                                 value={`${currentPlan.duration} min ---> ${getFormattedDuration(Number(currentPlan.duration))}`}
                             />
                         </div>
-
-                        <div className="break-inside-avoid mb-4">
-                            <Text type="subtitle" color="#000">Duración por fase</Text>
-                            <div className="w-full p-3 mt-2 text-sm text-gray-800 bg-gray-100 border rounded whitespace-pre-line">
-                                {currentPlan.duration_breakdown
-                                    ? formatDurationBreakdown(currentPlan.duration_breakdown)
-                                    : "Sin desglose disponible"}
-                            </div>
-                        </div>
                         {/* 🔹 Fecha de Inicio */}
                         <div className="break-inside-avoid mb-4">
                             <Text type="subtitle" color="#000">Fecha y Hora de Inicio</Text>
@@ -956,6 +938,14 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
                                 }}
                             />
                         </div>
+                        <div className="break-inside-avoid mb-4">
+                            <Text type="subtitle" color="#000">Duración por fase</Text>
+                            <div className="w-full p-3 mt-2 text-sm text-gray-800 bg-gray-100 border rounded whitespace-pre-line">
+                                {currentPlan.duration_breakdown
+                                    ? formatDurationBreakdown(currentPlan.duration_breakdown)
+                                    : "Sin desglose disponible"}
+                            </div>
+                        </div>
 
                         <div className="break-inside-avoid mb-4">
                             <Text type="subtitle" color="#000">Fecha y Hora de Final</Text>
@@ -972,6 +962,28 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
 
                     <div className="flex justify-center gap-2 mt-6">
                         <Button onClick={() => setIsOpen(false)} variant="cancel" label="Cancelar" />
+                        {currentPlan?.status_dates !== "Planificación" && (
+                            <Button
+                                onClick={async () => {
+                                    if (isSaving) return;
+                                    setIsSaving(true);
+                                    try {
+                                        const updatedPlanWithStatus = {
+                                            ...currentPlan,
+                                            status_dates: "Planificación",
+                                        };
+                                        await handleSave(updatedPlanWithStatus);
+                                    } catch (err) {
+                                        console.error("Error al finalizar edición:", err);
+                                    } finally {
+                                        setIsSaving(false);
+                                    }
+                                }}
+                                variant="terciario"
+                                disabled={isSaving}
+                                label={isSaving ? "Guardando..." : "Planificar y Guardar"}
+                            />
+                        )}
                         <Button onClick={() => handleSave(currentPlan)} variant="save" label="Guardar" />
                     </div>
                 </ModalSection>

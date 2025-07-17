@@ -5,7 +5,7 @@ import {
   validate_orden,
   fase_control,
   condiciones_fase,
-  validate_rol
+  validate_rol,
 } from "@/app/services/planing/planingServices";
 import {
   createTimer,
@@ -13,7 +13,7 @@ import {
 } from "../../services/timer/timerServices";
 import { getStageId } from "../../services/maestras/stageServices";
 import Firma from "../ordenes_ejecutadas/Firma";
-import ModalBlock from '../modal/ModalBlock';
+import ModalBlock from "../modal/ModalBlock";
 
 import Text from "../text/Text";
 import { showError } from "../toastr/Toaster";
@@ -196,15 +196,20 @@ const App = () => {
 
     const condicionFase = async () => {
       if (!fase) return;
-      const resp = await condiciones_fase(fase.adaptation_date_id, fase.fases_fk);
+      const resp = await condiciones_fase(
+        fase.adaptation_date_id,
+        fase.fases_fk
+      );
       const { role } = await validate_rol(fase.fases_fk);
       const perfil = document.cookie
-        .split('; ')
-        .find(row => row.startsWith('role='))
-        ?.split('=')[1];
+        .split("; ")
+        .find((row) => row.startsWith("role="))
+        ?.split("=")[1];
       setShowModal(
-        (resp.condicion_1 > 0) || ((role || "") === "") ||
-        ((perfil || "") === "") || (role !== perfil)
+        resp.condicion_1 > 0 ||
+          (role || "") === "" ||
+          (perfil || "") === "" ||
+          role !== perfil
       );
     };
 
@@ -281,8 +286,12 @@ const App = () => {
   // si no hay fase
   if (!fase) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-gray-900 gap-4">
-        <p className="text-white text-xl font-semibold">Fase finalizada.</p>
+      <div className="flex flex-col items-center justify-center min-h-screen bg-gray-900 gap-4"> 
+        <DateLoader
+          message="Fase finalizada."
+          backgroundColor="#242424"
+          color="#ffff"
+        />
         <button
           className="w-20 bg-blue-600 text-white p-2 rounded-xl hover:bg-blue-700 transition-colors"
           onClick={async () => {
@@ -365,8 +374,10 @@ const App = () => {
           />
         </div>
 
-        <div className="px-8 py-6 grid grid-cols-1 sm:grid-cols-2 
-          md:grid-cols-3 lg:grid-cols-s gap-6 text-sm text-gray-700">
+        <div
+          className="px-8 py-6 grid grid-cols-1 sm:grid-cols-2 
+          md:grid-cols-3 lg:grid-cols-s gap-6 text-sm text-gray-700"
+        >
           <div>
             <p className="text-gray-500 text-center">Orden N°</p>
             <p className="font-medium text-gray-900 text-center">
@@ -458,7 +469,10 @@ const App = () => {
                       {type === "muestreo" && (
                         <p className="text-red-500">
                           {items.map(({ min, max, valor }) => {
-                            if (min <= orden.cantidad_producir && orden.cantidad_producir <= max) {
+                            if (
+                              min <= orden.cantidad_producir &&
+                              orden.cantidad_producir <= max
+                            ) {
                               return valor;
                             }
                           })}
@@ -611,27 +625,27 @@ const App = () => {
                           {memoriaFase[linea]?.[clave]?.startsWith(
                             "data:application/pdf"
                           ) && (
-                              <div className="mb-2">
-                                <object
-                                  data={memoriaFase[linea][clave]}
-                                  type="application/pdf"
-                                  width="100%"
-                                  height="400px"
-                                >
-                                  <p className="text-gray-600">
-                                    No se pudo mostrar el PDF.{" "}
-                                    <a
-                                      href={memoriaFase[linea][clave]}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      className="text-blue-600 underline"
-                                    >
-                                      Haz clic aquí para verlo
-                                    </a>
-                                  </p>
-                                </object>
-                              </div>
-                            )}
+                            <div className="mb-2">
+                              <object
+                                data={memoriaFase[linea][clave]}
+                                type="application/pdf"
+                                width="100%"
+                                height="400px"
+                              >
+                                <p className="text-gray-600">
+                                  No se pudo mostrar el PDF.{" "}
+                                  <a
+                                    href={memoriaFase[linea][clave]}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-blue-600 underline"
+                                  >
+                                    Haz clic aquí para verlo
+                                  </a>
+                                </p>
+                              </object>
+                            </div>
+                          )}
 
                           <input
                             className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm 
@@ -675,14 +689,14 @@ const App = () => {
                           {memoriaFase[linea]?.[clave]?.startsWith(
                             "data:image"
                           ) && (
-                              <div className="mb-2">
-                                <img
-                                  src={memoriaFase[linea][clave]}
-                                  alt="Imagen guardada"
-                                  className="max-h-48 rounded shadow object-contain"
-                                />
-                              </div>
-                            )}
+                            <div className="mb-2">
+                              <img
+                                src={memoriaFase[linea][clave]}
+                                alt="Imagen guardada"
+                                className="max-h-48 rounded shadow object-contain"
+                              />
+                            </div>
+                          )}
 
                           <input
                             className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm 
@@ -750,7 +764,8 @@ const App = () => {
                             onChange={inputChange}
                           />
                           {memoriaFase[linea]?.[clave] !== undefined &&
-                            (memoriaFase[linea][clave] < min || memoriaFase[linea][clave] > max) && (
+                            (memoriaFase[linea][clave] < min ||
+                              memoriaFase[linea][clave] > max) && (
                               <p className="mt-1 text-sm text-red-600">
                                 Valor ingresado debe estar entre {min} y {max}.
                               </p>
