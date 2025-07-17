@@ -110,6 +110,11 @@ const NewLineas = () => {
         }, 1000);
     };
 
+    const estadoMap: Record<number, string> = {
+        100: "Pendiente",
+        11500: "Ejecutado",
+        // agrega más si hay
+    };
     return (
         <div className="p-8 min-h-screen bg-gradient-to-b from-gray-50 to-gray-100">
             <div className="max-w-7xl mx-auto flex flex-col gap-12">
@@ -119,12 +124,9 @@ const NewLineas = () => {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.4 }}
                 >
-                    <Text type="title" color="text-black">
-                        Líneas de procesos
-                    </Text>
                     <div className="mt-6 w-full rounded-3xl bg-white shadow-xl border border-gray-200 overflow-hidden">
                         <div className="bg-gray-50 px-6 py-4 border-b border-gray-200">
-                            <Text type="subtitle" color="text-black">Información de la Orden</Text>
+                            <Text type="title" color="text-black">Información de la Orden</Text>
                         </div>
                         <div className="px-8 py-6 grid grid-cols-1 sm:grid-cols-2
                             md:grid-cols-3 lg:grid-cols-s gap-6 text-sm text-gray-700">
@@ -152,12 +154,17 @@ const NewLineas = () => {
                             </div>
                             <div className="flex flex-col items-center">
                                 <p className="text-gray-500">Estado</p>
-                                <p className={`font-semibold text-gray-800 rounded-full px-2 py-1 w-24 text-center
-                                    ${orden?.estado === 'Activo' ? 'bg-green-100 text-green-800' : 
-                                    'bg-yellow-100 text-yellow-800'}`}>
-                                    {orden?.estado}
+                                <p
+                                    className={`font-semibold text-gray-800 rounded-full px-2 py-1 w-24 text-center
+                                    ${orden?.estado === 11500
+                                            ? "bg-green-100 text-green-800"
+                                            : "bg-yellow-100 text-yellow-800"
+                                        }`}
+                                >
+                                    {estadoMap[orden?.estado as number] ?? "Desconocido"}
                                 </p>
                             </div>
+
                         </div>
                     </div>
                 </motion.section>
