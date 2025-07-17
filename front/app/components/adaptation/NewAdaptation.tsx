@@ -21,7 +21,7 @@ import AuditModal from "../history/AuditModal";
 import { showSuccess, showError } from "../toastr/Toaster";
 // 🔹 Interfaces
 import { Client } from "@/app/interfaces/Client";
-import { Article, Ingredient, Bom, ArticleResponse } from "@/app/interfaces/BOM";
+import { Article, Ingredient, Bom } from "@/app/interfaces/BOM";
 import { MaestraBase } from "@/app/interfaces/NewMaestra";
 import { BOM, Adaptation, ArticleFormData, Plant } from "@/app/interfaces/NewAdaptation";
 import { Audit } from "../../interfaces/Audit";
@@ -75,11 +75,6 @@ function NewAdaptation({ canEdit = false, canView = false }: CreateClientProps) 
     const [auditList, setAuditList] = useState<Audit[]>([]);
     const [, setSelectedAudit] = useState<Audit | null>(null);
 
-    const [search, setSearch] = useState("");
-    const filteredClients = clients.filter(c =>
-        c.name.toLowerCase().includes(search.toLowerCase())
-    );
-
     // Cargar Adaptaciones al montar si se puede ver
     useEffect(() => {
         if (canView) fetchAdaptations();
@@ -126,9 +121,9 @@ function NewAdaptation({ canEdit = false, canView = false }: CreateClientProps) 
                 setIsLoading(true);
                 const maestrasData = await getMaestra();
                 setMaestra(maestrasData);
-            } catch (err) {
+            } catch {
                 showError("Error al cargar las maestras.");
-                console.error(err);
+                // Optionally, you can log the error if needed
             } finally {
                 setIsLoading(false);
             }
@@ -222,13 +217,13 @@ function NewAdaptation({ canEdit = false, canView = false }: CreateClientProps) 
                     try {
                         const parsed = JSON.parse(latestBom.ingredients);
                         setIngredients(parsed);
-                    } catch (e) {
+                    } catch {
                         setIngredients([]);
                     }
                 } else {
                     setIngredients([]);
                 }
-            } catch (err) {
+            } catch {
                 showError("Error al obtener BOM.");
                 setBoms([]);
                 setIngredients([]);
@@ -254,8 +249,7 @@ function NewAdaptation({ canEdit = false, canView = false }: CreateClientProps) 
                 };
             })
         );
-    }, [quantityToProduce]);
-
+    }, [quantityToProduce, ingredients.length]);
 
     // ======================= 🔁 Funciones de cambio y copia =======================
 
@@ -428,10 +422,9 @@ function NewAdaptation({ canEdit = false, canView = false }: CreateClientProps) 
             setIsLoading(true);
             if (isEditMode) {
                 console.log("📝 Actualizando adaptación con ID:", editAdaptationId);
-                for (let [key, value] of formData.entries()) {
+                for (const [key, value] of formData.entries()) {
                     console.log(`📦 ${key}:`, value);
                 }
-
                 await updateAdaptation(editAdaptationId!, formData);
                 showSuccess("Acondicionamiento actualizado.");
             } else {
@@ -523,7 +516,7 @@ function NewAdaptation({ canEdit = false, canView = false }: CreateClientProps) 
                         };
                     });
                     setIngredients(enriched);
-                } catch (e) {
+                } catch {
                     setIngredients([]);
                 }
             } else {
@@ -950,7 +943,7 @@ function NewAdaptation({ canEdit = false, canView = false }: CreateClientProps) 
 
                                             {/* Cant. Teórica */}
                                             <div>
-                                                <Text type="subtitle" color="text-gray-700">Cant. Teórica:</Text>
+                                                <Text type="subtitle" color="text-gray-700">Cant. a Producir:</Text>
                                                 <input
                                                     type="number"
                                                     className="w-full border border-gray-300 p-2 rounded-md mt-1 focus:outline-none focus:ring-2 focus:ring-blue-400 text-center text-gray-800"

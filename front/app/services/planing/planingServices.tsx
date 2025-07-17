@@ -131,3 +131,14 @@ export const condiciones_fase = async (id: number, fase: number) => {
         throw error;
     }
 }
+
+
+export const validate_rol = async (fase: number) => {
+    try {
+        const response = await Planning.get(`/validate_rol/${fase}`);
+        return response.data;
+    } catch (error: unknown) {
+        console.error("Error en validate_rol:", error);
+        throw error;
+    }
+}

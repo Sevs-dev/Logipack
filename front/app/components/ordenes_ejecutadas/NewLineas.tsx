@@ -126,31 +126,37 @@ const NewLineas = () => {
                         <div className="bg-gray-50 px-6 py-4 border-b border-gray-200">
                             <Text type="subtitle" color="text-black">Información de la Orden</Text>
                         </div>
-                        <div className="px-6 py-6 grid grid-cols-1 sm:grid-cols-2 
-                            md:grid-cols-3 lg:grid-cols-5 gap-6 text-gray-700 text-base text-center">
+                        <div className="px-8 py-6 grid grid-cols-1 sm:grid-cols-2
+                            md:grid-cols-3 lg:grid-cols-s gap-6 text-sm text-gray-700">
                             <div>
-                                <p className="text-sm text-gray-500">Orden N°</p>
-                                <p className="font-semibold text-gray-800">{orden?.number_order}</p>
+                                <p className="text-gray-500 text-center">Orden N°</p>
+                                <p className="font-medium text-gray-900 text-center">
+                                    {orden?.number_order}
+                                </p>
                             </div>
                             <div>
-                                <p className="text-sm text-gray-500">Descripción</p>
-                                <p className="font-semibold text-gray-800">{orden?.descripcion_maestra}</p>
+                                <p className="text-gray-500 text-center">Descripción</p>
+                                <p className="font-semibold text-gray-800 text-center">{orden?.descripcion_maestra}</p>
                             </div>
                             <div>
-                                <p className="text-sm text-gray-500">Cliente</p>
-                                <p className="font-semibold text-gray-800">{orden?.cliente}</p>
+                                <p className="text-gray-500 text-center">Cliente</p>
+                                <p className="font-semibold text-gray-800 text-center">{orden?.cliente}</p>
                             </div>
                             <div>
-                                <p className="text-sm text-gray-500">Planta</p>
-                                <p className="font-semibold text-gray-800">{orden?.planta}</p>
+                                <p className="text-gray-500 text-center">Planta</p>
+                                <p className="font-semibold text-gray-800 text-center">{orden?.planta}</p>
                             </div>
                             <div>
-                                <p className="text-sm text-gray-500">Estado</p>
-                                <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium 
-                                    ${orden?.estado === 'Activo' ? 'bg-green-100 text-green-800' :
-                                        'bg-yellow-100 text-yellow-800'}`}>
+                                <p className="text-gray-500 text-center">Cantidad a producir</p>
+                                <p className="font-semibold text-gray-800 text-center">{orden?.cantidad_producir}</p>
+                            </div>
+                            <div className="flex flex-col items-center">
+                                <p className="text-gray-500">Estado</p>
+                                <p className={`font-semibold text-gray-800 rounded-full px-2 py-1 w-24 text-center
+                                    ${orden?.estado === 'Activo' ? 'bg-green-100 text-green-800' : 
+                                    'bg-yellow-100 text-yellow-800'}`}>
                                     {orden?.estado}
-                                </span>
+                                </p>
                             </div>
                         </div>
                     </div>

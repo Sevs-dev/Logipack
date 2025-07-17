@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback, useMemo } from "react";
 import dayjs from 'dayjs';
-import 'dayjs/locale/es';
+import 'dayjs/locale/es'; 
 import isBetween from 'dayjs/plugin/isBetween';
 import isoWeek from 'dayjs/plugin/isoWeek';
 import { getPlanning } from "../../services/planing/planingServices";
@@ -549,6 +549,18 @@ const CalendarGantt: React.FC = () => {
                     >
                       ← Anterior
                     </button>
+
+                    <button
+                      onClick={() => {
+                        if (selectedEvent?.id) {
+                          window.open(`/pagina/${selectedEvent.id}`, '_blank', 'noopener,noreferrer');
+                        }
+                      }}
+                      className="text-sm bg-[#32a9f3] hover:bg-[#303ce5] px-4 py-2 rounded-lg text-white"
+                    >
+                      Ver detalles
+                    </button>
+
                     <button
                       onClick={goToNextEvent}
                       className="text-sm bg-gray-200 hover:bg-gray-300 text-gray-700 px-4 py-2 rounded-lg"
