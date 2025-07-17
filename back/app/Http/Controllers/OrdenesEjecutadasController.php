@@ -423,7 +423,7 @@ class OrdenesEjecutadasController extends Controller
             ->join('maestras as mae', 'mae.id', '=', 'ada.master')
             ->join('clients as cli', 'cli.id', '=', 'ada.client_id')
             ->join('factories as fac', 'fac.id', '=', 'ada.factory_id')
-            ->where('ada.id', $id)
+            ->where('ada_date.id', $id)
             ->select(
                 'ada_date.id as adaptation_date_id',
                 'ada.id as adaptation_id',
@@ -493,7 +493,7 @@ class OrdenesEjecutadasController extends Controller
             )
             ->orderByRaw('posicion ASC')
             ->get(), $orden);
-
+    
         // crear actividades de la orden ejecutada
         foreach ($fases as $fase) {
             ActividadesEjecutadas::create([

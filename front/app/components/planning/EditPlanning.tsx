@@ -422,7 +422,7 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
 
     const handleTerciario = useCallback(async (id: number) => {
         const { plan } = await getPlanningById(id);
-
+        
         // Validar si la orden tiene linea asignada
         if (plan.line === null || plan.line.length < 3) {
             showError("No se asigno linea a la planificación");
