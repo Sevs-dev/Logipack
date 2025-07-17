@@ -5,6 +5,7 @@ import {
   validate_orden,
   fase_control,
   condiciones_fase,
+  validate_rol
 } from "@/app/services/planing/planingServices";
 import {
   createTimer,
@@ -196,7 +197,15 @@ const App = () => {
     const condicionFase = async () => {
       if (!fase) return;
       const resp = await condiciones_fase(fase.adaptation_date_id, fase.fases_fk);
-      setShowModal(resp.condicion_1 > 0);
+      const { role } = await validate_rol(fase.fases_fk);
+      const perfil = document.cookie
+        .split('; ')
+        .find(row => row.startsWith('role='))
+        ?.split('=')[1];
+      setShowModal(
+        (resp.condicion_1 > 0) || ((role || "") === "") ||
+        ((perfil || "") === "") || (role !== perfil)
+      );
     };
 
     condicionFase();
