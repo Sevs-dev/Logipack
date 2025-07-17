@@ -187,7 +187,6 @@ class AdaptationDateController extends Controller
         try {
             Log::info("🔍 Iniciando getPlanByIdPDF con ID: $id");
 
-            // Obtener el plan con la relación hacia maestra
             $plan = AdaptationDate::with('adaptation.maestra')->find($id);
             if (!$plan) {
                 Log::warning("❌ Plan no encontrado para ID: $id");
@@ -197,7 +196,7 @@ class AdaptationDateController extends Controller
             Log::info("✅ Plan base obtenido", ['plan' => $plan->toArray()]);
             $cliente = $plan->adaptation?->client_id;
             $ordenadas = $plan->adaptation?->id;
-            // Obtener stages desde la maestra
+
             $maestra = $plan->adaptation?->maestra;
             Log::info("📦 Maestra encontrada", ['maestra' => optional($maestra)->toArray()]);
 
@@ -213,54 +212,52 @@ class AdaptationDateController extends Controller
                 }
             }
 
-            Log::info("📌 stageIds decodificados:", $stageIds);
+            Log::info("📌 stageIds decodificados", ['stageIds' => $stageIds]);
 
             $stages = Stage::whereIn('id', $stageIds)->get();
-            // Reordenar según el orden original de $stageIds
             $stages = $stages->sortBy(function ($stage) use ($stageIds) {
                 return array_search($stage->id, $stageIds);
             })->values();
-            Log::info("📄 Stages cargados:", $stages->toArray());
+            Log::info("📄 Stages cargados", ['stages' => $stages->toArray()]);
 
-            // Decodificación con protección
+            // 🔧 Decodificación segura
             $masterIds = json_decode($plan->master ?? '[]', true);
-            $masterIds = is_array($masterIds) ? $masterIds : [];
-            Log::info("🔧 masterIds:", $masterIds);
+            $masterIds = is_array($masterIds) ? $masterIds : [$plan->master];
+            Log::info("🔧 masterIds", ['masterIds' => $masterIds]);
 
             $lineIds = json_decode($plan->line ?? '[]', true);
-            $lineIds = is_array($lineIds) ? $lineIds : [];
-            Log::info("🔧 lineIds:", $lineIds);
+            $lineIds = is_array($lineIds) ? $lineIds : [$plan->line];
+            Log::info("🔧 lineIds", ['lineIds' => $lineIds]);
 
             $machineIds = json_decode($plan->machine ?? '[]', true);
-            $machineIds = is_array($machineIds) ? $machineIds : [];
-            Log::info("🔧 machineIds:", $machineIds);
+            $machineIds = is_array($machineIds) ? $machineIds : [$plan->machine];
+            Log::info("🔧 machineIds", ['machineIds' => $machineIds]);
 
             $userIds = json_decode($plan->users ?? '[]', true);
-            $userIds = is_array($userIds) ? $userIds : [];
-            Log::info("🔧 userIds:", $userIds);
+            $userIds = is_array($userIds) ? $userIds : [$plan->users];
+            Log::info("🔧 userIds", ['userIds' => $userIds]);
 
-            // Consultas
-
+            // 🧠 Consultas relacionadas
             $clientes = Clients::where('id', $cliente)->first();
-            Log::info("🏭 Clientes:", $clientes->toArray());
+            Log::info("🏭 Cliente", ['cliente' => optional($clientes)->toArray()]);
 
             $ordenasEje = OrdenesEjecutadas::where('adaptation_date_id', $ordenadas)->first();
-            Log::info("🏭 Ordenadas:", $ordenasEje->toArray());
+            Log::info("📦 Orden ejecutada", ['ordenada' => optional($ordenasEje)->toArray()]);
 
             $actividadesEje = ActividadesEjecutadas::where('adaptation_date_id', $ordenadas)->get();
-            Log::info("📄 Actividades ejecutadas:", $actividadesEje->toArray());
+            Log::info("📄 Actividades ejecutadas", ['actividadesEjecutadas' => $actividadesEje->toArray()]);
 
             $masterStages = Stage::whereIn('id', $masterIds)->get();
-            Log::info("🛠 masterStages:", $masterStages->toArray());
+            Log::info("🛠 masterStages", ['masterStages' => $masterStages->toArray()]);
 
             $lines = Manufacturing::whereIn('id', $lineIds)->get();
-            Log::info("🏭 Líneas:", $lines->toArray());
+            Log::info("🏭 Líneas", ['lines' => $lines->toArray()]);
 
             $machines = Machinery::whereIn('id', $machineIds)->get();
-            Log::info("⚙️ Máquinas:", $machines->toArray());
+            Log::info("⚙️ Máquinas", ['machines' => $machines->toArray()]);
 
             $users = User::whereIn('id', $userIds)->get();
-            Log::info("👥 Usuarios:", $users->toArray());
+            Log::info("👥 Usuarios", ['users' => $users->toArray()]);
 
             return response()->json([
                 'plan' => $plan,

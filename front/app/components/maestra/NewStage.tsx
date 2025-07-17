@@ -81,7 +81,7 @@ function NewStage({ canEdit = false, canView = false }: CreateClientProps) {
             try {
                 const role = await getRole();
                 setRoles(role);
-            } catch (error) {
+            } catch {
                 showError("Error al cargar los roles");
             }
         };
@@ -267,26 +267,39 @@ function NewStage({ canEdit = false, canView = false }: CreateClientProps) {
         setrepeat_line(false);
     };
 
-    const getFormattedDuration = (raw: number): string => {
-        const minutes = Math.floor(raw);
-        const seconds = Math.round((raw % 1) * 100); // <-- parte decimal como "segundos"
-        const totalSeconds = minutes * 60 + seconds;
-        if (totalSeconds < 60) return `${totalSeconds} seg`;
+    const getFormattedDuration = (input: number | string): string => {
+        let totalSeconds = 0;
+
+        if (typeof input === "string") input = input.replace(",", ".");
+        const num = typeof input === "number" ? input : parseFloat(input);
+
+        if (isNaN(num) || num <= 0) return "0 seg";
+
+        // Si el número tiene decimales, los decimales son segundos (ej: 0.10 => 10 seg)
+        const [minStr, secStr] = num.toString().split(".");
+        const mins = parseInt(minStr, 10) || 0;
+        const secs = secStr ? parseInt(secStr.padEnd(2, "0").slice(0, 2), 10) : 0;
+        totalSeconds = mins * 60 + secs;
+
         const days = Math.floor(totalSeconds / 86400);
         const hours = Math.floor((totalSeconds % 86400) / 3600);
-        const mins = Math.floor((totalSeconds % 3600) / 60);
-        const secs = totalSeconds % 60;
+        const minutes = Math.floor((totalSeconds % 3600) / 60);
+        const seconds = totalSeconds % 60;
+
         const parts: string[] = [];
         const pushPart = (value: number, singular: string, plural: string = singular + 's') => {
             if (value > 0) parts.push(`${value} ${value === 1 ? singular : plural}`);
         };
+
         pushPart(days, 'día');
         pushPart(hours, 'hora');
-        pushPart(mins, 'min', 'min');
-        const shouldShowSeconds = totalSeconds < 3600 && secs > 0 && days === 0 && hours === 0;
+        pushPart(minutes, 'min', 'min');
+
+        const shouldShowSeconds = totalSeconds < 3600 && seconds > 0 && days === 0 && hours === 0;
         if (shouldShowSeconds) {
-            pushPart(secs, 'seg', 'seg');
+            pushPart(seconds, 'seg', 'seg');
         }
+
         return parts.join(' ');
     };
 

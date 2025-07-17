@@ -6,7 +6,7 @@ import { showError, showSuccess, showConfirm } from "../toastr/Toaster";
 import Button from "../buttons/buttons";
 import Table from "../table/Table";
 import { InfoPopover } from "../buttons/InfoPopover";
-import { ActivityType, Activities } from "../../interfaces/NewActivity";
+import { ActivityType, Activities, FormData } from "../../interfaces/NewActivity";
 import Text from "../text/Text";
 import { Clock } from "lucide-react";
 import { CreateClientProps } from "../../interfaces/CreateClientProps";
@@ -42,12 +42,12 @@ export default function NewActivity({ canEdit = false, canView = false }: Create
     const [modalOpen, setModalOpen] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
     const [selectedType, setSelectedType] = useState("Texto corto");
-    const [formData, setFormData] = useState({
+    const [formData, setFormData] = useState<FormData>({
         description: "",
         config: JSON.stringify(activityTypes["Texto corto"], null, 2),
         binding: false,
         has_time: false,
-        duration: 0,
+        duration: undefined,
     });
 
     const [activities, setActivities] = useState<Activities[]>([]);
@@ -69,7 +69,7 @@ export default function NewActivity({ canEdit = false, canView = false }: Create
             config: getDefaultConfig("Texto corto"),
             binding: false,
             has_time: false,
-            duration: 0,
+            duration: undefined,
         });
         setSelectedType("Texto corto");
         setOptions([]);
@@ -142,7 +142,10 @@ export default function NewActivity({ canEdit = false, canView = false }: Create
             config,
             binding: formData.binding,
             has_time: formData.has_time,
-            duration: formData.duration,
+            duration:
+                typeof formData.duration === "number" && !isNaN(formData.duration)
+                    ? formData.duration
+                    : null,
         };
 
         try {
@@ -226,26 +229,40 @@ export default function NewActivity({ canEdit = false, canView = false }: Create
         }
     };
 
-    const getFormattedDuration = (raw: number): string => {
-        const minutes = Math.floor(raw);
-        const seconds = Math.round((raw % 1) * 100); // <-- parte decimal como "segundos"
-        const totalSeconds = minutes * 60 + seconds;
-        if (totalSeconds < 60) return `${totalSeconds} seg`;
+    // Convierte minutos.decimales a segundos y lo formatea legiblemente
+    const getFormattedDuration = (input: number | string): string => {
+        let totalSeconds = 0;
+
+        if (typeof input === "string") input = input.replace(",", ".");
+        const num = typeof input === "number" ? input : parseFloat(input);
+
+        if (isNaN(num) || num <= 0) return "0 seg";
+
+        // Si el número tiene decimales, los decimales son segundos (ej: 0.10 => 10 seg)
+        const [minStr, secStr] = num.toString().split(".");
+        const mins = parseInt(minStr, 10) || 0;
+        const secs = secStr ? parseInt(secStr.padEnd(2, "0").slice(0, 2), 10) : 0;
+        totalSeconds = mins * 60 + secs;
+
         const days = Math.floor(totalSeconds / 86400);
         const hours = Math.floor((totalSeconds % 86400) / 3600);
-        const mins = Math.floor((totalSeconds % 3600) / 60);
-        const secs = totalSeconds % 60;
+        const minutes = Math.floor((totalSeconds % 3600) / 60);
+        const seconds = totalSeconds % 60;
+
         const parts: string[] = [];
         const pushPart = (value: number, singular: string, plural: string = singular + 's') => {
             if (value > 0) parts.push(`${value} ${value === 1 ? singular : plural}`);
         };
+
         pushPart(days, 'día');
         pushPart(hours, 'hora');
-        pushPart(mins, 'min', 'min');
-        const shouldShowSeconds = totalSeconds < 3600 && secs > 0 && days === 0 && hours === 0;
+        pushPart(minutes, 'min', 'min');
+
+        const shouldShowSeconds = totalSeconds < 3600 && seconds > 0 && days === 0 && hours === 0;
         if (shouldShowSeconds) {
-            pushPart(secs, 'seg', 'seg');
+            pushPart(seconds, 'seg', 'seg');
         }
+
         return parts.join(' ');
     };
 
@@ -369,19 +386,21 @@ export default function NewActivity({ canEdit = false, canView = false }: Create
                                 <div className="relative flex items-center">
                                     <Clock className="absolute left-3 top-2.5 w-4 h-4 text-gray-500" />
                                     <input
-                                        id="duration"
                                         type="number"
                                         name="duration"
                                         min={0}
-                                        value={formData.duration || ""}
+                                        step="any"
+                                        placeholder="Minutos"
+                                        value={formData.duration === undefined ? "" : formData.duration}
                                         onChange={(e) => {
-                                            const val = Number(e.target.value);
+                                            const raw = e.target.value.replace(",", ".");
+                                            const parsed = parseFloat(raw);
+
                                             setFormData({
                                                 ...formData,
-                                                duration: isNaN(val) ? 0 : Math.max(0, val),
+                                                duration: raw === "" || isNaN(parsed) ? undefined : parsed,
                                             });
                                         }}
-                                        placeholder="Minutos"
                                         className="w-[140px] border p-2 pl-9 rounded-md text-black focus:ring-2 focus:ring-blue-500"
                                         disabled={!canEdit && !isEditing}
                                     />
@@ -511,7 +530,7 @@ export default function NewActivity({ canEdit = false, canView = false }: Create
                             </div>
                         )}
                     </div>
-                    
+
                     {/* Botones */}
                     <div className="flex justify-center gap-4 mt-6">
                         <Button onClick={handleModalClose} variant="cancel" label="Cancelar" />

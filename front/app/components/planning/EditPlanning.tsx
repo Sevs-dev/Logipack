@@ -242,30 +242,41 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
             const matchedPlan = serverPlansWithDetails.find(
                 p => p.ID_ADAPTACION === selectedPlan.id
             ) || serverPlansWithDetails[0];
+
             if (!matchedPlan) {
                 showError("No se encontraron detalles del plan.");
                 return;
             }
+
             const activitiesDetails = matchedPlan.activitiesDetails ?? [];
             const planActivities = selectedPlan.activities ?? [];
             const newLineActivities: Record<number, number[]> = {};
+
             // ✅ Usamos plan.activities que tiene la relación correcta línea → actividades
-            planActivities.forEach((line: any) => {
-                const lineId = Number(line.id);
-                const acts = Array.isArray(line.activities) ? line.activities : [];
-                if (!newLineActivities[lineId]) newLineActivities[lineId] = [];
-                acts.forEach((a: any) => {
-                    const actId = a.id;
-                    if (!newLineActivities[lineId].includes(actId)) {
-                        newLineActivities[lineId].push(actId);
-                        console.log(`🧩 Agregada actividad ${actId} a línea ${lineId}`);
+            planActivities.forEach((activity: ActivityDetail) => {
+                const binding = activity.binding;
+                const activityId = activity.id;
+
+                if (Array.isArray(binding)) {
+                    binding.forEach(lineId => {
+                        const lineKey = Number(lineId);
+                        if (!newLineActivities[lineKey]) newLineActivities[lineKey] = [];
+                        if (!newLineActivities[lineKey].includes(activityId)) {
+                            newLineActivities[lineKey].push(activityId);
+                        }
+                    });
+                } else if (typeof binding === "number" || typeof binding === "string") {
+                    const lineKey = Number(binding);
+                    if (!newLineActivities[lineKey]) newLineActivities[lineKey] = [];
+                    if (!newLineActivities[lineKey].includes(activityId)) {
+                        newLineActivities[lineKey].push(activityId);
                     }
-                });
+                }
             });
 
             // 🧲 Ahora complementamos con los bindings directos de activitiesDetails
             if (Array.isArray(activitiesDetails)) {
-                activitiesDetails.forEach((activity: any) => {
+                activitiesDetails.forEach((activity: ActivityDetail) => {
                     const binding = activity.binding;
                     if (Array.isArray(binding)) {
                         binding.forEach(lineId => {
@@ -284,6 +295,7 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
                     }
                 });
             }
+
             // ✅ Seteamos todo lo necesario
             setLineActivities(newLineActivities);
             setActivitiesDetails(activitiesDetails);
@@ -293,12 +305,14 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
             setSelectedUsers(
                 user.filter(u => (selectedPlan.users || []).includes(u.id))
             );
-            const fullPlan = {
+
+            const fullPlan: Plan = {
                 ...selectedPlan,
                 activitiesDetails: activitiesDetails,
                 lineActivities: newLineActivities,
                 line: getLinesArray(selectedPlan.line),
             };
+
             setCurrentPlan(fullPlan);
             setIsOpen(true);
         } catch (error) {
@@ -321,26 +335,39 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
         // console.log("Eliminar", id);
     }, []);
 
-    const getFormattedDuration = (raw: number): string => {
-        const minutes = Math.floor(raw);
-        const seconds = Math.round((raw % 1) * 100); // <-- parte decimal como "segundos"
-        const totalSeconds = minutes * 60 + seconds;
-        if (totalSeconds < 60) return `${totalSeconds} seg`;
+    const getFormattedDuration = (input: number | string): string => {
+        let totalSeconds = 0;
+
+        if (typeof input === "string") input = input.replace(",", ".");
+        const num = typeof input === "number" ? input : parseFloat(input);
+
+        if (isNaN(num) || num <= 0) return "0 seg";
+
+        // Si el número tiene decimales, los decimales son segundos (ej: 0.10 => 10 seg)
+        const [minStr, secStr] = num.toString().split(".");
+        const mins = parseInt(minStr, 10) || 0;
+        const secs = secStr ? parseInt(secStr.padEnd(2, "0").slice(0, 2), 10) : 0;
+        totalSeconds = mins * 60 + secs;
+
         const days = Math.floor(totalSeconds / 86400);
         const hours = Math.floor((totalSeconds % 86400) / 3600);
-        const mins = Math.floor((totalSeconds % 3600) / 60);
-        const secs = totalSeconds % 60;
+        const minutes = Math.floor((totalSeconds % 3600) / 60);
+        const seconds = totalSeconds % 60;
+
         const parts: string[] = [];
         const pushPart = (value: number, singular: string, plural: string = singular + 's') => {
             if (value > 0) parts.push(`${value} ${value === 1 ? singular : plural}`);
         };
+
         pushPart(days, 'día');
         pushPart(hours, 'hora');
-        pushPart(mins, 'min', 'min');
-        const shouldShowSeconds = totalSeconds < 3600 && secs > 0 && days === 0 && hours === 0;
+        pushPart(minutes, 'min', 'min');
+
+        const shouldShowSeconds = totalSeconds < 3600 && seconds > 0 && days === 0 && hours === 0;
         if (shouldShowSeconds) {
-            pushPart(secs, 'seg', 'seg');
+            pushPart(seconds, 'seg', 'seg');
         }
+
         return parts.join(' ');
     };
 
@@ -401,7 +428,6 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
         return [];
     }
 
-    const assignedActivityIds = useMemo(() => Object.values(lineActivities).flat(), [lineActivities]);
     const availableActivities = useMemo(() => activitiesDetails, [activitiesDetails]);
 
     async function fetchAndProcessPlans(id: number) {
@@ -423,52 +449,42 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
     const handleTerciario = useCallback(async (id: number) => {
         const { plan } = await getPlanningById(id);
 
-        // Validar si la orden tiene linea asignada
         if (plan.line === null || plan.line.length < 3) {
-            showError("No se asigno linea a la planificación");
+            showError("No se asignó línea a la planificación");
             return;
         }
 
-        // Validar si la orden tiene actividades asignadas
         if (plan.status_dates === null || plan.status_dates === "En Creación") {
             showError("Orden no planificada, debe completar la planificación");
             return;
         }
 
-        // Eliminar ejecutar si existe en localStorage
-        if (localStorage.getItem("ejecutar")) {
-            localStorage.removeItem("ejecutar");
-        }
+        localStorage.removeItem("ejecutar");
 
-        // Validar estado de la orden
         const data = await validate_orden(plan.id);
         if (data.estado === 100 || data.estado === null) {
-
-            // obtener usuario de la cookie
             const user = document.cookie
                 .split('; ')
                 .find(row => row.startsWith('name='))
                 ?.split('=')[1];
 
-            // Validar si se encontro usuario
             if (!user) {
-                showError("No se encontro usuario");
+                showError("No se encontró usuario");
                 return;
             }
 
-            // almacenar id y user en localStorage
             localStorage.setItem("ejecutar", JSON.stringify({
                 id: plan.id,
                 user: user
             }));
-            // abrir nueva pestaña con la ruta /pages/lineas
+
             window.open("/pages/lineas", "_blank");
             handleClose();
         } else {
-            showError("La orden ya fué finalizada estado: " + data.estado);
+            showError("La orden ya fue finalizada. Estado: " + data.estado);
             fetchAll();
         }
-    }, []);
+    }, [fetchAll, handleClose]);
 
     //Componente SelectorDual
     const agregarMaquina = (machine: MachinePlanning) => {
@@ -496,14 +512,14 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
     }, []);
 
     return (
-        <div>
+        <div className="break-inside-avoid mb-4">
             {isOpen && currentPlan && (
                 <ModalSection isVisible={isOpen} onClose={() => { setIsOpen(false) }}>
                     <Text type="title" color="text-[#000]">Editar Acondicionamiento</Text>
                     <h2 className="text-xl font-bold mb-6">Editar planificación</h2>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div>
+                        <div className="break-inside-avoid mb-4">
                             <Text type="subtitle" color="#000">Consecutivo</Text>
                             <input
                                 className="w-full border p-3 rounded-lg text-gray-800 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500 text-center"
@@ -516,7 +532,7 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
                             />
                         </div>
                         {/* 🔹 Artículo */}
-                        <div>
+                        <div className="break-inside-avoid mb-4">
                             <Text type="subtitle" color="#000">Artículo</Text>
                             <input
                                 className="w-full border p-3 rounded-lg text-gray-800 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500 text-center"
@@ -529,7 +545,7 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
                             />
                         </div>
                         {/* 🔹 Fecha de entrega */}
-                        <div>
+                        <div className="break-inside-avoid mb-4">
                             <Text type="subtitle" color="#000">Fecha de entrega</Text>
                             <input
                                 className="w-full border p-3 rounded-lg text-gray-800 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500 text-center"
@@ -543,7 +559,7 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
                             />
                         </div>
                         {/* 🔹 Registro Sanitario */}
-                        <div>
+                        <div className="break-inside-avoid mb-4">
                             <Text type="subtitle" color="#000">Registro Sanitario</Text>
                             <input
                                 className="w-full border p-3 rounded-lg text-gray-800 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500 text-center"
@@ -559,7 +575,7 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
                             />
                         </div>
                         {/* 🔹 Lote */}
-                        <div>
+                        <div className="break-inside-avoid mb-4">
                             <Text type="subtitle" color="#000">Lote</Text>
                             <input
                                 className="w-full border p-3 rounded-lg text-gray-800 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500 text-center"
@@ -572,7 +588,7 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
                             />
                         </div>
                         {/* 🔹 N° de orden */}
-                        <div>
+                        <div className="break-inside-avoid mb-4">
                             <Text type="subtitle" color="#000">N° de orden</Text>
                             <input
                                 className="w-full border p-3 rounded-lg text-gray-800 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500 text-center"
@@ -585,7 +601,7 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
                             />
                         </div>
                         {/* 🔹 Cantidad a producir */}
-                        <div>
+                        <div className="break-inside-avoid mb-4">
                             <Text type="subtitle" color="#000">Cantidad a producir</Text>
                             <input
                                 className="w-full border p-3 rounded-lg text-gray-800 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500 text-center"
@@ -602,7 +618,7 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
                             />
                         </div>
                         {/* 🔹 Cliente */}
-                        <div>
+                        <div className="break-inside-avoid mb-4">
                             <Text type="subtitle" color="#000">Cliente</Text>
                             <input
                                 className="w-full border p-3 rounded-lg text-gray-800 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500 text-center"
@@ -615,7 +631,7 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
                             />
                         </div>
                         {/* 🔹 Estado */}
-                        <div>
+                        <div className="break-inside-avoid mb-4">
                             <Text type="subtitle" color="#000">Estado</Text>
                             <select
                                 className="w-full border p-3 rounded-lg text-gray-800 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500 text-center"
@@ -631,7 +647,7 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
                             </select>
                         </div>
                         {/* 🔹 Planta */}
-                        <div>
+                        <div className="break-inside-avoid mb-4">
                             <Text type="subtitle" color="#000">Planta</Text>
                             <input
                                 className="w-full border p-3 rounded-lg text-gray-800 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500 text-center"
@@ -643,7 +659,7 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
                             />
                         </div>
                         {/* 🔹 Lineas */}
-                        <div>
+                        <div className="break-inside-avoid mb-4">
                             <Text type="subtitle" color="#000">Líneas</Text>
                             <div className="flex flex-col sm:flex-row gap-4 mt-2">
                                 {/* Lista de líneas disponibles */}
@@ -726,109 +742,112 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
 
                             </div>
                         </div>
-
                         {/* Actividades disponibles para arrastrar */}
-                        <div className="flex-1 border border-gray-200 rounded-lg p-4 bg-gray-50 shadow-sm transition-all">
-                            <Text type="subtitle" color="#000">Actividades disponibles</Text>
-                            {availableActivities.map((act) => {
-                                const isDisabled = !canEdit;
-                                return (
-                                    <div
-                                        key={act.id}
-                                        draggable={!isDisabled}
-                                        onDragStart={() => {
-                                            if (!isDisabled) setDraggedActivityId(act.id);
-                                        }}
-                                        className={`border border-gray-300 p-3 mb-3 rounded-md ${isDisabled ? "cursor-not-allowed bg-gray-100 text-gray-900" : "cursor-grab bg-white hover:shadow"
-                                            } shadow-sm transition-shadow flex justify-between items-center`}
-                                        title={isDisabled ? "No tienes permiso para arrastrar actividades" : ""}
-                                    >
-                                        <span className="text-gray-700 text-center">{act.description}</span>
-                                    </div>
-                                );
-                            })}
-
-                        </div>
-
-                        {/* Líneas y sus actividades */}
-                        <div className="flex-[3] flex gap-6 flex-wrap">
-                            {!currentPlan || !currentPlan.line ? (
-                                <p>No hay líneas disponibles.</p>
-                            ) : (
-                                getLinesArray(currentPlan.line).map((lineId) => {
-                                    const activitiesForLine = lineActivities[lineId];
+                        <div className="break-inside-avoid mb-4">
+                            <div className="flex-1 border border-gray-200 rounded-lg p-4 bg-gray-50 shadow-sm transition-all max-h-64 overflow-y-auto scrollbar-thin">
+                                <Text type="subtitle" color="#000">Actividades disponibles</Text>
+                                {availableActivities.map((act) => {
+                                    const isDisabled = !canEdit;
                                     return (
                                         <div
-                                            key={lineId}
-                                            onDragOver={(e) => e.preventDefault()}
-                                            onDrop={() => handleDrop(lineId)}
-                                            className="flex-1 min-w-[250px] border-2 border-dashed border-blue-300 rounded-lg p-4 bg-blue-50 transition-colors"
+                                            key={act.id}
+                                            draggable={!isDisabled}
+                                            onDragStart={() => {
+                                                if (!isDisabled) setDraggedActivityId(act.id);
+                                            }}
+                                            className={`border border-gray-300 p-3 mb-3 rounded-md ${isDisabled
+                                                ? "cursor-not-allowed bg-gray-100 text-gray-900"
+                                                : "cursor-grab bg-white hover:shadow"
+                                                } shadow-sm transition-shadow flex justify-between items-center`}
+                                            title={isDisabled ? "No tienes permiso para arrastrar actividades" : ""}
                                         >
-                                            <Text type="subtitle" color="#000">
-                                                {lineDetails[lineId]?.name || `Línea ${lineId}`}
-                                            </Text>
-
-                                            {Array.isArray(activitiesForLine) && activitiesForLine.length > 0 ? (
-                                                activitiesForLine.map((actId) => {
-                                                    const act = activitiesDetails.find((a) => a.id === actId);
-                                                    if (!act) {
-                                                        return (
-                                                            <p key={actId} className="text-red-400 italic">
-                                                                Actividad no encontrada (ID: {actId})
-                                                            </p>
-                                                        );
-                                                    }
-
-                                                    return (
-                                                        <div
-                                                            key={act.id}
-                                                            draggable
-                                                            onDragStart={() => setDraggedActivityId(act.id)}
-                                                            className="border border-blue-300 p-3 mb-3 rounded-md cursor-grab bg-teal-50 shadow-sm hover:shadow-md transition-shadow flex justify-between items-center"
-                                                        >
-                                                            <span className="text-gray-800 text-center">{act.description}</span>
-                                                            <button
-                                                                onClick={(e) => {
-                                                                    e.stopPropagation();
-                                                                    removeActivityFromLine(lineId, act.id);
-                                                                }}
-                                                                className="ml-3 text-red-500 hover:text-red-700 font-bold"
-                                                                aria-label={`Eliminar actividad ${act.description}`}
-                                                            >
-                                                                &times;
-                                                            </button>
-                                                        </div>
-                                                    );
-                                                })
-                                            ) : (
-                                                <p className="text-gray-400 italic">Sin actividades</p>
-                                            )}
+                                            <span className="text-gray-700 text-center">{act.description}</span>
                                         </div>
                                     );
-                                })
-                            )}
+                                })}
+                            </div>
                         </div>
+                        {/* Líneas y sus actividades */}
+                        <div className="break-inside-avoid mb-4">
+                            <div className="flex-[3] flex gap-6 flex-wrap">
+                                {!currentPlan || !currentPlan.line ? (
+                                    <p>No hay líneas disponibles.</p>
+                                ) : (
+                                    getLinesArray(currentPlan.line).map((lineId) => {
+                                        const activitiesForLine = lineActivities[lineId];
+                                        return (
+                                            <div
+                                                key={lineId}
+                                                onDragOver={(e) => e.preventDefault()}
+                                                onDrop={() => handleDrop(lineId)}
+                                                className="flex-1 min-w-[250px] border-2 border-dashed border-blue-300 rounded-lg p-4 bg-blue-50 transition-colors"
+                                            >
+                                                <Text type="subtitle" color="#000">
+                                                    {lineDetails[lineId]?.name || `Línea ${lineId}`}
+                                                </Text>
 
+                                                {Array.isArray(activitiesForLine) && activitiesForLine.length > 0 ? (
+                                                    activitiesForLine.map((actId) => {
+                                                        const act = activitiesDetails.find((a) => a.id === actId);
+                                                        if (!act) {
+                                                            return (
+                                                                <p key={actId} className="text-red-400 italic">
+                                                                    Actividad no encontrada (ID: {actId})
+                                                                </p>
+                                                            );
+                                                        }
 
+                                                        return (
+                                                            <div
+                                                                key={act.id}
+                                                                draggable
+                                                                onDragStart={() => setDraggedActivityId(act.id)}
+                                                                className="border border-blue-300 p-3 mb-3 rounded-md cursor-grab bg-teal-50 shadow-sm hover:shadow-md transition-shadow flex justify-between items-center"
+                                                            >
+                                                                <span className="text-gray-800 text-center">{act.description}</span>
+                                                                <button
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        removeActivityFromLine(lineId, act.id);
+                                                                    }}
+                                                                    className="ml-3 text-red-500 hover:text-red-700 font-bold"
+                                                                    aria-label={`Eliminar actividad ${act.description}`}
+                                                                >
+                                                                    &times;
+                                                                </button>
+                                                            </div>
+                                                        );
+                                                    })
+                                                ) : (
+                                                    <p className="text-gray-400 italic">Sin actividades</p>
+                                                )}
+                                            </div>
+                                        );
+                                    })
+                                )}
+                            </div>
+                        </div>
                         {/* 🔹 Maquinaria */}
-                        <SelectorDual
-                            titulo="Maquinaria"
-                            disponibles={machine}
-                            seleccionados={selectedMachines}
-                            onAgregar={agregarMaquina}
-                            onQuitar={removerMaquina}
-                        />
-
-                        <SelectorDual
-                            titulo="Usuarios"
-                            disponibles={user}
-                            seleccionados={selectedUsers}
-                            onAgregar={agregarUser}
-                            onQuitar={removerUser}
-                        />
-
+                        <div className="break-inside-avoid mb-4">
+                            <SelectorDual
+                                titulo="Maquinaria"
+                                disponibles={machine}
+                                seleccionados={selectedMachines}
+                                onAgregar={agregarMaquina}
+                                onQuitar={removerMaquina}
+                            />
+                        </div>
+                        <div className="break-inside-avoid mb-4">
+                            <SelectorDual
+                                titulo="Usuarios"
+                                disponibles={user}
+                                seleccionados={selectedUsers}
+                                onAgregar={agregarUser}
+                                onQuitar={removerUser}
+                            />
+                        </div>
                         {/* 🔹 Recursos */}
-                        <div>
+                        <div className="break-inside-avoid mb-4">
                             <Text type="subtitle" color="#000">Recursos</Text>
                             <textarea
                                 name="resource"
@@ -844,7 +863,7 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
                             />
                         </div>
                         {/* Color */}
-                        <div>
+                        <div className="break-inside-avoid mb-4">
                             <Text type="subtitle" color="#000">Color</Text>
                             <div className="flex flex-wrap gap-2 mt-2">
                                 {COLORS.map((color, index) => {
@@ -876,7 +895,7 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
                             </div>
                         </div>
                         {/* Icono */}
-                        <div>
+                        <div className="break-inside-avoid mb-4">
                             <Text type="subtitle" color="#000">Icono</Text>
                             <IconSelector
                                 selectedIcon={currentPlan?.icon || ""}
@@ -888,7 +907,7 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
                             />
                         </div>
                         {/* 🔹 Duración */}
-                        <div>
+                        <div className="break-inside-avoid mb-4">
                             <Text type="subtitle" color="#000">Duración
                                 <InfoPopover content="Esta duracion es calculada segun la cantidad de fases que requiera multiple" />
                             </Text>
@@ -900,7 +919,7 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
                             />
                         </div>
 
-                        <div>
+                        <div className="break-inside-avoid mb-4">
                             <Text type="subtitle" color="#000">Duración por fase</Text>
                             <div className="w-full p-3 mt-2 text-sm text-gray-800 bg-gray-100 border rounded whitespace-pre-line">
                                 {currentPlan.duration_breakdown
@@ -909,7 +928,7 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
                             </div>
                         </div>
                         {/* 🔹 Fecha de Inicio */}
-                        <div>
+                        <div className="break-inside-avoid mb-4">
                             <Text type="subtitle" color="#000">Fecha y Hora de Inicio</Text>
                             <input
                                 className="w-full border p-3 rounded-lg text-gray-800 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500 text-center"
@@ -937,7 +956,7 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
                             />
                         </div>
 
-                        <div>
+                        <div className="break-inside-avoid mb-4">
                             <Text type="subtitle" color="#000">Fecha y Hora de Final</Text>
                             <input
                                 className="w-full border p-3 rounded-lg text-gray-800 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500 text-center"

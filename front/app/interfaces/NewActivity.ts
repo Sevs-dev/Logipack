@@ -21,7 +21,7 @@ export interface Activities {
   config: string;
   binding: boolean;
   has_time: boolean;
-  duration: number;
+  duration: number | undefined;
 }
 
 export interface EditFormData {
@@ -30,7 +30,7 @@ export interface EditFormData {
   config: string;
   binding: boolean;
   has_time: boolean;
-  duration: number;
+  duration: number | undefined;
   options?: string[];
 }
 
@@ -59,3 +59,11 @@ export const activityTypes: Record<string, ActivityType> = {
 };
 
 export const initialSelectedType = "Texto corto";
+
+export interface FormData {
+  description: string;
+  config: string;
+  binding: boolean;
+  has_time: boolean;
+  duration?: number;
+}
