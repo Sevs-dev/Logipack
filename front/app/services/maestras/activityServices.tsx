@@ -14,7 +14,7 @@ export interface Data {
     config: string;
     binding: boolean;
     has_time: boolean;
-    duration: number;
+    duration?: number | null;
     user?: string;
 }
 

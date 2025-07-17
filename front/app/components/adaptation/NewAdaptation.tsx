@@ -18,7 +18,7 @@ import ModalSection from "../modal/ModalSection";
 import { CreateClientProps } from "../../interfaces/CreateClientProps";
 import AuditModal from "../history/AuditModal";
 // 🔹 Toastr
-import { showSuccess, showError } from "../toastr/Toaster";
+import { showSuccess, showError, showConfirm } from "../toastr/Toaster";
 // 🔹 Interfaces
 import { Client } from "@/app/interfaces/Client";
 import { Article, Ingredient, Bom } from "@/app/interfaces/BOM";
@@ -534,16 +534,16 @@ function NewAdaptation({ canEdit = false, canView = false }: CreateClientProps) 
 
     const handleDelete = async (id: number) => {
         if (!canEdit) return;
-        const confirmed = window.confirm("¿Eliminar esta adaptación?");
-        if (!confirmed) return;
-
-        try {
-            await deleteAdaptation(id);
-            setAdaptation(adaptation.filter(a => a.id !== id));
-        } catch (error) {
-            showError("Error al eliminar la adaptación.");
-            console.error(error);
-        }
+       
+        showConfirm("¿Seguro que quieres eliminar esta Adaptación?", async () => {
+            try {
+                await deleteAdaptation(id);
+                setAdaptation(adaptation.filter(a => a.id !== id));
+                showSuccess("Adaptación eliminada correctamente.");
+            } catch {
+                showError("Error al eliminar la adaptación.");
+            }
+        });
     };
 
     // ======================= 🧰 Utilidades =======================

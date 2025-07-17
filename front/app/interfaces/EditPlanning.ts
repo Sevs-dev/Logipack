@@ -210,3 +210,8 @@ export interface EnrichedPlan extends Omit<PlanFetch, 'factory' | 'users' | 'mac
   users: RelatedEntity[];
   lines: RelatedEntity[];
 }
+
+export interface LineActivity {
+  id: number;
+  activities: { id: number }[];
+}
