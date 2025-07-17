@@ -446,13 +446,24 @@ const App = () => {
                   } catch (error) {
                     config = {};
                   }
-                  const { type, options, min, max } = config;
+                  const { type, options, min, max, items } = config;
                   const clave = item.clave;
                   return (
                     <div key={index}>
                       <Text type="subtitle" color="text-[#ffff]">
                         {item.descripcion_activitie}
                       </Text>
+
+                      {/* MUESTREO */}
+                      {type === "muestreo" && (
+                        <p className="text-red-500">
+                          {items.map(({ min, max, valor }) => {
+                            if (min <= orden.cantidad_producir && orden.cantidad_producir <= max) {
+                              return valor;
+                            }
+                          })}
+                        </p>
+                      )}
 
                       {/* TEXT */}
                       {type === "text" && (
