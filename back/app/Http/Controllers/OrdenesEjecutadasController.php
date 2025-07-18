@@ -45,6 +45,14 @@ class OrdenesEjecutadasController extends Controller
                 }
             }
 
+            // Orden eliminada
+            if ($orden->estado == '-11000') {
+                return response()->json([
+                    'message' => 'Estado de la orden eliminada',
+                    'estado' => -11000,
+                ]);
+            }
+
             // Orden ejecutada
             $this->confirmar_orden($id);  // confirmar orden si es ejecutada
             return response()->json([
@@ -114,7 +122,7 @@ class OrdenesEjecutadasController extends Controller
         $id
     ): JsonResponse {
         
-        OrdenesEjecutadas::where('adaptation_id', $id)->update([
+        OrdenesEjecutadas::where('adaptation_date_id', $id)->update([
             'estado' => '-11000',
         ]);
 
