@@ -45,6 +45,14 @@ class OrdenesEjecutadasController extends Controller
                 }
             }
 
+            // Orden eliminada
+            if ($orden->estado == '-11000') {
+                return response()->json([
+                    'message' => 'Estado de la orden eliminada',
+                    'estado' => -11000,
+                ]);
+            }
+
             // Orden ejecutada
             $this->confirmar_orden($id);  // confirmar orden si es ejecutada
             return response()->json([
@@ -100,6 +108,26 @@ class OrdenesEjecutadasController extends Controller
             'message' => 'Orden de acondicionamiento creada',
             'orden' => $orden,
             'linea_procesos' => $lineas['linea_procesos'],
+            'estado' => 200,
+        ]);
+    }
+
+    /**
+     * Eliminar orden
+     *
+     * @param int $id
+     * @return JsonResponse
+     */
+    public function eliminar_orden(
+        $id
+    ): JsonResponse {
+        
+        OrdenesEjecutadas::where('adaptation_date_id', $id)->update([
+            'estado' => '-11000',
+        ]);
+
+        return response()->json([
+            'message' => 'Orden de acondicionamiento eliminada',
             'estado' => 200,
         ]);
     }
@@ -310,7 +338,18 @@ class OrdenesEjecutadasController extends Controller
      * @param int $id
      * @return JsonResponse
      */
-    public function getActividadesEjecutadas($id): JsonResponse {}
+    public function getActividadesEjecutadas($id): JsonResponse 
+    {
+        $actividades = DB::table('actividades_ejecutadas')
+            ->where('adaptation_date_id', $id)
+            ->where('estado_form', true)
+            ->get();
+
+        return response()->json([
+            'actividades' => $actividades,
+            'estado' => 200,
+        ]);
+    }
 
     /**
      * Validar rol
@@ -331,7 +370,7 @@ class OrdenesEjecutadasController extends Controller
             ->first();
 
         return response()->json([
-            'fase' => $fases,
+            'roles' => $fases,
             'estado' => 200,
         ]);
     }

@@ -16,15 +16,16 @@ interface WindowManagerProps {
 }
 
 const WindowManager: React.FC<WindowManagerProps> = ({ windowsData = [] }) => {
-    const cacheRef = useRef<Window[]>([]); // Referencia para caché en memoria
+    const cacheRef = useRef<Window[]>([]);
     const [windows, setWindows] = useState<Window[]>([]);
     const [activeWindow, setActiveWindow] = useState<number | null>(null);
-    const [isLoading, setIsLoading] = useState<boolean>(true);
+    const [isLoading, setIsLoading] = useState<boolean>(false);
     const [menuOpen, setMenuOpen] = useState<boolean>(false);
 
+    // Cargar caché inicial solo si está vacía
     useEffect(() => {
-        if (cacheRef.current.length === 0) { 
-            cacheRef.current = windowsData; // Guardamos en caché solo mientras el componente esté montado
+        if (windowsData.length && cacheRef.current.length === 0) {
+            cacheRef.current = windowsData;
         }
         setWindows(cacheRef.current);
         if (cacheRef.current.length > 0) {
@@ -32,10 +33,11 @@ const WindowManager: React.FC<WindowManagerProps> = ({ windowsData = [] }) => {
         }
     }, [windowsData]);
 
+    // Simula carga al cambiar ventana
     useEffect(() => {
         if (activeWindow !== null) {
             setIsLoading(true);
-            const timeout = setTimeout(() => setIsLoading(false), 1000);
+            const timeout = setTimeout(() => setIsLoading(false), 400); // más rápido
             return () => clearTimeout(timeout);
         }
     }, [activeWindow]);
@@ -43,18 +45,18 @@ const WindowManager: React.FC<WindowManagerProps> = ({ windowsData = [] }) => {
     const currentWindow = useMemo(() => windows.find(win => win.id === activeWindow), [windows, activeWindow]);
 
     const closeWindow = (id: number) => {
-        setWindows(prevWindows => {
-            const filteredWindows = prevWindows.filter(win => win.id !== id);
+        setWindows(prev => {
+            const filtered = prev.filter(win => win.id !== id);
             if (activeWindow === id) {
-                setActiveWindow(filteredWindows.length ? filteredWindows[0].id : null);
+                setActiveWindow(filtered.length ? filtered[0].id : null);
             }
-            return filteredWindows;
+            return filtered;
         });
     };
 
     return (
-        <div className="relative max-h-auto h-auto flex flex-col bg-gray-900 rounded-xl border border-gray-500 text-white overflow-hidden shadow-lg mt-2 mx-2 w-auto">
-            {/* Botón de menú desplegable en móviles */}
+        <div className="relative h-auto flex flex-col bg-gray-900 rounded-xl border border-gray-500 text-white overflow-hidden shadow-lg mt-2 mx-2 w-auto">
+            {/* Header móvil */}
             <div className="sm:hidden flex justify-between items-center px-4 py-2 bg-gray-850 border-b border-gray-700">
                 <span className="text-white font-semibold">Ventanas</span>
                 <button onClick={() => setMenuOpen(!menuOpen)} className="text-white p-2 hover:bg-gray-700 rounded-md">
@@ -62,7 +64,7 @@ const WindowManager: React.FC<WindowManagerProps> = ({ windowsData = [] }) => {
                 </button>
             </div>
 
-            {/* Menú desplegable en móviles */}
+            {/* Menú móvil */}
             <AnimatePresence>
                 {menuOpen && (
                     <motion.div
@@ -74,9 +76,9 @@ const WindowManager: React.FC<WindowManagerProps> = ({ windowsData = [] }) => {
                         {windows.map(win => (
                             <button
                                 key={win.id}
-                                className={`block w-full px-4 py-2 text-left text-sm font-semibold border-b border-gray-700 transition-all ${
-                                    activeWindow === win.id ? "bg-gray-950 text-white" : "bg-gray-800 text-gray-300 hover:bg-gray-700"
-                                }`}
+                                aria-label={`Ventana ${win.title}`}
+                                className={`block w-full px-4 py-2 text-left text-sm font-semibold border-b border-gray-700 transition-all ${activeWindow === win.id ? "bg-gray-950 text-white" : "bg-gray-800 text-gray-300 hover:bg-gray-700"
+                                    }`}
                                 onClick={() => { setActiveWindow(win.id); setMenuOpen(false); }}
                             >
                                 {win.title}
@@ -86,32 +88,32 @@ const WindowManager: React.FC<WindowManagerProps> = ({ windowsData = [] }) => {
                 )}
             </AnimatePresence>
 
-            {/* Pestañas en pantallas grandes */}
+            {/* Tabs escritorio */}
             <div className="hidden sm:flex flex-wrap items-center gap-1 px-3 py-2 bg-gray-850 rounded-t-xl shadow-md border-b border-gray-700">
                 {windows.map(win => (
                     <div key={win.id} className="relative">
                         <button
-                            className={`px-4 py-2 text-xs sm:text-sm font-semibold rounded-t-md transition-all flex items-center gap-2 border border-gray-700 shadow-sm ${
-                                activeWindow === win.id ? "bg-gray-950 text-white border-blue-500" : "bg-gray-800 text-gray-300 hover:bg-gray-700"
-                            }`}
+                            aria-label={`Ventana ${win.title}`}
+                            className={`px-4 py-2 text-xs sm:text-sm font-semibold rounded-t-md transition-all flex items-center gap-2 border border-gray-700 shadow-sm ${activeWindow === win.id ? "bg-gray-950 text-white border-blue-500" : "bg-gray-800 text-gray-300 hover:bg-gray-700"
+                                }`}
                             onClick={() => setActiveWindow(win.id)}
                         >
                             <span className="truncate max-w-[80px] sm:max-w-none">{win.title}</span>
-                            {!win.isProtected && (
-                                <span
-                                    className="text-red-400 hover:text-red-300 cursor-pointer text-xs hover:scale-110"
-                                    onClick={(e) => { e.stopPropagation(); closeWindow(win.id); }}
-                                >
-                                    ✖
-                                </span>
-                            )}
                         </button>
+                        {!win.isProtected && (
+                            <span
+                                className="absolute top-0 right-0 transform translate-x-1 -translate-y-1 text-red-400 hover:text-red-300 cursor-pointer text-xs hover:scale-110"
+                                onClick={(e) => { e.stopPropagation(); closeWindow(win.id); }}
+                            >
+                                ✖
+                            </span>
+                        )}
                     </div>
                 ))}
             </div>
 
-            {/* Contenido de la Ventana Activa */}
-            <div className="flex-grow bg-gray-800 rounded-b-xl shadow-inner border border-gray-500 w-full max-h-full overflow-auto flex items-center justify-center p-4">
+            {/* Contenido */}
+            <div className="flex-grow bg-gray-800 rounded-b-xl shadow-inner border border-gray-500 w-full max-h-full overflow-auto flex items-center justify-center p-[20px]">
                 <AnimatePresence mode="wait">
                     {isLoading ? (
                         <motion.div
@@ -124,20 +126,18 @@ const WindowManager: React.FC<WindowManagerProps> = ({ windowsData = [] }) => {
                         >
                             <Loader />
                         </motion.div>
-                    ) : (
-                        currentWindow && (
-                            <motion.div
-                                key={currentWindow.id}
-                                initial={{ opacity: 0, x: 20 }}
-                                animate={{ opacity: 1, x: 0 }}
-                                exit={{ opacity: 0, x: -20 }}
-                                transition={{ duration: 0.3, ease: "easeOut" }}
-                                className="w-full h-full overflow-auto p-6"
-                            >
-                                {currentWindow.content}
-                                {currentWindow.component}
-                            </motion.div>
-                        )
+                    ) : currentWindow && (
+                        <motion.div
+                            key={currentWindow.id}
+                            initial={{ opacity: 0, x: 20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            exit={{ opacity: 0, x: -20 }}
+                            transition={{ duration: 0.3, ease: "easeOut" }}
+                            className="w-full h-full overflow-auto p-[20x]"
+                        >
+                            {currentWindow.content}
+                            {currentWindow.component}
+                        </motion.div>
                     )}
                 </AnimatePresence>
             </div>

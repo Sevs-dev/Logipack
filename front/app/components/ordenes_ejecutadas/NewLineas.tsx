@@ -4,9 +4,10 @@ import { motion } from "framer-motion";
 import { linea_procesos, generar_orden } from "@/app/services/planing/planingServices";
 import Text from "@/app/components/text/Text";
 import { showError } from "@/app/components/toastr/Toaster";
-import DateLoader from '@/app/components/loader/DateLoader';
+import DateLoader from "@/app/components/loader/DateLoader";
+import { LineasResponse, LocalType } from "@/app/interfaces/NewLineas";
 
-const validar_estado = () => {
+const validar_estado = (): LocalType | null => {
     const ejecutar = localStorage.getItem("ejecutar");
     if (ejecutar) return JSON.parse(ejecutar);
 
@@ -17,65 +18,25 @@ const validar_estado = () => {
     return null;
 };
 
-type LocalType = {
-    id: number;
-    [key: string]: any;
-};
-
-const LineaCard = ({
-    descripcion,
-    onClick,
-    index,
-}: {
-    id: number;
-    descripcion: string;
-    onClick: () => void;
-    index: number;
-}) => {
-    return (
-        <motion.div
-            role="button"
-            tabIndex={0}
-            aria-label={`Seleccionar línea: ${descripcion}`}
-            onClick={onClick}
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{
-                duration: 0.3,
-                delay: index * 0.05,
-                ease: "easeOut",
-            }}
-            whileHover={{ scale: 1.03 }}
-            whileTap={{ scale: 0.95 }}
-            className="group relative cursor-pointer rounded-xl bg-blue-600 hover:bg-blue-700 text-white transition-all shadow-md hover:shadow-lg"
-        >
-            <div className="flex items-center justify-center h-20 px-4 rounded-xl">
-                <span className="text-base font-semibold text-center truncate max-w-full">
-                    {descripcion}
-                </span>
-            </div>
-        </motion.div>
-    );
-};
-
 const NewLineas = () => {
     const [local, setLocal] = useState<LocalType | null>(null);
-    const [lista, setLista] = useState<any>(null);
+    const [lista, setLista] = useState<LineasResponse | null>(null);
 
     useEffect(() => {
         const data = validar_estado();
         if (data) setLocal(data);
     }, []);
 
+    const cargarLineasProceso = async (localData: LocalType) => {
+        try {
+            const resp = await linea_procesos(localData.id);
+            setLista(resp);
+        } catch (error) {
+            showError("Error al obtener las líneas de procesos: " + error);
+        }
+    };
+
     useEffect(() => {
-        const cargarLineasProceso = async (local: any) => {
-            try {
-                const resp = await linea_procesos(local.id);
-                setLista(resp);
-            } catch (error) {
-                showError("Error al obtener las líneas de procesos: " + error);
-            }
-        };
 
         if (local) {
             cargarLineasProceso(local);
@@ -84,7 +45,7 @@ const NewLineas = () => {
 
     if (!local || !lista) {
         return (
-            <DateLoader message=" No hay datos de la orden o líneas de procesos" backgroundColor="#242424" color="#ffff" />
+            <DateLoader message=" No hay datos de la orden o líneas de procesos" backgroundColor="#1f2937" color="#ffff" />
         );
     }
 
@@ -93,8 +54,22 @@ const NewLineas = () => {
     const lista_fases = Array.isArray(lista.linea_fases) ? lista.linea_fases : [];
 
     if (orden === null && local) {
-        generar_orden(local.id);
-        window.location.reload();
+        const generar = async () => {
+            const { message } = await generar_orden(local.id);
+            console.log(message);
+            if (local) {
+                cargarLineasProceso(local);
+            }
+            // window.location.reload();
+        }
+        generar();
+    }
+    
+    // Si no hay orden, se muestra un loader
+    if (orden === null) {
+        return (
+            <DateLoader message=" Cargando orden...." backgroundColor="#1f2937" color="#ffff" />
+        );
     }
 
     const handleLinea = (id: number, tipo: string, descripcion: string) => {
@@ -113,94 +88,119 @@ const NewLineas = () => {
     const estadoMap: Record<number, string> = {
         100: "Pendiente",
         11500: "Ejecutado",
-        // agrega más si hay
     };
+
     return (
-        <div className="p-8 min-h-screen bg-gradient-to-b from-gray-50 to-gray-100">
-            <div className="max-w-7xl mx-auto flex flex-col gap-12">
-                {/* Información de la Orden */}
-                <motion.section
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.4 }}
-                >
-                    <div className="mt-6 w-full rounded-3xl bg-white shadow-xl border border-gray-200 overflow-hidden">
-                        <div className="bg-gray-50 px-6 py-4 border-b border-gray-200">
-                            <Text type="title" color="text-black">Información de la Orden</Text>
+        <div className="min-h-screen w-full bg-[#0a0d12] text-white p-[10px] sm:p-[10px] flex flex-col rounded-2xl">
+            <motion.section
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4 }}
+            >
+                <div className="w-full rounded-2xl bg-white/5 backdrop-blur-sm border border-white/10 shadow-md overflow-hidden">
+                    <div className="bg-white/2.5 px-[10px] py-[10px] border-b border-white/5 backdrop-blur-sm">
+                        <Text type="title" color="text-white">Información de la Orden</Text>
+                    </div>
+
+                    <div className="px-[10px] py-[10px] grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 text-sm text-white/80">
+                        <div>
+                            <p className="text-white/60 text-center">Orden N°</p>
+                            <p className="font-medium text-white text-center">{orden?.number_order}</p>
                         </div>
-                        <div className="px-8 py-6 grid grid-cols-1 sm:grid-cols-2
-                            md:grid-cols-3 lg:grid-cols-s gap-6 text-sm text-gray-700">
-                            <div>
-                                <p className="text-gray-500 text-center">Orden N°</p>
-                                <p className="font-medium text-gray-900 text-center">
-                                    {orden?.number_order}
-                                </p>
-                            </div>
-                            <div>
-                                <p className="text-gray-500 text-center">Descripción</p>
-                                <p className="font-semibold text-gray-800 text-center">{orden?.descripcion_maestra}</p>
-                            </div>
-                            <div>
-                                <p className="text-gray-500 text-center">Cliente</p>
-                                <p className="font-semibold text-gray-800 text-center">{orden?.cliente}</p>
-                            </div>
-                            <div>
-                                <p className="text-gray-500 text-center">Planta</p>
-                                <p className="font-semibold text-gray-800 text-center">{orden?.planta}</p>
-                            </div>
-                            <div>
-                                <p className="text-gray-500 text-center">Cantidad a producir</p>
-                                <p className="font-semibold text-gray-800 text-center">{orden?.cantidad_producir}</p>
-                            </div>
-                            <div className="flex flex-col items-center">
-                                <p className="text-gray-500">Estado</p>
-                                <p
-                                    className={`font-semibold text-gray-800 rounded-full px-2 py-1 w-24 text-center
-                                    ${orden?.estado === 11500
-                                            ? "bg-green-100 text-green-800"
-                                            : "bg-yellow-100 text-yellow-800"
-                                        }`}
+                        <div>
+                            <p className="text-white/60 text-center">Descripción</p>
+                            <p className="font-semibold text-white text-center">{orden?.descripcion_maestra}</p>
+                        </div>
+                        <div>
+                            <p className="text-white/60 text-center">Cliente</p>
+                            <p className="font-semibold text-white text-center">{orden?.cliente}</p>
+                        </div>
+                        <div>
+                            <p className="text-white/60 text-center">Planta</p>
+                            <p className="font-semibold text-white text-center">{orden?.planta}</p>
+                        </div>
+                        <div>
+                            <p className="text-white/60 text-center">Cantidad a producir</p>
+                            <p className="font-semibold text-white text-center">{orden?.cantidad_producir}</p>
+                        </div>
+                        <div className="flex flex-col items-center">
+                            <p className="text-white/60">Estado</p>
+                            <p
+                                className={`font-semibold rounded-full px-2 py-1 w-24 text-center ${orden?.estado === 11500
+                                    ? "bg-green-300/20 text-green-300"
+                                    : "bg-yellow-300/20 text-yellow-300"
+                                    }`}
+                            >
+                                {estadoMap[orden?.estado] ?? "Desconocido"}
+                            </p>
+                        </div>
+                    </div>
+
+                    {/* Líneas */}
+                    <section className="px-[10px] pb-[10px] pt-[10px]">
+                        <Text type="title" color="text-white">Líneas</Text>
+                        <div className="mt-3 flex flex-wrap justify-center gap-3">
+                            {lista_procesos.map((linea, index) => (
+                                <motion.div
+                                    key={linea.id}
+                                    role="button"
+                                    tabIndex={0}
+                                    aria-label={`Seleccionar línea: ${linea.descripcion}`}
+                                    onClick={() => handleLinea(linea.id, "linea", linea.descripcion)}
+                                    initial={{ opacity: 0, scale: 0.95 }}
+                                    animate={{ opacity: 1, scale: 1 }}
+                                    transition={{
+                                        duration: 0.3,
+                                        delay: index * 0.05,
+                                        ease: "easeOut",
+                                    }}
+                                    whileHover={{ scale: 1.03 }}
+                                    whileTap={{ scale: 0.95 }}
+                                    className="w-[120px] group relative cursor-pointer rounded-lg bg-[#841ae0]/60 border border-white/10 backdrop-blur-sm text-white transition-all shadow-sm hover:shadow-md hover:bg-[#b941ff]/60 active:scale-95"
                                 >
-                                    {estadoMap[orden?.estado as number] ?? "Desconocido"}
-                                </p>
-                            </div>
-
+                                    <div className="flex items-center justify-center h-14 px-2 rounded-lg">
+                                        <span className="text-sm font-medium text-center truncate max-w-[90px]">
+                                            {linea.descripcion}
+                                        </span>
+                                    </div>
+                                </motion.div>
+                            ))}
                         </div>
-                    </div>
-                </motion.section>
+                    </section>
 
-                {/* Líneas */}
-                <section>
-                    <Text type="title" color="text-black">Líneas</Text>
-                    <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
-                        {lista_procesos.map((linea: any, index: number) => (
-                            <LineaCard
-                                key={linea.id}
-                                id={linea.id}
-                                descripcion={linea.descripcion}
-                                index={index}
-                                onClick={() => handleLinea(linea.id, "linea", linea.descripcion)}
-                            />
-                        ))}
-                    </div>
-                </section>
-
-                {/* Fases */}
-                <section>
-                    <Text type="title" color="text-black">Fases</Text>
-                    <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                        {lista_fases.map((linea: any, index: number) => (
-                            <LineaCard
-                                key={linea.id}
-                                id={linea.id}
-                                descripcion={linea.descripcion}
-                                index={index}
-                                onClick={() => handleLinea(linea.id, "fase", linea.descripcion)}
-                            />
-                        ))}
-                    </div>
-                </section>
-            </div>
+                    {/* Fases */}
+                    <section className="px-[10px] pb-[10px] pt-[10px]">
+                        <Text type="title" color="text-white">Fases</Text>
+                        <div className="mt-3 flex flex-wrap justify-center gap-3">
+                            {lista_fases.map((linea, index) => (
+                                <motion.div
+                                    key={linea.id}
+                                    role="button"
+                                    tabIndex={0}
+                                    aria-label={`Seleccionar línea: ${linea.descripcion}`}
+                                    onClick={() => handleLinea(linea.id, "linea", linea.descripcion)}
+                                    initial={{ opacity: 0, scale: 0.95 }}
+                                    animate={{ opacity: 1, scale: 1 }}
+                                    transition={{
+                                        duration: 0.3,
+                                        delay: index * 0.05,
+                                        ease: "easeOut",
+                                    }}
+                                    whileHover={{ scale: 1.03 }}
+                                    whileTap={{ scale: 0.95 }}
+                                    className="w-[120px] group relative cursor-pointer rounded-lg bg-[#841ae0]/60 border border-white/10 backdrop-blur-sm text-white transition-all shadow-sm hover:shadow-md hover:bg-[#b941ff]/60 active:scale-95"
+                                >
+                                    <div className="flex items-center justify-center h-14 px-2 rounded-lg">
+                                        <span className="text-sm font-medium text-center truncate max-w-[90px]">
+                                            {linea.descripcion}
+                                        </span>
+                                    </div>
+                                </motion.div>
+                            ))}
+                        </div>
+                    </section>
+                </div>
+            </motion.section>
         </div>
     );
 };

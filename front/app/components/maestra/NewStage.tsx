@@ -265,6 +265,7 @@ function NewStage({ canEdit = false, canView = false }: CreateClientProps) {
         setDurationUser("");
         setMulti(false);
         setrepeat_line(false);
+        setRole("");
     };
 
     const getFormattedDuration = (input: number | string): string => {
