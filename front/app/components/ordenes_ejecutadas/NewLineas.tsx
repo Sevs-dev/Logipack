@@ -53,6 +53,7 @@ const NewLineas = () => {
     const lista_fases = Array.isArray(lista.linea_fases) ? lista.linea_fases : [];
 
     if (orden === null && local) {
+        console.log(local)
         generar_orden(local.id);
         window.location.reload();
     }
