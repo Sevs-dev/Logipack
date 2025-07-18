@@ -200,17 +200,18 @@ const App = () => {
         fase.adaptation_date_id,
         fase.fases_fk
       );
-      const {role} = await validate_rol(fase.fases_fk);
+      const {roles} = await validate_rol(fase.fases_fk);
       const perfil = document.cookie
         .split("; ")
         .find((row) => row.startsWith("role="))
         ?.split("=")[1];
 
+      console.log(roles?.role !== perfil, " : ", roles?.role, perfil);
       setShowModal(
         resp.condicion_1 > 0 ||
-          (role || "") === "" ||
+          (roles?.role || "") === "" ||
           (perfil || "") === "" ||
-          role !== perfil
+          roles?.role !== perfil
       );
     };
 

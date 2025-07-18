@@ -331,7 +331,7 @@ class OrdenesEjecutadasController extends Controller
             ->first();
 
         return response()->json([
-            'role' => $fases,
+            'roles' => $fases,
             'estado' => 200,
         ]);
     }
