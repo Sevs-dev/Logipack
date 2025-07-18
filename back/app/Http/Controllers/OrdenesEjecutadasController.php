@@ -114,7 +114,7 @@ class OrdenesEjecutadasController extends Controller
         $id
     ): JsonResponse {
         
-        OrdenesEjecutadas::where('adaptation_date_id', $id)->update([
+        OrdenesEjecutadas::where('adaptation_id', $id)->update([
             'estado' => '-11000',
         ]);
 
