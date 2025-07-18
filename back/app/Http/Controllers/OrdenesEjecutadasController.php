@@ -310,7 +310,18 @@ class OrdenesEjecutadasController extends Controller
      * @param int $id
      * @return JsonResponse
      */
-    public function getActividadesEjecutadas($id): JsonResponse {}
+    public function getActividadesEjecutadas($id): JsonResponse 
+    {
+        $actividades = DB::table('actividades_ejecutadas')
+            ->where('adaptation_date_id', $id)
+            ->where('estado_form', true)
+            ->get();
+
+        return response()->json([
+            'actividades' => $actividades,
+            'estado' => 200,
+        ]);
+    }
 
     /**
      * Validar rol
