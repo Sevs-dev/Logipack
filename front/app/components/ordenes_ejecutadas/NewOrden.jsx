@@ -200,11 +200,12 @@ const App = () => {
         fase.adaptation_date_id,
         fase.fases_fk
       );
-      const { role } = await validate_rol(fase.fases_fk);
+      const {role} = await validate_rol(fase.fases_fk);
       const perfil = document.cookie
         .split("; ")
         .find((row) => row.startsWith("role="))
         ?.split("=")[1];
+
       setShowModal(
         resp.condicion_1 > 0 ||
           (role || "") === "" ||
