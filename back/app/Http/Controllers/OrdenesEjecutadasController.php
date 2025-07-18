@@ -105,6 +105,26 @@ class OrdenesEjecutadasController extends Controller
     }
 
     /**
+     * Eliminar orden
+     *
+     * @param int $id
+     * @return JsonResponse
+     */
+    public function eliminar_orden(
+        $id
+    ): JsonResponse {
+        
+        OrdenesEjecutadas::where('adaptation_date_id', $id)->update([
+            'estado' => '-11000',
+        ]);
+
+        return response()->json([
+            'message' => 'Orden de acondicionamiento eliminada',
+            'estado' => 200,
+        ]);
+    }
+
+    /**
      * Linea procesos
      *
      * @param int $id
