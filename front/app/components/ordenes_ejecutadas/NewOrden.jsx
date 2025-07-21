@@ -209,9 +209,9 @@ const App = () => {
       console.log(roles?.role !== perfil, " :  Role ", roles?.role, 'perfil ', perfil);
       setShowModal(
         resp.condicion_1 > 0 ||
-          (roles?.role || "") === "" ||
-          (perfil || "") === "" ||
-          roles?.role !== perfil
+        (roles?.role || "") === "" ||
+        (perfil || "") === "" ||
+        roles?.role !== perfil
       );
     };
 
@@ -509,6 +509,19 @@ const App = () => {
                         />
                       )}
 
+                      {/* TEXTAREA */}
+                      {type === "textarea" && (
+                        <textarea
+                          className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm 
+                          focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-gray-700"
+                          placeholder={item.descripcion_activitie}
+                          name={clave}
+                          value={memoriaFase[linea]?.[clave] ?? ""}
+                          required={item.binding}
+                          onChange={inputChange}
+                        />
+                      )}
+
                       {/* DATE */}
                       {type === "date" && (
                         <input
@@ -788,7 +801,6 @@ const App = () => {
                           )}
                         </>
                       )}
-
 
                       {/* TEMPERATURE */}
                       {type === "temperature" && (
