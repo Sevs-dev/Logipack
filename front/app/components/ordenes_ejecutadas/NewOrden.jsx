@@ -206,7 +206,13 @@ const App = () => {
         .find((row) => row.startsWith("role="))
         ?.split("=")[1];
 
-      // console.log(roles?.role !== perfil, " : ", roles?.role, perfil);
+      console.log(
+        roles?.role !== perfil,
+        " :  Role ",
+        roles?.role,
+        "perfil ",
+        perfil
+      );
       setShowModal(
         resp.condicion_1 > 0 ||
           (roles?.role || "") === "" ||
@@ -507,7 +513,7 @@ const App = () => {
                       className="block w-full px-3 py-2 bg-[#1a1d23] border border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-white placeholder-gray-400 text-center"
                       name={clave}
                       value={memoriaFase[linea]?.[clave] ?? ""}
-                      required={item.binding} 
+                      required={item.binding}
                       onChange={(e) => {
                         e.target.style.height = "auto"; // Reinicia el alto
                         e.target.style.height = `${e.target.scrollHeight}px`; // Ajusta al contenido
