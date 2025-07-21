@@ -10,7 +10,7 @@ use App\Models\Manufacturing;
 use App\Models\OrdenesEjecutadas;
 use App\Models\Stage;
 use App\Models\User;
-use GuzzleHttp\Client;
+use App\Services\ArticleService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
@@ -195,11 +195,29 @@ class AdaptationDateController extends Controller
 
             Log::info("✅ Plan base obtenido", ['plan' => $plan->toArray()]);
             $cliente = $plan->adaptation?->client_id;
-            $ordenadas = $plan->adaptation?->id;
+            $codart = $plan->codart;
 
             $maestra = $plan->adaptation?->maestra;
             Log::info("📦 Maestra encontrada", ['maestra' => optional($maestra)->toArray()]);
 
+            $clientes = Clients::where('id', $cliente)->first();
+            Log::info("🏭 Cliente", ['cliente' => optional($clientes)->toArray()]);
+
+            $coddiv = $clientes->code ?? null;
+            $desart = null;
+
+            if (!$coddiv) {
+                Log::warning("⚠️ Cliente sin código definido, no se puede consultar artículo.");
+            } else {
+                $desart = ArticleService::getDesartByCodart($coddiv, $codart);
+                Log::info("📄 Artículo encontrado remotamente", [
+                    'coddiv' => $coddiv,
+                    'codart' => $codart,
+                    'desart' => $desart
+                ]);
+            }
+
+            // 🔧 Procesar relaciones y referencias
             $stageIds = [];
             if ($maestra && isset($maestra->type_stage)) {
                 $stageRaw = $maestra->type_stage;
@@ -220,7 +238,6 @@ class AdaptationDateController extends Controller
             })->values();
             Log::info("📄 Stages cargados", ['stages' => $stages->toArray()]);
 
-            // 🔧 Decodificación segura
             $masterIds = json_decode($plan->master ?? '[]', true);
             $masterIds = is_array($masterIds) ? $masterIds : [$plan->master];
             Log::info("🔧 masterIds", ['masterIds' => $masterIds]);
@@ -237,21 +254,51 @@ class AdaptationDateController extends Controller
             $userIds = is_array($userIds) ? $userIds : [$plan->users];
             Log::info("🔧 userIds", ['userIds' => $userIds]);
 
-            // 🧠 Consultas relacionadas
-            $clientes = Clients::where('id', $cliente)->first();
-            Log::info("🏭 Cliente", ['cliente' => optional($clientes)->toArray()]);
+            // 🏭 Cargar líneas antes del mapeo de forms
+            $lines = Manufacturing::whereIn('id', $lineIds)->get();
+            Log::info("🏭 Líneas", ['lines' => $lines->toArray()]);
+            $lineMap = $lines->pluck('name', 'id');
 
-            $ordenasEje = OrdenesEjecutadas::where('adaptation_date_id', $ordenadas)->first();
+            $ordenasEje = OrdenesEjecutadas::where('adaptation_date_id', $plan->id)->first();
             Log::info("📦 Orden ejecutada", ['ordenada' => optional($ordenasEje)->toArray()]);
 
-            $actividadesEje = ActividadesEjecutadas::where('adaptation_date_id', $ordenadas)->get();
-            Log::info("📄 Actividades ejecutadas", ['actividadesEjecutadas' => $actividadesEje->toArray()]);
+            $actividadesEje = ActividadesEjecutadas::where('adaptation_date_id', $plan->id)->get();
+            Log::info("📄 Actividades ejecutadas (crudas)", ['actividadesEjecutadas' => $actividadesEje->toArray()]);
+
+            // ✅ Decodificar `forms` y reemplazar `linea` por nombre
+            $actividadesEje = $actividadesEje->map(function ($actividad) use ($lineMap) {
+                $actividadArr = $actividad->toArray(); // ✅ ya no es modelo, sino array simple
+
+                try {
+                    $forms = json_decode($actividadArr['forms'], true);
+
+                    if (!is_array($forms)) {
+                        $forms = [];
+                    }
+
+                    foreach ($forms as &$form) {
+                        if (isset($form['linea']) && isset($lineMap[$form['linea']])) {
+                            $form['linea'] = $lineMap[$form['linea']];
+                        }
+                    }
+
+                    $actividadArr['forms'] = $forms;
+                } catch (\Throwable $e) {
+                    Log::warning("⚠️ Error al decodificar forms", [
+                        'actividad_id' => $actividad->id,
+                        'error' => $e->getMessage(),
+                    ]);
+                    $actividadArr['forms'] = [];
+                }
+
+                return $actividadArr;
+            });
+            Log::info("📄 Actividades ejecutadas (con forms parseado)", ['actividadesEjecutadas' => $actividadesEje->toArray()]);
+
+            Log::info("📄 Actividades ejecutadas (con forms parseado + líneas mapeadas)", ['actividadesEjecutadas' => $actividadesEje->toArray()]);
 
             $masterStages = Stage::whereIn('id', $masterIds)->get();
             Log::info("🛠 masterStages", ['masterStages' => $masterStages->toArray()]);
-
-            $lines = Manufacturing::whereIn('id', $lineIds)->get();
-            Log::info("🏭 Líneas", ['lines' => $lines->toArray()]);
 
             $machines = Machinery::whereIn('id', $machineIds)->get();
             Log::info("⚙️ Máquinas", ['machines' => $machines->toArray()]);
@@ -269,6 +316,7 @@ class AdaptationDateController extends Controller
                 'lines' => $lines,
                 'machines' => $machines,
                 'users' => $users,
+                'desart' => $desart,
             ]);
         } catch (\Exception $e) {
             Log::error("💥 Error en getPlanByIdPDF: " . $e->getMessage());

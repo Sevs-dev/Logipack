@@ -8,7 +8,7 @@ import { getPlanningByIdPDF } from '../../../services/planing/planingServices';
 import withAuth from '../../../hooks/withAuth';
 import html2pdf from 'html2pdf.js';
 import PDFTable from '../../../components/table/PDFTable';
-import DateLoader from '@/app/components/loader/DateLoader';
+import DateLoader from '@/app/components/loader/DateLoader'; 
 
 const PDFPage = ({ params }: { params: Promise<{ id: number }> }) => {
   const { id } = use(params);
@@ -27,14 +27,21 @@ const PDFPage = ({ params }: { params: Promise<{ id: number }> }) => {
       lot: string;
       expiration?: string;
       quantityToProduce: number;
-      // Add other properties if needed
+      bom?: number;
+      end_date?: string;
+      user: string;
+      updated_at?: string;
     };
     cliente: {
       name: string;
-      // Add other properties if needed
     };
     stages: Stage[];
-    // Add other properties if needed
+    desart?: string;
+    actividadesEjecutadas: {
+      id: number;
+      description_fase: string;
+      forms?: { descripcion_activitie?: string; valor?: string; linea?: string }[], user?: string; 
+    }[];
   };
 
   const [data, setData] = useState<DataType | null>(null);
@@ -106,6 +113,8 @@ const PDFPage = ({ params }: { params: Promise<{ id: number }> }) => {
   }
 
   const { plan } = data;
+  const { desart } = data;
+  const { actividadesEjecutadas } = data;
 
   const NODES_PER_ROW = 3;
   const NODE_WIDTH = 170;         // Reducido para asegurar que caben
@@ -169,8 +178,8 @@ const PDFPage = ({ params }: { params: Promise<{ id: number }> }) => {
           <Image
             src="/pharex.png"
             alt="Logo"
-            width={80}
-            height={40}
+            width={120}
+            height={80}
             className="h-10 object-contain absolute left-0 top-1/2 -translate-y-1/2"
             priority
           />
@@ -191,25 +200,27 @@ const PDFPage = ({ params }: { params: Promise<{ id: number }> }) => {
           </h2>
           <PDFTable
             rows={[
-              ["Código artículo", plan.codart, "Producto", plan.product_name || "Nombre del producto"],
-              ["Lote", plan.lot, "Vence", plan.expiration || "01/01/2026"],
+              ["Código artículo", plan.codart, "Producto", desart || "No contiene Nombre"],
+              ["Lote", plan.lot, "Vence", plan.end_date?.slice(0, 10) || "Sin Fecha"],
               ["Cantidad", `${plan.quantityToProduce} unidades`, "", ""],
             ]}
           />
         </section>
 
-        <section className="mb-2">
-          <h2 className="text-center text-xs font-semibold text-black uppercase tracking-wide border-b border-gray-300 pb-1 mb-3">
-            Materiales Requeridos (BOM)
-          </h2>
-          <PDFTable
-            headers={["Artículo", "Descripción", "Cantidad", "Lote"]}
-            rows={[
-              ["MAT-001", "Ingrediente Activo", "100 kg", "L-2024-A"],
-              ["MAT-002", "Excipiente", "50 kg", "L-2024-B"],
-            ]}
-          />
-        </section>
+        {plan.bom && (
+          <section className="mb-2">
+            <h2 className="text-center text-xs font-semibold text-black uppercase tracking-wide border-b border-gray-300 pb-1 mb-3">
+              Materiales Requeridos (BOM)
+            </h2>
+            <PDFTable
+              headers={["Artículo", "Descripción", "Cantidad", "Lote"]}
+              rows={[
+                ["MAT-001", "Ingrediente Activo", "100 kg", "L-2024-A"],
+                ["MAT-002", "Excipiente", "50 kg", "L-2024-B"],
+              ]}
+            />
+          </section>
+        )}
 
         <section className="mb-6">
           <h2 className="text-center text-xs font-semibold text-black uppercase tracking-wide border-b border-gray-300 pb-1 mb-2">
@@ -266,27 +277,36 @@ const PDFPage = ({ params }: { params: Promise<{ id: number }> }) => {
           </div>
 
           <PDFTable
-            rows={[["Receta validada por", plan.codart, "Fecha", plan.codart]]}
+            rows={[["Receta validada por", plan.user, "Fecha", plan.updated_at?.slice(0, 10) || "Sin Fecha"]]}
           />
         </section>
 
-        <section className="mb-2">
+        <>
           <h2 className="text-center text-xs font-semibold text-black uppercase tracking-wide border-b border-gray-300 pb-1 mb-3">
-            Operaciones
+            Operaciones ejecutadas
           </h2>
-          <h4 className="text-center text-xs font-semibold text-black uppercase tracking-wide border-b border-gray-300 pb-1 mb-3">
-            1. Despeje de Línea
-          </h4>
-          <PDFTable
-            rows={[
-              ["Línea", plan.codart, "Producto anterior", plan.codart],
-              [
-                { content: "Equipo", props: { className: "font-medium bg-gray-50 text-center" } },
-                { content: plan.codart, props: { colSpan: 3 } },
-              ],
-            ]}
-          />
-        </section>
+          {actividadesEjecutadas
+            .filter((actividad) => Array.isArray(actividad.forms) && actividad.forms.length > 0)
+            .map((actividad, index) => (
+              <section key={actividad.id} className="mb-4">
+                {/* 🔢 Título con número y nombre de la fase */}
+                <h4 className="text-center text-xs font-semibold text-black uppercase tracking-wide border-b border-gray-300 pb-1 mb-3">
+                  {index + 1}. {actividad.description_fase}
+                </h4>
+
+                <PDFTable
+                  headers={["Actividad", "Descripción", "Línea", "Usuario"]}
+                  rows={(actividad.forms ?? []).map((form) => [
+                    form.descripcion_activitie || "Sin descripción",
+                    form.valor ?? "",
+                    form.linea ?? "",
+                    form.user || "Sin usuario",
+                  ])}
+                />
+              </section>
+            ))}
+        </>
+
 
         <section className="mb-2">
           <h2 className="text-center text-xs font-semibold text-black uppercase tracking-wide border-b border-gray-300 pb-1 mb-3">

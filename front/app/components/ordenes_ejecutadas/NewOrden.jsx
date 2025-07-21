@@ -285,7 +285,7 @@ const App = () => {
     return (
       <DateLoader
         message=" No hay datos de la orden o líneas de procesos"
-        backgroundColor="#242424"
+        backgroundColor="#111827"
         color="#ffff"
       />
     );
@@ -297,7 +297,7 @@ const App = () => {
       <div className="flex flex-col items-center justify-center min-h-screen bg-gray-900 gap-4">
         <DateLoader
           message="Fase finalizada."
-          backgroundColor="#242424"
+          backgroundColor="#111827"
           color="#ffff"
         />
         <button
@@ -365,9 +365,7 @@ const App = () => {
       setTimerReady(false);
     }
   };
-
-  const inputBaseClass =
-    "block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-black text-center";
+ 
 
   return (
     <div className="min-h-screen w-full bg-[#1b2535] text-white p-[10px] sm:p-[10px] flex flex-col rounded-2xl">
