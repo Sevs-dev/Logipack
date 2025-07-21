@@ -206,7 +206,7 @@ const App = () => {
         .find((row) => row.startsWith("role="))
         ?.split("=")[1];
 
-      // console.log(roles?.role !== perfil, " : ", roles?.role, perfil);
+      console.log(roles?.role !== perfil, " :  Role ", roles?.role, 'perfil ', perfil);
       setShowModal(
         resp.condicion_1 > 0 ||
           (roles?.role || "") === "" ||
