@@ -295,7 +295,7 @@ const PDFPage = ({ params }: { params: Promise<{ id: number }> }) => {
                 </h4>
 
                 <PDFTable
-                  headers={["Actividad", "Descripción", "Línea", "Usuario"]}
+                  headers={["Actividad", "Resultado", "Línea", "Usuario"]}
                   rows={(actividad.forms ?? []).map((form) => [
                     form.descripcion_activitie || "Sin descripción",
                     form.valor ?? "",
@@ -306,40 +306,6 @@ const PDFPage = ({ params }: { params: Promise<{ id: number }> }) => {
               </section>
             ))}
         </>
-
-
-        <section className="mb-2">
-          <h2 className="text-center text-xs font-semibold text-black uppercase tracking-wide border-b border-gray-300 pb-1 mb-3">
-            2.1. Usuarios en Línea
-          </h2>
-          <PDFTable
-            headers={["#", "Usuario", "Fecha", "Hora Inicio", "Hora Fin"]}
-            rows={[["1", plan.codart, plan.codart, plan.codart, plan.codart]]}
-          />
-        </section>
-
-        <section className="mb-4">
-          <h2 className="text-center text-xs font-semibold text-black uppercase tracking-wide border-b border-gray-300 pb-1 mb-3">
-            2.2. Despeje de Línea
-          </h2>
-          {/* Contenedor horizontal */}
-          <div className="flex gap-4 mb-3">
-            {/* Textarea */}
-            <textarea
-              className="w-1/2 h-28 border border-gray-300 rounded p-2 text-sm resize-none"
-              placeholder="Observaciones del despeje..."
-            ></textarea>
-            {/* Tabla pequeña al lado derecho */}
-            <div className="w-1/2">
-              <PDFTable rows={[[plan.codart]]} />
-            </div>
-          </div>
-          {/* Tabla completa debajo */}
-          <PDFTable
-            headers={["Realizado Por", "Firma", "Fecha", "Hora"]}
-            rows={[[plan.codart, plan.codart, plan.codart, plan.codart]]}
-          />
-        </section>
 
         <section className="mb-2">
           <h2 className="text-center text-xs font-semibold text-black uppercase tracking-wide border-b border-gray-300 pb-1 mb-3">
