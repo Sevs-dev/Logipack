@@ -15,8 +15,7 @@ const PDFPage = ({ params }: { params: Promise<{ id: number }> }) => {
   const didFetch = useRef(false);
   type Stage = {
     id: number | string;
-    description: string;
-    // Add other properties if needed
+    description: string; 
   };
 
   type DataType = {
@@ -306,67 +305,6 @@ const PDFPage = ({ params }: { params: Promise<{ id: number }> }) => {
               </section>
             ))}
         </>
-
-        <section className="mb-2">
-          <h2 className="text-center text-xs font-semibold text-black uppercase tracking-wide border-b border-gray-300 pb-1 mb-3">
-            3. Operación: Marcación UI
-          </h2>
-          <h2 className="text-center text-xs font-semibold text-black uppercase tracking-wide border-b border-gray-300 pb-1 mb-3">
-            3.1. Ajustes de Equipo
-          </h2>
-          <PDFTable
-            headers={["Realizado Por", "Firma", "Fecha", "Hora"]}
-            rows={[[plan.codart, plan.codart, plan.codart, plan.codart]]}
-          />
-        </section>
-
-        <section className="mb-2">
-          <h2 className="text-center text-xs font-semibold text-black uppercase tracking-wide border-b border-gray-300 pb-1 mb-3">
-            3.2. Verificación de Testigos
-          </h2>
-          <Image
-            src="/pharex.png"
-            alt="Diagrama de operaciones"
-            width={800}
-            height={224}
-            className="w-full max-h-56 object-contain mb-3 border rounded"
-            priority
-          />
-          <h5 className="text-center text-[10px] text-black uppercase tracking-wide border-b border-gray-300 pb-1 mb-3">
-            Foto del testigo
-          </h5>
-          <PDFTable
-            headers={["Realizado Por", "Firma", "Fecha", "Hora"]}
-            rows={[[plan.codart, plan.codart, plan.codart, plan.codart]]}
-          />
-          <PDFTable
-            headers={["Verificado por", "Firma", "Fecha", "Hora"]}
-            rows={[[plan.codart, plan.codart, plan.codart, plan.codart]]}
-          />
-        </section>
-
-        <section className="mb-2">
-          <h2 className="text-center text-xs font-semibold text-black uppercase tracking-wide border-b border-gray-300 pb-1 mb-3">
-            3.3 Controles de Proceso
-          </h2>
-          <PDFTable
-            headers={["Realizado Por", "Firma", "Fecha", "Hora"]}
-            rows={[[plan.codart, plan.codart, plan.codart, plan.codart]]}
-          />
-        </section>
-
-        <section className="mb-2">
-          <h2 className="text-center text-xs font-semibold text-black uppercase tracking-wide border-b border-gray-300 pb-1 mb-3">
-            3. Operación: Marcación UI
-          </h2>
-          <h2 className="text-center text-xs font-semibold text-black uppercase tracking-wide border-b border-gray-300 pb-1 mb-3">
-            3.1. Ajustes de Equipo
-          </h2>
-          <PDFTable
-            headers={["Realizado Por", "Firma", "Fecha", "Hora"]}
-            rows={[[plan.codart, plan.codart, plan.codart, plan.codart]]}
-          />
-        </section>
 
         <footer className="mt-12 pt-3 border-t border-gray-300 text-center text-[10px] text-gray-500">
           Documento generado automáticamente – Pharex S.A.
