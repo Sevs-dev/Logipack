@@ -275,7 +275,7 @@ class OrdenesEjecutadasController extends Controller
             $fases = DB::table('actividades_ejecutadas')
                 ->where('adaptation_date_id', $id)
                 ->where('linea', 0)
-                // ->where('fases_fk', $linea)
+                ->where('fases_fk', $linea)
                 ->where('estado_form', false)
                 ->whereIn('phase_type', ['Planificación', 'Conciliación', 'Actividades'])
                 ->whereNotExists(function ($query) use ($id) {

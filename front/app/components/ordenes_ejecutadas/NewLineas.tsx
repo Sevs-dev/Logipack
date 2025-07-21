@@ -178,7 +178,7 @@ const NewLineas = () => {
                                     role="button"
                                     tabIndex={0}
                                     aria-label={`Seleccionar línea: ${linea.descripcion}`}
-                                    onClick={() => handleLinea(linea.id, "linea", linea.descripcion)}
+                                    onClick={() => handleLinea(linea.id, "fase", linea.descripcion)}
                                     initial={{ opacity: 0, scale: 0.95 }}
                                     animate={{ opacity: 1, scale: 1 }}
                                     transition={{

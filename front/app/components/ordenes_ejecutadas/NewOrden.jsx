@@ -127,7 +127,9 @@ const App = () => {
 
     const cargarFase = async () => {
       try {
+        console.log(local);
         const resp = await siguiente_fase(local.id, local.linea, local.tipo);
+        console.log(resp);
         setFase(resp.fases);
       } catch (error) {
         showError("No se pudo obtener la fase.");
