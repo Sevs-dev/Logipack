@@ -500,7 +500,7 @@ class OrdenesEjecutadasController extends Controller
 
         // Actualizar adaptation_dates
         AdaptationDate::where('id', $acondicionamiento->adaptation_date_id)->update([
-            'status_dates' => 'Proceso',
+            'status_dates' => 'En ejecución',
         ]);
 
         return $acondicionamiento;
