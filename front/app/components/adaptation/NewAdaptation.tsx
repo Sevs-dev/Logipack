@@ -448,6 +448,7 @@ function NewAdaptation({ canEdit = false, canView = false }: CreateClientProps) 
     const handleEdit = async (id: number) => {
         try {
             const { adaptation } = await getAdaptationsId(id);
+            console.log("🔍 Adaptación encontrada:", adaptation.master);
             if (!adaptation) {
                 showError("La adaptación no existe");
                 console.warn("⚠️ Adaptation no encontrada con ID:", id);
@@ -917,7 +918,7 @@ function NewAdaptation({ canEdit = false, canView = false }: CreateClientProps) 
                                             <div>
                                                 <Text type="subtitle" color="text-gray-700">N° Orden del Cliente:</Text>
                                                 <input
-                                                    type="number"
+                                                    type="text"
                                                     className="w-full border border-gray-300 p-2 rounded-md mt-1 focus:outline-none focus:ring-2 focus:ring-blue-400 text-center text-gray-800"
                                                     value={articleFields[article.codart]?.orderNumber || ""}
                                                     onChange={(e) =>
