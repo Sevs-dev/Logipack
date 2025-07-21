@@ -37,6 +37,7 @@ export interface EditFormData {
 export const activityTypes: Record<string, ActivityType> = {
   "Texto corto": { type: "text" },
   "Texto largo": { type: "textarea" },
+  "Fecha": { type: "date" }, 
   Adjunto: { type: "file" },
   Foto: { type: "image" },
   "Lista desplegable": { type: "select", options: ["Opción 1", "Opción 2"] },

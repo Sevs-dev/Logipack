@@ -761,12 +761,14 @@ const App = () => {
                     <>
                       <select
                         className="text-center last:block w-full px-3 py-2 bg-[#1a1d23] border border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-white placeholder-gray-400 mb-2"
-                        value={memoriaFase[linea]?.tipo_entrada || ""}
+                        value={
+                          memoriaFase[linea]?.[`tipo_entrada_${clave}`] || ""
+                        }
                         onChange={(e) => {
                           const updated = { ...memoriaFase };
                           updated[linea] = {
                             ...updated[linea],
-                            tipo_entrada: e.target.value,
+                            [`tipo_entrada_${clave}`]: e.target.value,
                           };
                           setMemoriaFase(updated);
                         }}
@@ -777,7 +779,7 @@ const App = () => {
                       </select>
 
                       {/* Mostrar Input si selecciona "texto" */}
-                      {memoriaFase[linea]?.tipo_entrada === "texto" && (
+                      {memoriaFase[linea]?.[`tipo_entrada_${clave}`] === "texto" && (
                         <input
                           type="text"
                           className="text-center block w-full px-3 py-2 bg-[#1a1d23] border border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-white placeholder-gray-400"
@@ -789,7 +791,7 @@ const App = () => {
                       )}
 
                       {/* Mostrar Firma si selecciona "firma" */}
-                      {memoriaFase[linea]?.tipo_entrada === "firma" && (
+                      {memoriaFase[linea]?.[`tipo_entrada_${clave}`] === "firma" && (
                         <Firma
                           type={type}
                           item={item}
