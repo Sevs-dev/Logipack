@@ -1,6 +1,7 @@
 // pages/pdf/PDFPage.tsx
 'use client';
 import React, { use, useEffect, useState, useRef } from 'react';
+import Image from 'next/image';
 import ReactFlow from 'reactflow';
 import 'reactflow/dist/style.css';
 import { getPlanningByIdPDF } from '../../../services/planing/planingServices';
@@ -11,10 +12,38 @@ import DateLoader from '@/app/components/loader/DateLoader';
 
 const PDFPage = ({ params }: { params: Promise<{ id: number }> }) => {
   const { id } = use(params);
-  const [data, setData] = useState<any>(null);
+  const didFetch = useRef(false);
+  type Stage = {
+    id: number | string;
+    description: string;
+    // Add other properties if needed
+  };
+
+  type DataType = {
+    plan: {
+      number_order: string;
+      codart: string;
+      product_name?: string;
+      lot: string;
+      expiration?: string;
+      quantityToProduce: number;
+      // Add other properties if needed
+    };
+    cliente: {
+      name: string;
+      // Add other properties if needed
+    };
+    stages: Stage[];
+    // Add other properties if needed
+  };
+
+  const [data, setData] = useState<DataType | null>(null);
   const pdfRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    if (didFetch.current) return;
+    didFetch.current = true;
+
     const fetchData = async () => {
       try {
         const response = await getPlanningByIdPDF(id);
@@ -45,8 +74,8 @@ const PDFPage = ({ params }: { params: Promise<{ id: number }> }) => {
       .set(opt)
       .toPdf()
       .get('pdf')
-      .then((pdf: any) => {
-        const totalPages = pdf.internal.getNumberOfPages();
+      .then((pdf: import('jspdf').jsPDF) => {
+        const totalPages = pdf.getNumberOfPages();
         const pageWidth = pdf.internal.pageSize.getWidth();
         const pageHeight = pdf.internal.pageSize.getHeight(); // 🔥 obtenemos el alto
 
@@ -58,7 +87,7 @@ const PDFPage = ({ params }: { params: Promise<{ id: number }> }) => {
           const pageText = `Página ${i} de ${totalPages}`;
           const textWidth =
             pdf.getStringUnitWidth(pageText) *
-            pdf.internal.getFontSize() /
+            pdf.getFontSize() /
             pdf.internal.scaleFactor;
 
           const x = pageWidth - textWidth - 0.5;
@@ -84,7 +113,7 @@ const PDFPage = ({ params }: { params: Promise<{ id: number }> }) => {
   const V_SPACING = 140;
   const CONTAINER_WIDTH = 794;
 
-  const nodes = data.stages.map((stage: any, index: number) => {
+  const nodes = data.stages.map((stage: Stage, index: number) => {
     const row = Math.floor(index / NODES_PER_ROW);
     const col = index % NODES_PER_ROW;
 
@@ -109,12 +138,12 @@ const PDFPage = ({ params }: { params: Promise<{ id: number }> }) => {
         fontSize: 11,
         background: '#fff',
         color: '#1e3a8a',
-        textAlign: 'center',
+        textAlign: 'center' as const,
       },
     };
   });
 
-  const edges = data.stages.slice(1).map((_: any, index: number) => ({
+  const edges = data.stages.slice(1).map((_: Stage, index: number) => ({
     id: `e${data.stages[index].id}-${data.stages[index + 1].id}`,
     source: `${data.stages[index].id}`,
     target: `${data.stages[index + 1].id}`,
@@ -137,11 +166,13 @@ const PDFPage = ({ params }: { params: Promise<{ id: number }> }) => {
         }}
       >
         <header className="mb-6 border-b border-gray-200 pb-4 flex items-center justify-center relative">
-          {/* Logo a la izquierda, fuera del flujo del centrado */}
-          <img
+          <Image
             src="/pharex.png"
             alt="Logo"
+            width={80}
+            height={40}
             className="h-10 object-contain absolute left-0 top-1/2 -translate-y-1/2"
+            priority
           />
 
           {/* Título perfectamente centrado */}
@@ -307,7 +338,14 @@ const PDFPage = ({ params }: { params: Promise<{ id: number }> }) => {
           <h2 className="text-center text-xs font-semibold text-black uppercase tracking-wide border-b border-gray-300 pb-1 mb-3">
             3.2. Verificación de Testigos
           </h2>
-          <img src="/pharex.png" alt="Diagrama de operaciones" className="w-full max-h-56 object-contain mb-3 border rounded" />
+          <Image
+            src="/pharex.png"
+            alt="Diagrama de operaciones"
+            width={800}
+            height={224}
+            className="w-full max-h-56 object-contain mb-3 border rounded"
+            priority
+          />
           <h5 className="text-center text-[10px] text-black uppercase tracking-wide border-b border-gray-300 pb-1 mb-3">
             Foto del testigo
           </h5>

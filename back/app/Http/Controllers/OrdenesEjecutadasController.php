@@ -497,6 +497,12 @@ class OrdenesEjecutadasController extends Controller
             'planta' => $acondicionamiento->factory_name,
             'cantidad_producir' => $acondicionamiento->quantityToProduce,
         ]);
+
+        // Actualizar estado de la adaptation_dates
+        AdaptationDate::where('id', $acondicionamiento->adaptation_date_id)->update([
+            'status_dates' => 'En ejecución',
+        ]);
+
         return $acondicionamiento;
     }
 
