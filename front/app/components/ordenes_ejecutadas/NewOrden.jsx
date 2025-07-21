@@ -200,7 +200,7 @@ const App = () => {
         fase.adaptation_date_id,
         fase.fases_fk
       );
-      const {roles} = await validate_rol(fase.fases_fk);
+      const { roles } = await validate_rol(fase.fases_fk);
       const perfil = document.cookie
         .split("; ")
         .find((row) => row.startsWith("role="))
@@ -288,7 +288,7 @@ const App = () => {
   // si no hay fase
   if (!fase) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-gray-900 gap-4"> 
+      <div className="flex flex-col items-center justify-center min-h-screen bg-gray-900 gap-4">
         <DateLoader
           message="Fase finalizada."
           backgroundColor="#242424"
@@ -627,27 +627,27 @@ const App = () => {
                           {memoriaFase[linea]?.[clave]?.startsWith(
                             "data:application/pdf"
                           ) && (
-                            <div className="mb-2">
-                              <object
-                                data={memoriaFase[linea][clave]}
-                                type="application/pdf"
-                                width="100%"
-                                height="400px"
-                              >
-                                <p className="text-gray-600">
-                                  No se pudo mostrar el PDF.{" "}
-                                  <a
-                                    href={memoriaFase[linea][clave]}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="text-blue-600 underline"
-                                  >
-                                    Haz clic aquí para verlo
-                                  </a>
-                                </p>
-                              </object>
-                            </div>
-                          )}
+                              <div className="mb-2">
+                                <object
+                                  data={memoriaFase[linea][clave]}
+                                  type="application/pdf"
+                                  width="100%"
+                                  height="400px"
+                                >
+                                  <p className="text-gray-600">
+                                    No se pudo mostrar el PDF.{" "}
+                                    <a
+                                      href={memoriaFase[linea][clave]}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="text-blue-600 underline"
+                                    >
+                                      Haz clic aquí para verlo
+                                    </a>
+                                  </p>
+                                </object>
+                              </div>
+                            )}
 
                           <input
                             className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm 
@@ -691,14 +691,14 @@ const App = () => {
                           {memoriaFase[linea]?.[clave]?.startsWith(
                             "data:image"
                           ) && (
-                            <div className="mb-2">
-                              <img
-                                src={memoriaFase[linea][clave]}
-                                alt="Imagen guardada"
-                                className="max-h-48 rounded shadow object-contain"
-                              />
-                            </div>
-                          )}
+                              <div className="mb-2">
+                                <img
+                                  src={memoriaFase[linea][clave]}
+                                  alt="Imagen guardada"
+                                  className="max-h-48 rounded shadow object-contain"
+                                />
+                              </div>
+                            )}
 
                           <input
                             className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm 
@@ -738,16 +738,57 @@ const App = () => {
 
                       {/* SIGNATURE */}
                       {type === "signature" && (
-                        <Firma
-                          type={type}
-                          item={item}
-                          info={memoriaFase[linea]}
-                          lineaIndex={linea}
-                          setMemoriaGeneral={setMemoriaFase}
-                          saveToDB={saveToDB}
-                          typeMem="memoria_fase"
-                        />
+                        <>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Selecciona el tipo de entrada:
+                          </label>
+                          <select
+                            className="mb-3 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm 
+                            focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-gray-700"
+                            value={memoriaFase[linea]?.tipo_entrada || ""}
+                            onChange={(e) => {
+                              const updated = { ...memoriaFase };
+                              updated[linea] = {
+                                ...updated[linea],
+                                tipo_entrada: e.target.value,
+                              };
+                              setMemoriaFase(updated);
+                            }}
+                          >
+                            <option value="">-- Selecciona --</option>
+                            <option value="texto">Texto</option>
+                            <option value="firma">Firma</option>
+                          </select>
+
+                          {/* Mostrar Input si selecciona "texto" */}
+                          {memoriaFase[linea]?.tipo_entrada === "texto" && (
+                            <input
+                              type="text"
+                              className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm 
+                              focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-gray-700"
+                              placeholder={item.descripcion_activitie}
+                              name={clave}
+                              value={memoriaFase[linea]?.[clave] ?? ""}
+                              required={item.binding}
+                              onChange={inputChange}
+                            />
+                          )}
+
+                          {/* Mostrar Firma si selecciona "firma" */}
+                          {memoriaFase[linea]?.tipo_entrada === "firma" && (
+                            <Firma
+                              type={type}
+                              item={item}
+                              info={memoriaFase[linea]}
+                              lineaIndex={linea}
+                              setMemoriaGeneral={setMemoriaFase}
+                              saveToDB={saveToDB}
+                              typeMem="memoria_fase"
+                            />
+                          )}
+                        </>
                       )}
+
 
                       {/* TEMPERATURE */}
                       {type === "temperature" && (

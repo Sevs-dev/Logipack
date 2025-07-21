@@ -19,6 +19,8 @@ use App\Models\Factory;
 use App\Models\Stage;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Log;
+use App\Models\OrdenesEjecutadas;
+
 
 
 class AdaptationController extends Controller
@@ -419,9 +421,20 @@ class AdaptationController extends Controller
     public function deleteAdaptation($id)
     {
         try {
+            // Buscar la adaptación
             $adaptation = Adaptation::findOrFail($id);
+
+            // Actualizar estado de las ordenes ejecutadas
+            OrdenesEjecutadas::where('adaptation_id', $adaptation->id)->update([
+                'estado' => '-11000',
+            ]);
+            
+            // Eliminar las fechas de adaptación
             AdaptationDate::where('adaptation_id', $adaptation->id)->delete();
+
+            // Eliminar la adaptación
             $adaptation->delete();
+            
             return response()->json([
                 'message' => 'Adaptation and related dates deleted successfully'
             ], 200);
@@ -436,6 +449,9 @@ class AdaptationController extends Controller
             ], 500);
         }
     }
+
+
+
     public function debugBomAndIngredients($id)
     {
         $adaptation = Adaptation::find($id);

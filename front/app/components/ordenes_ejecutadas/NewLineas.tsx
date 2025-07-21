@@ -27,15 +27,16 @@ const NewLineas = () => {
         if (data) setLocal(data);
     }, []);
 
+    const cargarLineasProceso = async (localData: LocalType) => {
+        try {
+            const resp = await linea_procesos(localData.id);
+            setLista(resp);
+        } catch (error) {
+            showError("Error al obtener las líneas de procesos: " + error);
+        }
+    };
+
     useEffect(() => {
-        const cargarLineasProceso = async (localData: LocalType) => {
-            try {
-                const resp = await linea_procesos(localData.id);
-                setLista(resp);
-            } catch (error) {
-                showError("Error al obtener las líneas de procesos: " + error);
-            }
-        };
 
         if (local) {
             cargarLineasProceso(local);
@@ -53,8 +54,22 @@ const NewLineas = () => {
     const lista_fases = Array.isArray(lista.linea_fases) ? lista.linea_fases : [];
 
     if (orden === null && local) {
-        generar_orden(local.id);
-        window.location.reload();
+        const generar = async () => {
+            const { message } = await generar_orden(local.id);
+            console.log(message);
+            if (local) {
+                cargarLineasProceso(local);
+            }
+            // window.location.reload();
+        }
+        generar();
+    }
+    
+    // Si no hay orden, se muestra un loader
+    if (orden === null) {
+        return (
+            <DateLoader message=" Cargando orden...." backgroundColor="#1f2937" color="#ffff" />
+        );
     }
 
     const handleLinea = (id: number, tipo: string, descripcion: string) => {
