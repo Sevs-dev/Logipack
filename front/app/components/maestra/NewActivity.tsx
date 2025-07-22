@@ -455,7 +455,7 @@ export default function NewActivity({ canEdit = false, canView = false }: Create
 
                         {selectedType === "Muestreo" && (
                             <div className="flex flex-col gap-4">
-                                <label className="text-sm font-medium text-black">
+                                <label className="text-sm font-medium text-black text-center">
                                     Rangos de muestreo con valor
                                     <InfoPopover
                                         content={
@@ -511,7 +511,7 @@ export default function NewActivity({ canEdit = false, canView = false }: Create
                                         }} variant="cancel" label="Eliminar" />
                                     </div>
                                 ))}
-                                <Button variant="add" label="Agregar usuario" onClick={() => {
+                                <Button variant="add" label="Agregar Muestreo" onClick={() => {
                                     const items = [...(parsedConfig?.items || []), { min: undefined, max: undefined, valor: undefined }];
                                     setFormData({ ...formData, config: JSON.stringify({ ...parsedConfig, items }, null, 2) });
                                 }}
