@@ -572,7 +572,8 @@ function BOMManager({ canEdit = false, canView = false }: CreateClientProps) {
                                                     </div>
                                                 </div>
                                             </div>
-                                            <div className="flex justify-center space-x-4 mt-4">
+                                            <hr className="my-4 border-t border-gray-600 w-full max-w-lg mx-auto opacity-60" />
+                                            <div className="flex justify-center gap-4 mt-6">
                                                 <Button
                                                     onClick={addIngredientRow}
                                                     variant="create"
@@ -586,7 +587,8 @@ function BOMManager({ canEdit = false, canView = false }: CreateClientProps) {
                             ) : (
                                 <div>
                                     <Text type="alert">No hay ingredientes agregados.</Text>
-                                    <div className="flex justify-center space-x-4 mt-4">
+                                    <hr className="my-4 border-t border-gray-600 w-full max-w-lg mx-auto opacity-60" />
+                                    <div className="flex justify-center gap-4 mt-6">
                                         <Button
                                             onClick={addIngredientRow}
                                             variant="create"
@@ -599,7 +601,8 @@ function BOMManager({ canEdit = false, canView = false }: CreateClientProps) {
                         </div>
                     )}
 
-                    <div className="flex justify-center space-x-4 mt-4">
+                    <hr className="my-4 border-t border-gray-600 w-full max-w-lg mx-auto opacity-60" />
+                    <div className="flex justify-center gap-4 mt-6">
                         <Button onClick={() => setIsModalOpen(false)} variant="cancel" label="Cancelar" />
                         {canEdit && (
                             <Button

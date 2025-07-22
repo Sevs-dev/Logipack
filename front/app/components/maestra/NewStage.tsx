@@ -538,7 +538,8 @@ function NewStage({ canEdit = false, canView = false }: CreateClientProps) {
                         </div>
 
                         {/* Opciones adicionales */}
-                        <div className="mt-4 flex justify-center gap-4">
+                        <hr className="my-4 border-t border-gray-600 w-full max-w-lg mx-auto opacity-60" />
+                        <div className="flex justify-center gap-4 mt-6">
                             <div className="flex items-center gap-3">
                                 <input
                                     type="checkbox"
@@ -620,7 +621,8 @@ function NewStage({ canEdit = false, canView = false }: CreateClientProps) {
                     </div>
 
                     {/* Botones de acción */}
-                    <div className="mt-4 flex justify-center gap-4">
+                    <hr className="my-4 border-t border-gray-600 w-full max-w-lg mx-auto opacity-60" />
+                    <div className="flex justify-center gap-4 mt-6">
                         <Button
                             onClick={() => {
                                 if (editingStage) {

@@ -325,7 +325,8 @@ function CreateMachinery({ canEdit = false, canView = false }: CreateClientProps
             </div>
           </form>
 
-          <div className="flex justify-end space-x-4 mt-4">
+          <hr className="my-4 border-t border-gray-600 w-full max-w-lg mx-auto opacity-60" />
+          <div className="flex justify-center gap-4 mt-6">
             <Button
               onClick={() => {
                 resetForm();

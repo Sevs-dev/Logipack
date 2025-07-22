@@ -359,7 +359,7 @@ function CreateUser({ canEdit = false, canView = false }: CreateClientProps) {
             </div>
 
             {/* Fábricas */}
-            <div className="col-span-1 md:col-span-2"> 
+            <div className="col-span-1 md:col-span-2">
               <SelectorDual
                 titulo="Fábricas asignadas"
                 disponibles={factory}
@@ -372,6 +372,7 @@ function CreateUser({ canEdit = false, canView = false }: CreateClientProps) {
           </div>
 
           {/* Botones */}
+          <hr className="my-4 border-t border-gray-600 w-full max-w-lg mx-auto opacity-60" />
           <div className="flex justify-center gap-4 mt-6">
             <Button onClick={closeModal} variant="cancel" label="Cancelar" />
             {canEdit && (
