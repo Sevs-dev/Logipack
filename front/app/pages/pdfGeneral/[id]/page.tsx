@@ -1,7 +1,6 @@
 // pages/pdf/PDFPage.tsx
 'use client';
 import React, { use, useEffect, useState, useRef } from 'react';
-import Image from 'next/image';
 import ReactFlow from 'reactflow';
 import 'reactflow/dist/style.css';
 import { getPlanningByIdPDF } from '../../../services/planing/planingServices';
@@ -39,7 +38,9 @@ const PDFPage = ({ params }: { params: Promise<{ id: number }> }) => {
     actividadesEjecutadas: {
       id: number;
       description_fase: string;
-      forms?: { descripcion_activitie?: string; valor?: string; linea?: string }[], user?: string;
+      forms?: { descripcion_activitie?: string; valor?: string; linea?: string }[];
+      user?: string
+      created_at?: string;
     }[];
   };
 
@@ -301,7 +302,7 @@ const PDFPage = ({ params }: { params: Promise<{ id: number }> }) => {
                 </h4>
 
                 <PDFTable
-                  headers={["Actividad", "Resultado", "Línea", "Usuario"]}
+                  headers={["Actividad", "Resultado", "Línea", "Usuario", "Hora"]}
                   rows={(actividad.forms ?? []).map((form) => {
                     const valor = form.valor;
                     const isImage =
@@ -325,8 +326,8 @@ const PDFPage = ({ params }: { params: Promise<{ id: number }> }) => {
                         valor || ""
                       ),
                       form.linea ?? "",
-                      form.user || "Sin usuario",
-                    ];
+                      actividad.user ? decodeURIComponent(actividad.user) : "Sin usuario",
+                      actividad.created_at ? actividad.created_at.slice(11, 16) : "Sin hora"];
                   })}
                 />
               </section>

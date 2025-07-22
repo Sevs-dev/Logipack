@@ -127,10 +127,39 @@ class AdaptationDateController extends Controller
     {
         try {
             $plan = AdaptationDate::all();
+            Log::info('PLAN:', [$plan]);
+
             return response()->json([
                 'plan' => $plan
             ], 200);
         } catch (\Exception $e) {
+            Log::error('Error retrieving plan:', [
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            return response()->json([
+                'error'   => 'Error retrieving plan',
+                'details' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function getPlanDash()
+    {
+        try {
+            // Incluye solo id y name del cliente
+            $plan = AdaptationDate::with(['client:id,name'])->get();
+
+            Log::info('PLAN:', [$plan]);
+
+            return response()->json([
+                'plan' => $plan
+            ], 200);
+        } catch (\Exception $e) {
+            Log::error('Error retrieving plan:', [
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
             return response()->json([
                 'error'   => 'Error retrieving plan',
                 'details' => $e->getMessage()

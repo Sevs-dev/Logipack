@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
+use Carbon\Carbon;
 
 class AuthController extends Controller
 {
@@ -105,7 +106,7 @@ class AuthController extends Controller
             'password'      => 'required|string|min:6',
             'role'          => 'required|string',
             'signature_bpm' => 'required|string|max:255|unique:users',
-            'factory'       => 'required|array',
+            'factory'       => 'nullable|array',
         ]);
 
         try {
@@ -136,6 +137,7 @@ class AuthController extends Controller
     {
         $user = User::find($id);
         if (!$user) {
+            Log::warning("Intento de actualización fallido: Usuario con id {$id} no encontrado a las " . Carbon::now('America/Bogota'));
             return response()->json(['estado' => 'error', 'mensaje' => 'Usuario no encontrado'], 404);
         }
 
@@ -143,16 +145,40 @@ class AuthController extends Controller
             'name'          => 'required|string|max:255',
             'email'         => "required|email|max:255|unique:users,email,$id",
             'role'          => 'required|string',
-            'factory'       => 'required|array',
+            'factory'       => 'nullable|array',
             'signature_bpm' => "required|string|max:255|unique:users,signature_bpm,$id",
+            // Password es opcional, pero si se envía debe ser válida
+            'password'      => 'nullable|string|min:8|confirmed',
+            // Si usas confirmación: debes enviar password_confirmation desde el frontend
         ]);
 
-        $user->update([
+        // Datos nuevos a actualizar (sin incluir la contraseña aún)
+        $newData = [
             'name'          => $request->name,
             'email'         => $request->email,
             'role'          => $request->role,
             'factory'       => $request->factory,
             'signature_bpm' => $request->signature_bpm,
+        ];
+
+        // Si se envía la contraseña y no viene vacía, la hasheamos
+        if ($request->filled('password')) {
+            $newData['password'] = Hash::make($request->password);
+        }
+
+        // Log de los datos a actualizar antes del update (sin la contraseña)
+        Log::info('Actualizando usuario', [
+            'id' => $id,
+            'old_data' => $user->toArray(),
+            'new_data' => array_diff_key($newData, ['password' => '']), // Oculta la pass en logs
+            'hora' => Carbon::now('America/Bogota')->toDateTimeString()
+        ]);
+
+        $user->update($newData);
+
+        Log::info("Usuario actualizado exitosamente", [
+            'id' => $id,
+            'hora' => Carbon::now('America/Bogota')->toDateTimeString()
         ]);
 
         return response()->json([
@@ -161,7 +187,6 @@ class AuthController extends Controller
             'usuario' => $user,
         ]);
     }
-
     /** =======================
      *     ELIMINAR USUARIO
      *  ======================= */

@@ -8,6 +8,7 @@ use App\Models\OrdenesEjecutadas;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Carbon\Carbon;
 
 class OrdenesEjecutadasController extends Controller
 {
@@ -121,7 +122,7 @@ class OrdenesEjecutadasController extends Controller
     public function eliminar_orden(
         $id
     ): JsonResponse {
-        
+
         OrdenesEjecutadas::where('adaptation_date_id', $id)->update([
             'estado' => '-11000',
         ]);
@@ -155,7 +156,9 @@ class OrdenesEjecutadasController extends Controller
                     DB::raw(
                         "FIND_IN_SET(std.id, REPLACE(REPLACE(REPLACE(REPLACE(COALESCE
                         (ada.maestra_fases_fk, ''), '[', ''), ']', ''), ' ', ''), '\"', ''))"
-                    ), '>', DB::raw('0')
+                    ),
+                    '>',
+                    DB::raw('0')
                 );
             })
             ->whereIn('std.phase_type', ['Planificación', 'Conciliación', 'Actividades'])
@@ -206,7 +209,9 @@ class OrdenesEjecutadasController extends Controller
                     DB::raw(
                         "FIND_IN_SET(man.id, REPLACE(REPLACE(REPLACE(REPLACE(COALESCE
                         (ada.linea_produccion, ''), '[', ''), ']', ''), ' ', ''), '\"', ''))"
-                    ), '>', DB::raw('0')
+                    ),
+                    '>',
+                    DB::raw('0')
                 );
             })
             ->select(
@@ -312,7 +317,9 @@ class OrdenesEjecutadasController extends Controller
                     DB::raw(
                         "FIND_IN_SET(std.id, REPLACE(REPLACE(REPLACE(REPLACE(COALESCE
                     (ada.maestra_fases_fk, ''), '[', ''), ']', ''), ' ', ''), '\"', ''))"
-                    ), '>', DB::raw('0')
+                    ),
+                    '>',
+                    DB::raw('0')
                 );
             })
             ->whereIn('std.phase_type', ['Control'])
@@ -338,7 +345,7 @@ class OrdenesEjecutadasController extends Controller
      * @param int $id
      * @return JsonResponse
      */
-    public function getActividadesEjecutadas($id): JsonResponse 
+    public function getActividadesEjecutadas($id): JsonResponse
     {
         $actividades = DB::table('actividades_ejecutadas')
             ->where('adaptation_date_id', $id)
@@ -434,6 +441,8 @@ class OrdenesEjecutadasController extends Controller
                 'forms' => $forms,
                 'user' => $user,
                 'estado_form' => true,
+                'created_at' => Carbon::now('America/Bogota'),
+                'updated_at' => Carbon::now('America/Bogota'),
             ]);
             return response()->json([
                 'message' => 'Formulario guardado correctamente',
@@ -525,7 +534,9 @@ class OrdenesEjecutadasController extends Controller
                     DB::raw(
                         "FIND_IN_SET(std.id, REPLACE(REPLACE(REPLACE(REPLACE(COALESCE
                     (ada.maestra_fases_fk, ''), '[', ''), ']', ''), ' ', ''), '\"', ''))"
-                    ), '>', DB::raw('0')
+                    ),
+                    '>',
+                    DB::raw('0')
                 );
             })
             ->select(
@@ -538,7 +549,7 @@ class OrdenesEjecutadasController extends Controller
             )
             ->orderByRaw('posicion ASC')
             ->get(), $orden);
-    
+
         // crear actividades de la orden ejecutada
         foreach ($fases as $fase) {
             ActividadesEjecutadas::create([
@@ -629,7 +640,9 @@ class OrdenesEjecutadasController extends Controller
                                 DB::raw(
                                     "FIND_IN_SET(atc.id, REPLACE(REPLACE(REPLACE(REPLACE(COALESCE
                                     (std.activities, ''), '[', ''), ']', ''), ' ', ''), '\"', ''))"
-                                ), '>', DB::raw('0')
+                                ),
+                                '>',
+                                DB::raw('0')
                             );
                         })
                         ->where('std.id', $fase->id)
@@ -653,9 +666,11 @@ class OrdenesEjecutadasController extends Controller
         // armar actividades de planificación o conciliación
         $actividades = [];
         foreach ($fases->toArray() as $count => $fase) {
-            if ($fase->phase_type == 'Planificación' ||
-                    $fase->phase_type == 'Conciliación' ||
-                    $fase->phase_type == 'Actividades') {
+            if (
+                $fase->phase_type == 'Planificación' ||
+                $fase->phase_type == 'Conciliación' ||
+                $fase->phase_type == 'Actividades'
+            ) {
                 // obtener lista si la actividades especificos
                 $actividades = DB::table('stages as std')
                     ->join('activities as atc', function ($join) {
@@ -663,7 +678,9 @@ class OrdenesEjecutadasController extends Controller
                             DB::raw(
                                 "FIND_IN_SET(atc.id, REPLACE(REPLACE(REPLACE(REPLACE(COALESCE
                              (std.activities, ''), '[', ''), ']', ''), ' ', ''), '\"', ''))"
-                            ), '>', DB::raw('0')
+                            ),
+                            '>',
+                            DB::raw('0')
                         );
                     })
                     ->where('std.id', $fase->id)

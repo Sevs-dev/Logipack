@@ -20,6 +20,16 @@ export const getPlanning = async () => {
     }
 }
 
+export const getPlanDash = async () => {
+    try {
+        const response = await Planning.get('/getPlanDash');
+        return response.data.plan;
+    } catch (error: unknown) {
+        console.error("Error en getPlan:", error);
+        throw error;
+    }
+}
+
 export const getActivitiesByPlanning = async (id: number) => {
     try {
         const response = await Planning.get(`/getPlanId/${id}`); 

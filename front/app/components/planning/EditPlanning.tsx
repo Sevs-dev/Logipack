@@ -962,7 +962,7 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
 
                     <div className="flex justify-center gap-2 mt-6">
                         <Button onClick={() => setIsOpen(false)} variant="cancel" label="Cancelar" />
-                        {currentPlan?.status_dates !== "Planificación" && (
+                        {currentPlan?.status_dates !== "Planificación" && currentPlan?.status_dates !== "En ejecución" && (
                             <Button
                                 onClick={async () => {
                                     if (isSaving) return;
@@ -1004,7 +1004,7 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
                 onEdit={handleEdit}
                 onTerciario={handleTerciario}
                 showTerciarioButton={true}
-                showTerciarioCondition={(row) => row.status_dates === "Planificación"} // 👈 Aquí va tu condición
+                showTerciarioCondition={(row) => row.status_dates === "Planificación" || row.status_dates === "En ejecución"} // 👈 Aquí va tu condición
                 onPDF={handlePDF}
                 showPDFCondition={(row) => row.status_dates === "Ejecutado"}
             />

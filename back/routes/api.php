@@ -164,6 +164,7 @@ Route::controller(AdaptationController::class)->group(function () {
 //Rutas Planificación
 Route::controller(AdaptationDateController::class)->group(function () {
     Route::get('/getPlan', 'getPlan'); // Obtener todas las lineas 
+    Route::get('/getPlanDash', 'getPlanDash'); // Obtener todas las lineas 
     Route::post('/newPlan', 'newAPlan'); // Crear una nueva lineas 
     Route::put('/updatePlan/{id}', 'update'); // Crear una nueva lineas 
     Route::get('/getPlanId/{id}', 'getPlanById'); // Obtener una lineas específica  

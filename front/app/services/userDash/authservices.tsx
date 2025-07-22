@@ -113,6 +113,7 @@ export const getDate = async (id: number): Promise<{ date: string; usuario: User
 
 // Update user
 export const updateUser = async (id: number, data: UpdateUserData): Promise<User> => {
+  console.log('Datos a actualizar:', data);
   try {
     const response = await authUser.put<User>(`/update/${id}`, data);
     return response.data;

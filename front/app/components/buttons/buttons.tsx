@@ -1,13 +1,10 @@
 import React, { useState } from "react";
 import {
-  FaEdit, FaTrash, FaCheck, FaTimes, FaPlus, FaHistory, FaAngleLeft, FaAngleRight, FaRegFilePdf, FaRegPlusSquare 
+  FaEdit, FaTrash, FaCheck, FaTimes, FaPlus, FaHistory, FaAngleLeft, FaAngleRight, FaRegFilePdf, FaRegPlusSquare
 } from "react-icons/fa";
 import { motion } from "framer-motion";
 
-type Variant =
-  | "save" | "cancel" | "edit" | "delete"
-  | "create" | "terciario" | "history"
-  | "after" | "before" | "pdf" | "add";
+type Variant = "save" | "cancel" | "edit" | "delete" | "create" | "create2" | "terciario" | "history" | "after" | "before" | "pdf" | "add";
 
 interface ButtonProps {
   type?: "button" | "submit" | "reset";
@@ -23,6 +20,7 @@ interface ButtonProps {
 const variantStyles: Record<Variant, string> = {
   save: "bg-green-600 hover:bg-green-700 text-white",
   cancel: "bg-red-600 hover:bg-red-700 text-white",
+  create2: "bg-yellow-500 hover:bg-yellow-600 focus:ring-yellow-400 shadow-lg shadow-yellow-500/40 text-gray-900 font-semibold px-3 py-1.5 rounded transition duration-300 ease-in-out",
   edit: "bg-blue-600 hover:bg-blue-700 text-white",
   delete: "bg-red-700 hover:bg-red-800 text-white",
   create: "bg-green-500 hover:bg-green-600 text-white",
@@ -39,13 +37,14 @@ const icons: Record<Variant, React.ReactNode> = {
   cancel: <FaTimes />,
   edit: <FaEdit />,
   delete: <FaTrash />,
+  create2: <FaPlus />,
   create: <FaPlus />,
   terciario: <FaPlus />,
   history: <FaHistory />,
   pdf: <FaRegFilePdf />,
   after: <FaAngleRight />,
   before: <FaAngleLeft />,
-  add: <FaRegPlusSquare  />, // NUEVO
+  add: <FaRegPlusSquare />, // NUEVO
 };
 
 const labels: Record<Variant, string> = {
@@ -54,6 +53,7 @@ const labels: Record<Variant, string> = {
   edit: "Editar",
   delete: "Eliminar",
   create: "Crear",
+  create2: "Finalizar",
   terciario: "Finalizar",
   history: "Historial",
   pdf: "PDF",
@@ -92,7 +92,7 @@ const Button: React.FC<ButtonProps> = ({
   };
 
   // Si solo es icono, añade aria-label
-  const showLabel = !["edit", "delete", "pdf", "history", "after", "before"].includes(variant);
+  const showLabel = !["edit", "delete", "pdf", "history", "after", "before", "create2"].includes(variant);
 
   return (
     <motion.button
@@ -126,9 +126,11 @@ const Button: React.FC<ButtonProps> = ({
                 ? "#facc15"
                 : variant === "save"
                   ? "#22c55e"
-                  : variant === "create"
-                    ? "#22d3ee"
-                    : "#fff"
+                  : variant === "create2"
+                    ? "#f59e0b"
+                    : variant === "create"
+                      ? "#22d3ee"
+                      : "#fff"
           }}
           initial={{ opacity: 1, x: 0, y: 0 }}
           animate={{
