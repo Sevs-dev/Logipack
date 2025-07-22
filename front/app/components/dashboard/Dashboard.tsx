@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef, ReactNode } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import CountUp from "react-countup";
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend, PieLabelRenderProps } from "recharts";
@@ -26,18 +26,34 @@ type Planning = {
   end_date?: string;
 };
 
+type CardProps = {
+  children: ReactNode;
+  // ...otros props opcionales
+}
+
 const COLORS = [
   "#FACC15", "#22d3ee", "#4ade80", "#a78bfa",
   "#f472b6", "#fb7185", "#6ee7b7", "#fcd34d"
 ];
 
 // 1. Helper para normalizar los keys de estado
-const normalizeKey = (key: string) =>
-  key
+// Helper normalizador reforzado
+const normalizeKey = (key: string) => {
+  const norm = key
     .toLowerCase()
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "") // Quita tildes
-    .replace(/[\s-]+/g, "_");
+    .replace(/[\s-]+/g, "_")
+    .replace(/^en_/, ""); // <-- si empieza por "en_", lo quita
+
+  // Aliases
+  if (["creacion", "en_creacion", "encreacion"].includes(norm)) return "creacion";
+  if (["planificacion", "en_planificacion"].includes(norm)) return "planificacion";
+  if (["ejecutado", "ejecutada"].includes(norm)) return "ejecutado";
+  if (["en_ejecucion", "ejecucion"].includes(norm)) return "en_ejecucion";
+  return norm;
+};
+
 
 // 2. Diccionario labels (con keys normalizados)
 const estadoLabels: Record<string, string> = {
@@ -53,7 +69,6 @@ const renderCustomLabel = ({
   cx,
   cy,
   midAngle,
-  innerRadius,
   outerRadius,
   percent,
   name,
@@ -61,7 +76,8 @@ const renderCustomLabel = ({
 }: PieLabelRenderProps & { name?: string; value?: number }) => {
   if (!value) return null;
   const RADIAN = Math.PI / 180;
-  const radius = Number(innerRadius) + (Number(outerRadius) - Number(innerRadius)) * 1.15;
+  const SEPARACION_LABEL = 1.28; // O prueba 1.3, 1.32, etc
+  const radius = Number(outerRadius) * SEPARACION_LABEL;
   const x = Number(cx) + radius * Math.cos(-Number(midAngle) * RADIAN);
   const y = Number(cy) + radius * Math.sin(-Number(midAngle) * RADIAN);
 
@@ -103,6 +119,17 @@ const CustomTooltip = ({
   return null;
 };
 
+
+const Card: React.FC<CardProps> = ({ children, ...props }) => (
+  <motion.div
+    whileHover={{ scale: 1.035, boxShadow: "0 6px 36px #0ff3c22e" }}
+    transition={{ type: "spring", stiffness: 180, damping: 16 }}
+    className="backdrop-blur-lg bg-gradient-to-tr from-white/10 via-cyan-900/20 to-white/5 border border-cyan-600/10 p-6 rounded-2xl shadow-xl hover:shadow-2xl transition-shadow"
+    {...props}
+  >
+    {children}
+  </motion.div>
+);
 const Dashboard = () => {
   const { userName } = useUserData();
   const [emojiIndex, setEmojiIndex] = useState(0);
@@ -159,11 +186,14 @@ const Dashboard = () => {
 
   // -------- Pie Chart ESTADOS DINÁMICO --------
   // Siempre todos los estados posibles
-  const conteoPorEstado = planning.reduce((acc: Record<string, number>, curr) => {
-    const estado = normalizeKey(curr.status_dates ?? "Sin Estado");
-    acc[estado] = (acc[estado] || 0) + 1;
-    return acc;
-  }, {});
+  const conteoPorEstado: Record<string, number> = planning.reduce(
+    (acc, curr) => {
+      const estado = normalizeKey(curr.status_dates ?? "Sin Estado");
+      acc[estado] = (acc[estado] || 0) + 1;
+      return acc;
+    },
+    {} as Record<string, number>
+  );
 
   const dataEstados = ALL_ESTADOS.map((key) => ({
     name: estadoLabels[key] ?? key,
@@ -171,6 +201,7 @@ const Dashboard = () => {
     rawKey: key,
   }));
 
+  const dataEstadosFiltrados = dataEstados.filter((d) => d.value > 0);
   // Para los filtros, muestra siempre todos
 
   const ordenesFiltradas =
@@ -302,17 +333,24 @@ const Dashboard = () => {
         </section>
 
         {/* Pie Chart y Top Clientes */}
-        <section className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-12">
+        <section className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-16">
           {/* Pie Chart */}
-          <div className="backdrop-blur-md bg-white/10 border border-white/10 p-6 rounded-2xl shadow-lg">
-            <h2 className="text-lg font-semibold mb-4 gap-2 text-center">
-              📊 Distribución de Estados
+          <Card>
+            <h2 className="text-xl md:text-2xl font-extrabold mb-5 text-center text-cyan-200 tracking-wider flex items-center justify-center gap-2 drop-shadow-sm">
+              <span className="text-3xl md:text-4xl animate-pulse">📊</span>
+              <span className="drop-shadow">Distribución de Estados</span>
             </h2>
-            <div className="w-full flex flex-col items-center">
+
+            <div className="w-full flex flex-col items-center min-h-[280px]">
               {dataEstados.every((d) => d.value === 0) ? (
-                <div className="text-gray-400 text-base py-16">No hay datos para mostrar.</div>
+                <div className="flex flex-col items-center py-14 opacity-70 select-none">
+                  <span className="text-6xl mb-3 animate-bounce">🤷‍♂️</span>
+                  <span className="text-base md:text-lg text-cyan-100/90 font-medium">
+                    No hay datos para mostrar.
+                  </span>
+                </div>
               ) : (
-                <ResponsiveContainer width="100%" height={260}>
+                <ResponsiveContainer width="100%" height={240}>
                   <PieChart>
                     <Pie
                       data={dataEstados}
@@ -320,39 +358,80 @@ const Dashboard = () => {
                       nameKey="name"
                       cx="50%"
                       cy="50%"
-                      outerRadius={90}
+                      outerRadius={92}
                       label={renderCustomLabel}
                       isAnimationActive
-                      animationDuration={900}
-                      stroke="#1e293b"
-                      strokeWidth={2}
+                      animationDuration={800}
+                      stroke="#0ea5e9"
+                      strokeWidth={2.5}
                     >
-                      {dataEstados.map((entry, i) => (
-                        <Cell key={i} fill={COLORS[i % COLORS.length]} />
+                      {dataEstadosFiltrados.map((entry, i) => (
+                        <Cell
+                          key={i}
+                          fill={COLORS[i % COLORS.length]}
+                          className="hover:opacity-80 transition-opacity"
+                        />
                       ))}
                     </Pie>
-                    <Tooltip content={<CustomTooltip />} />
-                    <Legend verticalAlign="bottom" iconType="circle" />
+                    <Tooltip
+                      content={<CustomTooltip />}
+                      wrapperStyle={{ borderRadius: 12, background: "#0f172a", color: "#fff" }}
+                      cursor={{ fill: "#0ea5e930" }}
+                    />
+                    <Legend
+                      verticalAlign="bottom"
+                      iconType="circle"
+                      wrapperStyle={{
+                        paddingTop: 8,
+                        color: "#a5f3fc",
+                        fontWeight: 500,
+                        fontSize: 14,
+                      }}
+                    />
                   </PieChart>
                 </ResponsiveContainer>
               )}
             </div>
-          </div>
+          </Card>
 
-          {/* Top 10 Clientes */}
-          <div className="backdrop-blur-md bg-white/10 border border-white/10 p-6 rounded-2xl shadow-lg">
-            <h2 className="text-lg font-semibold mb-4 text-center">🏆 Top 5 Clientes</h2>
+
+          {/* Top 5 Clientes */}
+          <Card>
+            <h2 className="text-lg font-bold mb-4 text-center text-amber-200 tracking-wide flex items-center justify-center gap-2">
+              <span className="text-2xl">🏆</span> Top 5 Clientes
+            </h2>
             <ol className="space-y-3">
-              {topClientes.map(([clienteName, cantidad], idx) => (
-                <li key={clienteName} className="flex items-center justify-between px-2">
-                  <span className="font-bold text-xl">
-                    {["🥇", "🥈", "🥉"][idx] || `#${idx + 1}`} {clienteName}
-                  </span>
-                  <span className="text-2xl font-bold text-emerald-400">{cantidad}</span>
-                </li>
-              ))}
+              {topClientes.length === 0 ? (
+                <div className="flex flex-col items-center py-12 opacity-60">
+                  <span className="text-5xl mb-2 animate-bounce">🤷‍♂️</span>
+                  <span className="text-base">Sin clientes destacados.</span>
+                </div>
+              ) : (
+                topClientes.map(([clienteName, cantidad], idx) => (
+                  <motion.li
+                    key={clienteName}
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: idx * 0.05 }}
+                    className={`flex items-center justify-between px-4 py-2 rounded-xl shadow-sm ${idx === 0
+                      ? "bg-gradient-to-r from-amber-400/30 via-white/0 to-white/0"
+                      : idx === 1
+                        ? "bg-gradient-to-r from-gray-300/20 via-white/0 to-white/0"
+                        : idx === 2
+                          ? "bg-gradient-to-r from-amber-700/30 via-white/0 to-white/0"
+                          : "bg-white/0"
+                      }`}
+                  >
+                    <span className="font-bold text-lg flex items-center gap-2">
+                      {["🥇", "🥈", "🥉"][idx] || <span className="text-gray-500">#{idx + 1}</span>}{" "}
+                      <span className="ml-2">{clienteName}</span>
+                    </span>
+                    <span className="text-2xl font-extrabold text-emerald-400 drop-shadow-sm">{cantidad}</span>
+                  </motion.li>
+                ))
+              )}
             </ol>
-          </div>
+          </Card>
         </section>
 
         {/* Filtros dinámicos de estado */}
