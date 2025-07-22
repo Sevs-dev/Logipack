@@ -6,6 +6,8 @@ import CountUp from "react-countup";
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend, PieLabelRenderProps } from "recharts";
 import useUserData from "../../hooks/useUserData";
 import { getPlanDash } from "../../services/planing/planingServices";
+import { getPlanningById, validate_orden } from "../../services/planing/planingServices";
+import { showError, showSuccess } from "../toastr/Toaster";
 
 const emojis = [
   "🤖", "🗂️", "🎯", "📎", "🔧", "🕒", "🧾", "🛠️",
@@ -107,7 +109,7 @@ const Dashboard = () => {
   const [planning, setPlanning] = useState<Planning[]>([]);
   const didFetch = useRef(false);
   const uniqueEstados = ALL_ESTADOS;
-  const [estadoSeleccionado, setEstadoSeleccionado] = useState<string>("todos");
+  const [estadoSeleccionado, setEstadoSeleccionado] = useState<string>("todos"); 
 
   useEffect(() => {
     if (!userName) return;
@@ -203,6 +205,48 @@ const Dashboard = () => {
     })),
   ];
 
+  const handleTerciario = async (orden: Planning) => {
+    if (!orden?.id) {
+      showError("No hay evento seleccionado");
+      return;
+    }
+    // Trae el plan real por ID
+    const res = await getPlanningById(Number(orden.id)); // CORREGIDO
+    if (!res || !res.plan) {
+      showError("No se pudo obtener la orden");
+      return;
+    }
+    const { plan } = res;
+
+    localStorage.removeItem("ejecutar");
+
+    // Valida si ya está finalizada
+    const validacion = await validate_orden(plan.id);
+
+    if (validacion.estado === 100 || validacion.estado === null) {
+      // Busca el user en la cookie
+      const user = document.cookie
+        .split('; ')
+        .find(row => row.startsWith('name='))
+        ?.split('=')[1];
+
+      if (!user) {
+        showError("No se encontró usuario");
+        return;
+      }
+
+      localStorage.setItem("ejecutar", JSON.stringify({
+        id: plan.id,
+        user: user
+      }));
+      window.open("/pages/lineas", "_blank");
+    } else {
+      showSuccess(
+        `La orden ya fue finalizada. Estado: ${estadoLabels[normalizeKey(validacion.estado?.toString() ?? "")] || validacion.estado}`
+      );
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-gray-950 text-white px-4 md:px-10 py-6">
       <main role="main" className="max-w-7xl mx-auto">
@@ -232,26 +276,28 @@ const Dashboard = () => {
         </header>
 
         {/* Widgets Dinámicos */}
-        <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-6 mb-12 text-center">
+        <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-12 text-center">
           {estadosKPIs.map(({ label, color, icon, value }) => (
             <div
               key={label}
               className="backdrop-blur-md bg-white/10 border border-white/10 p-6 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300"
             >
-              <h2 className="text-[14px] font-semibold text-white mb-2">
+              <h2 className="text-xl font-semibold text-white mb-2">
                 {icon} {label}
               </h2>
               <p className={`text-3xl font-bold ${color}`}>
                 <CountUp end={value} duration={2} />
               </p>
+              <p className="text-xs text-gray-400 mt-2">Datos Actualizados</p>
             </div>
           ))}
           {/* KPI: Órdenes creadas hoy */}
           <div className="backdrop-blur-md bg-white/10 border border-white/10 p-6 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300">
-            <h2 className="text-[14px] font-semibold text-white mb-2">📅 Órdenes hoy</h2>
+            <h2 className="text-xl font-semibold text-white mb-2">📅 Órdenes hoy</h2>
             <p className="text-3xl font-bold text-fuchsia-400">
               <CountUp end={ordenesHoy} duration={2} />
             </p>
+            <p className="text-xs text-gray-400 mt-2">Órdenes creadas hoy ({hoy})</p>
           </div>
         </section>
 
@@ -313,7 +359,7 @@ const Dashboard = () => {
         </section>
 
         {/* Filtros dinámicos de estado */}
-        <div className="flex flex-wrap gap-2 mb-6">
+        <div className="flex flex-wrap gap-2 mb-6 items-center justify-center">
           <button
             onClick={() => setEstadoSeleccionado("todos")}
             className={`px-4 py-1 rounded-full font-semibold border capitalize
@@ -339,7 +385,7 @@ const Dashboard = () => {
 
         {/* Tabla detalle */}
         <section className="backdrop-blur-md bg-white/10 border border-white/10 p-6 rounded-2xl shadow-lg mb-12">
-          <h2 className="text-lg font-semibold mb-4">
+          <h2 className="text-lg font-semibold mb-4 text-center">
             📋 Órdenes{" "}
             {estadoSeleccionado === "todos"
               ? ""
@@ -349,32 +395,87 @@ const Dashboard = () => {
             </span>
           </h2>
 
-          <div className="overflow-auto max-h-[400px]">
-            <table className="min-w-full text-xs md:text-sm text-left border-separate border-spacing-y-2">
+          <div className="overflow-auto max-h-[400px] rounded-2xl shadow-inner border border-white/10">
+            <table className="min-w-full text-xs md:text-sm border-separate border-spacing-y-2">
               <thead>
                 <tr>
-                  <th className="px-2 py-1 bg-black/20 rounded">N° Orden</th>
-                  <th className="px-2 py-1 bg-black/20 rounded">Estado</th>
-                  <th className="px-2 py-1 bg-black/20 rounded">Cliente</th>
-                  <th className="px-2 py-1 bg-black/20 rounded">Fecha Creación</th>
-                  <th className="px-2 py-1 bg-black/20 rounded">Fecha Fin</th>
+                  <th className="px-4 py-2 bg-gradient-to-r via-gray-900 to-gray-950 text-cyan-300 font-semibold  text-center shadow-md tracking-wide border-b border-cyan-600/30 border  ">
+                    N° Orden
+                  </th>
+                  <th className="px-4 py-2 bg-gradient-to-r via-gray-900 to-gray-950 text-cyan-300 font-semibold text-center shadow-md tracking-wide border-b border-cyan-600/30 border  ">
+                    Estado
+                  </th>
+                  <th className="px-4 py-2 bg-gradient-to-r via-gray-900 to-gray-950 text-cyan-300 font-semibold text-center shadow-md tracking-wide border-b border-cyan-600/30 border  ">
+                    Cliente
+                  </th>
+                  <th className="px-4 py-2 bg-gradient-to-r via-gray-900 to-gray-950 text-cyan-300 font-semibold text-center shadow-md tracking-wide border-b border-cyan-600/30 border  ">
+                    Fecha Creación
+                  </th>
+                  <th className="px-4 py-2 bg-gradient-to-r via-gray-900 to-gray-950 text-cyan-300 font-semibold  text-center shadow-md tracking-wide border-b border-cyan-600/30 border  ">
+                    Fecha Fin
+                  </th>
                 </tr>
               </thead>
               <tbody>
-                {ordenesFiltradas.map((item) => (
-                  <tr key={item.id}>
-                    <td className="px-2 py-1 bg-white/10 rounded">{item.number_order}</td>
-                    <td className="px-2 py-1 bg-white/10 rounded">
-                      {estadoLabels[normalizeKey(item.status_dates ?? "Sin Estado")] ??
-                        item.status_dates}
+                {ordenesFiltradas.map((item, idx) => (
+                  <tr
+                    key={item.id}
+                    className={`
+            transition-colors
+            hover:bg-gradient-to-r hover:from-[#22d3ee]/10 hover:to-[#818cf8]/10
+            ${idx % 2 === 0 ? "bg-white/5" : "bg-white/10"}
+            rounded-xl
+          `}
+                  >
+                    <td className="px-4 py-2 text-center   font-mono font-bold text-white/90 drop-shadow border border-white/10">
+                      {item.number_order}
                     </td>
-                    <td className="px-2 py-1 bg-white/10 rounded">
+                    <td className="px-4 py-2 text-center border border-white/10">
+                      <span
+                        className={`
+                          inline-block px-3 py-1 rounded-full text-xs font-semibold transition
+                          ${normalizeKey(item.status_dates ?? "Sin Estado") === "ejecutado"
+                            ? "bg-green-500/20 text-green-400"
+                            : normalizeKey(item.status_dates ?? "Sin Estado") === "planificacion"
+                              ? "bg-cyan-500/20 text-cyan-300"
+                              : normalizeKey(item.status_dates ?? "Sin Estado") === "creacion"
+                                ? "bg-yellow-400/20 text-yellow-200"
+                                : normalizeKey(item.status_dates ?? "Sin Estado") === "en_ejecucion"
+                                  ? "bg-fuchsia-600/20 text-fuchsia-300 cursor-pointer hover:bg-fuchsia-700/40 hover:scale-105 ring-2 ring-fuchsia-300/40"
+                                  : "bg-gray-500/10 text-white/60"
+                          }
+                          `}
+                        style={{
+                          userSelect: "none",
+                          transition: "all 0.15s"
+                        }}
+                        onClick={() => {
+                          if (normalizeKey(item.status_dates ?? "Sin Estado") === "en_ejecucion") {
+                            handleTerciario(item);
+                          }
+                        }}
+                        title={
+                          normalizeKey(item.status_dates ?? "Sin Estado") === "en_ejecucion"
+                            ? "Ir a ejecución"
+                            : undefined
+                        }
+                        role={normalizeKey(item.status_dates ?? "Sin Estado") === "en_ejecucion" ? "button" : undefined}
+                        tabIndex={normalizeKey(item.status_dates ?? "Sin Estado") === "en_ejecucion" ? 0 : undefined}
+                      >
+                        {estadoLabels[normalizeKey(item.status_dates ?? "Sin Estado")] ?? item.status_dates}
+                        {normalizeKey(item.status_dates ?? "Sin Estado") === "en_ejecucion" && (
+                          <span className="ml-2 animate-pulse">🚀</span>
+                        )}
+                      </span>
+                    </td>
+
+                    <td className="px-4 py-2 text-center font-semibold text-white/80 border border-white/10">
                       {item.client?.name ?? item.client_id}
                     </td>
-                    <td className="px-2 py-1 bg-white/10 rounded">
+                    <td className="px-4 py-2 text-center text-xs text-white/60 border border-white/10">
                       {item.created_at?.slice(0, 16)}
                     </td>
-                    <td className="px-2 py-1 bg-white/10 rounded">
+                    <td className="px-4 py-2 text-center  text-xs text-white/60 border border-white/10">
                       {item.end_date?.slice(0, 16) || "-"}
                     </td>
                   </tr>
@@ -384,15 +485,7 @@ const Dashboard = () => {
           </div>
         </section>
 
-        {/* Coming Soon */}
-        <section className="mt-12 backdrop-blur-md bg-white/5 border border-white/10 p-6 rounded-2xl shadow-inner text-center">
-          <h2 className="text-2xl font-bold text-white mb-2">
-            🚀 ¡Más funcionalidades en camino!
-          </h2>
-          <p className="text-gray-400">
-            ¿Qué más necesitas en este dashboard? ¡Lo armamos!
-          </p>
-        </section>
+         
       </main>
     </div>
   );
