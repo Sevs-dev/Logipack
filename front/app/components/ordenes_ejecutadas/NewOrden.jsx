@@ -367,7 +367,6 @@ const App = () => {
       setTimerReady(false);
     }
   };
- 
 
   return (
     <div className="min-h-screen w-full bg-[#1b2535] text-white p-[10px] sm:p-[10px] flex flex-col rounded-2xl">
@@ -577,71 +576,77 @@ const App = () => {
                   )}
 
                   {/* RADIO */}
-                  {type === "radio" &&
-                    options.map((opt, idx) => (
-                      <label
-                        key={idx}
-                        className="inline-flex items-center gap-2 mr-4"
-                      >
-                        <input
-                          type="radio"
-                          name={clave}
-                          value={opt}
-                          required={item.binding}
-                          checked={memoriaFase[linea]?.[clave] === opt}
-                          onChange={inputChange}
-                          className="h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500"
-                        />
-                        <span className="text-sm text-gray-700">{opt}</span>
-                      </label>
-                    ))}
+                  {type === "radio" && (
+                    <div className="flex justify-center flex-wrap gap-4 mt-2">
+                      {options.map((opt, idx) => (
+                        <label
+                          key={idx}
+                          className="flex items-center gap-2 text-white"
+                        >
+                          <input
+                            type="radio"
+                            name={clave}
+                            value={opt}
+                            required={item.binding}
+                            checked={memoriaFase[linea]?.[clave] === opt}
+                            onChange={inputChange}
+                            className="appearance-none w-4 h-4 border border-gray-600 rounded-full checked:bg-blue-500 checked:border-transparent focus:outline-none"
+                          />
+                          <span className="text-sm">{opt}</span>
+                        </label>
+                      ))}
+                    </div>
+                  )}
 
                   {/* CHECKBOX */}
-                  {type === "checkbox" &&
-                    options.map((opt, idx) => (
-                      <label
-                        key={idx}
-                        className="inline-flex items-center gap-2 mr-4"
-                      >
-                        <input
-                          type="checkbox"
-                          name={clave}
-                          required={
-                            item.binding &&
-                            (!Array.isArray(memoriaFase[linea]?.[clave]) ||
-                              memoriaFase[linea][clave].length === 0)
-                          }
-                          checked={
-                            Array.isArray(memoriaFase[linea]?.[clave]) &&
-                            memoriaFase[linea][clave].includes(opt)
-                          }
-                          onChange={(e) => {
-                            const checked = e.target.checked;
-                            setMemoriaFase((prev) => {
-                              const prevArr = Array.isArray(
-                                prev[linea]?.[clave]
-                              )
-                                ? prev[linea][clave]
-                                : [];
-                              const newArr = checked
-                                ? [...prevArr, opt]
-                                : prevArr.filter((val) => val !== opt);
-                              const actualizado = {
-                                ...prev,
-                                [linea]: {
-                                  ...prev[linea],
-                                  [clave]: newArr,
-                                },
-                              };
-                              saveToDB("memoria_fase", actualizado);
-                              return actualizado;
-                            });
-                          }}
-                          className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                        />
-                        <span className="text-sm text-gray-700">{opt}</span>
-                      </label>
-                    ))}
+                  {type === "checkbox" && (
+                    <div className="flex justify-center flex-wrap gap-4 mt-2">
+                      {options.map((opt, idx) => (
+                        <label
+                          key={idx}
+                          className="flex items-center gap-2 text-white"
+                        >
+                          <input
+                            type="checkbox"
+                            name={clave}
+                            required={
+                              item.binding &&
+                              (!Array.isArray(memoriaFase[linea]?.[clave]) ||
+                                memoriaFase[linea][clave].length === 0)
+                            }
+                            checked={
+                              Array.isArray(memoriaFase[linea]?.[clave]) &&
+                              memoriaFase[linea][clave].includes(opt)
+                            }
+                            onChange={(e) => {
+                              const checked = e.target.checked;
+                              setMemoriaFase((prev) => {
+                                const prevArr = Array.isArray(
+                                  prev[linea]?.[clave]
+                                )
+                                  ? prev[linea][clave]
+                                  : [];
+                                const newArr = checked
+                                  ? [...prevArr, opt]
+                                  : prevArr.filter((val) => val !== opt);
+                                const actualizado = {
+                                  ...prev,
+                                  [linea]: {
+                                    ...prev[linea],
+                                    [clave]: newArr,
+                                  },
+                                };
+                                saveToDB("memoria_fase", actualizado);
+                                return actualizado;
+                              });
+                            }}
+                            className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                          />
+                          <span className="text-sm">{opt}</span>
+                        </label>
+                      ))}
+                    </div>
+                  )}
 
                   {/* FILE (PDF) */}
                   {type === "file" && (
@@ -779,7 +784,8 @@ const App = () => {
                       </select>
 
                       {/* Mostrar Input si selecciona "texto" */}
-                      {memoriaFase[linea]?.[`tipo_entrada_${clave}`] === "texto" && (
+                      {memoriaFase[linea]?.[`tipo_entrada_${clave}`] ===
+                        "texto" && (
                         <input
                           type="text"
                           className="text-center block w-full px-3 py-2 bg-[#1a1d23] border border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-white placeholder-gray-400"
@@ -791,7 +797,8 @@ const App = () => {
                       )}
 
                       {/* Mostrar Firma si selecciona "firma" */}
-                      {memoriaFase[linea]?.[`tipo_entrada_${clave}`] === "firma" && (
+                      {memoriaFase[linea]?.[`tipo_entrada_${clave}`] ===
+                        "firma" && (
                         <Firma
                           type={type}
                           item={item}

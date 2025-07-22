@@ -8,14 +8,14 @@ import { getPlanningByIdPDF } from '../../../services/planing/planingServices';
 import withAuth from '../../../hooks/withAuth';
 import html2pdf from 'html2pdf.js';
 import PDFTable from '../../../components/table/PDFTable';
-import DateLoader from '@/app/components/loader/DateLoader'; 
+import DateLoader from '@/app/components/loader/DateLoader';
 
 const PDFPage = ({ params }: { params: Promise<{ id: number }> }) => {
   const { id } = use(params);
   const didFetch = useRef(false);
   type Stage = {
     id: number | string;
-    description: string; 
+    description: string;
   };
 
   type DataType = {
@@ -39,7 +39,7 @@ const PDFPage = ({ params }: { params: Promise<{ id: number }> }) => {
     actividadesEjecutadas: {
       id: number;
       description_fase: string;
-      forms?: { descripcion_activitie?: string; valor?: string; linea?: string }[], user?: string; 
+      forms?: { descripcion_activitie?: string; valor?: string; linea?: string }[], user?: string;
     }[];
   };
 
@@ -159,6 +159,10 @@ const PDFPage = ({ params }: { params: Promise<{ id: number }> }) => {
     animated: true,
   }));
 
+  const rows = Math.ceil(data.stages.length / NODES_PER_ROW);
+  const DYNAMIC_HEIGHT = rows * V_SPACING + 100; // ajusta el extra si lo necesitas
+
+
   return (
     <div className="p-6">
       <div
@@ -174,15 +178,13 @@ const PDFPage = ({ params }: { params: Promise<{ id: number }> }) => {
         }}
       >
         <header className="mb-6 border-b border-gray-200 pb-4 flex items-center justify-center relative">
-          <Image
+          <img
             src="/pharex.png"
             alt="Logo"
             width={120}
             height={80}
-            className="h-10 object-contain absolute left-0 top-1/2 -translate-y-1/2"
-            priority
+            style={{ objectFit: 'contain', position: 'absolute', left: 0, top: '50%', transform: 'translateY(-50%)' }}
           />
-
           {/* Título perfectamente centrado */}
           <h1 className="text-xl font-semibold text-gray-800 tracking-wide text-center">
             Batch Record de Producción
@@ -228,52 +230,58 @@ const PDFPage = ({ params }: { params: Promise<{ id: number }> }) => {
 
           <div
             style={{
-              width: '744px',
-              height: 260,
-              overflow: 'hidden',
-              margin: '0 auto 0 -48px',
+              width: '100%',
+              maxWidth: '744px',
+              height: DYNAMIC_HEIGHT,
+              margin: '0 auto',
               padding: 0,
               boxSizing: 'border-box',
-              position: 'relative', // 🔑 Necesario para que el overlay funcione
+              position: 'relative',
               background: '#fff',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
             }}
           >
-            <ReactFlow
-              nodes={nodes}
-              edges={edges}
-              fitView
-              nodesDraggable={false}
-              panOnScroll={false}
-              panOnDrag={false}
-              zoomOnScroll={false}
-              zoomOnPinch={false}
-              style={{
-                width: '744px',
-                height: 260,
-                background: '#fff',
-                overflow: 'hidden',
-                pointerEvents: 'none',
-              }}
-              fitViewOptions={{
-                padding: 0,
-                minZoom: 1,
-                maxZoom: 1,
-              }}
-            />
+            <div style={{ width: '100%', height: '100%', position: 'relative' }}>
+              <ReactFlow
+                nodes={nodes}
+                edges={edges}
+                fitView
+                nodesDraggable={false}
+                panOnScroll={false}
+                panOnDrag={false}
+                zoomOnScroll={false}
+                zoomOnPinch={false}
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  background: '#fff',
+                  pointerEvents: 'none',
+                }}
+                fitViewOptions={{
+                  padding: 0.1,
+                  minZoom: 1,
+                  maxZoom: 1,
+                }}
+              />
 
-            {/* 🩹 Overlay para cubrir la marca */}
-            <div
-              style={{
-                position: 'absolute',
-                bottom: -4,     // Ajustalo según el caso exacto
-                right: -2,
-                width: '100px',
-                height: '30px',
-                backgroundColor: '#fff',
-                zIndex: 10, // Asegura que esté por encima
-              }}
-            />
+              {/* 🩹 Overlay anti-marca */}
+              <div
+                style={{
+                  position: 'absolute',
+                  bottom: -4,
+                  right: -2,
+                  width: '100px',
+                  height: '30px',
+                  backgroundColor: '#fff',
+                  zIndex: 10,
+                }}
+              />
+            </div>
           </div>
+
+
 
           <PDFTable
             rows={[["Receta validada por", plan.user, "Fecha", plan.updated_at?.slice(0, 10) || "Sin Fecha"]]}
@@ -288,22 +296,42 @@ const PDFPage = ({ params }: { params: Promise<{ id: number }> }) => {
             .filter((actividad) => Array.isArray(actividad.forms) && actividad.forms.length > 0)
             .map((actividad, index) => (
               <section key={actividad.id} className="mb-4">
-                {/* 🔢 Título con número y nombre de la fase */}
                 <h4 className="text-center text-xs font-semibold text-black uppercase tracking-wide border-b border-gray-300 pb-1 mb-3">
                   {index + 1}. {actividad.description_fase}
                 </h4>
 
                 <PDFTable
                   headers={["Actividad", "Resultado", "Línea", "Usuario"]}
-                  rows={(actividad.forms ?? []).map((form) => [
-                    form.descripcion_activitie || "Sin descripción",
-                    form.valor ?? "",
-                    form.linea ?? "",
-                    form.user || "Sin usuario",
-                  ])}
+                  rows={(actividad.forms ?? []).map((form) => {
+                    const valor = form.valor;
+                    const isImage =
+                      typeof valor === "string" &&
+                      (valor.startsWith("data:image") || /\.(jpeg|jpg|png|gif|webp)$/i.test(valor));
+
+                    return [
+                      form.descripcion_activitie || "Sin descripción",
+                      isImage ? (
+                        <img
+                          src={valor}
+                          alt="evidencia"
+                          style={{
+                            width: "100px",
+                            height: "auto",
+                            borderRadius: "4px",
+                            objectFit: "contain",
+                          }}
+                        />
+                      ) : (
+                        valor || ""
+                      ),
+                      form.linea ?? "",
+                      form.user || "Sin usuario",
+                    ];
+                  })}
                 />
               </section>
             ))}
+
         </>
 
         <footer className="mt-12 pt-3 border-t border-gray-300 text-center text-[10px] text-gray-500">
