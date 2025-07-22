@@ -106,6 +106,8 @@ const Dashboard = () => {
   const [emojiIndex, setEmojiIndex] = useState(0);
   const [planning, setPlanning] = useState<Planning[]>([]);
   const didFetch = useRef(false);
+  const uniqueEstados = ALL_ESTADOS;
+  const [estadoSeleccionado, setEstadoSeleccionado] = useState<string>("todos");
 
   useEffect(() => {
     if (!userName) return;
@@ -168,9 +170,6 @@ const Dashboard = () => {
   }));
 
   // Para los filtros, muestra siempre todos
-  const uniqueEstados = ALL_ESTADOS;
-
-  const [estadoSeleccionado, setEstadoSeleccionado] = useState<string>("todos");
 
   const ordenesFiltradas =
     estadoSeleccionado === "todos"
