@@ -109,7 +109,7 @@ const Dashboard = () => {
   const [planning, setPlanning] = useState<Planning[]>([]);
   const didFetch = useRef(false);
   const uniqueEstados = ALL_ESTADOS;
-  const [estadoSeleccionado, setEstadoSeleccionado] = useState<string>("todos"); 
+  const [estadoSeleccionado, setEstadoSeleccionado] = useState<string>("todos");
 
   useEffect(() => {
     if (!userName) return;
@@ -381,7 +381,7 @@ const Dashboard = () => {
         </div>
 
         {/* Tabla detalle */}
-        <section className="backdrop-blur-md bg-white/10 border border-white/10 p-6 rounded-2xl shadow-lg mb-12">
+        <section className="backdrop-blur-md bg-white/10 border border-white/10 p-6 rounded-2xl shadow-lg">
           <h2 className="text-lg font-semibold mb-4 text-center">
             📋 Órdenes{" "}
             {estadoSeleccionado === "todos"
@@ -392,11 +392,43 @@ const Dashboard = () => {
             </span>
           </h2>
 
-          <div className="overflow-auto max-h-[400px] rounded-2xl shadow-inner border border-white/10">
-            <table className="min-w-full text-xs md:text-sm border-separate border-spacing-y-2">
+          <div
+            className="overflow-auto max-h-[400px] rounded-2xl shadow-inner border border-white/10"
+            style={{
+              scrollbarColor: "#818cf8 #23272f",        // Para Firefox
+              scrollbarWidth: "thin",
+              msOverflowStyle: "none",                   // IE/Edge
+            }}
+          >
+            <style jsx>{`
+              div::-webkit-scrollbar {
+                width: 10px;
+                background: #23272f;
+                border-radius: 12px;
+              }
+              div::-webkit-scrollbar-thumb {
+                background: linear-gradient(135deg, #22d3ee 0%, #818cf8 100%);
+                border-radius: 12px;
+                min-height: 48px;
+                border: 2px solid #23272f;
+                transition: background 0.2s;
+                box-shadow: 0 1px 8px #23272f55;
+              }
+              div::-webkit-scrollbar-thumb:hover {
+                background: linear-gradient(135deg, #818cf8 0%, #22d3ee 100%);
+              }
+              div::-webkit-scrollbar-track {
+                background: #23272f;
+                border-radius: 12px;
+              }
+              div::-webkit-scrollbar-corner {
+                background: #23272f;
+              }
+            `}</style>
+            <table className="min-w-full text-xs md:text-sm border-separate">
               <thead>
                 <tr>
-                  <th className="px-4 py-2 bg-gradient-to-r via-gray-900 to-gray-950 text-cyan-300 font-semibold  text-center shadow-md tracking-wide border-b border-cyan-600/30 border  ">
+                  <th className="px-4 py-2 bg-gradient-to-r via-gray-900 to-gray-950 text-cyan-300 font-semibold  text-center shadow-md tracking-wide border-b border-cyan-600/30 border rounded-tl-xl">
                     N° Orden
                   </th>
                   <th className="px-4 py-2 bg-gradient-to-r via-gray-900 to-gray-950 text-cyan-300 font-semibold text-center shadow-md tracking-wide border-b border-cyan-600/30 border  ">
@@ -408,7 +440,7 @@ const Dashboard = () => {
                   <th className="px-4 py-2 bg-gradient-to-r via-gray-900 to-gray-950 text-cyan-300 font-semibold text-center shadow-md tracking-wide border-b border-cyan-600/30 border  ">
                     Fecha Creación
                   </th>
-                  <th className="px-4 py-2 bg-gradient-to-r via-gray-900 to-gray-950 text-cyan-300 font-semibold  text-center shadow-md tracking-wide border-b border-cyan-600/30 border  ">
+                  <th className="px-4 py-2 bg-gradient-to-r via-gray-900 to-gray-950 text-cyan-300 font-semibold  text-center shadow-md tracking-wide border-b border-cyan-600/30 border rounded-tr-xl">
                     Fecha Fin
                   </th>
                 </tr>
@@ -482,7 +514,7 @@ const Dashboard = () => {
           </div>
         </section>
 
-         
+
       </main>
     </div>
   );
