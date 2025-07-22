@@ -146,7 +146,7 @@ const Dashboard = () => {
     (p: Planning) => (p.created_at ?? '').slice(0, 10) === hoy
   ).length;
 
-  // Top 10 clientes (por cantidad de órdenes)
+  // Top 5 clientes (por cantidad de órdenes)
   const topClientes = Object.entries(
     planning.reduce((acc: Record<string, number>, curr: Planning) => {
       const clienteName = curr.client?.name ?? String(curr.client_id ?? 'Sin cliente');
@@ -155,7 +155,7 @@ const Dashboard = () => {
     }, {})
   )
     .sort((a, b) => b[1] - a[1])
-    .slice(0, 10);
+    .slice(0, 5);
 
   // -------- Pie Chart ESTADOS DINÁMICO --------
   // Siempre todos los estados posibles
@@ -305,11 +305,8 @@ const Dashboard = () => {
         <section className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-12">
           {/* Pie Chart */}
           <div className="backdrop-blur-md bg-white/10 border border-white/10 p-6 rounded-2xl shadow-lg">
-            <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-              <span role="img" aria-label="pie">
-                📊
-              </span>{" "}
-              Distribución de Estados
+            <h2 className="text-lg font-semibold mb-4 gap-2 text-center">
+              📊 Distribución de Estados
             </h2>
             <div className="w-full flex flex-col items-center">
               {dataEstados.every((d) => d.value === 0) ? (
@@ -344,7 +341,7 @@ const Dashboard = () => {
 
           {/* Top 10 Clientes */}
           <div className="backdrop-blur-md bg-white/10 border border-white/10 p-6 rounded-2xl shadow-lg">
-            <h2 className="text-lg font-semibold mb-4">🏆 Top 10 Clientes</h2>
+            <h2 className="text-lg font-semibold mb-4 text-center">🏆 Top 5 Clientes</h2>
             <ol className="space-y-3">
               {topClientes.map(([clienteName, cantidad], idx) => (
                 <li key={clienteName} className="flex items-center justify-between px-2">
