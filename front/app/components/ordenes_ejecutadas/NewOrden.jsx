@@ -371,6 +371,11 @@ const App = () => {
   return (
     <div className="min-h-screen w-full bg-[#1b2535] text-white p-[10px] sm:p-[10px] flex flex-col rounded-2xl">
       {/* Información de la Orden */}
+      {/* <ModalBlock
+        isOpen={showModal}
+        onClose={() => setShowModal(false)}
+        message="Tu acceso está bloqueado temporalmente. Contacta al administrador."
+      /> */}
       <div className="w-full rounded-2xl bg-white/5 backdrop-blur-sm border border-white/10 shadow-md overflow-hidden">
         <div className="bg-white/2.5 px-[10px] py-[10px] border-b border-white/5 backdrop-blur-sm">
           <Text type="title" color="text-white">
@@ -378,11 +383,6 @@ const App = () => {
           </Text>
 
           {/* Contenido principal */}
-          <ModalBlock
-            isOpen={showModal}
-            onClose={() => setShowModal(false)}
-            message="Tu acceso está bloqueado temporalmente. Contacta al administrador."
-          />
         </div>
 
         <div

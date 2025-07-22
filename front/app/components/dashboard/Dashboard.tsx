@@ -22,51 +22,30 @@ type Planning = {
   status_dates?: string;
   created_at?: string;
   end_date?: string;
-  // otros campos...
 };
 
-type EstadoCard = {
-  label: string;
-  color: string;
-  icon: string;
-  filter: (arr: Planning[]) => number;
-};
-
-const estados: EstadoCard[] = [
-  {
-    label: "Órdenes Totales",
-    color: "text-blue-400",
-    icon: "📦",
-    filter: (arr: Planning[]) => arr.length,
-  },
-  {
-    label: "En Creación",
-    color: "text-yellow-300",
-    icon: "📝",
-    filter: (arr: Planning[]) =>
-      arr.filter((x) => (x.status_dates ?? "").toLowerCase() === "creacion").length,
-  },
-  {
-    label: "En Planificación",
-    color: "text-cyan-300",
-    icon: "🗓️",
-    filter: (arr: Planning[]) =>
-      arr.filter(
-        (x) =>
-          (x.status_dates ?? "").toLowerCase() === "planificación" ||
-          (x.status_dates ?? "").toLowerCase() === "planificacion"
-      ).length,
-  },
-  {
-    label: "Ejecutadas",
-    color: "text-green-400",
-    icon: "✅",
-    filter: (arr: Planning[]) =>
-      arr.filter((x) => (x.status_dates ?? "").toLowerCase() === "ejecutado").length,
-  },
+const COLORS = [
+  "#FACC15", "#22d3ee", "#4ade80", "#a78bfa",
+  "#f472b6", "#fb7185", "#6ee7b7", "#fcd34d"
 ];
 
-const COLORS = ["#FACC15", "#22d3ee", "#4ade80", "#a78bfa", "#f472b6"];
+// 1. Helper para normalizar los keys de estado
+const normalizeKey = (key: string) =>
+  key
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "") // Quita tildes
+    .replace(/[\s-]+/g, "_");
+
+// 2. Diccionario labels (con keys normalizados)
+const estadoLabels: Record<string, string> = {
+  creacion: "En Creación",
+  planificacion: "Planificación",
+  ejecutado: "Ejecutadas",
+  en_ejecucion: "En Ejecución",
+};
+
+const ALL_ESTADOS = Object.keys(estadoLabels); // Muestra siempre estos
 
 const renderCustomLabel = ({
   cx,
@@ -76,14 +55,13 @@ const renderCustomLabel = ({
   outerRadius,
   percent,
   name,
-  value
+  value,
 }: PieLabelRenderProps & { name?: string; value?: number }) => {
   if (!value) return null;
   const RADIAN = Math.PI / 180;
   const radius = Number(innerRadius) + (Number(outerRadius) - Number(innerRadius)) * 1.15;
   const x = Number(cx) + radius * Math.cos(-Number(midAngle) * RADIAN);
   const y = Number(cy) + radius * Math.sin(-Number(midAngle) * RADIAN);
-
 
   return (
     <text
@@ -101,7 +79,6 @@ const renderCustomLabel = ({
   );
 };
 
-// Tooltip personalizado tipado
 const CustomTooltip = ({
   active,
   payload,
@@ -113,14 +90,17 @@ const CustomTooltip = ({
     const { name, value, percent } = payload[0].payload;
     return (
       <div className="bg-black/80 rounded-xl px-4 py-2 text-white text-xs shadow-lg">
-        <b>{name}</b><br />
-        {value} órdenes<br />
+        <b>{name}</b>
+        <br />
+        {value} órdenes
+        <br />
         {Math.round(percent * 100)}%
       </div>
     );
   }
   return null;
 };
+
 const Dashboard = () => {
   const { userName } = useUserData();
   const [emojiIndex, setEmojiIndex] = useState(0);
@@ -141,7 +121,6 @@ const Dashboard = () => {
     const fetchData = async () => {
       try {
         const data = await getPlanDash();
-        console.log("Planning data fetched:", data);
         setPlanning(data || []);
       } catch (error) {
         console.error("Error al traer planning:", error);
@@ -158,62 +137,76 @@ const Dashboard = () => {
     );
   }
 
-  // KPIs adicionales
   const hoy = new Date().toISOString().slice(0, 10);
   const ordenesHoy = planning.filter(
     (p: Planning) => (p.created_at ?? '').slice(0, 10) === hoy
   ).length;
 
-  // Top 3 clientes (por cantidad de órdenes)
+  // Top 10 clientes (por cantidad de órdenes)
   const topClientes = Object.entries(
     planning.reduce((acc: Record<string, number>, curr: Planning) => {
-      // Usa el nombre si existe, si no muestra el id
       const clienteName = curr.client?.name ?? String(curr.client_id ?? 'Sin cliente');
       acc[clienteName] = (acc[clienteName] || 0) + 1;
       return acc;
     }, {})
   )
     .sort((a, b) => b[1] - a[1])
-    .slice(0, 10); // Top 10
+    .slice(0, 10);
 
-  // Extrae y normaliza los estados únicos
-  const uniqueEstados = Array.from(
-    new Set(planning.map(p => (p.status_dates ?? "Sin Estado").toLowerCase()))
-  );
+  // -------- Pie Chart ESTADOS DINÁMICO --------
+  // Siempre todos los estados posibles
+  const conteoPorEstado = planning.reduce((acc: Record<string, number>, curr) => {
+    const estado = normalizeKey(curr.status_dates ?? "Sin Estado");
+    acc[estado] = (acc[estado] || 0) + 1;
+    return acc;
+  }, {});
 
-  // Opcional: Si quieres ordenarlos o poner uno por defecto adelante
-  // Por defecto, muestra todos
+  const dataEstados = ALL_ESTADOS.map((key) => ({
+    name: estadoLabels[key] ?? key,
+    value: conteoPorEstado[key] || 0,
+    rawKey: key,
+  }));
+
+  // Para los filtros, muestra siempre todos
+  const uniqueEstados = ALL_ESTADOS;
+
   const [estadoSeleccionado, setEstadoSeleccionado] = useState<string>("todos");
 
-  // Para labels bonitos
-  const estadoLabels: Record<string, string> = {
-    creacion: "En Creación",
-    planificacion: "En Planificación",
-    planificación: "En Planificación",
-    ejecutado: "Ejecutadas",
-    // ...agrega los que necesites
-    "sin estado": "Sin Estado",
-  };
-  
+  const ordenesFiltradas =
+    estadoSeleccionado === "todos"
+      ? planning
+      : planning.filter(
+        (p) => normalizeKey(p.status_dates ?? "Sin Estado") === estadoSeleccionado
+      );
 
-  const ordenesFiltradas = estadoSeleccionado === "todos"
-    ? planning
-    : planning.filter(
-      (p) => (p.status_dates ?? "Sin Estado").toLowerCase() === estadoSeleccionado
-    );
-
-
-  // Pie chart de estados
-  const dataEstados = [
-    { name: "Creación", value: estados[1].filter(planning) },
-    { name: "Planificación", value: estados[2].filter(planning) },
-    { name: "Ejecutadas", value: estados[3].filter(planning) },
+  // KPIs (color dinámico por estado, normalizado)
+  const estadosKPIs = [
+    {
+      label: "Órdenes Totales",
+      color: "text-blue-400",
+      icon: "📦",
+      value: planning.length,
+    },
+    ...dataEstados.map((e, idx) => ({
+      label: e.name,
+      color: `text-[${COLORS[idx % COLORS.length]}]`,
+      icon:
+        e.rawKey === "creacion"
+          ? "📝"
+          : e.rawKey === "planificacion"
+            ? "🗓️"
+            : e.rawKey === "ejecutado"
+              ? "✅"
+              : e.rawKey === "en_ejecucion"
+                ? "🔄"
+                : "📂",
+      value: e.value,
+    })),
   ];
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-gray-950 text-white px-4 md:px-10 py-6">
       <main role="main" className="max-w-7xl mx-auto">
-
         {/* Header */}
         <header className="flex flex-col items-center text-center mb-12">
           <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight text-white drop-shadow mb-2">
@@ -240,28 +233,26 @@ const Dashboard = () => {
         </header>
 
         {/* Widgets Dinámicos */}
-        <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-12 text-center">
-          {estados.map(({ label, color, icon, filter }) => (
+        <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-6 mb-12 text-center">
+          {estadosKPIs.map(({ label, color, icon, value }) => (
             <div
               key={label}
               className="backdrop-blur-md bg-white/10 border border-white/10 p-6 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300"
             >
-              <h2 className="text-lg font-semibold text-white mb-2">
+              <h2 className="text-[14px] font-semibold text-white mb-2">
                 {icon} {label}
               </h2>
               <p className={`text-3xl font-bold ${color}`}>
-                <CountUp end={filter(planning)} duration={2} />
+                <CountUp end={value} duration={2} />
               </p>
-              <p className="text-sm text-gray-400 mt-1">Datos actualizados</p>
             </div>
           ))}
           {/* KPI: Órdenes creadas hoy */}
           <div className="backdrop-blur-md bg-white/10 border border-white/10 p-6 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300">
-            <h2 className="text-lg font-semibold text-white mb-2">📅 Órdenes hoy</h2>
+            <h2 className="text-[14px] font-semibold text-white mb-2">📅 Órdenes hoy</h2>
             <p className="text-3xl font-bold text-fuchsia-400">
               <CountUp end={ordenesHoy} duration={2} />
             </p>
-            <p className="text-sm text-gray-400 mt-1">Creadas el {hoy}</p>
           </div>
         </section>
 
@@ -270,10 +261,13 @@ const Dashboard = () => {
           {/* Pie Chart */}
           <div className="backdrop-blur-md bg-white/10 border border-white/10 p-6 rounded-2xl shadow-lg">
             <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-              <span role="img" aria-label="pie">📊</span> Distribución de Estados
+              <span role="img" aria-label="pie">
+                📊
+              </span>{" "}
+              Distribución de Estados
             </h2>
             <div className="w-full flex flex-col items-center">
-              {dataEstados.every(d => d.value === 0) ? (
+              {dataEstados.every((d) => d.value === 0) ? (
                 <div className="text-gray-400 text-base py-16">No hay datos para mostrar.</div>
               ) : (
                 <ResponsiveContainer width="100%" height={260}>
@@ -303,7 +297,7 @@ const Dashboard = () => {
             </div>
           </div>
 
-          {/* Top 3 Clientes */}
+          {/* Top 10 Clientes */}
           <div className="backdrop-blur-md bg-white/10 border border-white/10 p-6 rounded-2xl shadow-lg">
             <h2 className="text-lg font-semibold mb-4">🏆 Top 10 Clientes</h2>
             <ol className="space-y-3">
@@ -319,8 +313,6 @@ const Dashboard = () => {
           </div>
         </section>
 
-        {/* Tabla detalle */}
-        {/* 3. Renderiza una sección por cada estado */}
         {/* Filtros dinámicos de estado */}
         <div className="flex flex-wrap gap-2 mb-6">
           <button
@@ -328,29 +320,31 @@ const Dashboard = () => {
             className={`px-4 py-1 rounded-full font-semibold border capitalize
       ${estadoSeleccionado === "todos"
                 ? "bg-cyan-400 text-black shadow"
-                : "bg-white/10 text-white border-white/20 hover:bg-cyan-800"}
-    `}
+                : "bg-white/10 text-white border-white/20 hover:bg-cyan-800"}`}
           >
             Todos
           </button>
-          {uniqueEstados.map(est => (
+          {uniqueEstados.map((est) => (
             <button
               key={est}
               onClick={() => setEstadoSeleccionado(est)}
               className={`px-4 py-1 rounded-full font-semibold border capitalize
         ${estadoSeleccionado === est
                   ? "bg-cyan-400 text-black shadow"
-                  : "bg-white/10 text-white border-white/20 hover:bg-cyan-800"}
-      `}
+                  : "bg-white/10 text-white border-white/20 hover:bg-cyan-800"}`}
             >
               {estadoLabels[est] ?? est}
             </button>
           ))}
         </div>
 
+        {/* Tabla detalle */}
         <section className="backdrop-blur-md bg-white/10 border border-white/10 p-6 rounded-2xl shadow-lg mb-12">
           <h2 className="text-lg font-semibold mb-4">
-            📋 Órdenes {estadoSeleccionado === "todos" ? "" : (estadoLabels[estadoSeleccionado] ?? estadoSeleccionado)}
+            📋 Órdenes{" "}
+            {estadoSeleccionado === "todos"
+              ? ""
+              : (estadoLabels[estadoSeleccionado] ?? estadoSeleccionado)}
             <span className="ml-2 text-gray-400 font-normal text-sm">
               ({ordenesFiltradas.length})
             </span>
@@ -372,7 +366,8 @@ const Dashboard = () => {
                   <tr key={item.id}>
                     <td className="px-2 py-1 bg-white/10 rounded">{item.number_order}</td>
                     <td className="px-2 py-1 bg-white/10 rounded">
-                      {estadoLabels[(item.status_dates ?? "Sin Estado").toLowerCase()] ?? item.status_dates}
+                      {estadoLabels[normalizeKey(item.status_dates ?? "Sin Estado")] ??
+                        item.status_dates}
                     </td>
                     <td className="px-2 py-1 bg-white/10 rounded">
                       {item.client?.name ?? item.client_id}
@@ -392,8 +387,12 @@ const Dashboard = () => {
 
         {/* Coming Soon */}
         <section className="mt-12 backdrop-blur-md bg-white/5 border border-white/10 p-6 rounded-2xl shadow-inner text-center">
-          <h2 className="text-2xl font-bold text-white mb-2">🚀 ¡Más funcionalidades en camino!</h2>
-          <p className="text-gray-400">¿Qué más necesitas en este dashboard? ¡Lo armamos!</p>
+          <h2 className="text-2xl font-bold text-white mb-2">
+            🚀 ¡Más funcionalidades en camino!
+          </h2>
+          <p className="text-gray-400">
+            ¿Qué más necesitas en este dashboard? ¡Lo armamos!
+          </p>
         </section>
       </main>
     </div>
