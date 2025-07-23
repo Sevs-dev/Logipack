@@ -152,3 +152,13 @@ export const validate_rol = async (fase: number) => {
         throw error;
     }
 }
+
+export const actividades_ejecutadas = async (id: number) => {
+    try {
+        const response = await Planning.get(`/getActividadesEjecutadas/${id}`);
+        return response.data;
+    } catch (error: unknown) {
+        console.error("Error en actividades_ejecutadas:", error);
+        throw error;
+    }
+}

@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback } from "react";
 // import "tailwindcss/tailwind.css";
+import { actividades_ejecutadas } from "@/app/services/planing/planingServices";
 
 const NewDetalle = () => {
   const [actividades, setActividades] = useState([]);
@@ -9,14 +10,8 @@ const NewDetalle = () => {
   // obtener actividades
   const obtenerActividades = useCallback(async () => {
     try {
-      const response = await fetch("http://127.0.0.1:8000/api/getActividadesEjecutadas/27", {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
-
-      const data = await response.json();
+      const data = await actividades_ejecutadas(27);
+      
       if (data?.actividades) {
         setActividades(data.actividades);
       }
