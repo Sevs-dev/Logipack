@@ -68,7 +68,7 @@ const NewDetalle = () => {
               shadow-lg p-4 text-white/80 font-medium text-lg">
               <div
                 className="px-8 py-6 grid grid-cols-1 sm:grid-cols-2 
-          md:grid-cols-3 lg:grid-cols-s gap-6 text-sm text-gray-200"
+          md:grid-cols-4 lg:grid-cols-s gap-6 text-sm text-gray-200"
               >
                 <div>
                   <p className="text-gray-500 text-center">Orden N°</p>
