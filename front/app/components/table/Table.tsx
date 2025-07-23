@@ -16,13 +16,16 @@ type TableProps<T extends { id: number }> = {
     onTerciario?: (id: number) => void;
     onHistory?: (id: number) => void;
     onPDF?: (id: number) => void;
+    onView?: (id: number) => void;
     showDeleteButton?: boolean;
     showEditButton?: boolean;
     showTerciarioButton?: boolean;
+    showViewButton?: boolean;
     showHistory?: boolean;
     showPDF?: boolean;
     showTerciarioCondition?: (row: T) => boolean;
     showPDFCondition?: (row: T) => boolean;
+    showViewCondition?: (row: T) => boolean;
 };
 
 const Header = ({
@@ -72,13 +75,16 @@ function Table<T extends { id: number }>({
     onTerciario,
     onHistory,
     onPDF,
+    onView,
     showTerciarioCondition,
     showPDFCondition,
+    showViewCondition,
     showDeleteButton = true,
     showEditButton = true,
     showTerciarioButton = true,
     showHistory = true,
     showPDF = true,
+    showViewButton = false,
 }: TableProps<T>) {
     const [sortColumn, setSortColumn] = useState("id");
     const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
@@ -249,10 +255,13 @@ function Table<T extends { id: number }>({
                                             {showTerciarioButton && onTerciario && (!showTerciarioCondition || showTerciarioCondition(row)) && (
                                                 <Button onClick={() => onTerciario(row.id)} variant="create2" />
                                             )}
-                                            {showHistory && onHistory && <Button onClick={() => onHistory(row.id)} variant="history" />}
+                                            {showViewButton && onView && (!showViewCondition || showViewCondition(row)) && (
+                                                <Button onClick={() => onView(row.id)} variant="view" />
+                                            )}
                                             {showPDF && onPDF && (!showPDFCondition || showPDFCondition(row)) && (
                                                 <Button onClick={() => onPDF(row.id)} variant="pdf" />
                                             )}
+                                            {showHistory && onHistory && <Button onClick={() => onHistory(row.id)} variant="history" />}
                                         </td>
                                     </tr>
                                 ))

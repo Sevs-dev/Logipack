@@ -11,7 +11,7 @@ const NewDetalle = () => {
   // obtener actividades
   const obtenerActividades = useCallback(async () => {
     try {
-      const data = await actividades_ejecutadas(27);
+      const data = await actividades_ejecutadas(4);
       console.log(data);
       if (data?.actividades) {
         setOrden(data.orden);

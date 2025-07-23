@@ -21,6 +21,7 @@ import { getManu } from "@/app/services/userDash/manufacturingServices";
 import { getMachin } from "@/app/services/userDash/machineryServices";
 import { getManuId } from "@/app/services/userDash/manufacturingServices";
 import { getUsers } from "@/app/services/userDash/authservices"
+import { actividades_ejecutadas } from "@/app/services/planing/planingServices";
 // 🔹 Interfaces
 import { Plan, ActivityDetail, sanitizePlan, ServerPlan, DurationItem, PlanServ } from "@/app/interfaces/EditPlanning";
 
@@ -519,6 +520,23 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
         window.open(`/pages/pdfGeneral/${id}`,);
     }, []);
 
+    const obtenerActividades = useCallback(async (id: number) => {
+        const { plan } = await getPlanningById(id); 
+        if (!plan?.id) {
+            showError("No se pudo obtener el ID de planificación");
+            return;
+        }
+        try {
+            const data = await actividades_ejecutadas(plan.id);
+            if (data?.actividades) {
+                window.open(`/pages/ejecuciones/${id}`);
+            }
+        } catch (error) {
+            console.error('Error al obtener fases:', error);
+        }
+    }, []);
+
+
     return (
         <div className="break-inside-avoid mb-4">
             {isOpen && currentPlan && (
@@ -1001,11 +1019,14 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
                 }}
                 onDelete={handleDelete}
                 showDeleteButton={false}
+                showTerciarioButton={true}
+                showViewButton={true}
                 onEdit={handleEdit}
                 onTerciario={handleTerciario}
-                showTerciarioButton={true}
-                showTerciarioCondition={(row) => row.status_dates === "Planificación" || row.status_dates === "En ejecución"} // 👈 Aquí va tu condición
+                onView={obtenerActividades}
                 onPDF={handlePDF}
+                showTerciarioCondition={(row) => row.status_dates === "Planificación" || row.status_dates === "En ejecución"} // 👈 Aquí va tu condición
+                showViewCondition={(row) => row.status_dates === "Ejecutado"}
                 showPDFCondition={(row) => row.status_dates === "Ejecutado"}
             />
 

@@ -1,10 +1,10 @@
 import React, { useState } from "react";
 import {
-  FaEdit, FaTrash, FaCheck, FaTimes, FaPlus, FaHistory, FaAngleLeft, FaAngleRight, FaRegFilePdf, FaRegPlusSquare
+  FaEdit, FaTrash, FaCheck, FaTimes, FaPlus, FaHistory, FaAngleLeft, FaAngleRight, FaRegFilePdf, FaRegPlusSquare, FaVoteYea 
 } from "react-icons/fa";
 import { motion } from "framer-motion";
 
-type Variant = "save" | "cancel" | "edit" | "delete" | "create" | "create2" | "terciario" | "history" | "after" | "before" | "pdf" | "add";
+type Variant = "save" | "cancel" | "edit" | "delete" | "create" | "create2" | "terciario" | "history" | "after" | "before" | "pdf" | "add" | "view";
 
 interface ButtonProps {
   type?: "button" | "submit" | "reset";
@@ -30,6 +30,7 @@ const variantStyles: Record<Variant, string> = {
   after: "bg-white text-black border border-purple-500 hover:bg-purple-600 hover:text-white",
   before: "bg-white text-black border border-purple-500 hover:bg-purple-600 hover:text-white",
   add: "bg-orange-500 hover:bg-orange-600 text-white",
+  view: "bg-[#CD4CD9] hover:bg-[#D94CB8] text-white",
 };
 
 const icons: Record<Variant, React.ReactNode> = {
@@ -45,6 +46,7 @@ const icons: Record<Variant, React.ReactNode> = {
   after: <FaAngleRight />,
   before: <FaAngleLeft />,
   add: <FaRegPlusSquare />, // NUEVO
+  view: <FaVoteYea  />, // Icono genérico para "view"
 };
 
 const labels: Record<Variant, string> = {
@@ -60,6 +62,7 @@ const labels: Record<Variant, string> = {
   after: "Siguiente",
   before: "Anterior",
   add: "Agregar", // NUEVO
+  view: "Ver", // Etiqueta para el botón de vista
 };
 
 const sizeStyles = {
@@ -84,7 +87,7 @@ const Button: React.FC<ButtonProps> = ({
   const handleClick = () => {
     if (onClick) onClick();
     // Solo partículas en botones principales
-    if (["save", "create", "terciario", "add"].includes(variant)) {
+    if (["save", "create", "terciario", "add", "view"].includes(variant)) {
       const newParticles = Array.from({ length: 8 }, (_, i) => i);
       setParticles(newParticles);
       setTimeout(() => setParticles([]), 400);
@@ -92,7 +95,7 @@ const Button: React.FC<ButtonProps> = ({
   };
 
   // Si solo es icono, añade aria-label
-  const showLabel = !["edit", "delete", "pdf", "history", "after", "before", "create2"].includes(variant);
+  const showLabel = !["edit", "delete", "pdf", "history", "after", "before", "create2", "view"].includes(variant);
 
   return (
     <motion.button
@@ -128,6 +131,8 @@ const Button: React.FC<ButtonProps> = ({
                   ? "#22c55e"
                   : variant === "create2"
                     ? "#f59e0b"
+                    : variant === "view"
+                      ? "#9ca3af" 
                     : variant === "create"
                       ? "#22d3ee"
                       : "#fff"

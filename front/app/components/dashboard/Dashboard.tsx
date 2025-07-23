@@ -8,6 +8,7 @@ import useUserData from "../../hooks/useUserData";
 import { getPlanDash } from "../../services/planing/planingServices";
 import { getPlanningById, validate_orden } from "../../services/planing/planingServices";
 import { showError, showSuccess } from "../toastr/Toaster";
+import { actividades_ejecutadas } from "@/app/services/planing/planingServices";
 
 const emojis = [
   "🤖", "🗂️", "🎯", "📎", "🔧", "🕒", "🧾", "🛠️",
@@ -278,6 +279,34 @@ const Dashboard = () => {
     }
   };
 
+  const obtenerActividades = async (orden: Planning) => {
+    if (!orden?.id) {
+      showError("No hay evento seleccionado");
+      return;
+    }
+
+    try {
+      const res = await getPlanningById(Number(orden.id));
+      if (!res?.plan) {
+        showError("No se pudo obtener la orden");
+        return;
+      }
+
+      const { plan } = res;
+      const data = await actividades_ejecutadas(plan.id);
+
+      // Si hay actividades ejecutadas, abre la página
+      if (Array.isArray(data?.actividades) && data.actividades.length > 0) {
+        window.open(`/pages/ejecuciones/${plan.id}`);
+      } else {
+        showError("No hay actividades ejecutadas para esta orden");
+      }
+    } catch (error) {
+      console.error('Error al obtener fases:', error);
+      showError("Error inesperado al obtener actividades");
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-gray-950 text-white px-4 md:px-10 py-6">
       <main role="main" className="max-w-7xl mx-auto">
@@ -541,26 +570,35 @@ const Dashboard = () => {
                     <td className="px-4 py-2 text-center border border-white/10">
                       <span
                         className={`
-                          inline-block px-3 py-1 rounded-full text-xs font-semibold transition
-                          ${normalizeKey(item.status_dates ?? "Sin Estado") === "ejecutado"
-                            ? "bg-green-500/20 text-green-400"
-                            : normalizeKey(item.status_dates ?? "Sin Estado") === "planificacion"
-                              ? "bg-cyan-500/20 text-cyan-300"
-                              : normalizeKey(item.status_dates ?? "Sin Estado") === "creacion"
-                                ? "bg-yellow-400/20 text-yellow-200"
-                                : normalizeKey(item.status_dates ?? "Sin Estado") === "en_ejecucion"
-                                  ? "bg-fuchsia-600/20 text-fuchsia-300 cursor-pointer hover:bg-fuchsia-700/40 hover:scale-105 ring-2 ring-fuchsia-300/40"
-                                  : "bg-gray-500/10 text-white/60"
-                          }
-                          `}
+    inline-block px-3 py-1 rounded-full text-xs font-semibold transition
+    ${(() => {
+                            switch (normalizeKey(item.status_dates ?? "Sin Estado")) {
+                              case "ejecutado":
+                                return "bg-green-500/20 text-green-400 cursor-pointer hover:bg-green-600/40 hover:scale-105 ring-2 ring-green-300/40";
+                              case "planificacion":
+                                return "bg-cyan-500/20 text-cyan-300";
+                              case "creacion":
+                                return "bg-yellow-400/20 text-yellow-200";
+                              case "en_ejecucion":
+                                return "bg-fuchsia-600/20 text-fuchsia-300 cursor-pointer hover:bg-fuchsia-700/40 hover:scale-105 ring-2 ring-fuchsia-300/40";
+                              default:
+                                return "bg-gray-500/10 text-white/60";
+                            }
+                          })()}
+  `}
                         style={{
                           userSelect: "none",
                           transition: "all 0.15s"
                         }}
                         onClick={() => {
-                          if (normalizeKey(item.status_dates ?? "Sin Estado") === "en_ejecucion") {
+                          const estado = normalizeKey(item.status_dates ?? "Sin Estado");
+                          if (estado === "en_ejecucion") {
                             handleTerciario(item);
                           }
+                          if (estado === "ejecutado") {
+                            obtenerActividades(item);
+                          }
+                          // Aquí puedes agregar más casos si mañana tienes más estados interactivos
                         }}
                         title={
                           normalizeKey(item.status_dates ?? "Sin Estado") === "en_ejecucion"
@@ -576,7 +614,6 @@ const Dashboard = () => {
                         )}
                       </span>
                     </td>
-
                     <td className="px-4 py-2 text-center font-semibold text-white/80 border border-white/10">
                       {item.client?.name ?? item.client_id}
                     </td>
