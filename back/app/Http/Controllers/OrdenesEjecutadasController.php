@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\ActividadesEjecutadas;
 use App\Models\AdaptationDate;
 use App\Models\OrdenesEjecutadas;
+use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -121,7 +122,6 @@ class OrdenesEjecutadasController extends Controller
     public function eliminar_orden(
         $id
     ): JsonResponse {
-        
         OrdenesEjecutadas::where('adaptation_date_id', $id)->update([
             'estado' => '-11000',
         ]);
@@ -155,7 +155,9 @@ class OrdenesEjecutadasController extends Controller
                     DB::raw(
                         "FIND_IN_SET(std.id, REPLACE(REPLACE(REPLACE(REPLACE(COALESCE
                         (ada.maestra_fases_fk, ''), '[', ''), ']', ''), ' ', ''), '\"', ''))"
-                    ), '>', DB::raw('0')
+                    ),
+                    '>',
+                    DB::raw('0')
                 );
             })
             ->whereIn('std.phase_type', ['Planificación', 'Conciliación', 'Actividades'])
@@ -206,7 +208,9 @@ class OrdenesEjecutadasController extends Controller
                     DB::raw(
                         "FIND_IN_SET(man.id, REPLACE(REPLACE(REPLACE(REPLACE(COALESCE
                         (ada.linea_produccion, ''), '[', ''), ']', ''), ' ', ''), '\"', ''))"
-                    ), '>', DB::raw('0')
+                    ),
+                    '>',
+                    DB::raw('0')
                 );
             })
             ->select(
@@ -283,7 +287,7 @@ class OrdenesEjecutadasController extends Controller
                         ->select(DB::raw(1))
                         ->from('actividades_ejecutadas')
                         ->where('adaptation_date_id', $id)
-                        ->where('repeat_line', 1)
+                        ->where('repeat_line', true)
                         ->where('estado_form', false)
                         ->whereIn('phase_type', ['Actividades', 'Procesos']);
                 })
@@ -312,7 +316,9 @@ class OrdenesEjecutadasController extends Controller
                     DB::raw(
                         "FIND_IN_SET(std.id, REPLACE(REPLACE(REPLACE(REPLACE(COALESCE
                     (ada.maestra_fases_fk, ''), '[', ''), ']', ''), ' ', ''), '\"', ''))"
-                    ), '>', DB::raw('0')
+                    ),
+                    '>',
+                    DB::raw('0')
                 );
             })
             ->whereIn('std.phase_type', ['Control'])
@@ -338,14 +344,20 @@ class OrdenesEjecutadasController extends Controller
      * @param int $id
      * @return JsonResponse
      */
-    public function getActividadesEjecutadas($id): JsonResponse 
+    public function getActividadesEjecutadas($id): JsonResponse
     {
+        // obtener orden
+        $orden = OrdenesEjecutadas::where('adaptation_date_id', $id)
+            ->where('proceso', 'eject')
+            ->first();
+
         $actividades = DB::table('actividades_ejecutadas')
             ->where('adaptation_date_id', $id)
             ->where('estado_form', true)
             ->get();
 
         return response()->json([
+            'orden' => $orden,
             'actividades' => $actividades,
             'estado' => 200,
         ]);
@@ -434,6 +446,8 @@ class OrdenesEjecutadasController extends Controller
                 'forms' => $forms,
                 'user' => $user,
                 'estado_form' => true,
+                'created_at' => Carbon::now('America/Bogota'),
+                'updated_at' => Carbon::now('America/Bogota'),
             ]);
             return response()->json([
                 'message' => 'Formulario guardado correctamente',
@@ -525,7 +539,9 @@ class OrdenesEjecutadasController extends Controller
                     DB::raw(
                         "FIND_IN_SET(std.id, REPLACE(REPLACE(REPLACE(REPLACE(COALESCE
                     (ada.maestra_fases_fk, ''), '[', ''), ']', ''), ' ', ''), '\"', ''))"
-                    ), '>', DB::raw('0')
+                    ),
+                    '>',
+                    DB::raw('0')
                 );
             })
             ->select(
@@ -538,7 +554,7 @@ class OrdenesEjecutadasController extends Controller
             )
             ->orderByRaw('posicion ASC')
             ->get(), $orden);
-    
+
         // crear actividades de la orden ejecutada
         foreach ($fases as $fase) {
             ActividadesEjecutadas::create([
@@ -629,7 +645,9 @@ class OrdenesEjecutadasController extends Controller
                                 DB::raw(
                                     "FIND_IN_SET(atc.id, REPLACE(REPLACE(REPLACE(REPLACE(COALESCE
                                     (std.activities, ''), '[', ''), ']', ''), ' ', ''), '\"', ''))"
-                                ), '>', DB::raw('0')
+                                ),
+                                '>',
+                                DB::raw('0')
                             );
                         })
                         ->where('std.id', $fase->id)
@@ -653,9 +671,11 @@ class OrdenesEjecutadasController extends Controller
         // armar actividades de planificación o conciliación
         $actividades = [];
         foreach ($fases->toArray() as $count => $fase) {
-            if ($fase->phase_type == 'Planificación' ||
-                    $fase->phase_type == 'Conciliación' ||
-                    $fase->phase_type == 'Actividades') {
+            if (
+                $fase->phase_type == 'Planificación' ||
+                $fase->phase_type == 'Conciliación' ||
+                $fase->phase_type == 'Actividades'
+            ) {
                 // obtener lista si la actividades especificos
                 $actividades = DB::table('stages as std')
                     ->join('activities as atc', function ($join) {
@@ -663,7 +683,9 @@ class OrdenesEjecutadasController extends Controller
                             DB::raw(
                                 "FIND_IN_SET(atc.id, REPLACE(REPLACE(REPLACE(REPLACE(COALESCE
                              (std.activities, ''), '[', ''), ']', ''), ' ', ''), '\"', ''))"
-                            ), '>', DB::raw('0')
+                            ),
+                            '>',
+                            DB::raw('0')
                         );
                     })
                     ->where('std.id', $fase->id)

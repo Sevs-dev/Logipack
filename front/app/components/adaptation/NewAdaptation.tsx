@@ -535,7 +535,7 @@ function NewAdaptation({ canEdit = false, canView = false }: CreateClientProps) 
 
     const handleDelete = async (id: number) => {
         if (!canEdit) return;
-       
+
         showConfirm("¿Seguro que quieres eliminar esta Adaptación?", async () => {
             try {
                 await deleteAdaptation(id);
@@ -1066,7 +1066,8 @@ function NewAdaptation({ canEdit = false, canView = false }: CreateClientProps) 
                     </div>
 
                     {/* Botones */}
-                    <div className="flex justify-center space-x-4 mt-4">
+                    <hr className="my-4 border-t border-gray-600 w-full max-w-lg mx-auto opacity-60" />
+                    <div className="flex justify-center gap-4 mt-6">
                         <Button onClick={() => {
                             resetForm();
                             setIsOpen(false);

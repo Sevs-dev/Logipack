@@ -331,6 +331,7 @@ function CreateClient({ canEdit = false, canView = false }: CreateClientProps) {
             </ul>
           </div>
 
+          <hr className="my-4 border-t border-gray-600 w-full max-w-lg mx-auto opacity-60" />
           <div className="flex justify-center gap-4 mt-6">
             <Button onClick={closeModal} variant="cancel" />
             {canEdit && <Button onClick={handleSave} disabled={

@@ -912,7 +912,8 @@ const Maestra = ({ canEdit = false, canView = false }: CreateClientProps) => {
                     </div>
 
                     {/* Botones de acción */}
-                    <div className="flex justify-center mt-4">
+                    <hr className="my-4 border-t border-gray-600 w-full max-w-lg mx-auto opacity-60" />
+                    <div className="flex justify-center gap-4 mt-6">
                         <div className="flex gap-2">
                             <Button onClick={() => setIsOpen(false)} variant="cancel" label="Cancelar" />
 

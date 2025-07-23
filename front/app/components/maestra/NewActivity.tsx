@@ -19,7 +19,7 @@ export default function NewActivity({ canEdit = false, canView = false }: Create
     const activityTypes: Record<string, ActivityType> = {
         "Texto corto": { type: "text" },
         "Texto largo": { type: "textarea" },
-        "Fecha": { type: "date" }, 
+        "Fecha": { type: "date" },
         Adjunto: { type: "file" },
         Foto: { type: "image" },
         "Lista desplegable": { type: "select", options: ["Opción 1", "Opción 2"] },
@@ -455,7 +455,7 @@ export default function NewActivity({ canEdit = false, canView = false }: Create
 
                         {selectedType === "Muestreo" && (
                             <div className="flex flex-col gap-4">
-                                <label className="text-sm font-medium text-black">
+                                <label className="text-sm font-medium text-black text-center">
                                     Rangos de muestreo con valor
                                     <InfoPopover
                                         content={
@@ -505,34 +505,23 @@ export default function NewActivity({ canEdit = false, canView = false }: Create
                                             placeholder="Valor"
                                             className="w-[80px] border p-2 rounded-md text-black text-center"
                                         />
-                                        <button
-                                            type="button"
-                                            onClick={() => {
-                                                const items = (parsedConfig?.items ?? []).filter((_, i) => i !== index);
-                                                setFormData({ ...formData, config: JSON.stringify({ ...parsedConfig, items }, null, 2) });
-                                            }}
-                                            className="text-red-500 hover:underline text-sm"
-                                        >
-                                            Eliminar
-                                        </button>
+                                        <Button onClick={() => {
+                                            const items = (parsedConfig?.items ?? []).filter((_, i) => i !== index);
+                                            setFormData({ ...formData, config: JSON.stringify({ ...parsedConfig, items }, null, 2) });
+                                        }} variant="cancel" label="Eliminar" />
                                     </div>
                                 ))}
-
-                                <button
-                                    type="button"
-                                    onClick={() => {
-                                        const items = [...(parsedConfig?.items || []), { min: undefined, max: undefined, valor: undefined }];
-                                        setFormData({ ...formData, config: JSON.stringify({ ...parsedConfig, items }, null, 2) });
-                                    }}
-                                    className="text-blue-600 hover:underline text-sm"
-                                >
-                                    + Agregar otro rango
-                                </button>
+                                <Button variant="add" label="Agregar Muestreo" onClick={() => {
+                                    const items = [...(parsedConfig?.items || []), { min: undefined, max: undefined, valor: undefined }];
+                                    setFormData({ ...formData, config: JSON.stringify({ ...parsedConfig, items }, null, 2) });
+                                }}
+                                />
                             </div>
                         )}
                     </div>
 
                     {/* Botones */}
+                    <hr className="my-4 border-t border-gray-600 w-full max-w-lg mx-auto opacity-60" />
                     <div className="flex justify-center gap-4 mt-6">
                         <Button onClick={handleModalClose} variant="cancel" label="Cancelar" />
                         {canEdit && (

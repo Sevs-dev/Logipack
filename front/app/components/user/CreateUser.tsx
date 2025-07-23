@@ -152,21 +152,31 @@ function CreateUser({ canEdit = false, canView = false }: CreateClientProps) {
     setIsSaving(true);
     setLoading(true);
     try {
+      // Solo IDs para el backend
+      const factoryValue =
+        Array.isArray(selectedFactorys) && selectedFactorys.length > 0
+          ? selectedFactorys.map(f =>
+            typeof f === "object" && "id" in f ? f.id : f
+          )
+          : null;
+
       await updateUser(userToEdit!.id, {
         name,
         email,
         password: password || undefined,
+        password_confirmation: password || undefined,
         role,
         signature_bpm,
-        factory: selectedFactorys,
+        factory: factoryValue,
       });
+
       showSuccess("Usuario actualizado exitosamente");
       setIsModalOpen(false);
       resetForm();
-      setUserToEdit(null); // Limpiar usuario editado 
+      setUserToEdit(null);
     } catch (error) {
-      console.error("Error actualizando usuario:", error);
       showError("Error actualizando usuario");
+      console.error("Error actualizando usuario:", error);
     } finally {
       setLoading(false);
       setIsSaving(false);
@@ -209,17 +219,38 @@ function CreateUser({ canEdit = false, canView = false }: CreateClientProps) {
 
       try {
         const { factory: userFactory } = userData;
+
         if (typeof userFactory === "string") {
+          // String que puede ser un array JSON o un número
           const parsed = JSON.parse(userFactory);
           if (Array.isArray(parsed)) {
-            factoryParsed = parsed.map(Number).filter(n => !isNaN(n));
+            factoryParsed = parsed
+              .map(f =>
+                typeof f === "object" && f !== null && "id" in f
+                  ? Number(f.id)
+                  : Number(f)
+              )
+              .filter(n => !isNaN(n));
+          } else if (typeof parsed === "object" && parsed !== null && "id" in parsed) {
+            factoryParsed = [Number(parsed.id)];
           } else {
             const singleNumber = Number(parsed);
             if (!isNaN(singleNumber)) factoryParsed = [singleNumber];
           }
         } else if (Array.isArray(userFactory)) {
-          factoryParsed = userFactory.map(Number).filter(n => !isNaN(n));
+          // Array de objetos, números o strings
+          factoryParsed = userFactory
+            .map(f =>
+              typeof f === "object" && f !== null && "id" in f
+                ? Number(f.id)
+                : Number(f)
+            )
+            .filter(n => !isNaN(n));
+        } else if (typeof userFactory === "object" && userFactory !== null && "id" in userFactory) {
+          // Un solo objeto fábrica
+          factoryParsed = [Number(userFactory.id)];
         } else if (typeof userFactory === "number") {
+          // Un solo número
           factoryParsed = [userFactory];
         }
       } catch (parseError) {
@@ -232,7 +263,7 @@ function CreateUser({ canEdit = false, canView = false }: CreateClientProps) {
       // Setear usuario a editar con factories como objetos completos
       setUserToEdit({
         ...userData,
-        factory: selectedFactoryObjects, // <-- aquí el cambio
+        factory: selectedFactoryObjects,
       });
 
       setSelectedFactorys(selectedFactoryObjects);
@@ -359,7 +390,7 @@ function CreateUser({ canEdit = false, canView = false }: CreateClientProps) {
             </div>
 
             {/* Fábricas */}
-            <div className="col-span-1 md:col-span-2"> 
+            <div className="col-span-1 md:col-span-2">
               <SelectorDual
                 titulo="Fábricas asignadas"
                 disponibles={factory}
@@ -372,6 +403,7 @@ function CreateUser({ canEdit = false, canView = false }: CreateClientProps) {
           </div>
 
           {/* Botones */}
+          <hr className="my-4 border-t border-gray-600 w-full max-w-lg mx-auto opacity-60" />
           <div className="flex justify-center gap-4 mt-6">
             <Button onClick={closeModal} variant="cancel" label="Cancelar" />
             {canEdit && (

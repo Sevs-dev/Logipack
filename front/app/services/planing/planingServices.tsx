@@ -20,6 +20,16 @@ export const getPlanning = async () => {
     }
 }
 
+export const getPlanDash = async () => {
+    try {
+        const response = await Planning.get('/getPlanDash');
+        return response.data.plan;
+    } catch (error: unknown) {
+        console.error("Error en getPlan:", error);
+        throw error;
+    }
+}
+
 export const getActivitiesByPlanning = async (id: number) => {
     try {
         const response = await Planning.get(`/getPlanId/${id}`); 
@@ -139,6 +149,16 @@ export const validate_rol = async (fase: number) => {
         return response.data;
     } catch (error: unknown) {
         console.error("Error en validate_rol:", error);
+        throw error;
+    }
+}
+
+export const actividades_ejecutadas = async (id: number) => {
+    try {
+        const response = await Planning.get(`/getActividadesEjecutadas/${id}`);
+        return response.data;
+    } catch (error: unknown) {
+        console.error("Error en actividades_ejecutadas:", error);
         throw error;
     }
 }

@@ -10,6 +10,8 @@ import Button from "../buttons/buttons";
 import DateLoader from '@/app/components/loader/DateLoader';
 import Text from "../text/Text";
 import { motion, AnimatePresence } from "framer-motion";
+import { showError, showSuccess } from "../toastr/Toaster";
+import { getPlanningById, validate_orden } from "../../services/planing/planingServices";
 
 // Configuración inicial
 dayjs.extend(isoWeek);
@@ -274,13 +276,47 @@ const CalendarGantt: React.FC = () => {
     );
   }
 
+  const estadoLabels: Record<number | string, string> = {
+    11500: "Ejecutado",
+    // más estados si los tienes...
+  };
+
+  const handleTerciario = async () => {
+    if (!selectedEvent?.id) {
+      showError("No hay evento seleccionado");
+      return;
+    }
+    const { plan } = await getPlanningById(selectedEvent.id);
+    localStorage.removeItem("ejecutar");
+    const data = await validate_orden(plan.id);
+    if (data.estado === 100 || data.estado === null) {
+      const user = document.cookie
+        .split('; ')
+        .find(row => row.startsWith('name='))
+        ?.split('=')[1];
+      if (!user) {
+        showError("No se encontró usuario");
+        return;
+      }
+      localStorage.setItem("ejecutar", JSON.stringify({
+        id: plan.id,
+        user: user
+      }));
+      window.open("/pages/lineas", "_blank");
+    } else {
+      showSuccess(
+        `La orden ya fue finalizada. Estado: ${estadoLabels[data.estado as number] || data.estado}`
+      );
+    }
+  };
+
+
   // Renderizado de celdas
   const renderCell = useCallback((dayIndex: number, hour: number): React.ReactNode => {
     const baseTime = currentWeek.add(dayIndex, 'day').hour(hour).minute(0);
     const events = assignLanes(getEventsForCell(dayIndex, hour));
     const laneHeight = 24;
-    const maxHeight = 24 * 10; // Ajusta según el número de filas que deseas mostrar sin scroll
-
+    const maxHeight = 24 * 10;
     return (
       <td
         key={hour}
@@ -375,7 +411,7 @@ const CalendarGantt: React.FC = () => {
           <div className="relative w-full sm:w-auto sm:min-w-[220px]">
             <input
               type="date"
-              className="w-full pl-4 pr-4 py-2 border border-gray-200 rounded-full shadow text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-400 transition bg-white"
+              className="w-full pl-4 pr-4 py-2 border border-gray-200 rounded-full shadow text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-400 transition bg-white text-center"
               value={selectedDate ? selectedDate.format('YYYY-MM-DD') : ''}
               onChange={(e) => {
                 const value = e.target.value;
@@ -401,7 +437,7 @@ const CalendarGantt: React.FC = () => {
               placeholder="Ej: 1234"
               value={filters.numberOrder}
               onChange={(e) => setFilters({ ...filters, numberOrder: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-200 rounded-lg shadow-sm text-sm text-gray-700 placeholder-gray-300 focus:ring-2 focus:ring-blue-200"
+              className="w-full px-3 py-2 border border-gray-200 rounded-lg shadow-sm text-sm text-gray-700 placeholder-gray-300 focus:ring-2 focus:ring-blue-200 text-center"
             />
           </div>
           {/* Línea */}
@@ -410,7 +446,7 @@ const CalendarGantt: React.FC = () => {
             <select
               value={filters.codart}
               onChange={(e) => setFilters({ ...filters, codart: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-200 rounded-lg shadow-sm text-sm text-gray-700 bg-white focus:ring-2 focus:ring-blue-200"
+              className="w-full px-3 py-2 border border-gray-200 rounded-lg shadow-sm text-sm text-gray-700 bg-white focus:ring-2 focus:ring-blue-200 text-center"
             >
               <option value="">Todas</option>
               {[...new Set(events.map(e => e.codart))].map(cod => (
@@ -426,7 +462,7 @@ const CalendarGantt: React.FC = () => {
               placeholder="Ej: 30"
               value={filters.minDuration ?? ""}
               onChange={(e) => setFilters({ ...filters, minDuration: Number(e.target.value) })}
-              className="w-full px-3 py-2 border border-gray-200 rounded-lg shadow-sm text-sm text-gray-700 placeholder-gray-300 focus:ring-2 focus:ring-blue-200"
+              className="w-full px-3 py-2 border border-gray-200 rounded-lg shadow-sm text-sm text-gray-700 placeholder-gray-300 focus:ring-2 focus:ring-blue-200 text-center"
             />
           </div>
           {/* Cliente */}
@@ -435,7 +471,7 @@ const CalendarGantt: React.FC = () => {
             <select
               value={filters.clientName}
               onChange={(e) => setFilters({ ...filters, clientName: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-200 rounded-lg shadow-sm text-sm text-gray-700 bg-white focus:ring-2 focus:ring-blue-200"
+              className="w-full px-3 py-2 border border-gray-200 rounded-lg shadow-sm text-sm text-gray-700 bg-white focus:ring-2 focus:ring-blue-200 text-center"
             >
               <option value="">Todos</option>
               {[...new Set(events.map(e => e.clientName))].map(client => (
@@ -448,7 +484,7 @@ const CalendarGantt: React.FC = () => {
             <label className="mb-1 text-xs font-medium text-transparent">Limpiar</label>
             <button
               onClick={() => setFilters({ numberOrder: "", codart: "", minDuration: null, clientName: "" })}
-              className="w-full text-sm px-3 py-2 bg-gray-100 text-gray-500 rounded-xl hover:bg-gray-200 shadow-sm transition font-semibold"
+              className="w-full text-sm px-3 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-400 hover:text-black shadow-sm transition font-semibold"
             >
               Limpiar filtros
             </button>
@@ -564,11 +600,7 @@ const CalendarGantt: React.FC = () => {
                     </button>
 
                     <button
-                      onClick={() => {
-                        if (selectedEvent?.id) {
-                          window.open(`/pagina/${selectedEvent.id}`, '_blank', 'noopener,noreferrer');
-                        }
-                      }}
+                      onClick={handleTerciario}
                       className="text-sm bg-[#32a9f3] hover:bg-[#303ce5] px-4 py-2 rounded-lg text-white"
                     >
                       Ver detalles

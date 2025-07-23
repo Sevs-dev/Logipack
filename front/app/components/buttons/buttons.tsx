@@ -1,44 +1,53 @@
 import React, { useState } from "react";
-import { FaEdit, FaTrash, FaCheck, FaTimes, FaPlus, FaHistory, FaAngleLeft, FaAngleRight, FaRegFilePdf  } from "react-icons/fa";
+import {
+  FaEdit, FaTrash, FaCheck, FaTimes, FaPlus, FaHistory, FaAngleLeft, FaAngleRight, FaRegFilePdf, FaRegPlusSquare
+} from "react-icons/fa";
 import { motion } from "framer-motion";
+
+type Variant = "save" | "cancel" | "edit" | "delete" | "create" | "create2" | "terciario" | "history" | "after" | "before" | "pdf" | "add";
 
 interface ButtonProps {
   type?: "button" | "submit" | "reset";
-  variant: "save" | "cancel" | "edit" | "delete" | "create" | "create2" | "terciario" | "history" | "after" | "before" | "pdf";
+  variant: Variant;
   onClick?: () => void;
   disabled?: boolean;
   label?: string;
+  icon?: React.ReactNode;
+  size?: "xs" | "sm" | "md" | "lg";
+  className?: string;
 }
 
-const buttonStyles = {
-  save: "bg-green-600 hover:bg-green-700 focus:ring-green-400 shadow-lg shadow-green-500/40 text-white font-semibold px-3 py-1.5 rounded transition duration-300 ease-in-out",
-  cancel: "bg-red-600 hover:bg-red-700 focus:ring-red-400 shadow-lg shadow-red-500/40 text-white font-semibold px-3 py-1.5 rounded transition duration-300 ease-in-out",
-  edit: "bg-blue-600 hover:bg-blue-700 focus:ring-blue-400 shadow-lg shadow-blue-500/40 text-white font-semibold px-3 py-1.5 rounded transition duration-300 ease-in-out",
-  delete: "bg-red-700 hover:bg-red-800 focus:ring-red-500 shadow-lg shadow-red-600/40 text-white font-semibold px-3 py-1.5 rounded transition duration-300 ease-in-out",
-  create: "bg-green-500 hover:bg-green-600 focus:ring-green-400 shadow-lg shadow-green-500/40 text-white font-semibold px-3 py-1.5 rounded transition duration-300 ease-in-out",
+const variantStyles: Record<Variant, string> = {
+  save: "bg-green-600 hover:bg-green-700 text-white",
+  cancel: "bg-red-600 hover:bg-red-700 text-white",
   create2: "bg-yellow-500 hover:bg-yellow-600 focus:ring-yellow-400 shadow-lg shadow-yellow-500/40 text-gray-900 font-semibold px-3 py-1.5 rounded transition duration-300 ease-in-out",
-  terciario: "bg-yellow-400 hover:bg-yellow-500 focus:ring-yellow-300 shadow-lg shadow-yellow-400/40 text-gray-900 font-semibold px-3 py-1.5 rounded transition duration-300 ease-in-out",
-  history: "bg-purple-600 hover:bg-purple-700 focus:ring-purple-500 shadow-lg shadow-purple-500/50 text-white font-semibold px-3 py-1.5 rounded transition duration-300 ease-in-out",
-  pdf: "bg-cyan-500 hover:bg-cyan-600 focus:ring-cyan-400 shadow-lg shadow-cyan-400/40 text-white font-semibold px-3 py-1.5 rounded transition duration-300 ease-in-out",
-  after: "bg-white text-black font-semibold px-4 py-2 rounded-lg border border-purple-500 shadow-sm transition-all duration-300 ease-in-out hover:bg-purple-600 hover:text-white hover:border-transparent focus:ring-2 focus:ring-purple-400 focus:ring-offset-2",
-  before: "bg-white text-black font-semibold px-4 py-2 rounded-lg border border-purple-500 shadow-sm transition-all duration-300 ease-in-out hover:bg-purple-600 hover:text-white hover:border-transparent focus:ring-2 focus:ring-purple-400 focus:ring-offset-2",
+  edit: "bg-blue-600 hover:bg-blue-700 text-white",
+  delete: "bg-red-700 hover:bg-red-800 text-white",
+  create: "bg-green-500 hover:bg-green-600 text-white",
+  terciario: "bg-yellow-400 hover:bg-yellow-500 text-gray-900",
+  history: "bg-purple-600 hover:bg-purple-700 text-white",
+  pdf: "bg-cyan-500 hover:bg-cyan-600 text-white",
+  after: "bg-white text-black border border-purple-500 hover:bg-purple-600 hover:text-white",
+  before: "bg-white text-black border border-purple-500 hover:bg-purple-600 hover:text-white",
+  add: "bg-orange-500 hover:bg-orange-600 text-white",
 };
 
-const icons = {
-  save: <FaCheck />, // Icono cambiado a "Check" (✓)
-  cancel: <FaTimes />, // Icono cambiado a "X"
+const icons: Record<Variant, React.ReactNode> = {
+  save: <FaCheck />,
+  cancel: <FaTimes />,
   edit: <FaEdit />,
   delete: <FaTrash />,
-  create: <FaPlus />,
   create2: <FaPlus />,
+  create: <FaPlus />,
   terciario: <FaPlus />,
   history: <FaHistory />,
   pdf: <FaRegFilePdf />,
   after: <FaAngleRight />,
   before: <FaAngleLeft />,
+  add: <FaRegPlusSquare />, // NUEVO
 };
 
-const labels: Record<ButtonProps["variant"], string> = {
+const labels: Record<Variant, string> = {
   save: "Guardar",
   cancel: "Cancelar",
   edit: "Editar",
@@ -50,41 +59,84 @@ const labels: Record<ButtonProps["variant"], string> = {
   pdf: "PDF",
   after: "Siguiente",
   before: "Anterior",
+  add: "Agregar", // NUEVO
 };
 
-const Button: React.FC<ButtonProps> = ({ type = "button", variant, onClick, disabled = false, label }) => {
+const sizeStyles = {
+  xs: "px-2 py-0.5 text-xs",
+  sm: "px-3 py-1 text-sm",
+  md: "px-4 py-2 text-base",
+  lg: "px-5 py-2.5 text-lg",
+};
+
+const Button: React.FC<ButtonProps> = ({
+  type = "button",
+  variant,
+  onClick,
+  disabled = false,
+  label,
+  icon,
+  size = "sm",
+  className = "",
+}) => {
   const [particles, setParticles] = useState<number[]>([]);
 
   const handleClick = () => {
     if (onClick) onClick();
-    const newParticles = Array.from({ length: 8 }, (_, i) => i);
-    setParticles(newParticles);
-    setTimeout(() => setParticles([]), 400);
+    // Solo partículas en botones principales
+    if (["save", "create", "terciario", "add"].includes(variant)) {
+      const newParticles = Array.from({ length: 8 }, (_, i) => i);
+      setParticles(newParticles);
+      setTimeout(() => setParticles([]), 400);
+    }
   };
+
+  // Si solo es icono, añade aria-label
+  const showLabel = !["edit", "delete", "pdf", "history", "after", "before", "create2"].includes(variant);
 
   return (
     <motion.button
       type={type}
       onClick={handleClick}
       disabled={disabled}
-      whileHover={{ scale: 1.05, boxShadow: "0px 0px 8px rgba(255,255,255,0.6)" }}
+      whileHover={{ scale: 1.05 }}
       whileTap={{ scale: 0.95, opacity: 0.9 }}
-      className={`relative flex items-center justify-center gap-2 rounded-lg font-medium transition duration-200 focus:outline-none focus:ring-2
-        px-2 py-1 text-xs sm:px-3 sm:py-1 sm:text-sm whitespace-nowrap overflow-hidden
-        ${buttonStyles[variant]} ${disabled ? "opacity-50 cursor-not-allowed" : ""}`}
+      className={`
+        relative flex items-center justify-center gap-2 font-medium transition duration-200 focus:outline-none focus:ring-2
+        rounded-lg whitespace-nowrap overflow-hidden
+        ${sizeStyles[size]}
+        ${variantStyles[variant]}
+        ${disabled ? "opacity-50 cursor-not-allowed" : ""}
+        ${className}
+      `}
+      aria-label={label ?? labels[variant]}
     >
-      {icons[variant]}
-      {variant !== "edit" && variant !== "delete" && variant !== "create2" && variant !== "history" && variant !== "pdf" ? (label ?? labels[variant] ?? "") : null}
+      {icon ?? icons[variant]}
+      {showLabel ? (label ?? labels[variant] ?? "") : null}
 
+      {/* Partículas solo si aplica */}
       {particles.map((_, i) => (
         <motion.span
           key={i}
-          className="absolute w-1 h-1 bg-white rounded-full"
+          className="absolute w-1 h-1 rounded-full"
+          style={{
+            background: variant === "add"
+              ? "#10b981" // emerald-500 para add
+              : variant === "terciario"
+                ? "#facc15"
+                : variant === "save"
+                  ? "#22c55e"
+                  : variant === "create2"
+                    ? "#f59e0b"
+                    : variant === "create"
+                      ? "#22d3ee"
+                      : "#fff"
+          }}
           initial={{ opacity: 1, x: 0, y: 0 }}
           animate={{
             opacity: 0,
-            x: Math.random() * 30 - 15,
-            y: Math.random() * 30 - 15,
+            x: Math.random() * 28 - 14,
+            y: Math.random() * 28 - 14,
             scale: 0.5,
           }}
           transition={{ duration: 0.4 }}

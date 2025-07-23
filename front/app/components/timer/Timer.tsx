@@ -539,7 +539,8 @@ const Timer: React.FC<TimerProps> = ({ ejecutadaId, stageId, initialMinutes, ref
                         <p className="text-gray-500 text-center">No hay actividades disponibles</p>
                     )}
                     {/* Botones de acción */}
-                    <div className="flex justify-center mt-4">
+                    <hr className="my-4 border-t border-gray-600 w-full max-w-lg mx-auto opacity-60" />
+                    <div className="flex justify-center gap-4 mt-6">
                         <button
                             onClick={() => {
                                 setShowModal(false);

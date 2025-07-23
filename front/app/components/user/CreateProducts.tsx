@@ -214,7 +214,8 @@ function Products({ canEdit = false, canView = false }: CreateClientProps) {
               />
             </div>
             {error && <p className="text-red-500 mb-4">{error}</p>}
-            <div className="flex justify-center gap-2 mt-2">
+            <hr className="my-4 border-t border-gray-600 w-full max-w-lg mx-auto opacity-60" />
+            <div className="flex justify-center gap-4 mt-6">
               <Button onClick={() => setShowModal(false)} variant="cancel" />
               {canEdit && (
                 <Button type="submit" variant="save" label={isSaving ? "Guardando..." : "Guardando"} disabled={isSaving} />

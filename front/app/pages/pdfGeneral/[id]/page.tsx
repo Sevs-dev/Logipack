@@ -1,7 +1,6 @@
 // pages/pdf/PDFPage.tsx
 'use client';
 import React, { use, useEffect, useState, useRef } from 'react';
-import Image from 'next/image';
 import ReactFlow from 'reactflow';
 import 'reactflow/dist/style.css';
 import { getPlanningByIdPDF } from '../../../services/planing/planingServices';
@@ -16,7 +15,6 @@ const PDFPage = ({ params }: { params: Promise<{ id: number }> }) => {
   type Stage = {
     id: number | string;
     description: string;
-    // Add other properties if needed
   };
 
   type DataType = {
@@ -27,14 +25,23 @@ const PDFPage = ({ params }: { params: Promise<{ id: number }> }) => {
       lot: string;
       expiration?: string;
       quantityToProduce: number;
-      // Add other properties if needed
+      bom?: number;
+      end_date?: string;
+      user: string;
+      updated_at?: string;
     };
     cliente: {
       name: string;
-      // Add other properties if needed
     };
     stages: Stage[];
-    // Add other properties if needed
+    desart?: string;
+    actividadesEjecutadas: {
+      id: number;
+      description_fase: string;
+      forms?: { descripcion_activitie?: string; valor?: string; linea?: string }[];
+      user?: string
+      created_at?: string;
+    }[];
   };
 
   const [data, setData] = useState<DataType | null>(null);
@@ -106,6 +113,8 @@ const PDFPage = ({ params }: { params: Promise<{ id: number }> }) => {
   }
 
   const { plan } = data;
+  const { desart } = data;
+  const { actividadesEjecutadas } = data;
 
   const NODES_PER_ROW = 3;
   const NODE_WIDTH = 170;         // Reducido para asegurar que caben
@@ -151,6 +160,10 @@ const PDFPage = ({ params }: { params: Promise<{ id: number }> }) => {
     animated: true,
   }));
 
+  const rows = Math.ceil(data.stages.length / NODES_PER_ROW);
+  const DYNAMIC_HEIGHT = rows * V_SPACING + 100; // ajusta el extra si lo necesitas
+
+
   return (
     <div className="p-6">
       <div
@@ -166,15 +179,13 @@ const PDFPage = ({ params }: { params: Promise<{ id: number }> }) => {
         }}
       >
         <header className="mb-6 border-b border-gray-200 pb-4 flex items-center justify-center relative">
-          <Image
+          <img
             src="/pharex.png"
             alt="Logo"
-            width={80}
-            height={40}
-            className="h-10 object-contain absolute left-0 top-1/2 -translate-y-1/2"
-            priority
+            width={120}
+            height={80}
+            style={{ objectFit: 'contain', position: 'absolute', left: 0, top: '50%', transform: 'translateY(-50%)' }}
           />
-
           {/* Título perfectamente centrado */}
           <h1 className="text-xl font-semibold text-gray-800 tracking-wide text-center">
             Batch Record de Producción
@@ -191,25 +202,27 @@ const PDFPage = ({ params }: { params: Promise<{ id: number }> }) => {
           </h2>
           <PDFTable
             rows={[
-              ["Código artículo", plan.codart, "Producto", plan.product_name || "Nombre del producto"],
-              ["Lote", plan.lot, "Vence", plan.expiration || "01/01/2026"],
+              ["Código artículo", plan.codart, "Producto", desart || "No contiene Nombre"],
+              ["Lote", plan.lot, "Vence", plan.end_date?.slice(0, 10) || "Sin Fecha"],
               ["Cantidad", `${plan.quantityToProduce} unidades`, "", ""],
             ]}
           />
         </section>
 
-        <section className="mb-2">
-          <h2 className="text-center text-xs font-semibold text-black uppercase tracking-wide border-b border-gray-300 pb-1 mb-3">
-            Materiales Requeridos (BOM)
-          </h2>
-          <PDFTable
-            headers={["Artículo", "Descripción", "Cantidad", "Lote"]}
-            rows={[
-              ["MAT-001", "Ingrediente Activo", "100 kg", "L-2024-A"],
-              ["MAT-002", "Excipiente", "50 kg", "L-2024-B"],
-            ]}
-          />
-        </section>
+        {plan.bom && (
+          <section className="mb-2">
+            <h2 className="text-center text-xs font-semibold text-black uppercase tracking-wide border-b border-gray-300 pb-1 mb-3">
+              Materiales Requeridos (BOM)
+            </h2>
+            <PDFTable
+              headers={["Artículo", "Descripción", "Cantidad", "Lote"]}
+              rows={[
+                ["MAT-001", "Ingrediente Activo", "100 kg", "L-2024-A"],
+                ["MAT-002", "Excipiente", "50 kg", "L-2024-B"],
+              ]}
+            />
+          </section>
+        )}
 
         <section className="mb-6">
           <h2 className="text-center text-xs font-semibold text-black uppercase tracking-wide border-b border-gray-300 pb-1 mb-2">
@@ -218,169 +231,109 @@ const PDFPage = ({ params }: { params: Promise<{ id: number }> }) => {
 
           <div
             style={{
-              width: '744px',
-              height: 260,
-              overflow: 'hidden',
-              margin: '0 auto 0 -48px',
+              width: '100%',
+              maxWidth: '744px',
+              height: DYNAMIC_HEIGHT,
+              margin: '0 auto',
               padding: 0,
               boxSizing: 'border-box',
-              position: 'relative', // 🔑 Necesario para que el overlay funcione
+              position: 'relative',
               background: '#fff',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
             }}
           >
-            <ReactFlow
-              nodes={nodes}
-              edges={edges}
-              fitView
-              nodesDraggable={false}
-              panOnScroll={false}
-              panOnDrag={false}
-              zoomOnScroll={false}
-              zoomOnPinch={false}
-              style={{
-                width: '744px',
-                height: 260,
-                background: '#fff',
-                overflow: 'hidden',
-                pointerEvents: 'none',
-              }}
-              fitViewOptions={{
-                padding: 0,
-                minZoom: 1,
-                maxZoom: 1,
-              }}
-            />
+            <div style={{ width: '100%', height: '100%', position: 'relative' }}>
+              <ReactFlow
+                nodes={nodes}
+                edges={edges}
+                fitView
+                nodesDraggable={false}
+                panOnScroll={false}
+                panOnDrag={false}
+                zoomOnScroll={false}
+                zoomOnPinch={false}
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  background: '#fff',
+                  pointerEvents: 'none',
+                }}
+                fitViewOptions={{
+                  padding: 0.1,
+                  minZoom: 1,
+                  maxZoom: 1,
+                }}
+              />
 
-            {/* 🩹 Overlay para cubrir la marca */}
-            <div
-              style={{
-                position: 'absolute',
-                bottom: -4,     // Ajustalo según el caso exacto
-                right: -2,
-                width: '100px',
-                height: '30px',
-                backgroundColor: '#fff',
-                zIndex: 10, // Asegura que esté por encima
-              }}
-            />
-          </div>
-
-          <PDFTable
-            rows={[["Receta validada por", plan.codart, "Fecha", plan.codart]]}
-          />
-        </section>
-
-        <section className="mb-2">
-          <h2 className="text-center text-xs font-semibold text-black uppercase tracking-wide border-b border-gray-300 pb-1 mb-3">
-            Operaciones
-          </h2>
-          <h4 className="text-center text-xs font-semibold text-black uppercase tracking-wide border-b border-gray-300 pb-1 mb-3">
-            1. Despeje de Línea
-          </h4>
-          <PDFTable
-            rows={[
-              ["Línea", plan.codart, "Producto anterior", plan.codart],
-              [
-                { content: "Equipo", props: { className: "font-medium bg-gray-50 text-center" } },
-                { content: plan.codart, props: { colSpan: 3 } },
-              ],
-            ]}
-          />
-        </section>
-
-        <section className="mb-2">
-          <h2 className="text-center text-xs font-semibold text-black uppercase tracking-wide border-b border-gray-300 pb-1 mb-3">
-            2.1. Usuarios en Línea
-          </h2>
-          <PDFTable
-            headers={["#", "Usuario", "Fecha", "Hora Inicio", "Hora Fin"]}
-            rows={[["1", plan.codart, plan.codart, plan.codart, plan.codart]]}
-          />
-        </section>
-
-        <section className="mb-4">
-          <h2 className="text-center text-xs font-semibold text-black uppercase tracking-wide border-b border-gray-300 pb-1 mb-3">
-            2.2. Despeje de Línea
-          </h2>
-          {/* Contenedor horizontal */}
-          <div className="flex gap-4 mb-3">
-            {/* Textarea */}
-            <textarea
-              className="w-1/2 h-28 border border-gray-300 rounded p-2 text-sm resize-none"
-              placeholder="Observaciones del despeje..."
-            ></textarea>
-            {/* Tabla pequeña al lado derecho */}
-            <div className="w-1/2">
-              <PDFTable rows={[[plan.codart]]} />
+              {/* 🩹 Overlay anti-marca */}
+              <div
+                style={{
+                  position: 'absolute',
+                  bottom: -4,
+                  right: -2,
+                  width: '100px',
+                  height: '30px',
+                  backgroundColor: '#fff',
+                  zIndex: 10,
+                }}
+              />
             </div>
           </div>
-          {/* Tabla completa debajo */}
+
+
+
           <PDFTable
-            headers={["Realizado Por", "Firma", "Fecha", "Hora"]}
-            rows={[[plan.codart, plan.codart, plan.codart, plan.codart]]}
+            rows={[["Receta validada por", plan.user, "Fecha", plan.updated_at?.slice(0, 10) || "Sin Fecha"]]}
           />
         </section>
 
-        <section className="mb-2">
+        <>
           <h2 className="text-center text-xs font-semibold text-black uppercase tracking-wide border-b border-gray-300 pb-1 mb-3">
-            3. Operación: Marcación UI
+            Operaciones ejecutadas
           </h2>
-          <h2 className="text-center text-xs font-semibold text-black uppercase tracking-wide border-b border-gray-300 pb-1 mb-3">
-            3.1. Ajustes de Equipo
-          </h2>
-          <PDFTable
-            headers={["Realizado Por", "Firma", "Fecha", "Hora"]}
-            rows={[[plan.codart, plan.codart, plan.codart, plan.codart]]}
-          />
-        </section>
+          {actividadesEjecutadas
+            .filter((actividad) => Array.isArray(actividad.forms) && actividad.forms.length > 0)
+            .map((actividad, index) => (
+              <section key={actividad.id} className="mb-4">
+                <h4 className="text-center text-xs font-semibold text-black uppercase tracking-wide border-b border-gray-300 pb-1 mb-3">
+                  {index + 1}. {actividad.description_fase}
+                </h4>
 
-        <section className="mb-2">
-          <h2 className="text-center text-xs font-semibold text-black uppercase tracking-wide border-b border-gray-300 pb-1 mb-3">
-            3.2. Verificación de Testigos
-          </h2>
-          <Image
-            src="/pharex.png"
-            alt="Diagrama de operaciones"
-            width={800}
-            height={224}
-            className="w-full max-h-56 object-contain mb-3 border rounded"
-            priority
-          />
-          <h5 className="text-center text-[10px] text-black uppercase tracking-wide border-b border-gray-300 pb-1 mb-3">
-            Foto del testigo
-          </h5>
-          <PDFTable
-            headers={["Realizado Por", "Firma", "Fecha", "Hora"]}
-            rows={[[plan.codart, plan.codart, plan.codart, plan.codart]]}
-          />
-          <PDFTable
-            headers={["Verificado por", "Firma", "Fecha", "Hora"]}
-            rows={[[plan.codart, plan.codart, plan.codart, plan.codart]]}
-          />
-        </section>
+                <PDFTable
+                  headers={["Actividad", "Resultado", "Línea", "Usuario", "Hora"]}
+                  rows={(actividad.forms ?? []).map((form) => {
+                    const valor = form.valor;
+                    const isImage =
+                      typeof valor === "string" &&
+                      (valor.startsWith("data:image") || /\.(jpeg|jpg|png|gif|webp)$/i.test(valor));
 
-        <section className="mb-2">
-          <h2 className="text-center text-xs font-semibold text-black uppercase tracking-wide border-b border-gray-300 pb-1 mb-3">
-            3.3 Controles de Proceso
-          </h2>
-          <PDFTable
-            headers={["Realizado Por", "Firma", "Fecha", "Hora"]}
-            rows={[[plan.codart, plan.codart, plan.codart, plan.codart]]}
-          />
-        </section>
+                    return [
+                      form.descripcion_activitie || "Sin descripción",
+                      isImage ? (
+                        <img
+                          src={valor}
+                          alt="evidencia"
+                          style={{
+                            width: "100px",
+                            height: "auto",
+                            borderRadius: "4px",
+                            objectFit: "contain",
+                          }}
+                        />
+                      ) : (
+                        valor || ""
+                      ),
+                      form.linea ?? "",
+                      actividad.user ? decodeURIComponent(actividad.user) : "Sin usuario",
+                      actividad.created_at ? actividad.created_at.slice(11, 16) : "Sin hora"];
+                  })}
+                />
+              </section>
+            ))}
 
-        <section className="mb-2">
-          <h2 className="text-center text-xs font-semibold text-black uppercase tracking-wide border-b border-gray-300 pb-1 mb-3">
-            3. Operación: Marcación UI
-          </h2>
-          <h2 className="text-center text-xs font-semibold text-black uppercase tracking-wide border-b border-gray-300 pb-1 mb-3">
-            3.1. Ajustes de Equipo
-          </h2>
-          <PDFTable
-            headers={["Realizado Por", "Firma", "Fecha", "Hora"]}
-            rows={[[plan.codart, plan.codart, plan.codart, plan.codart]]}
-          />
-        </section>
+        </>
 
         <footer className="mt-12 pt-3 border-t border-gray-300 text-center text-[10px] text-gray-500">
           Documento generado automáticamente – Pharex S.A.
