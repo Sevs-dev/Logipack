@@ -255,13 +255,13 @@ function Table<T extends { id: number }>({
                                             {showTerciarioButton && onTerciario && (!showTerciarioCondition || showTerciarioCondition(row)) && (
                                                 <Button onClick={() => onTerciario(row.id)} variant="create2" />
                                             )}
-                                            {showHistory && onHistory && <Button onClick={() => onHistory(row.id)} variant="history" />}
-                                            {showPDF && onPDF && (!showPDFCondition || showPDFCondition(row)) && (
-                                                <Button onClick={() => onPDF(row.id)} variant="pdf" />
-                                            )}
                                             {showViewButton && onView && (!showViewCondition || showViewCondition(row)) && (
                                                 <Button onClick={() => onView(row.id)} variant="view" />
                                             )}
+                                            {showPDF && onPDF && (!showPDFCondition || showPDFCondition(row)) && (
+                                                <Button onClick={() => onPDF(row.id)} variant="pdf" />
+                                            )}
+                                            {showHistory && onHistory && <Button onClick={() => onHistory(row.id)} variant="history" />}
                                         </td>
                                     </tr>
                                 ))

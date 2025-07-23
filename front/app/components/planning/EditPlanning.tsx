@@ -1023,11 +1023,11 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
                 showViewButton={true}
                 onEdit={handleEdit}
                 onTerciario={handleTerciario}
-                showTerciarioCondition={(row) => row.status_dates === "Planificación" || row.status_dates === "En ejecución"} // 👈 Aquí va tu condición
-                onPDF={handlePDF}
-                showPDFCondition={(row) => row.status_dates === "Ejecutado"}
                 onView={obtenerActividades}
+                onPDF={handlePDF}
+                showTerciarioCondition={(row) => row.status_dates === "Planificación" || row.status_dates === "En ejecución"} // 👈 Aquí va tu condición
                 showViewCondition={(row) => row.status_dates === "Ejecutado"}
+                showPDFCondition={(row) => row.status_dates === "Ejecutado"}
             />
 
         </div>

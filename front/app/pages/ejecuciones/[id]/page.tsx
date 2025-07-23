@@ -1,6 +1,7 @@
 "use client";
 import { use, useEffect, useState, useCallback } from "react";
 import { actividades_ejecutadas } from "@/app/services/planing/planingServices";
+import DateLoader from "@/app/components/loader/DateLoader";
 
 // ---- Tipos ----
 type OrdenType = {
@@ -64,10 +65,8 @@ const NewDetalle = ({ params }: { params: Promise<{ id: number }> }) => {
     }, [obtenerActividades]);
 
     if (!actividades.length) {
-        return (
-            <div className="min-h-screen flex items-center justify-center bg-gray-950 text-white/70">
-                <span className="animate-pulse">Cargando actividades...</span>
-            </div>
+        return ( 
+            <DateLoader message="Cargando actividades..." backgroundColor="#1f2937" color="#ffff" />
         );
     }
 
