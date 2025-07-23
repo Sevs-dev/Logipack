@@ -5,10 +5,10 @@ namespace App\Http\Controllers;
 use App\Models\ActividadesEjecutadas;
 use App\Models\AdaptationDate;
 use App\Models\OrdenesEjecutadas;
+use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Carbon\Carbon;
 
 class OrdenesEjecutadasController extends Controller
 {
@@ -122,7 +122,6 @@ class OrdenesEjecutadasController extends Controller
     public function eliminar_orden(
         $id
     ): JsonResponse {
-
         OrdenesEjecutadas::where('adaptation_date_id', $id)->update([
             'estado' => '-11000',
         ]);
@@ -347,12 +346,18 @@ class OrdenesEjecutadasController extends Controller
      */
     public function getActividadesEjecutadas($id): JsonResponse
     {
+        // obtener orden
+        $orden = OrdenesEjecutadas::where('adaptation_date_id', $id)
+            ->where('proceso', 'eject')
+            ->first();
+
         $actividades = DB::table('actividades_ejecutadas')
             ->where('adaptation_date_id', $id)
             ->where('estado_form', true)
             ->get();
 
         return response()->json([
+            'orden' => $orden,
             'actividades' => $actividades,
             'estado' => 200,
         ]);

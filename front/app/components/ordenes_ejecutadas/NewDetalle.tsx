@@ -3,6 +3,7 @@ import { useEffect, useState, useCallback } from "react";
 import { actividades_ejecutadas } from "@/app/services/planing/planingServices";
 
 const NewDetalle = () => {
+  const [orden, setOrden] = useState(null);
   const [actividades, setActividades] = useState([]);
   const [imagenAmpliada, setImagenAmpliada] = useState(null);
 
@@ -11,8 +12,9 @@ const NewDetalle = () => {
   const obtenerActividades = useCallback(async () => {
     try {
       const data = await actividades_ejecutadas(27);
-      
+      console.log(data);
       if (data?.actividades) {
+        setOrden(data.orden);
         setActividades(data.actividades);
       }
     } catch (error) {
@@ -64,13 +66,53 @@ const NewDetalle = () => {
             {/* Información de la Orden */}
             <div className="w-full rounded-xl bg-white/5 backdrop-blur-md border border-white/10 
               shadow-lg p-4 text-white/80 font-medium text-lg">
-              titulo
+              <div
+                className="px-8 py-6 grid grid-cols-1 sm:grid-cols-2 
+          md:grid-cols-3 lg:grid-cols-s gap-6 text-sm text-gray-200"
+              >
+                <div>
+                  <p className="text-gray-500 text-center">Orden N°</p>
+                  <p className="font-medium text-gray-200 text-center">
+                    {orden?.number_order}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-gray-500 text-center">Cliente</p>
+                  <p className="font-medium text-gray-200 text-center">
+                    {orden?.cliente}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-gray-500 text-center">Planta</p>
+                  <p className="font-medium text-gray-200 text-center">
+                    {orden?.planta}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-gray-500 text-center">Maestra</p>
+                  <p className="font-medium text-gray-200 text-center">
+                    {orden?.descripcion_maestra}
+                  </p>
+                </div>
+                {/* <div>
+                  <p className="text-gray-500 text-center">Línea</p>
+                  <p className="font-medium text-gray-200 text-center">
+                    {data?.linea} ({data?.local.descripcion})
+                  </p>
+                </div>
+                <div>
+                  <p className="text-gray-500 text-center">Cantidad a producir</p>
+                  <p className="font-medium text-gray-200 text-center">
+                    {data?.orden?.cantidad_producir}
+                  </p>
+                </div> */}
+              </div>
 
 
 
 
 
-              
+
             </div>
 
             {/* Fase */}
@@ -91,7 +133,7 @@ const NewDetalle = () => {
                         <div className="mb-4 space-y-1">
                           <h4 className="text-lg font-semibold text-white">{description_fase}</h4>
                           <div className="flex justify-between text-sm text-white/60">
-                            <span className="italic">{phase_type} 
+                            <span className="italic">{phase_type}
                               <br /> Estado : {estado_form == "1" ? "Finalizado" : "En ejecución"}
                             </span>
                             <span>{user} <br /> Linea: {linea}</span>
