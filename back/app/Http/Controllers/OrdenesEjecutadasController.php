@@ -309,7 +309,7 @@ class OrdenesEjecutadasController extends Controller
     public function getFaseControl($id): JsonResponse
     {
         $fases = DB::table('ordenes_ejecutadas as ada')
-            ->where('ada.id', $id)
+            ->where('ada.adaptation_date_id', $id)
             ->where('ada.proceso', 'eject')
             ->join('stages as std', function ($join) {
                 $join->on(
