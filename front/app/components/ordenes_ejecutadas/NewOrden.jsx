@@ -146,21 +146,18 @@ const App = () => {
       if (!fase) return;
 
       try {
-        const stage = await getStageId(fase.fases_fk);
+        const stage = await getStageId(fase.adaptation_date_id);
         const { fase_control: control } = await fase_control(
           fase.orden_ejecutada
         );
-
         // Validaciones
         if (!stage?.id) return;
         if (!control?.id) return;
-
         // Obetenr id de la activiad ejecutada
-        const ejecutadaId = Number(fase.id);
+        const ejecutadaId = Number(stage.id);
         if (!Number.isFinite(ejecutadaId) || ejecutadaId <= 0) return;
-
         // Instancia de timer
-        const time = Number(stage.repeat_minutes ?? 0);
+        const time = Number(stage.repeat_minutes) || 0;
         const createResult = await createTimer({
           ejecutada_id: ejecutadaId,
           stage_id: stage?.id,
@@ -168,11 +165,9 @@ const App = () => {
           orden_id: fase.orden_ejecutada,
           time,
         });
-
         if (createResult?.exists) {
           // console.log("⚠️ Timer ya existía para:", ejecutadaId);
         }
-
         const timerResult = await getTimerEjecutadaById(ejecutadaId);
         if (
           timerResult?.timer &&
@@ -196,25 +191,21 @@ const App = () => {
         setTimerReady(false);
       }
     };
-
     // Validar condicion de la fase
     const condicionFase = async () => {
       // Validar si hay fase
       if (!fase) return;
-
       // Validar condicion de la fase
       const resp = await condiciones_fase(
         fase.adaptation_date_id,
         fase.fases_fk
       );
-
       // Validar roles
       const { roles } = await validate_rol(fase.fases_fk);
       const perfil = document.cookie
         .split("; ")
         .find((row) => row.startsWith("role="))
         ?.split("=")[1];
-
       // console.log(roles?.role !== perfil," :  Role ",roles?.role,"perfil ",perfil);
       // Bloquear modal
       setShowModal(
