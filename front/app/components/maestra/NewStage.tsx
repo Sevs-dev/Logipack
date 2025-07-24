@@ -541,24 +541,29 @@ function NewStage({ canEdit = false, canView = false }: CreateClientProps) {
                         <hr className="my-4 border-t border-gray-600 w-full max-w-lg mx-auto opacity-60" />
                         <div className="flex justify-center gap-4 mt-6">
                             <div className="flex items-center gap-3">
-                                <input
-                                    type="checkbox"
-                                    checked={repeat}
-                                    onChange={(e) => setRepeat(e.target.checked)}
-                                    className="h-5 w-5 text-blue-600"
-                                    disabled={!canEdit}
-                                />
-                                <span className="text-sm text-black">Repetir</span>
-                                {repeat && (
-                                    <input
-                                        type="number"
-                                        placeholder="Cada (min)"
-                                        value={repeatMinutes}
-                                        onChange={(e) => setRepeatMinutes(e.target.value)}
-                                        className="min-w-[120px] p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 text-black text-sm"
-                                        disabled={!canEdit}
-                                    />
+                                {phaseType === "Control" && (
+                                    <>
+                                        <input
+                                            type="checkbox"
+                                            checked={repeat}
+                                            onChange={(e) => setRepeat(e.target.checked)}
+                                            className="h-5 w-5 text-blue-600"
+                                            disabled={!canEdit}
+                                        />
+                                        <span className="text-sm text-black">Repetir</span>
+                                        {repeat && (
+                                            <input
+                                                type="number"
+                                                placeholder="Cada (min)"
+                                                value={repeatMinutes}
+                                                onChange={(e) => setRepeatMinutes(e.target.value)}
+                                                className="min-w-[120px] p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 text-black text-sm"
+                                                disabled={!canEdit}
+                                            />
+                                        )}
+                                    </>
                                 )}
+
                             </div>
 
                             <div className="flex items-center gap-2">

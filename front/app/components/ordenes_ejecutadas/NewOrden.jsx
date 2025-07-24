@@ -199,10 +199,9 @@ const App = () => {
 
     // Validar condicion de la fase
     const condicionFase = async () => {
-
       // Validar si hay fase
       if (!fase) return;
-      
+
       // Validar condicion de la fase
       const resp = await condiciones_fase(
         fase.adaptation_date_id,
@@ -220,12 +219,10 @@ const App = () => {
       // Bloquear modal
       setShowModal(
         (roles?.role || "") === "" ||
-        (perfil || "") === "" ||
-        roles?.role !== perfil
+          (perfil || "") === "" ||
+          roles?.role !== perfil
       );
-      setShowModal_fase(
-        resp.condicion_1 > 0
-      );
+      setShowModal_fase(resp.condicion_1 > 0);
     };
 
     // Validar condicion de la fase
@@ -672,27 +669,27 @@ const App = () => {
                       {memoriaFase[linea]?.[clave]?.startsWith(
                         "data:application/pdf"
                       ) && (
-                          <div className="mb-2">
-                            <object
-                              data={memoriaFase[linea][clave]}
-                              type="application/pdf"
-                              width="100%"
-                              height="400px"
-                            >
-                              <p className="text-gray-600">
-                                No se pudo mostrar el PDF.{" "}
-                                <a
-                                  href={memoriaFase[linea][clave]}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="text-blue-600 underline"
-                                >
-                                  Haz clic aquí para verlo
-                                </a>
-                              </p>
-                            </object>
-                          </div>
-                        )}
+                        <div className="mb-2">
+                          <object
+                            data={memoriaFase[linea][clave]}
+                            type="application/pdf"
+                            width="100%"
+                            height="400px"
+                          >
+                            <p className="text-gray-600">
+                              No se pudo mostrar el PDF.{" "}
+                              <a
+                                href={memoriaFase[linea][clave]}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-blue-600 underline"
+                              >
+                                Haz clic aquí para verlo
+                              </a>
+                            </p>
+                          </object>
+                        </div>
+                      )}
 
                       <input
                         className="block w-full px-3 py-2 bg-[#1a1d23] border border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-white placeholder-gray-400 text-center"
@@ -735,14 +732,14 @@ const App = () => {
                       {memoriaFase[linea]?.[clave]?.startsWith(
                         "data:image"
                       ) && (
-                          <div className="mb-2">
-                            <img
-                              src={memoriaFase[linea][clave]}
-                              alt="Imagen guardada"
-                              className="max-h-48 rounded shadow object-contain"
-                            />
-                          </div>
-                        )}
+                        <div className="mb-2 justify-center flex">
+                          <img
+                            src={memoriaFase[linea][clave]}
+                            alt="Imagen guardada"
+                            className="max-h-48 rounded shadow object-contain"
+                          />
+                        </div>
+                      )}
 
                       <input
                         className="block w-full px-3 py-2 bg-[#1a1d23] border border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-white placeholder-gray-400 text-center"
@@ -804,29 +801,29 @@ const App = () => {
                       {/* Mostrar Input si selecciona "texto" */}
                       {memoriaFase[linea]?.[`tipo_entrada_${clave}`] ===
                         "texto" && (
-                          <input
-                            type="text"
-                            className="text-center block w-full px-3 py-2 bg-[#1a1d23] border border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-white placeholder-gray-400"
-                            name={clave}
-                            value={memoriaFase[linea]?.[clave] ?? ""}
-                            required={item.binding}
-                            onChange={inputChange}
-                          />
-                        )}
+                        <input
+                          type="text"
+                          className="text-center block w-full px-3 py-2 bg-[#1a1d23] border border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-white placeholder-gray-400"
+                          name={clave}
+                          value={memoriaFase[linea]?.[clave] ?? ""}
+                          required={item.binding}
+                          onChange={inputChange}
+                        />
+                      )}
 
                       {/* Mostrar Firma si selecciona "firma" */}
                       {memoriaFase[linea]?.[`tipo_entrada_${clave}`] ===
                         "firma" && (
-                          <Firma
-                            type={type}
-                            item={item}
-                            info={memoriaFase[linea]}
-                            lineaIndex={linea}
-                            setMemoriaGeneral={setMemoriaFase}
-                            saveToDB={saveToDB}
-                            typeMem="memoria_fase"
-                          />
-                        )}
+                        <Firma
+                          type={type}
+                          item={item}
+                          info={memoriaFase[linea]}
+                          lineaIndex={linea}
+                          setMemoriaGeneral={setMemoriaFase}
+                          saveToDB={saveToDB}
+                          typeMem="memoria_fase"
+                        />
+                      )}
                     </>
                   )}
 
@@ -847,8 +844,22 @@ const App = () => {
                       {memoriaFase[linea]?.[clave] !== undefined &&
                         (memoriaFase[linea][clave] < min ||
                           memoriaFase[linea][clave] > max) && (
-                          <p className="mt-1 text-sm text-red-600">
-                            Valor ingresado debe estar entre {min} y {max}.
+                          <p
+                            className="
+                            mt-2 mb-2 px-4 py-2
+                            text-sm text-center font-semibold
+                            text-yellow-100
+                            bg-gradient-to-r from-purple-900/90 via-purple-700/80 to-blue-900/80
+                            rounded-xl shadow-lg
+                            border border-yellow-400/40
+                            backdrop-blur-sm
+                            animate-pulse
+                            max-w-xs mx-auto
+                          "
+                          >
+                            ⚠️ Valor ingresado debe estar entre{" "}
+                            <span className="font-bold">{min}</span> y{" "}
+                            <span className="font-bold">{max}</span>.
                           </p>
                         )}
                     </>

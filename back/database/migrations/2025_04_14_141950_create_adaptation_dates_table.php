@@ -32,7 +32,7 @@ return new class extends Migration
             $table->string('factory')->nullable();
             $table->json('line')->nullable();
             $table->json('activities')->nullable();
-            $table->string('resource')->nullable();
+            $table->text('resource')->nullable();
             $table->json('machine')->nullable();
             $table->json('users')->nullable();
             $table->string('color')->nullable();
