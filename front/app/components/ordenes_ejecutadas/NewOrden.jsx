@@ -84,7 +84,7 @@ const clearDB = async () => {
     return new Promise((resolve, reject) => {
       request.onsuccess = () => resolve();
       request.onerror = () => reject("Error al limpiar IndexedDB");
-      tx.oncomplete = () => console.log("Limpieza completada");
+      // tx.oncomplete = () => console.log("Limpieza completada");
     });
   } catch (error) {
     console.error("Error al limpiar IndexedDB:", error);
@@ -128,9 +128,9 @@ const App = () => {
 
     const cargarFase = async () => {
       try {
-        console.log(local);
+        // console.log(local);
         const resp = await siguiente_fase(local.id, local.linea, local.tipo);
-        console.log(resp);
+        // console.log(resp);
         setFase(resp.fases);
       } catch (error) {
         showError("No se pudo obtener la fase.");
@@ -449,21 +449,6 @@ const App = () => {
             Fase de {fase?.description_fase} ({fase?.phase_type})
           </Text>
         </div>
-
-        {/* Timer */}
-        {!timerReady || !timerData ? (
-          <div className="text-center text-sm text-gray-600 animate-pulse py-4">
-            ⏳ Cargando datos del temporizador...
-          </div>
-        ) : (
-          <Timer
-            ejecutadaId={timerData.ejecutadaId}
-            stageId={timerData.stageId}
-            initialMinutes={timerData.initialMinutes}
-            refetchTimer={refetchTimer}
-          />
-        )}
-
         {/* Formulario */}
         <form
           ref={formRef}
@@ -557,6 +542,12 @@ const App = () => {
                       value={memoriaFase[linea]?.[clave] ?? ""}
                       required={item.binding}
                       onChange={inputChange}
+                      style={{
+                        colorScheme: "dark",
+                        WebkitCalendarPickerIndicator: {
+                          filter: "invert(1)",
+                        },
+                      }}
                     />
                   )}
 
@@ -881,6 +872,19 @@ const App = () => {
           </>
         </form>
       </div>
+      {/* Timer */}
+      {!timerReady || !timerData ? (
+        <div className="text-center text-sm text-gray-600 animate-pulse py-4">
+          ⏳ Cargando datos del temporizador...
+        </div>
+      ) : (
+        <Timer
+          ejecutadaId={timerData.ejecutadaId}
+          stageId={timerData.stageId}
+          initialMinutes={timerData.initialMinutes}
+          refetchTimer={refetchTimer}
+        />
+      )}
     </div>
   );
 };
