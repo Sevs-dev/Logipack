@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import {
   FaHome, FaVials, FaCog, FaFileInvoice, FaAngleDown, FaSignOutAlt,
   FaChartLine, FaArrowLeft, FaBars, FaIoxhost, FaBook, FaBorderAll,
-  FaDolly, FaCalendarAlt
+  FaDolly, FaCalendarAlt, FaBookmark
 } from "react-icons/fa";
 import nookies from "nookies";
 import { useRouter, usePathname } from "next/navigation";
@@ -77,6 +77,12 @@ const menuItems: MenuItem[] = [
         label: "Ordenes de Acon.",
         icon: <FaFileInvoice />,
         link: "/pages/adaptation",
+      },
+      {
+        key: "planing",
+        label: "Gestión de Ordenes",
+        icon: <FaBookmark />,
+        link: "/pages/planificacion",
       },
     ],
   },

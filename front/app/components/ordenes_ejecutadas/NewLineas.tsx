@@ -156,10 +156,10 @@ const NewLineas = () => {
                                     }}
                                     whileHover={{ scale: 1.03 }}
                                     whileTap={{ scale: 0.95 }}
-                                    className="w-[120px] group relative cursor-pointer rounded-lg bg-[#841ae0]/60 border border-white/10 backdrop-blur-sm text-white transition-all shadow-sm hover:shadow-md hover:bg-[#b941ff]/60 active:scale-95"
+                                    className="w-[200px] group relative cursor-pointer rounded-lg bg-[#841ae0]/60 border border-white/10 backdrop-blur-sm text-white transition-all shadow-sm hover:shadow-md hover:bg-[#b941ff]/60 active:scale-95"
                                 >
                                     <div className="flex items-center justify-center h-14 px-2 rounded-lg">
-                                        <span className="text-sm font-medium text-center truncate max-w-[90px]">
+                                        <span className="text-sm font-medium text-center truncate max-w-[200px]">
                                             {linea.descripcion}
                                         </span>
                                     </div>
@@ -188,10 +188,10 @@ const NewLineas = () => {
                                     }}
                                     whileHover={{ scale: 1.03 }}
                                     whileTap={{ scale: 0.95 }}
-                                    className="w-[120px] group relative cursor-pointer rounded-lg bg-[#841ae0]/60 border border-white/10 backdrop-blur-sm text-white transition-all shadow-sm hover:shadow-md hover:bg-[#b941ff]/60 active:scale-95"
+                                    className="w-[200px] group relative cursor-pointer rounded-lg bg-[#841ae0]/60 border border-white/10 backdrop-blur-sm text-white transition-all shadow-sm hover:shadow-md hover:bg-[#b941ff]/60 active:scale-95"
                                 >
                                     <div className="flex items-center justify-center h-14 px-2 rounded-lg">
-                                        <span className="text-sm font-medium text-center truncate max-w-[90px]">
+                                        <span className="text-sm font-medium text-center truncate max-w-[300px]">
                                             {linea.descripcion}
                                         </span>
                                     </div>
