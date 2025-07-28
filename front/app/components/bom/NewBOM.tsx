@@ -478,112 +478,115 @@ function BOMManager({ canEdit = false, canView = false }: CreateClientProps) {
                     {selectedArticle && (
                         <div className="mt-6">
                             <Text type="subtitle" color="text-gray-800">Materiales:</Text>
+
                             {ingredients.length > 0 ? (
-                                ingredients.map((ing, index) => {
-                                    const filteredArticles = allArticles.filter(article =>
-                                        article.desart.toLowerCase().includes(articleSearch.toLowerCase()) ||
-                                        article.codart.toLowerCase().includes(articleSearch.toLowerCase())
-                                    );
+                                <>
+                                    {ingredients.map((ing, index) => {
+                                        const filteredArticles = allArticles.filter(article =>
+                                            article.desart.toLowerCase().includes(articleSearch.toLowerCase()) ||
+                                            article.codart.toLowerCase().includes(articleSearch.toLowerCase())
+                                        );
 
-                                    return (
-                                        <div key={index}>
-                                            <div
-                                                className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 mb-6 hover:shadow-md transition-shadow duration-300"
-                                            >
-                                                <div className="flex flex-col md:flex-row gap-2">
-                                                    {/* Buscador + Lista de artículos */}
-                                                    <div className="flex-1">
-                                                        <Text type="subtitle" color="#000">Buscar artículo</Text>
-                                                        <input
-                                                            type="text"
-                                                            placeholder="Nombre o código del artículo..."
-                                                            className="w-full px-5 py-3 border border-gray-300 rounded-xl text-base text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                                            value={articleSearch}
-                                                            onChange={(e) => setArticleSearch(e.target.value)}
-                                                            disabled={!canEdit}
-                                                        />
-
-                                                        <div className="mt-4 max-h-64 overflow-y-auto border border-gray-300 rounded-xl divide-y divide-gray-100 shadow-inner bg-white">
-                                                            {filteredArticles.length > 0 ? (
-                                                                filteredArticles.map(article => (
-                                                                    <label
-                                                                        key={article.codart}
-                                                                        className={`flex items-center px-5 py-3 text-base cursor-pointer text-black transition-colors duration-150 ${ing.codart === article.codart
-                                                                            ? 'bg-blue-100 text-black font-medium'
-                                                                            : 'hover:bg-blue-50'
-                                                                            }`}
-                                                                    >
-                                                                        <input
-                                                                            type="radio"
-                                                                            name={`article-${index}`}
-                                                                            className="mr-3 accent-blue-600 scale-110"
-                                                                            value={article.codart}
-                                                                            checked={ing.codart === article.codart}
-                                                                            onChange={() => handleIngredientSelect(index, article.codart)}
-                                                                            disabled={!canEdit}
-                                                                        />
-                                                                        {article.desart} ({article.codart})
-                                                                    </label>
-                                                                ))
-                                                            ) : (
-                                                                <div className="p-5 text-base text-gray-500">No se encontraron artículos.</div>
-                                                            )}
-                                                        </div>
-                                                    </div>
-
-                                                    {/* Inputs y botón */}
-                                                    <div className="mt-8">
-                                                        <div>
-                                                            <Text type="subtitle" color="#000">Cantidad</Text>
+                                        return (
+                                            <div key={index}>
+                                                <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 mb-6 hover:shadow-md transition-shadow duration-300">
+                                                    <div className="flex flex-col md:flex-row gap-2">
+                                                        {/* Buscador + Lista de artículos */}
+                                                        <div className="flex-1">
+                                                            <Text type="subtitle" color="#000">Buscar artículo</Text>
                                                             <input
-                                                                type="number"
-                                                                min="0"
-                                                                step="any"
-                                                                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-center text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                                                placeholder="0"
-                                                                value={ing.quantity}
-                                                                onChange={(e) => handleIngredientChange(index, "quantity", e.target.value)}
+                                                                type="text"
+                                                                placeholder="Nombre o código del artículo..."
+                                                                className="w-full px-5 py-3 border border-gray-300 rounded-xl text-base text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                                value={articleSearch}
+                                                                onChange={(e) => setArticleSearch(e.target.value)}
                                                                 disabled={!canEdit}
                                                             />
-                                                        </div>
-                                                        <div>
-                                                            <Text type="subtitle" color="#000">% Merma</Text>
-                                                            <input
-                                                                type="number"
-                                                                min="0"
-                                                                step="any"
-                                                                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-center text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                                                placeholder="0"
-                                                                value={ing.merma}
-                                                                onChange={(e) => handleIngredientChange(index, "merma", e.target.value)}
-                                                                disabled={!canEdit}
-                                                            />
+
+                                                            <div className="mt-4 max-h-64 overflow-y-auto border border-gray-300 rounded-xl divide-y divide-gray-100 shadow-inner bg-white">
+                                                                {filteredArticles.length > 0 ? (
+                                                                    filteredArticles.map(article => (
+                                                                        <label
+                                                                            key={article.codart}
+                                                                            className={`flex items-center px-5 py-3 text-base cursor-pointer text-black transition-colors duration-150 ${ing.codart === article.codart
+                                                                                ? 'bg-blue-100 text-black font-medium'
+                                                                                : 'hover:bg-blue-50'
+                                                                                }`}
+                                                                        >
+                                                                            <input
+                                                                                type="radio"
+                                                                                name={`article-${index}`}
+                                                                                className="mr-3 accent-blue-600 scale-110"
+                                                                                value={article.codart}
+                                                                                checked={ing.codart === article.codart}
+                                                                                onChange={() => handleIngredientSelect(index, article.codart)}
+                                                                                disabled={!canEdit}
+                                                                            />
+                                                                            {article.desart} ({article.codart})
+                                                                        </label>
+                                                                    ))
+                                                                ) : (
+                                                                    <div className="p-5 text-base text-gray-500">No se encontraron artículos.</div>
+                                                                )}
+                                                            </div>
                                                         </div>
 
-                                                        <div className="pt-4">
-                                                            <button
-                                                                onClick={() => removeIngredientRow(index)}
-                                                                className="w-full bg-red-500 hover:bg-red-600 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-all duration-200"
-                                                                disabled={!canEdit}
-                                                            >
-                                                                Eliminar
-                                                            </button>
+                                                        {/* Inputs y botón */}
+                                                        <div className="mt-8">
+                                                            <div>
+                                                                <Text type="subtitle" color="#000">Cantidad</Text>
+                                                                <input
+                                                                    type="number"
+                                                                    min="0"
+                                                                    step="any"
+                                                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-center text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                                    placeholder="0"
+                                                                    value={ing.quantity}
+                                                                    onChange={(e) => handleIngredientChange(index, "quantity", e.target.value)}
+                                                                    disabled={!canEdit}
+                                                                />
+                                                            </div>
+                                                            <div>
+                                                                <Text type="subtitle" color="#000">% Merma</Text>
+                                                                <input
+                                                                    type="number"
+                                                                    min="0"
+                                                                    step="any"
+                                                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-center text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                                    placeholder="0"
+                                                                    value={ing.merma}
+                                                                    onChange={(e) => handleIngredientChange(index, "merma", e.target.value)}
+                                                                    disabled={!canEdit}
+                                                                />
+                                                            </div>
+
+                                                            <div className="pt-4">
+                                                                <button
+                                                                    onClick={() => removeIngredientRow(index)}
+                                                                    className="w-full bg-red-500 hover:bg-red-600 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-all duration-200"
+                                                                    disabled={!canEdit}
+                                                                >
+                                                                    Eliminar
+                                                                </button>
+                                                            </div>
                                                         </div>
                                                     </div>
                                                 </div>
                                             </div>
-                                            <hr className="my-4 border-t border-gray-600 w-full max-w-lg mx-auto opacity-60" />
-                                            <div className="flex justify-center gap-4 mt-6">
-                                                <Button
-                                                    onClick={addIngredientRow}
-                                                    variant="create"
-                                                    label="Agregar Ingrediente"
-                                                    disabled={!canEdit}
-                                                />
-                                            </div>
-                                        </div>
-                                    );
-                                })
+                                        );
+                                    })}
+
+                                    {/* ✅ Botón único para agregar ingrediente */}
+                                    <hr className="my-4 border-t border-gray-600 w-full max-w-lg mx-auto opacity-60" />
+                                    <div className="flex justify-center gap-4 mt-6">
+                                        <Button
+                                            onClick={addIngredientRow}
+                                            variant="create"
+                                            label="Agregar Ingrediente"
+                                            disabled={!canEdit}
+                                        />
+                                    </div>
+                                </>
                             ) : (
                                 <div>
                                     <Text type="alert">No hay ingredientes agregados.</Text>

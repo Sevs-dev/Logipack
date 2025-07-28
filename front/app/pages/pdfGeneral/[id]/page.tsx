@@ -8,42 +8,11 @@ import withAuth from '../../../hooks/withAuth';
 import html2pdf from 'html2pdf.js';
 import PDFTable from '../../../components/table/PDFTable';
 import DateLoader from '@/app/components/loader/DateLoader';
+import { Stage, TimerControlDataItem, TimerControl, Timer, DataType } from '@/app/interfaces/PDF';
 
 const PDFPage = ({ params }: { params: Promise<{ id: number }> }) => {
   const { id } = use(params);
   const didFetch = useRef(false);
-  type Stage = {
-    id: number | string;
-    description: string;
-  };
-
-  type DataType = {
-    plan: {
-      number_order: string;
-      codart: string;
-      product_name?: string;
-      lot: string;
-      expiration?: string;
-      quantityToProduce: number;
-      bom?: number;
-      end_date?: string;
-      user: string;
-      updated_at?: string;
-    };
-    cliente: {
-      name: string;
-    };
-    stages: Stage[];
-    desart?: string;
-    actividadesEjecutadas: {
-      id: number;
-      description_fase: string;
-      forms?: { descripcion_activitie?: string; valor?: string; linea?: string }[];
-      user?: string
-      created_at?: string;
-    }[];
-  };
-
   const [data, setData] = useState<DataType | null>(null);
   const pdfRef = useRef<HTMLDivElement>(null);
 
@@ -69,9 +38,9 @@ const PDFPage = ({ params }: { params: Promise<{ id: number }> }) => {
 
     const opt = {
       margin: 0.5,
-      filename: `plan-${id}.pdf`,
+      filename: `${data?.plan.number_order}.pdf`,
       image: { type: 'jpeg', quality: 0.98 },
-      html2canvas: { scale: 4, logging: false },
+      html2canvas: { scale: 2, logging: false, useCORS: true, backgroundColor: '#fff', },
       jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' },
       pagebreak: { mode: ['avoid-all', 'css'] },
     };
@@ -117,7 +86,7 @@ const PDFPage = ({ params }: { params: Promise<{ id: number }> }) => {
   const { actividadesEjecutadas } = data;
 
   const NODES_PER_ROW = 3;
-  const NODE_WIDTH = 170;         // Reducido para asegurar que caben
+  const NODE_WIDTH = 170;
   const H_SPACING = 20;
   const V_SPACING = 140;
   const CONTAINER_WIDTH = 794;
@@ -176,6 +145,9 @@ const PDFPage = ({ params }: { params: Promise<{ id: number }> }) => {
           fontSize: '13px',
           lineHeight: '1.7',
           fontFamily: '"Helvetica Neue", Helvetica, Arial, sans-serif',
+          overflowWrap: 'break-word',
+          wordBreak: 'break-word',
+          overflow: 'hidden', // ← importante
         }}
       >
         <header className="mb-6 border-b border-gray-200 pb-4 flex items-center justify-center relative">
@@ -334,6 +306,35 @@ const PDFPage = ({ params }: { params: Promise<{ id: number }> }) => {
             ))}
 
         </>
+
+        <section>
+          <h2 className="text-center text-xs font-semibold text-black uppercase tracking-wide border-b border-gray-300 pb-1 mb-3">
+            Controles de Producción
+          </h2>
+
+          {data.timers.map((timer: Timer) => (
+            <div key={timer.id} className="mb-4">
+              <div className="flex flex-wrap gap-4">
+                {timer.timer_controls.map((control: TimerControl) => (
+                  <div key={control.id} className="w-full md:w-[48%]">
+                    <PDFTable
+                      headers={["Descripción", "Resultado", "Usuario", "Fecha y Hora"]}
+                      rows={control.data.map((item: TimerControlDataItem) => [
+                        item.descripcion,
+                        typeof item.valor === "object"
+                          ? JSON.stringify(item.valor)
+                          : String(item.valor ?? ""),
+                        control.user,
+                        new Date(control.created_at).toLocaleString(),
+                      ])}
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+
+        </section>
 
         <footer className="mt-12 pt-3 border-t border-gray-300 text-center text-[10px] text-gray-500">
           Documento generado automáticamente – Pharex S.A.

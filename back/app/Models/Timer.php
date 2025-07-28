@@ -9,4 +9,9 @@ class Timer extends Model
 {
     use HasFactory;
     protected $guarded = [];
+
+    public function timerControls()
+    {
+        return $this->hasMany(TimerControl::class);
+    } 
 }

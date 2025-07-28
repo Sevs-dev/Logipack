@@ -35,6 +35,9 @@ export default function NewActivity({ canEdit = false, canView = false }: Create
 
         Muestreo: {
             type: "muestreo",
+            clase: "",
+            nivel: "",
+            subnivel: "",
             items: [
                 { min: undefined, max: undefined, valor: undefined },
             ]
@@ -456,6 +459,85 @@ export default function NewActivity({ canEdit = false, canView = false }: Create
                         {selectedType === "Muestreo" && (
                             <div className="flex flex-col gap-4">
                                 <label className="text-sm font-medium text-black text-center">
+                                    Clasificación de inspección
+                                </label>
+
+                                <div className="flex gap-4 justify-center">
+                                    <select
+                                        className="border p-2 rounded-md text-black"
+                                        value={parsedConfig?.clase || ""}
+                                        onChange={(e) => {
+                                            const nuevaClase = e.target.value;
+                                            const nuevoNivel = ""; // Resetear nivel al cambiar clase
+                                            setFormData({
+                                                ...formData,
+                                                config: JSON.stringify({
+                                                    ...parsedConfig,
+                                                    clase: nuevaClase,
+                                                    nivel: nuevoNivel,
+                                                }, null, 2),
+                                            });
+                                        }}
+                                    >
+                                        <option value="">Seleccionar clase</option>
+                                        <option value="especifico">Específico</option>
+                                        <option value="general">General</option>
+                                    </select>
+
+                                    <select
+                                        className="border p-2 rounded-md text-black"
+                                        value={parsedConfig?.nivel || ""}
+                                        onChange={(e) => {
+                                            setFormData({
+                                                ...formData,
+                                                config: JSON.stringify({
+                                                    ...parsedConfig,
+                                                    nivel: e.target.value,
+                                                }, null, 2),
+                                            });
+                                        }}
+                                        disabled={!parsedConfig?.clase}
+                                    >
+                                        <option value="">Seleccionar nivel</option>
+                                        {parsedConfig?.clase === "especifico" &&
+                                            ["S-1", "S-2", "S-3", "S-4"].map((nivel) => (
+                                                <option key={nivel} value={nivel}>
+                                                    {nivel}
+                                                </option>
+                                            ))}
+                                        {parsedConfig?.clase === "general" &&
+                                            ["I", "II", "III"].map((nivel) => (
+                                                <option key={nivel} value={nivel}>
+                                                    {nivel}
+                                                </option>
+                                            ))}
+                                    </select>
+                                    <select
+                                        className="border p-2 rounded-md text-black"
+                                        value={parsedConfig?.subnivel || ""}
+                                        onChange={(e) => {
+                                            setFormData({
+                                                ...formData,
+                                                config: JSON.stringify({
+                                                    ...parsedConfig,
+                                                    subnivel: e.target.value,
+                                                }, null, 2),
+                                            });
+                                        }}
+                                        disabled={!parsedConfig?.clase} // o podrías quitar esto si querés que esté siempre activo
+                                    >
+                                        <option value="">Seleccionar subnivel</option>
+                                        {["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R"].map((nivel) => (
+                                            <option key={nivel} value={nivel}>
+                                                {nivel}
+                                            </option>
+                                        ))}
+                                    </select>
+
+                                </div>
+
+                                {/* Texto informativo y inputs de muestreo */}
+                                <label className="text-sm font-medium text-black text-center">
                                     Rangos de muestreo con valor
                                     <InfoPopover
                                         content={
@@ -505,19 +587,28 @@ export default function NewActivity({ canEdit = false, canView = false }: Create
                                             placeholder="Valor"
                                             className="w-[80px] border p-2 rounded-md text-black text-center"
                                         />
-                                        <Button onClick={() => {
-                                            const items = (parsedConfig?.items ?? []).filter((_, i) => i !== index);
-                                            setFormData({ ...formData, config: JSON.stringify({ ...parsedConfig, items }, null, 2) });
-                                        }} variant="cancel" label="Eliminar" />
+                                        <Button
+                                            onClick={() => {
+                                                const items = (parsedConfig?.items ?? []).filter((_, i) => i !== index);
+                                                setFormData({ ...formData, config: JSON.stringify({ ...parsedConfig, items }, null, 2) });
+                                            }}
+                                            variant="cancel"
+                                            label="Eliminar"
+                                        />
                                     </div>
                                 ))}
-                                <Button variant="add" label="Agregar Muestreo" onClick={() => {
-                                    const items = [...(parsedConfig?.items || []), { min: undefined, max: undefined, valor: undefined }];
-                                    setFormData({ ...formData, config: JSON.stringify({ ...parsedConfig, items }, null, 2) });
-                                }}
+
+                                <Button
+                                    variant="add"
+                                    label="Agregar Muestreo"
+                                    onClick={() => {
+                                        const items = [...(parsedConfig?.items || []), { min: undefined, max: undefined, valor: undefined }];
+                                        setFormData({ ...formData, config: JSON.stringify({ ...parsedConfig, items }, null, 2) });
+                                    }}
                                 />
                             </div>
                         )}
+
                     </div>
 
                     {/* Botones */}

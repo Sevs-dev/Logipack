@@ -9,6 +9,7 @@ use App\Models\Machinery;
 use App\Models\Manufacturing;
 use App\Models\OrdenesEjecutadas;
 use App\Models\Stage;
+use App\Models\Timer;
 use App\Models\User;
 use App\Services\ArticleService;
 use Illuminate\Http\Request;
@@ -127,7 +128,7 @@ class AdaptationDateController extends Controller
     {
         try {
             $plan = AdaptationDate::all();
-            Log::info('PLAN:', [$plan]);
+            // Log::info('PLAN:', [$plan]);
 
             return response()->json([
                 'plan' => $plan
@@ -150,7 +151,7 @@ class AdaptationDateController extends Controller
             // Incluye solo id y name del cliente
             $plan = AdaptationDate::with(['client:id,name'])->get();
 
-            Log::info('PLAN:', [$plan]);
+            // Log::info('PLAN:', [$plan]);
 
             return response()->json([
                 'plan' => $plan
@@ -214,36 +215,36 @@ class AdaptationDateController extends Controller
     public function getPlanByIdPDF($id)
     {
         try {
-            Log::info("🔍 Iniciando getPlanByIdPDF con ID: $id");
+            // Log::info("🔍 Iniciando getPlanByIdPDF con ID: $id");
 
             $plan = AdaptationDate::with('adaptation.maestra')->find($id);
             if (!$plan) {
-                Log::warning("❌ Plan no encontrado para ID: $id");
+                // Log::warning("❌ Plan no encontrado para ID: $id");
                 return response()->json(['error' => 'Plan not found'], 404);
             }
 
-            Log::info("✅ Plan base obtenido", ['plan' => $plan->toArray()]);
+            // Log::info("✅ Plan base obtenido", ['plan' => $plan->toArray()]);
             $cliente = $plan->adaptation?->client_id;
             $codart = $plan->codart;
 
             $maestra = $plan->adaptation?->maestra;
-            Log::info("📦 Maestra encontrada", ['maestra' => optional($maestra)->toArray()]);
+            // Log::info("📦 Maestra encontrada", ['maestra' => optional($maestra)->toArray()]);
 
             $clientes = Clients::where('id', $cliente)->first();
-            Log::info("🏭 Cliente", ['cliente' => optional($clientes)->toArray()]);
+            // Log::info("🏭 Cliente", ['cliente' => optional($clientes)->toArray()]);
 
             $coddiv = $clientes->code ?? null;
             $desart = null;
 
             if (!$coddiv) {
-                Log::warning("⚠️ Cliente sin código definido, no se puede consultar artículo.");
+                // Log::warning("⚠️ Cliente sin código definido, no se puede consultar artículo.");
             } else {
                 $desart = ArticleService::getDesartByCodart($coddiv, $codart);
-                Log::info("📄 Artículo encontrado remotamente", [
-                    'coddiv' => $coddiv,
-                    'codart' => $codart,
-                    'desart' => $desart
-                ]);
+                // Log::info("📄 Artículo encontrado remotamente", [
+                //     'coddiv' => $coddiv,
+                //     'codart' => $codart,
+                //     'desart' => $desart
+                // ]);
             }
 
             // 🔧 Procesar relaciones y referencias
@@ -259,40 +260,40 @@ class AdaptationDateController extends Controller
                 }
             }
 
-            Log::info("📌 stageIds decodificados", ['stageIds' => $stageIds]);
+            // Log::info("📌 stageIds decodificados", ['stageIds' => $stageIds]);
 
             $stages = Stage::whereIn('id', $stageIds)->get();
             $stages = $stages->sortBy(function ($stage) use ($stageIds) {
                 return array_search($stage->id, $stageIds);
             })->values();
-            Log::info("📄 Stages cargados", ['stages' => $stages->toArray()]);
+            // Log::info("📄 Stages cargados", ['stages' => $stages->toArray()]);
 
             $masterIds = json_decode($plan->master ?? '[]', true);
             $masterIds = is_array($masterIds) ? $masterIds : [$plan->master];
-            Log::info("🔧 masterIds", ['masterIds' => $masterIds]);
+            // Log::info("🔧 masterIds", ['masterIds' => $masterIds]);
 
             $lineIds = json_decode($plan->line ?? '[]', true);
             $lineIds = is_array($lineIds) ? $lineIds : [$plan->line];
-            Log::info("🔧 lineIds", ['lineIds' => $lineIds]);
+            // Log::info("🔧 lineIds", ['lineIds' => $lineIds]);
 
             $machineIds = json_decode($plan->machine ?? '[]', true);
             $machineIds = is_array($machineIds) ? $machineIds : [$plan->machine];
-            Log::info("🔧 machineIds", ['machineIds' => $machineIds]);
+            // Log::info("🔧 machineIds", ['machineIds' => $machineIds]);
 
             $userIds = json_decode($plan->users ?? '[]', true);
             $userIds = is_array($userIds) ? $userIds : [$plan->users];
-            Log::info("🔧 userIds", ['userIds' => $userIds]);
+            // Log::info("🔧 userIds", ['userIds' => $userIds]);
 
             // 🏭 Cargar líneas antes del mapeo de forms
             $lines = Manufacturing::whereIn('id', $lineIds)->get();
-            Log::info("🏭 Líneas", ['lines' => $lines->toArray()]);
+            // Log::info("🏭 Líneas", ['lines' => $lines->toArray()]);
             $lineMap = $lines->pluck('name', 'id');
 
             $ordenasEje = OrdenesEjecutadas::where('adaptation_date_id', $plan->id)->first();
-            Log::info("📦 Orden ejecutada", ['ordenada' => optional($ordenasEje)->toArray()]);
+            // Log::info("📦 Orden ejecutada", ['ordenada' => optional($ordenasEje)->toArray()]);
 
             $actividadesEje = ActividadesEjecutadas::where('adaptation_date_id', $plan->id)->get();
-            Log::info("📄 Actividades ejecutadas (crudas)", ['actividadesEjecutadas' => $actividadesEje->toArray()]);
+            // Log::info("📄 Actividades ejecutadas (crudas)", ['actividadesEjecutadas' => $actividadesEje->toArray()]);
 
             // ✅ Decodificar `forms` y reemplazar `linea` por nombre
             $actividadesEje = $actividadesEje->map(function ($actividad) use ($lineMap) {
@@ -322,18 +323,24 @@ class AdaptationDateController extends Controller
 
                 return $actividadArr;
             });
-            Log::info("📄 Actividades ejecutadas (con forms parseado)", ['actividadesEjecutadas' => $actividadesEje->toArray()]);
+            // Log::info("📄 Actividades ejecutadas (con forms parseado)", ['actividadesEjecutadas' => $actividadesEje->toArray()]);
 
-            Log::info("📄 Actividades ejecutadas (con forms parseado + líneas mapeadas)", ['actividadesEjecutadas' => $actividadesEje->toArray()]);
+            // Log::info("📄 Actividades ejecutadas (con forms parseado + líneas mapeadas)", ['actividadesEjecutadas' => $actividadesEje->toArray()]);
 
             $masterStages = Stage::whereIn('id', $masterIds)->get();
-            Log::info("🛠 masterStages", ['masterStages' => $masterStages->toArray()]);
+            // Log::info("🛠 masterStages", ['masterStages' => $masterStages->toArray()]);
 
             $machines = Machinery::whereIn('id', $machineIds)->get();
-            Log::info("⚙️ Máquinas", ['machines' => $machines->toArray()]);
+            // Log::info("⚙️ Máquinas", ['machines' => $machines->toArray()]);
 
             $users = User::whereIn('id', $userIds)->get();
-            Log::info("👥 Usuarios", ['users' => $users->toArray()]);
+            // Log::info("👥 Usuarios", ['users' => $users->toArray()]); 
+
+            $timers = Timer::with('timerControls')
+                ->where('ejecutada_id', $plan->id)
+                ->get();
+
+            // Log::info("⏱️ Timers con controles", $timers->toArray());
 
             return response()->json([
                 'plan' => $plan,
@@ -346,6 +353,7 @@ class AdaptationDateController extends Controller
                 'machines' => $machines,
                 'users' => $users,
                 'desart' => $desart,
+                'timers' => $timers,
             ]);
         } catch (\Exception $e) {
             Log::error("💥 Error en getPlanByIdPDF: " . $e->getMessage());

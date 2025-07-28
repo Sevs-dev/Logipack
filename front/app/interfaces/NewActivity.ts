@@ -7,6 +7,9 @@ export type ActivityType = {
   max?: number;
   valor?: number;
   items?: Array<{ min?: number; max?: number; valor?: number }>;
+  clase?: string;
+  nivel?: string;
+  subnivel?: string;
 };
 
 export interface NewActivity {

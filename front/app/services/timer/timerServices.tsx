@@ -32,9 +32,9 @@ const handleError = (action: string, error: unknown) => {
 };
 
 // Crear un timer
-export const createTimer = async (data: TimerData): Promise<TimerResponse | { exists: true }> => {
+export const createTimer = async (data: TimerData): Promise<TimerResponse | { exists: true }> => { 
     try {
-        const response = await apiTimer.post('/newTimer', data);
+        const response = await apiTimer.post('/newTimer', data); 
         return response.data;
     } catch (error) {
         const status = (error as { response?: { status?: number } })?.response?.status;

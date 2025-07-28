@@ -19,6 +19,7 @@ export interface MaestraBase {
   duration_user: string;
   paralelo: boolean;
   user?: string;
+actividades_muestreo?: Activitie[];
 }
 
 export interface MaestrasServ {
@@ -53,4 +54,10 @@ export interface MaestraResponse {
   success: boolean;
   data: DataService | DataService[];
   message?: string;
+}
+
+export interface Activitie {
+  id: number;
+  descripcion: string;
+  config: string; 
 }
