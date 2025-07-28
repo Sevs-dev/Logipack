@@ -6,7 +6,7 @@ import { getFactory } from "@/app/services/userDash/factoryServices";
 import { getPrefix } from "@/app/services/consecutive/consecutiveServices";
 import { getArticleByCode, getArticleByClient } from "@/app/services/bom/articleServices";
 import { newAdaptation, getAdaptations, deleteAdaptation, updateAdaptation, getAdaptationsId } from "@/app/services/adaptation/adaptationServices";
-import { getMaestra, getMuestreo } from "../../services/maestras/maestraServices";
+import { getMaestra } from "../../services/maestras/maestraServices";
 import { getAuditsByModelAdaptation } from "../../services/history/historyAuditServices";
 // 🔹 Componentes
 import Button from "../buttons/buttons";
@@ -41,8 +41,6 @@ function NewAdaptation({ canEdit = false, canView = false }: CreateClientProps) 
     // Maestra
     const [maestra, setMaestra] = useState<MaestraBase[]>([]);
     const [selectedMaestras, setSelectedMaestras] = useState<string[]>([]);
-    const [maestraMuestreo, setMaestraMuestreo] = useState<MaestraBase | null>(null);
-
 
     // Artículos
     const [articles, setArticles] = useState<Article[]>([]);
@@ -132,37 +130,6 @@ function NewAdaptation({ canEdit = false, canView = false }: CreateClientProps) 
         };
         fetchMaestras();
     }, []);
-
-    useEffect(() => {
-        const fetchMuestreo = async () => {
-            const maestraId = Number(selectedMaestras?.[0]);
-            if (!maestraId || isNaN(maestraId)) {
-                console.warn("⚠️ No hay maestra seleccionada o el ID no es válido:", selectedMaestras);
-                return;
-            }
-            try {
-                setIsLoading(true);
-                const muestreoData = await getMuestreo(maestraId);
-                console.log("🔍 Muestreo cargado:", muestreoData);
-                const actividades = muestreoData?.actividades_muestreo ?? [];
-                if (actividades.length > 0) {
-                    setMaestraMuestreo(muestreoData);
-                } else {
-                    console.info("ℹ️ La maestra no contiene actividades de tipo 'muestreo'.");
-                    setMaestra([]);
-                }
-            } catch (error) {
-                showError("❌ Error al cargar el muestreo de la maestra.");
-                console.error("💥 Error en fetchMuestreo:", error);
-            } finally {
-                setIsLoading(false);
-            }
-        };
-
-        fetchMuestreo();
-    }, [selectedMaestras]);
-
-
 
     // Cargar Artículos por Cliente
     useEffect(() => {
@@ -333,9 +300,7 @@ function NewAdaptation({ canEdit = false, canView = false }: CreateClientProps) 
     // ======================= 📦 Memos y helpers =======================
 
     const maestraSeleccionada = useMemo(() => {
-        const idSeleccionado = selectedMaestras?.[0];
-        if (!idSeleccionado) return undefined;
-        return maestra.find(m => m?.id?.toString() === idSeleccionado);
+        return maestra.find(m => m.id.toString() === selectedMaestras[0]);
     }, [selectedMaestras, maestra]);
 
     const maestraRequiereBOM = maestraSeleccionada?.requiere_bom ?? false;
@@ -725,18 +690,15 @@ function NewAdaptation({ canEdit = false, canView = false }: CreateClientProps) 
                                 disabled={!canEdit}
                             >
                                 <option value="">Seleccione...</option>
-                                {maestra
-                                    .filter((m): m is MaestraBase => !!m && typeof m.id !== "undefined")
-                                    .map((master) => (
-                                        <option
-                                            key={master.id}
-                                            value={master.id.toString()}
-                                            disabled={Number(master.aprobado) === 0}
-                                        >
-                                            {master.descripcion ?? "Sin descripción"}
-                                        </option>
-                                    ))}
-
+                                {maestra.map((master) => (
+                                    <option
+                                        key={master.id}
+                                        value={master.id.toString()}
+                                        disabled={Number(master.aprobado) === 0}
+                                    >
+                                        {master.descripcion}
+                                    </option>
+                                ))}
                             </select>
                         </div>
                         <div className="flex flex-col justify-end">
@@ -1030,51 +992,6 @@ function NewAdaptation({ canEdit = false, canView = false }: CreateClientProps) 
                                 ))}
                             </div>
                         )}
-
-                        {Array.isArray(maestraMuestreo?.actividades_muestreo) && maestraMuestreo.actividades_muestreo.length > 0 && (
-                            <div className="mt-4 border border-gray-300 rounded-md p-4 bg-gray-50">
-                                <Text type="subtitle" color="#000">Actividades de Muestreo:</Text>
-                                <ul className="mt-2 list-inside space-y-4 text-sm text-gray-800">
-                                    {maestraMuestreo.actividades_muestreo.map((actividad) => {
-                                        const config = JSON.parse(actividad.config || "{}");
-                                        return (
-                                            <li key={actividad.id} className="border border-dashed border-gray-300 p-3 rounded-md">
-                                                <p className="text-xs text-gray-600 mb-1">
-                                                    <strong>Clase:</strong> {config.clase ?? "-"} | <strong>Nivel:</strong> {config.nivel ?? "-"} | <strong>Subnivel:</strong> {config.subnivel ?? "-"}
-                                                </p>
-
-                                                {Array.isArray(config.items) && config.items.length > 0 && (
-                                                    <div className="text-xs text-gray-600 mt-2 space-y-4">
-                                                        <strong>Rangos definidos:</strong>
-                                                        {config.items.map((item: any, idx: number) => {
-                                                            const A = Number(item.valor);
-                                                            const B = A;
-                                                            const C = A;
-                                                            const D = Math.floor(Math.sqrt(C)) + 1;
-                                                            const E = B / D;
-                                                            return (
-                                                                <div key={idx} className="border border-gray-200 rounded-md p-2 bg-white">
-                                                                    <p className="mb-1">[{item.min} - {item.max}] → Valor: {item.valor}</p>
-                                                                    <p className="text-gray-700">
-                                                                        <strong>A)</strong> TOTAL UNIDADES ACONDICIONADAS: {A} <br />
-                                                                        <strong>B)</strong> TAMAÑO MUESTRA: {B} <br />
-                                                                        <strong>C)</strong> TOTAL CAJAS CORRUGADAS: {C} <br />
-                                                                        <strong>D)</strong> CORRUGADOS A REVISAR (VC + 1): {D} <br />
-                                                                        <strong>E)</strong> CANTIDAD A REVISAR (B / D): {E.toFixed(2)} <br />
-                                                                    </p>
-                                                                </div>
-                                                            );
-                                                        })}
-
-                                                    </div>
-                                                )}
-                                            </li>
-                                        );
-                                    })}
-                                </ul>
-                            </div>
-                        )}
-
 
                         {/* Materiales */}
                         {maestraRequiereBOM ? (
