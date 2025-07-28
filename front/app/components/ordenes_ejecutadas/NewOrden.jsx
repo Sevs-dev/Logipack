@@ -210,8 +210,8 @@ const App = () => {
       // Bloquear modal
       setShowModal(
         (roles?.role || "") === "" ||
-          (perfil || "") === "" ||
-          roles?.role !== perfil
+        (perfil || "") === "" ||
+        roles?.role !== perfil
       );
       setShowModal_fase(resp.condicion_1 > 0);
     };
@@ -463,6 +463,29 @@ const App = () => {
               }
               const { type, options, min, max, items } = config;
               const clave = item.clave;
+              // if (fase?.phase_type === "Conciliación") {
+              //   return (
+              //     <div key={index}>
+              //       <Text type="subtitle" color="text-white">
+              //         {item.descripcion_activitie}
+              //       </Text>
+
+              //       {/* TEXT */}
+              //       {type === "text" && (
+              //         <input
+              //           type="text"
+              //           className="block w-full px-3 py-2 bg-[#1a1d23] border 
+              //           border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 
+              //           focus:ring-blue-500 focus:border-blue-500 text-white placeholder-gray-400 text-center"
+              //           name={476584376584356}
+              //           value={memoriaFase[linea]?.[476584376584356] ?? ""}
+              //           required={true}
+              //           onChange={inputChange}
+              //         />
+              //       )}
+              //     </div>
+              //   );
+              // } 
               return (
                 <div key={index}>
                   <Text type="subtitle" color="text-white">
@@ -651,27 +674,27 @@ const App = () => {
                       {memoriaFase[linea]?.[clave]?.startsWith(
                         "data:application/pdf"
                       ) && (
-                        <div className="mb-2">
-                          <object
-                            data={memoriaFase[linea][clave]}
-                            type="application/pdf"
-                            width="100%"
-                            height="400px"
-                          >
-                            <p className="text-gray-600">
-                              No se pudo mostrar el PDF.{" "}
-                              <a
-                                href={memoriaFase[linea][clave]}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-blue-600 underline"
-                              >
-                                Haz clic aquí para verlo
-                              </a>
-                            </p>
-                          </object>
-                        </div>
-                      )}
+                          <div className="mb-2">
+                            <object
+                              data={memoriaFase[linea][clave]}
+                              type="application/pdf"
+                              width="100%"
+                              height="400px"
+                            >
+                              <p className="text-gray-600">
+                                No se pudo mostrar el PDF.{" "}
+                                <a
+                                  href={memoriaFase[linea][clave]}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-blue-600 underline"
+                                >
+                                  Haz clic aquí para verlo
+                                </a>
+                              </p>
+                            </object>
+                          </div>
+                        )}
 
                       <input
                         className="block w-full px-3 py-2 bg-[#1a1d23] border border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-white placeholder-gray-400 text-center"
@@ -714,14 +737,14 @@ const App = () => {
                       {memoriaFase[linea]?.[clave]?.startsWith(
                         "data:image"
                       ) && (
-                        <div className="mb-2 justify-center flex">
-                          <img
-                            src={memoriaFase[linea][clave]}
-                            alt="Imagen guardada"
-                            className="max-h-48 rounded shadow object-contain"
-                          />
-                        </div>
-                      )}
+                          <div className="mb-2 justify-center flex">
+                            <img
+                              src={memoriaFase[linea][clave]}
+                              alt="Imagen guardada"
+                              className="max-h-48 rounded shadow object-contain"
+                            />
+                          </div>
+                        )}
 
                       <input
                         className="block w-full px-3 py-2 bg-[#1a1d23] border border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-white placeholder-gray-400 text-center"
@@ -783,29 +806,29 @@ const App = () => {
                       {/* Mostrar Input si selecciona "texto" */}
                       {memoriaFase[linea]?.[`tipo_entrada_${clave}`] ===
                         "texto" && (
-                        <input
-                          type="text"
-                          className="text-center block w-full px-3 py-2 bg-[#1a1d23] border border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-white placeholder-gray-400"
-                          name={clave}
-                          value={memoriaFase[linea]?.[clave] ?? ""}
-                          required={item.binding}
-                          onChange={inputChange}
-                        />
-                      )}
+                          <input
+                            type="text"
+                            className="text-center block w-full px-3 py-2 bg-[#1a1d23] border border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-white placeholder-gray-400"
+                            name={clave}
+                            value={memoriaFase[linea]?.[clave] ?? ""}
+                            required={item.binding}
+                            onChange={inputChange}
+                          />
+                        )}
 
                       {/* Mostrar Firma si selecciona "firma" */}
                       {memoriaFase[linea]?.[`tipo_entrada_${clave}`] ===
                         "firma" && (
-                        <Firma
-                          type={type}
-                          item={item}
-                          info={memoriaFase[linea]}
-                          lineaIndex={linea}
-                          setMemoriaGeneral={setMemoriaFase}
-                          saveToDB={saveToDB}
-                          typeMem="memoria_fase"
-                        />
-                      )}
+                          <Firma
+                            type={type}
+                            item={item}
+                            info={memoriaFase[linea]}
+                            lineaIndex={linea}
+                            setMemoriaGeneral={setMemoriaFase}
+                            saveToDB={saveToDB}
+                            typeMem="memoria_fase"
+                          />
+                        )}
                     </>
                   )}
 
