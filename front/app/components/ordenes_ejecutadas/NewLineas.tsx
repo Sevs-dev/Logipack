@@ -52,7 +52,9 @@ const NewLineas = () => {
     const orden = lista.orden;
     const lista_procesos = Array.isArray(lista.linea_procesos) ? lista.linea_procesos : [];
     const lista_fases = Array.isArray(lista.linea_fases) ? lista.linea_fases : [];
-
+    if (lista_procesos && lista_procesos.length === 0) {
+        window.close();
+    }
     if (orden === null && local) {
         const generar = async () => {
             const { message } = await generar_orden(local.id);
@@ -64,7 +66,7 @@ const NewLineas = () => {
         }
         generar();
     }
-    
+
     // Si no hay orden, se muestra un loader
     if (orden === null) {
         return (

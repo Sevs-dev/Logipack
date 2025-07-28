@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { FaPlay, FaStop, FaRedo } from 'react-icons/fa';
-import { motion, useMotionValue, useTransform, useSpring } from "framer-motion";
+import { motion } from "framer-motion";
 import { showSuccess, showConfirm } from "../toastr/Toaster";
 import Text from "../text/Text";
 import { TimerControlData } from '../../interfaces/TimerController';
@@ -14,6 +14,15 @@ interface TimerProps {
     initialMinutes: number;
     refetchTimer: () => void;
     userId: number; // Add userId as a prop
+}
+
+interface ActividadConfig {
+    type?: string;
+    min?: number;
+    max?: number;
+    step?: number;
+    options?: string[];
+    [key: string]: unknown;
 }
 
 const Timer: React.FC<TimerProps> = ({ ejecutadaId, stageId, initialMinutes, refetchTimer, userId }) => {
@@ -78,6 +87,7 @@ const Timer: React.FC<TimerProps> = ({ ejecutadaId, stageId, initialMinutes, ref
             if (!timerId) return;
             try {
                 const control = await getcontrolTimer(timerId);
+                console.log("Control de timer obtenido:", control);
                 setControlData(control);
             } catch (error) {
                 console.error('Error al obtener control del timer:', error);
@@ -88,18 +98,19 @@ const Timer: React.FC<TimerProps> = ({ ejecutadaId, stageId, initialMinutes, ref
 
     // 🧠 Guardar respuestas del formulario dinámico
     const handleSaveTimerData = async () => {
-        if (timerId === null) {
-            console.error("❌ timerId es null, no se puede guardar el control de timer");
+        if (!timerId || typeof timerId !== "number") {
+            console.error("❌ timerId inválido o null:", timerId);
             return;
         }
 
-        const name = document.cookie
-            .split('; ')
-            .find(row => row.startsWith('name='))
-            ?.split('=')[1];
+        const nameCookie = document.cookie
+            .split("; ")
+            .find((row) => row.startsWith("name="));
+
+        const name = nameCookie?.split("=")[1];
 
         if (!name) {
-            console.error("❌ Usuario no encontrado en cookie");
+            console.error("❌ Usuario no encontrado en cookies");
             return;
         }
 
@@ -107,17 +118,38 @@ const Timer: React.FC<TimerProps> = ({ ejecutadaId, stageId, initialMinutes, ref
             const payload: TimerControlData = {
                 timer_id: timerId,
                 user: decodeURIComponent(name),
-                data: controlData.map((actividad) => ({
-                    activity_id: actividad.id_activitie,
-                    tipo: JSON.parse(actividad.config ?? "{}").type || "text",
-                    descripcion: actividad.descripcion_activitie,
-                    valor: actividad.valor ?? "",
-                    clave: actividad.clave,
-                })),
+                data: controlData.map((actividad) => {
+                    let tipo = "text";
+                    try {
+                        const config = JSON.parse(
+                            typeof actividad.config === "string" ? actividad.config : "{}"
+                        );
+                        if (typeof config === "string") {
+                            tipo = JSON.parse(config).type || "text";
+                        } else {
+                            tipo = config.type || "text";
+                        }
+                    } catch (error) {
+                        console.warn("⚠️ Config malformado en actividad", actividad, error);
+                    }
+
+                    const valor =
+                        typeof actividad.valor === "object" && actividad.valor !== null
+                            ? JSON.stringify(actividad.valor)
+                            : actividad.valor ?? "";
+
+                    return {
+                        activity_id: actividad.id_activitie,
+                        tipo,
+                        descripcion: actividad.descripcion_activitie,
+                        valor,
+                        clave: actividad.clave,
+                    };
+                }),
             };
 
             const res = await createTimerControl(payload);
-            // console.log("✔ Guardado exitoso:", res);
+            console.log("✔ Control de timer guardado correctamente", res);
         } catch (err) {
             console.error("❌ Error al guardar control de timer", err);
         }
@@ -192,7 +224,6 @@ const Timer: React.FC<TimerProps> = ({ ejecutadaId, stageId, initialMinutes, ref
             showSuccess("Fase de control detenida correctamente.");
         });
     };
-
 
     // 🔔 Reproducir alarma si se activa
     useEffect(() => {
@@ -390,13 +421,27 @@ const Timer: React.FC<TimerProps> = ({ ejecutadaId, stageId, initialMinutes, ref
                                     <Text type="title">{fase}</Text>
                                     <div className="grid gap-6">
                                         {actividades.map((actividad) => {
-                                            const config = JSON.parse(actividad.config ?? "{}");
-                                            const tipo = config.type || "text";
+                                            const parseConfig = (raw: any) => {
+                                                try {
+                                                    if (typeof raw === "string") {
+                                                        let parsed = JSON.parse(raw);
+                                                        if (typeof parsed === "string") parsed = JSON.parse(parsed);
+                                                        return parsed;
+                                                    }
+                                                    return raw ?? {};
+                                                } catch (e) {
+                                                    console.warn("❌ Error al parsear config:", raw, e);
+                                                    return {};
+                                                }
+                                            };
+
+                                            const parsedConfig = parseConfig(actividad.config);
+                                            const tipo = parsedConfig.type || "text";
                                             const value = actividad.valor ?? "";
-                                            const options = config.options ?? [];
+                                            const options: string[] = Array.isArray(parsedConfig.options) ? parsedConfig.options : [];
 
                                             const commonInputClass =
-                                                "w-full border border-gray-300 p-2 pl-9 rounded-md text-sm text-black focus:outline-none focus:ring-2 focus:ring-blue-500";
+                                                "w-full border border-gray-300 p-2 pl-9 rounded-md text-sm text-black focus:outline-none focus:ring-2 focus:ring-blue-500 text-center";
 
                                             return (
                                                 <div key={actividad.id_activitie} className="flex flex-col gap-2">
@@ -443,7 +488,7 @@ const Timer: React.FC<TimerProps> = ({ ejecutadaId, stageId, initialMinutes, ref
                                                                         onChange={(e) => handleChange(actividad.id_activitie, e.target.value)}
                                                                     >
                                                                         <option value="">Seleccione...</option>
-                                                                        {options.map((opt: string, idx: number) => (
+                                                                        {options.map((opt, idx) => (
                                                                             <option key={idx} value={opt}>
                                                                                 {opt}
                                                                             </option>
@@ -462,7 +507,7 @@ const Timer: React.FC<TimerProps> = ({ ejecutadaId, stageId, initialMinutes, ref
                                                             case "radio":
                                                                 return (
                                                                     <div className="flex flex-wrap gap-4">
-                                                                        {options.map((opt: string, idx: number) => (
+                                                                        {options.map((opt, idx) => (
                                                                             <label key={idx} className="inline-flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
                                                                                 <input
                                                                                     type="radio"
@@ -487,18 +532,38 @@ const Timer: React.FC<TimerProps> = ({ ejecutadaId, stageId, initialMinutes, ref
                                                                         onChange={(e) => handleChange(actividad.id_activitie, e.target.value)}
                                                                     />
                                                                 );
-                                                            case "range":
+                                                            case "temperature": {
+                                                                const rangoMin = parsedConfig.min;
+                                                                const rangoMax = parsedConfig.max;
+
+                                                                const valor = typeof value === "number" ? value : parseFloat(value);
+                                                                const fueraDeRango =
+                                                                    !isNaN(valor) &&
+                                                                    (rangoMin !== undefined && valor < rangoMin || rangoMax !== undefined && valor > rangoMax);
+
                                                                 return (
-                                                                    <input
-                                                                        type="range"
-                                                                        className="w-full accent-blue-500"
-                                                                        min={config.min ?? 0}
-                                                                        max={config.max ?? 100}
-                                                                        step={config.step ?? 1}
-                                                                        value={value}
-                                                                        onChange={(e) => handleChange(actividad.id_activitie, e.target.value)}
-                                                                    />
+                                                                    <div className="flex flex-col gap-2">
+                                                                        <input
+                                                                            type="number"
+                                                                            step="0.1"
+                                                                            placeholder={`Entre ${rangoMin} y ${rangoMax}`}
+                                                                            className={`${commonInputClass} ${fueraDeRango ? "border-red-500 ring-red-500" : ""
+                                                                                }`}
+                                                                            value={value}
+                                                                            onChange={(e) => {
+                                                                                const val = e.target.value === "" ? "" : parseFloat(e.target.value);
+                                                                                handleChange(actividad.id_activitie, val);
+                                                                            }}
+                                                                        />
+                                                                        {fueraDeRango && (
+                                                                            <p className="text-sm text-black bg-red-300 p-2 rounded-md mt-1 text-center">
+                                                                                ⚠️ El valor debe estar entre {rangoMin}°C y {rangoMax}°C
+                                                                            </p>
+                                                                        )}
+                                                                    </div>
                                                                 );
+                                                            }
+
                                                             case "color":
                                                                 return (
                                                                     <input
@@ -513,7 +578,7 @@ const Timer: React.FC<TimerProps> = ({ ejecutadaId, stageId, initialMinutes, ref
                                                                     <input
                                                                         type="file"
                                                                         className="block w-full text-sm text-gray-700 dark:text-gray-300 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-blue-500 file:text-white hover:file:bg-blue-600"
-                                                                        onChange={(e) => handleChange(actividad.id_activitie, e.target.files?.[0])}
+                                                                        onChange={(e) => handleChange(actividad.id_activitie, e.target.files?.[0] ?? null)}
                                                                     />
                                                                 );
                                                             default:
@@ -534,10 +599,11 @@ const Timer: React.FC<TimerProps> = ({ ejecutadaId, stageId, initialMinutes, ref
                                 </div>
                             ))}
                         </div>
-
                     ) : (
                         <p className="text-gray-500 text-center">No hay actividades disponibles</p>
                     )}
+
+
                     {/* Botones de acción */}
                     <hr className="my-4 border-t border-gray-600 w-full max-w-lg mx-auto opacity-60" />
                     <div className="flex justify-center gap-4 mt-6">

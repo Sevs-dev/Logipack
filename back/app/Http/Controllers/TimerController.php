@@ -19,17 +19,20 @@ class TimerController extends Controller
             'time'         => 'required|integer|min:0',
         ]);
 
-        // Verificar si ya existe
-        $existing = Timer::where('ejecutada_id', $validated['ejecutada_id'])->first();
+        Log::info('🔔 [Timer Store] Petición recibida', $validated);
 
-        if ($existing) {
-            // Silenciosamente retornar el existente
+        // ✅ Validar si ya existe un timer para esta actividad, sin importar su estado
+        $existingTimer = Timer::where('ejecutada_id', $validated['ejecutada_id'])->first();
+
+        if ($existingTimer) {
             return response()->json([
-                'timer' => $existing,
+                'exists' => true,
+                'message' => 'Ya existe un timer para esta actividad.',
+                'timer' => $existingTimer,
             ], 200); // OK
         }
 
-        // Crear nuevo timer
+        // ✅ Si no existe, crear nuevo timer
         $timer = Timer::create([
             'ejecutada_id' => $validated['ejecutada_id'],
             'stage_id'     => $validated['stage_id'],

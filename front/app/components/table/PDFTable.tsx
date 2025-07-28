@@ -29,7 +29,7 @@ const PDFTable = ({ headers, rows, className = '', striped = true }: PDFTablePro
             {headers.map((header, i) => (
               <th
                 key={i}
-                className="border border-slate-200 px-2 py-1 font-semibold text-center whitespace-nowrap"
+                className="border border-slate-200 px-2 py-1 font-semibold text-center align-middle whitespace-nowrap"
               >
                 {header}
               </th>
@@ -53,10 +53,12 @@ const PDFTable = ({ headers, rows, className = '', striped = true }: PDFTablePro
               return (
                 <td
                   key={ci}
-                  className="border border-slate-200 px-2 py-1 align-top whitespace-pre-line text-neutral-900 text-center"
+                  className="border border-slate-200 px-2 py-1 text-center align-middle whitespace-pre-line text-neutral-900"
                   {...props}
                 >
-                  {content}
+                  <div className="flex justify-center items-center w-full h-full">
+                    {content}
+                  </div>
                 </td>
               );
             })}

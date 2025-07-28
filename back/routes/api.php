@@ -111,6 +111,7 @@ Route::controller(ProductController::class)->group(function () {
 //Rutas Maestras
 Route::controller(MaestrasController::class)->group(function () {
     Route::get('/getMaestra', 'getMaestra'); // Obtener todas las lineas
+    Route::get('/getMuestreo/{id}', 'getMuestreo'); // Obtener todas las lineas
     Route::post('/newMaestra', 'newMaestra'); // Crear una nueva lineas
     Route::get('/MaestraId/{id}', 'MaestraId'); // Obtener una lineas específica
     Route::get('/MaestraName/{name}', 'MaestraName'); // Obtener una lineas específica
@@ -200,15 +201,6 @@ Route::controller(LineaTipoAcondicionamientoController::class)->group(function (
     Route::get('/getListTipoyLineas/{id}', 'getListTipoyLineas'); // Obtener una lineas específica
     Route::get('/getSelectStages', 'getSelectStages'); // Obtener una lineas específica
 });
-
-// //Rutas Ordenes Ejecutadas
-// Route::controller(OrdenesEjecutadasController::class)->group(function () {
-//     Route::get('/getOrdenesEjecutadas', 'getAll'); // Obtener todas las lineas   
-//     Route::get('/validar_estado/{id}', 'validar_estado'); // Crear una nueva lineas 
-//     Route::get('/procesar_orden/{id}', 'procesar_orden'); // Crear una nueva lineas 
-//     Route::post('/next_line', 'nextLineOrden'); // Crear una nueva lineas 
-//     Route::post('/confirmarOrden', 'confirmarOrden'); // Crear una nueva lineas 
-// });
 
 //Rutas Ordenes Ejecutadas
 Route::controller(OrdenesEjecutadasController::class)->group(function () {

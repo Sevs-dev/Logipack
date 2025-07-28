@@ -67,6 +67,16 @@ export const getMaestraId = async (id: number): Promise<MaestraBase> => {
   }
 };
 
+export const getMuestreo = async (id: number): Promise<MaestraBase> => {
+  try {
+    const response = await Maestras.get(`/getMuestreo/${id}`);
+    return response.data;
+  } catch (error: unknown) {
+    handleError("getMaestraId", error);
+    throw error;
+  }
+};
+
 export const getMaestraName = async (name: string): Promise<MaestraBase[]> => {
   try {
     const response = await Maestras.get(`/MaestraName/${name}`);

@@ -73,6 +73,10 @@ class AdaptationDate extends Model
         return $this->hasMany(User::class, 'id', 'users');
     }
 
+    public function controls()
+    {
+        return $this->hasMany(TimerControl::class);
+    }
 
     /*
     |--------------------------------------------------------------------------

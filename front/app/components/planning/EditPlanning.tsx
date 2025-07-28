@@ -1026,7 +1026,7 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
                 onView={obtenerActividades}
                 onPDF={handlePDF}
                 showTerciarioCondition={(row) => row.status_dates === "Planificación" || row.status_dates === "En ejecución"} // 👈 Aquí va tu condición
-                showViewCondition={(row) => row.status_dates === "Ejecutado"}
+                showViewCondition={(row) => row.status_dates === "Ejecutado" || row.status_dates === "En ejecución"}
                 showPDFCondition={(row) => row.status_dates === "Ejecutado"}
             />
 

@@ -13,4 +13,9 @@ class TimerControl extends Model
     protected $casts = [
         'data' => 'array',
     ];
+
+    public function timer()
+    {
+        return $this->belongsTo(Timer::class);
+    } 
 }
