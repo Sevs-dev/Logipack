@@ -92,6 +92,7 @@ const NewDetalle = () => {
                   <p className="text-gray-500 text-center">Maestra</p>
                   <p className="font-medium text-gray-200 text-center">
                     {orden?.descripcion_maestra}
+                    {/* ddd */}
                   </p>
                 </div>
                 {/* <div>

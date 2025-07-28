@@ -160,6 +160,7 @@ class OrdenesEjecutadasController extends Controller
                     DB::raw('0')
                 );
             })
+            // , 'Conciliación'
             ->whereIn('std.phase_type', ['Planificación', 'Conciliación', 'Actividades'])
             ->whereNotExists(function ($query) use ($id) {
                 $query

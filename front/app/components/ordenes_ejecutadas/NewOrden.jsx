@@ -211,8 +211,8 @@ const App = () => {
       // Bloquear modal
       setShowModal(
         (roles?.role || "") === "" ||
-          (perfil || "") === "" ||
-          roles?.role !== perfil
+        (perfil || "") === "" ||
+        roles?.role !== perfil
       );
       setShowModal_fase(resp.condicion_1 > 0);
     };
