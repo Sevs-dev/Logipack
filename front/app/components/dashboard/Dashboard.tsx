@@ -3,7 +3,7 @@
 import React, { useEffect, useState, useRef, ReactNode } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import CountUp from "react-countup";
-import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend, PieLabelRenderProps } from "recharts";
+import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, PieLabelRenderProps } from "recharts";
 import useUserData from "../../hooks/useUserData";
 import { getPlanDash } from "../../services/planing/planingServices";
 import { getPlanningById, validate_orden } from "../../services/planing/planingServices";
@@ -379,46 +379,58 @@ const Dashboard = () => {
                   </span>
                 </div>
               ) : (
-                <ResponsiveContainer width="100%" height={240}>
-                  <PieChart>
-                    <Pie
-                      data={dataEstados}
-                      dataKey="value"
-                      nameKey="name"
-                      cx="50%"
-                      cy="50%"
-                      outerRadius={92}
-                      label={renderCustomLabel}
-                      isAnimationActive
-                      animationDuration={800}
-                      stroke="#0ea5e9"
-                      strokeWidth={2.5}
-                    >
-                      {dataEstadosFiltrados.map((entry, i) => (
-                        <Cell
-                          key={i}
-                          fill={COLORS[i % COLORS.length]}
-                          className="hover:opacity-80 transition-opacity"
+                <>
+                  <ResponsiveContainer width="100%" height={240}>
+                    <PieChart>
+                      <Pie
+                        data={dataEstados}
+                        dataKey="value"
+                        nameKey="name"
+                        cx="50%"
+                        cy="50%"
+                        outerRadius={92}
+                        label={renderCustomLabel}
+                        isAnimationActive
+                        animationDuration={800}
+                        stroke="#0ea5e9"
+                        strokeWidth={2.5}
+                      >
+                        {dataEstadosFiltrados.map((entry, i) => (
+                          <Cell
+                            key={i}
+                            fill={COLORS[i % COLORS.length]}
+                            className="hover:opacity-80 transition-opacity"
+                          />
+                        ))}
+                      </Pie>
+                      <Tooltip
+                        content={<CustomTooltip />}
+                        wrapperStyle={{
+                          borderRadius: 12,
+                          background: "#0f172a",
+                          color: "#fff",
+                        }}
+                        cursor={{ fill: "#0ea5e930" }}
+                      />
+                      {/* <Legend ... /> REMOVIDO */}
+                    </PieChart>
+                  </ResponsiveContainer>
+
+                  {/* ✅ Leyenda personalizada afuera */}
+                  <div className="flex flex-wrap justify-center gap-4 mt-5">
+                    {dataEstadosFiltrados.map((entry, i) => (
+                      <div key={i} className="flex items-center space-x-2">
+                        <span
+                          className="w-3 h-3 rounded-full inline-block"
+                          style={{ backgroundColor: COLORS[i % COLORS.length] }}
                         />
-                      ))}
-                    </Pie>
-                    <Tooltip
-                      content={<CustomTooltip />}
-                      wrapperStyle={{ borderRadius: 12, background: "#0f172a", color: "#fff" }}
-                      cursor={{ fill: "#0ea5e930" }}
-                    />
-                    <Legend
-                      verticalAlign="bottom"
-                      iconType="circle"
-                      wrapperStyle={{
-                        paddingTop: 8,
-                        color: "#a5f3fc",
-                        fontWeight: 500,
-                        fontSize: 14,
-                      }}
-                    />
-                  </PieChart>
-                </ResponsiveContainer>
+                        <span className="text-sm text-cyan-100/90 font-medium">
+                          {entry.name}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </>
               )}
             </div>
           </Card>

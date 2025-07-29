@@ -18,6 +18,7 @@ import { Audit } from "../../interfaces/Audit";
 import { getRole } from "../../services/userDash/authservices";
 import { Role } from "@/app/interfaces/CreateUser";
 import DateLoader from '@/app/components/loader/DateLoader';
+import SelectorDual from "../../components/SelectorDual/SelectorDual";
 
 function NewStage({ canEdit = false, canView = false }: CreateClientProps) {
     // === useState (Modal & Edición) ===
@@ -28,7 +29,6 @@ function NewStage({ canEdit = false, canView = false }: CreateClientProps) {
     const [description, setDescription] = useState("");
     const [duration, setDuration] = useState("");
     const [durationUser, setDurationUser] = useState("");
-    const [role, setRole] = useState("");
     const [roles, setRoles] = useState<Role[]>([]);
     const [phaseType, setPhaseType] = useState<string>("");
     // === useState (Flags) ===
@@ -47,7 +47,9 @@ function NewStage({ canEdit = false, canView = false }: CreateClientProps) {
     const [, setSelectedAudit] = useState<Audit | null>(null);
     const [searchTerm, setSearchTerm] = useState("");
     const [isSaving, setIsSaving] = useState(false);
-    
+    const [selectedRoles, setSelectedRoles] = useState<Role[]>([]);
+
+
     // === Fetchers ===
     const fetchStage = async () => {
         try {
@@ -151,10 +153,11 @@ function NewStage({ canEdit = false, canView = false }: CreateClientProps) {
             status,
             multi,
             duration_user: durationUser,
-            role: role,
+            role: selectedRoles.map(r => r.name).join(','),
             duration,
             activities: [],
         };
+        console.log("Datos a enviar:", newStage);
         if (["Actividades", "Control", "Procesos"].includes(phaseType)) {
             newStage.activities = selectedActivities.map((activity) => activity.id);
         }
@@ -192,13 +195,19 @@ function NewStage({ canEdit = false, canView = false }: CreateClientProps) {
             setCanPause(data.can_pause);
             setDuration(data.duration);
             setDurationUser(data.duration_user);
-            setRole(data.role)
+
+            // ✅ Si lo guardaste como string separado por comas:
+            const rolesArray = data.role ? data.role.split(',') : [];
+            const matchedRoles = roles.filter((r) => rolesArray.includes(r.name));
+            setSelectedRoles(matchedRoles);
+
             setIsEditOpen(true);
         } catch {
             console.error("Error obteniendo datos de la fase:");
             showError("Error obteniendo datos de la fase");
         }
     };
+
 
     // === Actualización ===
     const handleUpdate = async () => {
@@ -221,7 +230,7 @@ function NewStage({ canEdit = false, canView = false }: CreateClientProps) {
             multi: Boolean(multi),
             activities: activityIds,
             duration_user: durationUser ?? "",
-            role: role ?? "",
+            role: selectedRoles.map(r => r.name).join(','),
             duration,
         };
         try {
@@ -267,7 +276,7 @@ function NewStage({ canEdit = false, canView = false }: CreateClientProps) {
         setDurationUser("");
         setMulti(false);
         setrepeat_line(false);
-        setRole("");
+        setSelectedRoles([]);
     };
 
     const getFormattedDuration = (input: number | string): string => {
@@ -386,20 +395,17 @@ function NewStage({ canEdit = false, canView = false }: CreateClientProps) {
                                 </select>
                             </div>
                             <div className="w-full md:w-1/2">
-                                <Text type="subtitle" color="#000">Rol</Text>
-                                <select
-                                    value={role}
-                                    onChange={(e) => setRole(e.target.value)}
-                                    className="w-full text-black border border-gray-300 rounded p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                    disabled={!canEdit}
-                                >
-                                    <option value="">Selecciona un rol</option>
-                                    {roles.map((r) => (
-                                        <option key={r.id} value={r.name}>
-                                            {r.name}
-                                        </option>
-                                    ))}
-                                </select>
+                                <SelectorDual
+                                    titulo="Rol"
+                                    disponibles={roles.filter(
+                                        (r) => !selectedRoles.some((sel) => sel.id === r.id)
+                                    )}
+                                    seleccionados={selectedRoles}
+                                    onAgregar={(rol) => setSelectedRoles((prev) => [...prev, rol])}
+                                    onQuitar={(id) =>
+                                        setSelectedRoles((prev) => prev.filter((r) => r.id !== id))
+                                    }
+                                />
                             </div>
                         </div>
 
