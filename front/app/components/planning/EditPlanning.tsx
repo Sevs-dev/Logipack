@@ -130,6 +130,24 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
         fetchLineDetails();
     }, [currentPlan]);
 
+    useEffect(() => {
+        if (!currentPlan) return;
+
+        setLineActivities((prev) => {
+            const currentLines = getLinesArray(currentPlan.line);
+            // Nuevo objeto sólo con las líneas activas
+            const newLineActivities: Record<number, number[]> = {};
+
+            // Mantén las actividades de las líneas existentes
+            currentLines.forEach(lineId => {
+                newLineActivities[lineId] = prev[lineId] || [];
+            });
+
+            return newLineActivities;
+        });
+    }, [currentPlan?.line]);
+
+
     function calculateEndDateRespectingWorkHours(start: string, durationMinutes: number): string {
         const WORK_START_HOUR = 6;
         const WORK_END_HOUR = 18;
@@ -521,7 +539,7 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
     }, []);
 
     const obtenerActividades = useCallback(async (id: number) => {
-        const { plan } = await getPlanningById(id); 
+        const { plan } = await getPlanningById(id);
         if (!plan?.id) {
             showError("No se pudo obtener el ID de planificación");
             return;

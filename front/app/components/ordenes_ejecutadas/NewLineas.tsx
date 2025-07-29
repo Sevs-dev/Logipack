@@ -52,20 +52,24 @@ const NewLineas = () => {
     const orden = lista.orden;
     const lista_procesos = Array.isArray(lista.linea_procesos) ? lista.linea_procesos : [];
     const lista_fases = Array.isArray(lista.linea_fases) ? lista.linea_fases : [];
-    if (lista_procesos && lista_procesos.length === 0) {
-        window.close();
-    }
-    if (orden === null && local) {
-        const generar = async () => {
+
+    const verificarYGenerar = async () => {
+        if (orden === null && local) {
             const { message } = await generar_orden(local.id);
             console.log(message);
             if (local) {
-                cargarLineasProceso(local);
+                await cargarLineasProceso(local);
             }
-            // window.location.reload();
         }
-        generar();
-    }
+
+        // ⚠️ Revalida después de intentar generar
+        const procesosActualizados = Array.isArray(lista.linea_procesos) ? lista.linea_procesos : [];
+        if (procesosActualizados.length === 0) {
+            // window.close();
+            console.log("No hay procesos disponibles para la orden.");
+        }
+    };
+    verificarYGenerar();
 
     // Si no hay orden, se muestra un loader
     if (orden === null) {
