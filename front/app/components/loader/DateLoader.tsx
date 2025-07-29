@@ -1,25 +1,32 @@
 import React from 'react';
 
 interface DateLoaderProps {
-    message?: string;
-    backgroundColor?: string;
-    color?: string;
+  message?: string;
+  backgroundColor?: string;
+  color?: string;
 }
 
 function DateLoader({
-    message = 'Cargando...',
-    backgroundColor = '#242424',
-    color = '#ffffff',
+  message = 'Cargando...',
+  backgroundColor,
+  color = '#ffffff',
 }: DateLoaderProps) {
-    return (
-        <div
-            className="flex flex-col justify-center items-center h-screen space-y-4"
-            style={{ backgroundColor, color }}
-        >
-            <span className="loader"></span>
-            <p className="text-sm text-gray-300 animate-pulse tracking-wide">{message}</p>
+  const background = backgroundColor ?? 'rgba(2, 2, 2, 0.22)';
 
-            <style jsx>{`
+  return (
+    <div
+      className="fixed inset-0 z-[9999] flex flex-col justify-center items-center space-y-4"
+      style={{
+        backgroundColor: background,
+        backdropFilter: 'blur(6px)',
+        WebkitBackdropFilter: 'blur(6px)',
+        color,
+      }}
+    >
+      <span className="loader"></span>
+      <p className="text-sm animate-pulse tracking-wide">{message}</p>
+
+      <style jsx>{`
         .loader {
           display: block;
           width: 84px;
@@ -55,8 +62,8 @@ function DateLoader({
           }
         }
       `}</style>
-        </div>
-    );
+    </div>
+  );
 }
 
 export default DateLoader;

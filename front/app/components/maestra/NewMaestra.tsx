@@ -24,6 +24,7 @@ import { Product } from "../../interfaces/Products";
 import { DataTipoAcondicionamiento, DataLineaTipoAcondicionamiento } from "@/app/interfaces/NewTipoAcondicionamiento";
 import { getLineaTipoAcondicionamientoById as getLineaTipoAcomById } from "@/app/services/maestras/LineaTipoAcondicionamientoService";
 import { Audit } from "../../interfaces/Audit";
+import DateLoader from '@/app/components/loader/DateLoader';
 // importaciones de interfaces
 
 const Maestra = ({ canEdit = false, canView = false }: CreateClientProps) => {
@@ -53,6 +54,7 @@ const Maestra = ({ canEdit = false, canView = false }: CreateClientProps) => {
     const [, setSelectedAudit] = useState<Audit | null>(null);
     const [fasesBloqueadas, setFasesBloqueadas] = useState<number[]>([]);
     const [isSaving, setIsSaving] = useState(false);
+
 
     const handleSelectTipoAcondicionamiento = async (tipoId: number) => {
         try {
@@ -626,6 +628,9 @@ const Maestra = ({ canEdit = false, canView = false }: CreateClientProps) => {
                 </div>
             )}
 
+            {isSaving && (
+                <DateLoader message="Cargando..." backgroundColor="rgba(0, 0, 0, 0.28)" color="rgba(255, 255, 0, 1)" />
+            )}
             {/* Modal de creación/edición */}
             {isOpen && (
                 <ModalSection isVisible={isOpen} onClose={() => { setIsOpen(false) }}>

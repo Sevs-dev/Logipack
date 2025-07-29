@@ -12,6 +12,7 @@ import { CreateClientProps } from "../../interfaces/CreateClientProps";
 import { MachinePlanning } from "../../interfaces/NewMachine"
 import { UserPlaning } from "../../interfaces/CreateUser"
 import SelectorDual from "../SelectorDual/SelectorDual"
+import DateLoader from '@/app/components/loader/DateLoader';
 // 🔹 Servicios 
 import { getPlanning, updatePlanning, getActivitiesByPlanning, getPlanningById, validate_orden } from "../../services/planing/planingServices";
 import { getActivitieId } from "../../services/maestras/activityServices"
@@ -40,6 +41,7 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
     const [selectedMachines, setSelectedMachines] = useState<MachinePlanning[]>([]);
     const [selectedUsers, setSelectedUsers] = useState<UserPlaning[]>([]);
     const [isSaving, setIsSaving] = useState(false);
+
 
     const fetchAll = useCallback(async () => {
         try {
@@ -129,6 +131,24 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
         };
         fetchLineDetails();
     }, [currentPlan]);
+
+    useEffect(() => {
+        if (!currentPlan) return;
+
+        setLineActivities((prev) => {
+            const currentLines = getLinesArray(currentPlan.line);
+            // Nuevo objeto sólo con las líneas activas
+            const newLineActivities: Record<number, number[]> = {};
+
+            // Mantén las actividades de las líneas existentes
+            currentLines.forEach(lineId => {
+                newLineActivities[lineId] = prev[lineId] || [];
+            });
+
+            return newLineActivities;
+        });
+    }, [currentPlan?.line]);
+
 
     function calculateEndDateRespectingWorkHours(start: string, durationMinutes: number): string {
         const WORK_START_HOUR = 6;
@@ -521,7 +541,7 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
     }, []);
 
     const obtenerActividades = useCallback(async (id: number) => {
-        const { plan } = await getPlanningById(id); 
+        const { plan } = await getPlanningById(id);
         if (!plan?.id) {
             showError("No se pudo obtener el ID de planificación");
             return;
@@ -539,6 +559,11 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
 
     return (
         <div className="break-inside-avoid mb-4">
+
+            {isSaving && (
+                <DateLoader message="Cargando..." backgroundColor="rgba(0, 0, 0, 0.28)" color="rgba(255, 255, 0, 1)" />
+            )}
+
             {isOpen && currentPlan && (
                 <ModalSection isVisible={isOpen} onClose={() => { setIsOpen(false) }}>
                     <Text type="title" color="text-[#000]">Editar Acondicionamiento</Text>

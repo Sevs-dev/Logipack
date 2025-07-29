@@ -17,6 +17,7 @@ import { Factory } from "../../interfaces/NewFactory";
 import { MachineryForm, Machine } from "../../interfaces/NewMachine";
 import { CreateClientProps } from "../../interfaces/CreateClientProps";
 import { Audit } from "../../interfaces/Audit";
+import DateLoader from '@/app/components/loader/DateLoader';
 
 function CreateMachinery({ canEdit = false, canView = false }: CreateClientProps) {
   const [isOpen, setIsOpen] = useState(false);
@@ -40,6 +41,7 @@ function CreateMachinery({ canEdit = false, canView = false }: CreateClientProps
   // Estado para la auditoría seleccionada (no se usa, pero se deja para posible ampliación)
   const [, setSelectedAudit] = useState<Audit | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+
 
   useEffect(() => {
     if (canView) {
@@ -178,6 +180,10 @@ function CreateMachinery({ canEdit = false, canView = false }: CreateClientProps
           <Button onClick={() => { resetForm(); setIsOpen(true); }} variant="create" label="Crear Maquinaria" />
         )}
       </div>
+
+      {isSaving && (
+        <DateLoader message="Cargando..." backgroundColor="rgba(0, 0, 0, 0.28)" color="rgba(255, 255, 0, 1)" />
+      )}
 
       {isOpen && (
         <ModalSection isVisible={isOpen} onClose={() => { setIsOpen(false) }}>

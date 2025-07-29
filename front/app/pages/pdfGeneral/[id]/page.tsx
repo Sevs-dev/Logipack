@@ -1,6 +1,6 @@
 // pages/pdf/PDFPage.tsx
 'use client';
-import React, { use, useEffect, useState, useRef } from 'react';
+import React, { use, useEffect, useState, useRef, useMemo } from 'react';
 import ReactFlow from 'reactflow';
 import 'reactflow/dist/style.css';
 import { getPlanningByIdPDF } from '../../../services/planing/planingServices';
@@ -8,13 +8,14 @@ import withAuth from '../../../hooks/withAuth';
 import html2pdf from 'html2pdf.js';
 import PDFTable from '../../../components/table/PDFTable';
 import DateLoader from '@/app/components/loader/DateLoader';
-import { Stage, TimerControlDataItem, TimerControl, Timer, DataType } from '@/app/interfaces/PDF';
+import { Stage, TimerControlDataItem, TimerControl, Timer, DataType, Ingredient } from '@/app/interfaces/PDF';
 
 const PDFPage = ({ params }: { params: Promise<{ id: number }> }) => {
   const { id } = use(params);
   const didFetch = useRef(false);
   const [data, setData] = useState<DataType | null>(null);
   const pdfRef = useRef<HTMLDivElement>(null);
+
 
   useEffect(() => {
     if (didFetch.current) return;
@@ -32,6 +33,7 @@ const PDFPage = ({ params }: { params: Promise<{ id: number }> }) => {
 
     fetchData();
   }, [id]);
+
 
   const handleDownload = () => {
     if (!pdfRef.current) return;
@@ -75,12 +77,23 @@ const PDFPage = ({ params }: { params: Promise<{ id: number }> }) => {
       .save();
   };
 
+  const ingredientsData: Ingredient[] = useMemo(() => {
+    if (!data?.plan?.ingredients) return [];
+    try {
+      return typeof data.plan.ingredients === "string"
+        ? JSON.parse(data.plan.ingredients)
+        : data.plan.ingredients;
+    } catch (error) {
+      console.error("❌ Error al parsear plan.ingredients:", error);
+      return [];
+    }
+  }, [data?.plan?.ingredients]);
+
   if (!data) {
     return (
       <DateLoader message="Generando PDF..." backgroundColor="#242424" color="#ffff" />
     );
   }
-
   const { plan } = data;
   const { desart } = data;
   const { actividadesEjecutadas } = data;
@@ -187,11 +200,15 @@ const PDFPage = ({ params }: { params: Promise<{ id: number }> }) => {
               Materiales Requeridos (BOM)
             </h2>
             <PDFTable
-              headers={["Artículo", "Descripción", "Cantidad", "Lote"]}
-              rows={[
-                ["MAT-001", "Ingrediente Activo", "100 kg", "L-2024-A"],
-                ["MAT-002", "Excipiente", "50 kg", "L-2024-B"],
-              ]}
+              headers={["Código", "Descripción", "Cantidad", "Merma", "Teórica", "Validar"]}
+              rows={ingredientsData.map((item) => [
+                item.codart,
+                item.desart,
+                `${item.quantity} kg`,
+                item.merma || "-",
+                item.teorica || "-",
+                item.validar || "-",
+              ])}
             />
           </section>
         )}

@@ -16,6 +16,7 @@ import { getAuditsByModelAdmin } from "../../services/history/historyAuditServic
 import AuditModal from "../history/AuditModal";
 import { Audit } from "../../interfaces/Audit";
 import { Product } from "../../interfaces/Products";
+import DateLoader from '@/app/components/loader/DateLoader';
 
 /**
  * Componente principal para gestionar productos.
@@ -37,6 +38,7 @@ function Products({ canEdit = false, canView = false }: CreateClientProps) {
   // Estado para la auditoría seleccionada (no se usa, pero se deja para posible ampliación)
   const [, setSelectedAudit] = useState<Audit | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+
 
   // Efecto para cargar productos si el usuario puede verlos
   useEffect(() => {
@@ -195,6 +197,10 @@ function Products({ canEdit = false, canView = false }: CreateClientProps) {
         <div className="flex justify-center mb-2">
           <Button onClick={openCreateModal} variant="create" label="Crear Tipo de Productos" />
         </div>
+      )}
+
+      {isSaving && (
+        <DateLoader message="Cargando..." backgroundColor="rgba(0, 0, 0, 0.28)" color="rgba(255, 255, 0, 1)" />
       )}
 
       {/* Modal para crear o editar producto */}

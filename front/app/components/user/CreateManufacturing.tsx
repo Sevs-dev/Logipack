@@ -15,6 +15,7 @@ import SelectorDual from "../SelectorDual/SelectorDual"
 import AuditModal from "../history/AuditModal";
 import { Audit } from "../../interfaces/Audit";
 import { getAuditsByModelAdmin } from "../../services/history/historyAuditServices";
+import DateLoader from '@/app/components/loader/DateLoader';
 
 function CreateManufacturing({ canEdit = false, canView = false }: CreateClientProps) {
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -27,6 +28,7 @@ function CreateManufacturing({ canEdit = false, canView = false }: CreateClientP
     // Estado para la auditoría seleccionada (no se usa, pero se deja para posible ampliación)
     const [, setSelectedAudit] = useState<Audit | null>(null);
     const [isSaving, setIsSaving] = useState(false);
+
 
     const fetchData = async () => {
         try {
@@ -146,7 +148,9 @@ function CreateManufacturing({ canEdit = false, canView = false }: CreateClientP
                     <Button onClick={openModal} variant="create" label="Crear Línea" />
                 </div>
             )}
-
+            {isSaving && (
+                <DateLoader message="Cargando..." backgroundColor="rgba(0, 0, 0, 0.28)" color="rgba(255, 255, 0, 1)" />
+            )}
             {isModalOpen && (
                 <ModalSection isVisible={isModalOpen} onClose={closeModal}>
                     <Text type="title" color="text-[#000]">{formData.id ? "Editar" : "Crear"} Línea</Text>

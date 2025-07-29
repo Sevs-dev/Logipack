@@ -7,6 +7,7 @@ import Button from "../buttons/buttons";
 import ModalSection from "../modal/ModalSection";
 import Text from "../text/Text";
 import { CreateClientProps } from "../../interfaces/CreateClientProps";
+import DateLoader from '@/app/components/loader/DateLoader';
 
 interface ResponsiblePerson {
   name: string;
@@ -47,6 +48,7 @@ function CreateClient({ canEdit = false, canView = false }: CreateClientProps) {
   const [newResponsibleName, setNewResponsibleName] = useState("");
   const [newResponsibleEmail, setNewResponsibleEmail] = useState("");
   const [isSaving, setIsSaving] = useState(false);
+
 
   const fetchClients = useCallback(async () => {
     try {
@@ -190,6 +192,10 @@ function CreateClient({ canEdit = false, canView = false }: CreateClientProps) {
         <div className="flex justify-center mb-2">
           <Button onClick={() => setIsModalOpen(true)} variant="create" label="Crear Cliente" />
         </div>
+      )}
+
+      {isSaving && (
+        <DateLoader message="Cargando..." backgroundColor="rgba(0, 0, 0, 0.28)" color="rgba(255, 255, 0, 1)" />
       )}
 
       {isModalOpen && (
