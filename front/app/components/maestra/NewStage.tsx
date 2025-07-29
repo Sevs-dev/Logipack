@@ -157,7 +157,6 @@ function NewStage({ canEdit = false, canView = false }: CreateClientProps) {
             duration,
             activities: [],
         };
-        console.log("Datos a enviar:", newStage);
         if (["Actividades", "Control", "Procesos"].includes(phaseType)) {
             newStage.activities = selectedActivities.map((activity) => activity.id);
         }
