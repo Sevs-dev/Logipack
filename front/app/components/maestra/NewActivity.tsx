@@ -14,6 +14,7 @@ import ModalSection from "../modal/ModalSection";
 import AuditModal from "../history/AuditModal";
 import { Audit } from "../../interfaces/Audit";
 import OptionsManager from "../inputs/OptionsManager";
+import DateLoader from '@/app/components/loader/DateLoader';
 
 export default function NewActivity({ canEdit = false, canView = false }: CreateClientProps) {
     const activityTypes: Record<string, ActivityType> = {
@@ -297,6 +298,9 @@ export default function NewActivity({ canEdit = false, canView = false }: Create
                 </div>
             )}
 
+            {isSaving && (
+                <DateLoader message="Cargando..." backgroundColor="rgba(0, 0, 0, 0.28)" color="rgba(255, 255, 0, 1)" />
+            )}
             {/* Modal unificado para crear/editar */}
             {modalOpen && (
                 <ModalSection isVisible={modalOpen} onClose={handleModalClose}>

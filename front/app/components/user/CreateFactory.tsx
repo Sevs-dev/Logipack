@@ -12,6 +12,7 @@ import { CreateClientProps } from "../../interfaces/CreateClientProps";
 import { getAuditsByModelAdmin } from "../../services/history/historyAuditServices";
 import AuditModal from "../history/AuditModal";
 import { Audit } from "../../interfaces/Audit";
+import DateLoader from '@/app/components/loader/DateLoader';
 
 function CreateFactory({ canEdit = false, canView = false }: CreateClientProps) {
     const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
@@ -29,6 +30,7 @@ function CreateFactory({ canEdit = false, canView = false }: CreateClientProps) 
     // Estado para la auditoría seleccionada (no se usa, pero se deja para posible ampliación)
     const [, setSelectedAudit] = useState<Audit | null>(null);
     const [isSaving, setIsSaving] = useState(false);
+
 
     const fetchFactories = async () => {
         try {
@@ -135,6 +137,10 @@ function CreateFactory({ canEdit = false, canView = false }: CreateClientProps) 
                     }} variant="create" label="Crear Planta" />
                 )}
             </div>
+
+            {isSaving && (
+                <DateLoader message="Cargando..." backgroundColor="rgba(0, 0, 0, 0.28)" color="rgba(255, 255, 0, 1)" />
+            )}
 
             {isModalOpen && (
                 <ModalSection isVisible={isModalOpen} onClose={() => setIsModalOpen(false)}>

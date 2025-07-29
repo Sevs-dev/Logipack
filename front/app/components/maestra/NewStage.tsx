@@ -17,6 +17,7 @@ import AuditModal from "../history/AuditModal";
 import { Audit } from "../../interfaces/Audit";
 import { getRole } from "../../services/userDash/authservices";
 import { Role } from "@/app/interfaces/CreateUser";
+import DateLoader from '@/app/components/loader/DateLoader';
 
 function NewStage({ canEdit = false, canView = false }: CreateClientProps) {
     // === useState (Modal & Edición) ===
@@ -46,6 +47,7 @@ function NewStage({ canEdit = false, canView = false }: CreateClientProps) {
     const [, setSelectedAudit] = useState<Audit | null>(null);
     const [searchTerm, setSearchTerm] = useState("");
     const [isSaving, setIsSaving] = useState(false);
+    
     // === Fetchers ===
     const fetchStage = async () => {
         try {
@@ -324,6 +326,10 @@ function NewStage({ canEdit = false, canView = false }: CreateClientProps) {
                 <div className="flex justify-center space-x-2 mb-2">
                     <Button onClick={() => setIsOpen(true)} variant="create" label="Crear Fase" />
                 </div>
+            )}
+
+            {isSaving && (
+                <DateLoader message="Cargando..." backgroundColor="rgba(0, 0, 0, 0.28)" color="rgba(255, 255, 0, 1)" />
             )}
 
             {(isOpen || isEditOpen && editingStage) && (

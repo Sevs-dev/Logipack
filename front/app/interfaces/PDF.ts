@@ -35,6 +35,7 @@ export interface DataType {
     end_date?: string;
     user: string;
     updated_at?: string;
+    ingredients?: Ingredient[] | string; // si viene como string JSON, lo puedes parsear
   };
   cliente: {
     name: string;
@@ -53,4 +54,17 @@ export interface DataType {
     created_at?: string;
   }[];
   timers: Timer[];
+}
+
+export interface Ingredient {
+  codart: string;
+  desart: string;
+  quantity: number | string;
+  merma?: string;
+  teorica?: string;
+  validar?: string;
+  lot?: string;
+  expiration?: string;
+  product_name?: string;
+  unit?: string;
 }

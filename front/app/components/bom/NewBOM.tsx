@@ -17,6 +17,7 @@ import { getAuditsByModel } from "../../services/history/historyAuditServices";
 import { Article, Ingredient, Bom, BomView, BomPayload } from "@/app/interfaces/BOM";
 import { Audit } from "../../interfaces/Audit";
 import { Client } from "@/app/interfaces/Client";
+import DateLoader from '@/app/components/loader/DateLoader';
 
 function BOMManager({ canEdit = false, canView = false }: CreateClientProps) {
     // Estados
@@ -359,6 +360,9 @@ function BOMManager({ canEdit = false, canView = false }: CreateClientProps) {
                     />
                 )}
             </div>
+            {isSaving && (
+                <DateLoader message="Cargando..." backgroundColor="rgba(0, 0, 0, 0.28)" color="rgba(255, 255, 0, 1)" />
+            )}
 
             {isModalOpen && (
                 <ModalSection isVisible={isModalOpen} onClose={() => { setIsModalOpen(false) }}>

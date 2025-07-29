@@ -14,6 +14,7 @@ import { Factory, Role } from "@/app/interfaces/CreateUser";
 import { User } from "@/app/interfaces/Auth";
 import { CreateClientProps } from "../../interfaces/CreateClientProps";
 import SelectorDual from "../SelectorDual/SelectorDual"
+import DateLoader from '@/app/components/loader/DateLoader';
 
 function CreateUser({ canEdit = false, canView = false }: CreateClientProps) {
   // Estados para formulario
@@ -39,6 +40,7 @@ function CreateUser({ canEdit = false, canView = false }: CreateClientProps) {
     factory: [] as number[],
   });
   const [isSaving, setIsSaving] = useState(false);
+
   // Carga inicial de roles, fábricas y usuarios
   useEffect(() => {
     if (!canView) return;
@@ -293,6 +295,10 @@ function CreateUser({ canEdit = false, canView = false }: CreateClientProps) {
         <div className="flex justify-center space-x-2 mb-2">
           <Button onClick={openModal} variant="create" label="Crear Usuario" />
         </div>
+      )}
+
+      {isSaving && (
+        <DateLoader message="Cargando..." backgroundColor="rgba(0, 0, 0, 0.28)" color="rgba(255, 255, 0, 1)" />
       )}
       {/* Modal crear/editar usuario */}
       {isModalOpen && (
