@@ -470,6 +470,7 @@ const Maestra = ({ canEdit = false, canView = false }: CreateClientProps) => {
                             description: descripcion,
                             duration: stageData.duration ?? "",
                             duration_user: stageData.duration_user ?? "",
+                            phase_type: stageData.phase_type ?? "",
                         } as StageFase;
                     } catch {
                         console.warn("❌ Error obteniendo stage ID:", stageId);
@@ -505,8 +506,7 @@ const Maestra = ({ canEdit = false, canView = false }: CreateClientProps) => {
             showError("Debes seleccionar al menos una fase");
             setIsSaving(false);
             return;
-        }
-
+        } 
         if (!selectedStages.some(stage => stage.phase_type === "Procesos")) {
             showError("Debes incluir al menos una fase de tipo 'Procesos'");
             setIsSaving(false);
