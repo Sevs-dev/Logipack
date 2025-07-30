@@ -53,6 +53,10 @@ const NewLineas = () => {
     const lista_procesos = Array.isArray(lista.linea_procesos) ? lista.linea_procesos : [];
     const lista_fases = Array.isArray(lista.linea_fases) ? lista.linea_fases : [];
 
+    // if (lista_procesos.length === 0 && lista_fases.length === 0) {
+    //     window.close();
+    // }
+    
     const verificarYGenerar = async () => {
         if (orden === null && local) {
             const { message } = await generar_orden(local.id);
