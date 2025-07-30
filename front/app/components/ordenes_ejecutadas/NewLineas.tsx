@@ -53,10 +53,10 @@ const NewLineas = () => {
     const lista_procesos = Array.isArray(lista.linea_procesos) ? lista.linea_procesos : [];
     const lista_fases = Array.isArray(lista.linea_fases) ? lista.linea_fases : [];
 
-    if (orden.estado === 11500) {
+    if (orden?.estado === 11500) {
         window.close();
     }
-    console.log("orden", orden.estado);
+    console.log("orden", orden?.estado);
     // if (lista_procesos.length === 0 && lista_fases.length === 0 && orden === null) {
     //     window.close();
     // }
