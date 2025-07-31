@@ -165,7 +165,6 @@ const App = () => {
           orden_id: fase.orden_ejecutada,
           time,
         });
-        console.log(createResult);
         if (createResult?.exists) {
           // console.log("⚠️ Timer ya existía para:", ejecutadaId);
         }
