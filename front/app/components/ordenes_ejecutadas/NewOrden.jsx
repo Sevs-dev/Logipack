@@ -105,7 +105,7 @@ const App = () => {
   const [memoriaFase, setMemoriaFase] = useState({});
   const [timerData, setTimerData] = useState(null);
   const [timerReady, setTimerReady] = useState(false);
-  const [showModal, setShowModal] = useState(false);
+  const [showModal_rol, setShowModal_rol] = useState(false);
   const [showModal_fase, setShowModal_fase] = useState(false);
 
   // Cargar datos iniciales
@@ -209,14 +209,17 @@ const App = () => {
         .split("; ")
         .find((row) => row.startsWith("role="))
         ?.split("=")[1];
-
-      // console.log(roles?.role !== perfil," :  Role ",roles?.role,"perfil ",perfil);
-      // Bloquear modal
-      setShowModal(
-        (roles?.role || "") === "" ||
-          (perfil || "") === "" ||
-          roles?.role !== perfil
-      );
+      const tienePermiso = roles?.role
+        .split(',')
+        .map(r => r.trim().toLowerCase())
+        .some(r => r === perfil?.toLowerCase());
+      setShowModal_rol(!tienePermiso);  // Mostrar modal solo si no tiene permiso
+      console.log("permiso", tienePermiso);
+      // setShowModal_rol(
+      //   // (roles?.role || "") === "" ||
+      //   // (perfil || "") === "" ||
+      //   permiso // roles?.role !== perfil
+      // );
       setShowModal_fase(resp.condicion_1 > 0);
     };
 
@@ -409,271 +412,271 @@ const App = () => {
                 </Text>
               </div>
 
-              <div
-                className="px-8 py-6 grid grid-cols-1 sm:grid-cols-2 
+            <div
+              className="px-8 py-6 grid grid-cols-1 sm:grid-cols-2 
           md:grid-cols-3 lg:grid-cols-s gap-6 text-sm text-gray-200"
-              >
-                <div>
-                  <p className="text-gray-500 text-center">Orden N°</p>
-                  <p className="font-medium text-gray-200 text-center">
-                    {orden?.number_order}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-gray-500 text-center">Cliente</p>
-                  <p className="font-medium text-gray-200 text-center">
-                    {orden?.cliente}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-gray-500 text-center">Planta</p>
-                  <p className="font-medium text-gray-200 text-center">
-                    {orden?.planta}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-gray-500 text-center">Maestra</p>
-                  <p className="font-medium text-gray-200 text-center">
-                    {orden?.descripcion_maestra}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-gray-500 text-center">Línea</p>
-                  <p className="font-medium text-gray-200 text-center">
-                    {linea} ({local.descripcion})
-                  </p>
-                </div>
-                <div>
-                  <p className="text-gray-500 text-center">
-                    Cantidad a producir
-                  </p>
-                  <p className="font-medium text-gray-200 text-center">
-                    {orden?.cantidad_producir}
-                  </p>
-                </div>
+            >
+              <div>
+                <p className="text-gray-500 text-center">Orden N°</p>
+                <p className="font-medium text-gray-200 text-center">
+                  {orden?.number_order}
+                </p>
+              </div>
+              <div>
+                <p className="text-gray-500 text-center">Cliente</p>
+                <p className="font-medium text-gray-200 text-center">
+                  {orden?.cliente}
+                </p>
+              </div>
+              <div>
+                <p className="text-gray-500 text-center">Planta</p>
+                <p className="font-medium text-gray-200 text-center">
+                  {orden?.planta}
+                </p>
+              </div>
+              <div>
+                <p className="text-gray-500 text-center">Maestra</p>
+                <p className="font-medium text-gray-200 text-center">
+                  {orden?.descripcion_maestra}
+                </p>
+              </div>
+              <div>
+                <p className="text-gray-500 text-center">Línea</p>
+                <p className="font-medium text-gray-200 text-center">
+                  {linea} ({local.descripcion})
+                </p>
+              </div>
+              <div>
+                <p className="text-gray-500 text-center">
+                  Cantidad a producir
+                </p>
+                <p className="font-medium text-gray-200 text-center">
+                  {orden?.cantidad_producir}
+                </p>
               </div>
             </div>
-            {/* Fase */}
-            <div className="w-full rounded-2xl bg-white/5 backdrop-blur-sm border border-white/10 shadow-md overflow-hidden mt-4">
-              <div className="bg-white/2.5 px-[10px] py-[10px] border-b border-white/5 backdrop-blur-sm">
-                <Text type="title" color="text-white">
-                  Fase de {fase?.description_fase} ({fase?.phase_type})
-                </Text>
-              </div>
-              {/* Formulario */}
-              <form
-                ref={formRef}
-                onSubmit={handleSubmit}
-                className="min-h-screen w-full bg-[#1b2535] text-white p-[10px] sm:p-[10px] flex flex-col rounded-2xl"
-              >
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {forms.map((item, index) => {
-                    // obtener tipo de actividad
-                    let config = item.config;
-                    try {
-                      if (typeof config === "string") {
-                        config = JSON.parse(config);
-                      }
-
-                      if (typeof config === "string") {
-                        config = JSON.parse(config);
-                      }
-                    } catch (error) {
-                      config = {};
+          </div>
+          {/* Fase */}
+          <div className="w-full rounded-2xl bg-white/5 backdrop-blur-sm border border-white/10 shadow-md overflow-hidden mt-4">
+            <div className="bg-white/2.5 px-[10px] py-[10px] border-b border-white/5 backdrop-blur-sm">
+              <Text type="title" color="text-white">
+                Fase de {fase?.description_fase} ({fase?.phase_type})
+              </Text>
+            </div>
+            {/* Formulario */}
+            <form
+              ref={formRef}
+              onSubmit={handleSubmit}
+              className="min-h-screen w-full bg-[#1b2535] text-white p-[10px] sm:p-[10px] flex flex-col rounded-2xl"
+            >
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {forms.map((item, index) => {
+                  // obtener tipo de actividad
+                  let config = item.config;
+                  try {
+                    if (typeof config === "string") {
+                      config = JSON.parse(config);
                     }
-                    const { type, options, min, max, items } = config;
-                    const clave = item.clave;
-                    return (
-                      <div key={index}>
-                        <Text type="subtitle" color="text-white">
-                          {item.descripcion_activitie}
-                        </Text>
 
-                        {/* MUESTREO */}
-                        {type === "muestreo" && (
-                          <p className="text-red-500">
-                            {items.map(({ min, max, valor }) => {
-                              if (
-                                min <= orden.cantidad_producir &&
-                                orden.cantidad_producir <= max
-                              ) {
-                                return valor;
-                              }
-                            })}
-                          </p>
-                        )}
+                    if (typeof config === "string") {
+                      config = JSON.parse(config);
+                    }
+                  } catch (error) {
+                    config = {};
+                  }
+                  const { type, options, min, max, items } = config;
+                  const clave = item.clave;
+                  return (
+                    <div key={index}>
+                      <Text type="subtitle" color="text-white">
+                        {item.descripcion_activitie}
+                      </Text>
 
-                        {/* TEXT */}
-                        {type === "text" && (
-                          <input
-                            type="text"
-                            className="block w-full px-3 py-2 bg-[#1a1d23] border border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-white placeholder-gray-400 text-center"
-                            name={clave}
-                            value={memoriaFase[linea]?.[clave] ?? ""}
-                            required={item.binding}
-                            onChange={inputChange}
-                          />
-                        )}
-                        {/* TEXTAREA */}
+                      {/* MUESTREO */}
+                      {type === "muestreo" && (
+                        <p className="text-red-500">
+                          {items.map(({ min, max, valor }) => {
+                            if (
+                              min <= orden.cantidad_producir &&
+                              orden.cantidad_producir <= max
+                            ) {
+                              return valor;
+                            }
+                          })}
+                        </p>
+                      )}
 
-                        {type === "textarea" && (
-                          <textarea
-                            rows={1}
-                            style={{ maxHeight: "15rem" }}
-                            className="block w-full px-3 py-2 bg-[#1a1d23] border border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-white placeholder-gray-400 text-center"
-                            name={clave}
-                            value={memoriaFase[linea]?.[clave] ?? ""}
-                            required={item.binding}
-                            onChange={(e) => {
-                              e.target.style.height = "auto"; // Reinicia el alto
-                              e.target.style.height = `${e.target.scrollHeight}px`; // Ajusta al contenido
-                              inputChange(e);
-                            }}
-                          />
-                        )}
+                      {/* TEXT */}
+                      {type === "text" && (
+                        <input
+                          type="text"
+                          className="block w-full px-3 py-2 bg-[#1a1d23] border border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-white placeholder-gray-400 text-center"
+                          name={clave}
+                          value={memoriaFase[linea]?.[clave] ?? ""}
+                          required={item.binding}
+                          onChange={inputChange}
+                        />
+                      )}
+                      {/* TEXTAREA */}
 
-                        {/* NUMBER */}
-                        {type === "number" && (
-                          <input
-                            type="number"
-                            className="block w-full px-3 py-2 bg-[#1a1d23] border border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-white placeholder-gray-400 text-center"
-                            name={clave}
-                            value={memoriaFase[linea]?.[clave] ?? ""}
-                            required={item.binding}
-                            onChange={inputChange}
-                          />
-                        )}
+                      {type === "textarea" && (
+                        <textarea
+                          rows={1}
+                          style={{ maxHeight: "15rem" }}
+                          className="block w-full px-3 py-2 bg-[#1a1d23] border border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-white placeholder-gray-400 text-center"
+                          name={clave}
+                          value={memoriaFase[linea]?.[clave] ?? ""}
+                          required={item.binding}
+                          onChange={(e) => {
+                            e.target.style.height = "auto"; // Reinicia el alto
+                            e.target.style.height = `${e.target.scrollHeight}px`; // Ajusta al contenido
+                            inputChange(e);
+                          }}
+                        />
+                      )}
 
-                        {/* DATE */}
-                        {type === "date" && (
-                          <input
-                            type="date"
-                            className="block w-full px-3 py-2 bg-[#1a1d23] border border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-white placeholder-gray-400 text-center"
-                            name={clave}
-                            value={memoriaFase[linea]?.[clave] ?? ""}
-                            required={item.binding}
-                            onChange={inputChange}
-                            style={{
-                              colorScheme: "dark",
-                              WebkitCalendarPickerIndicator: {
-                                filter: "invert(1)",
-                              },
-                            }}
-                          />
-                        )}
+                      {/* NUMBER */}
+                      {type === "number" && (
+                        <input
+                          type="number"
+                          className="block w-full px-3 py-2 bg-[#1a1d23] border border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-white placeholder-gray-400 text-center"
+                          name={clave}
+                          value={memoriaFase[linea]?.[clave] ?? ""}
+                          required={item.binding}
+                          onChange={inputChange}
+                        />
+                      )}
 
-                        {/* TIME */}
-                        {type === "time" && (
-                          <input
-                            type="time"
-                            className="block w-full px-3 py-2 bg-[#1a1d23] border border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-white placeholder-gray-400 text-center"
-                            name={clave}
-                            value={memoriaFase[linea]?.[clave] ?? ""}
-                            required={item.binding}
-                            onChange={inputChange}
-                          />
-                        )}
+                      {/* DATE */}
+                      {type === "date" && (
+                        <input
+                          type="date"
+                          className="block w-full px-3 py-2 bg-[#1a1d23] border border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-white placeholder-gray-400 text-center"
+                          name={clave}
+                          value={memoriaFase[linea]?.[clave] ?? ""}
+                          required={item.binding}
+                          onChange={inputChange}
+                          style={{
+                            colorScheme: "dark",
+                            WebkitCalendarPickerIndicator: {
+                              filter: "invert(1)",
+                            },
+                          }}
+                        />
+                      )}
 
-                        {/* SELECT */}
-                        {type === "select" && (
-                          <select
-                            className="block w-full px-3 py-2 bg-[#1a1d23] border border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-white placeholder-gray-400 text-center"
-                            name={clave}
-                            value={memoriaFase[linea]?.[clave] ?? ""}
-                            required={item.binding}
-                            onChange={inputChange}
-                          >
-                            <option value="">Seleccione</option>
-                            {options.map((opt, k) => (
-                              <option key={`opt-${k}`} value={opt}>
-                                {opt}
-                              </option>
-                            ))}
-                          </select>
-                        )}
+                      {/* TIME */}
+                      {type === "time" && (
+                        <input
+                          type="time"
+                          className="block w-full px-3 py-2 bg-[#1a1d23] border border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-white placeholder-gray-400 text-center"
+                          name={clave}
+                          value={memoriaFase[linea]?.[clave] ?? ""}
+                          required={item.binding}
+                          onChange={inputChange}
+                        />
+                      )}
 
-                        {/* RADIO */}
-                        {type === "radio" && (
-                          <div className="flex justify-center flex-wrap gap-4 mt-2">
-                            {options.map((opt, idx) => (
-                              <label
-                                key={idx}
-                                className="flex items-center gap-2 text-white"
-                              >
-                                <input
-                                  type="radio"
-                                  name={clave}
-                                  value={opt}
-                                  required={item.binding}
-                                  checked={memoriaFase[linea]?.[clave] === opt}
-                                  onChange={inputChange}
-                                  className="appearance-none w-4 h-4 border border-gray-600 rounded-full checked:bg-blue-500 checked:border-transparent focus:outline-none"
-                                />
-                                <span className="text-sm">{opt}</span>
-                              </label>
-                            ))}
-                          </div>
-                        )}
+                      {/* SELECT */}
+                      {type === "select" && (
+                        <select
+                          className="block w-full px-3 py-2 bg-[#1a1d23] border border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-white placeholder-gray-400 text-center"
+                          name={clave}
+                          value={memoriaFase[linea]?.[clave] ?? ""}
+                          required={item.binding}
+                          onChange={inputChange}
+                        >
+                          <option value="">Seleccione</option>
+                          {options.map((opt, k) => (
+                            <option key={`opt-${k}`} value={opt}>
+                              {opt}
+                            </option>
+                          ))}
+                        </select>
+                      )}
 
-                        {/* CHECKBOX */}
-                        {type === "checkbox" && (
-                          <div className="flex justify-center flex-wrap gap-4 mt-2">
-                            {options.map((opt, idx) => (
-                              <label
-                                key={idx}
-                                className="flex items-center gap-2 text-white"
-                              >
-                                <input
-                                  type="checkbox"
-                                  name={clave}
-                                  required={
-                                    item.binding &&
-                                    (!Array.isArray(
-                                      memoriaFase[linea]?.[clave]
-                                    ) ||
-                                      memoriaFase[linea][clave].length === 0)
-                                  }
-                                  checked={
-                                    Array.isArray(
-                                      memoriaFase[linea]?.[clave]
-                                    ) && memoriaFase[linea][clave].includes(opt)
-                                  }
-                                  onChange={(e) => {
-                                    const checked = e.target.checked;
-                                    setMemoriaFase((prev) => {
-                                      const prevArr = Array.isArray(
-                                        prev[linea]?.[clave]
-                                      )
-                                        ? prev[linea][clave]
-                                        : [];
-                                      const newArr = checked
-                                        ? [...prevArr, opt]
-                                        : prevArr.filter((val) => val !== opt);
-                                      const actualizado = {
-                                        ...prev,
-                                        [linea]: {
-                                          ...prev[linea],
-                                          [clave]: newArr,
-                                        },
-                                      };
-                                      saveToDB("memoria_fase", actualizado);
-                                      return actualizado;
-                                    });
-                                  }}
-                                  className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                                />
-                                <span className="text-sm">{opt}</span>
-                              </label>
-                            ))}
-                          </div>
-                        )}
+                      {/* RADIO */}
+                      {type === "radio" && (
+                        <div className="flex justify-center flex-wrap gap-4 mt-2">
+                          {options.map((opt, idx) => (
+                            <label
+                              key={idx}
+                              className="flex items-center gap-2 text-white"
+                            >
+                              <input
+                                type="radio"
+                                name={clave}
+                                value={opt}
+                                required={item.binding}
+                                checked={memoriaFase[linea]?.[clave] === opt}
+                                onChange={inputChange}
+                                className="appearance-none w-4 h-4 border border-gray-600 rounded-full checked:bg-blue-500 checked:border-transparent focus:outline-none"
+                              />
+                              <span className="text-sm">{opt}</span>
+                            </label>
+                          ))}
+                        </div>
+                      )}
 
-                        {/* FILE (PDF) */}
-                        {type === "file" && (
-                          <div>
-                            {memoriaFase[linea]?.[clave]?.startsWith(
-                              "data:application/pdf"
-                            ) && (
+                      {/* CHECKBOX */}
+                      {type === "checkbox" && (
+                        <div className="flex justify-center flex-wrap gap-4 mt-2">
+                          {options.map((opt, idx) => (
+                            <label
+                              key={idx}
+                              className="flex items-center gap-2 text-white"
+                            >
+                              <input
+                                type="checkbox"
+                                name={clave}
+                                required={
+                                  item.binding &&
+                                  (!Array.isArray(
+                                    memoriaFase[linea]?.[clave]
+                                  ) ||
+                                    memoriaFase[linea][clave].length === 0)
+                                }
+                                checked={
+                                  Array.isArray(
+                                    memoriaFase[linea]?.[clave]
+                                  ) && memoriaFase[linea][clave].includes(opt)
+                                }
+                                onChange={(e) => {
+                                  const checked = e.target.checked;
+                                  setMemoriaFase((prev) => {
+                                    const prevArr = Array.isArray(
+                                      prev[linea]?.[clave]
+                                    )
+                                      ? prev[linea][clave]
+                                      : [];
+                                    const newArr = checked
+                                      ? [...prevArr, opt]
+                                      : prevArr.filter((val) => val !== opt);
+                                    const actualizado = {
+                                      ...prev,
+                                      [linea]: {
+                                        ...prev[linea],
+                                        [clave]: newArr,
+                                      },
+                                    };
+                                    saveToDB("memoria_fase", actualizado);
+                                    return actualizado;
+                                  });
+                                }}
+                                className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                              />
+                              <span className="text-sm">{opt}</span>
+                            </label>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* FILE (PDF) */}
+                      {type === "file" && (
+                        <div>
+                          {memoriaFase[linea]?.[clave]?.startsWith(
+                            "data:application/pdf"
+                          ) && (
                               <div className="mb-2">
                                 <object
                                   data={memoriaFase[linea][clave]}
@@ -696,47 +699,47 @@ const App = () => {
                               </div>
                             )}
 
-                            <input
-                              className="block w-full px-3 py-2 bg-[#1a1d23] border border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-white placeholder-gray-400 text-center"
-                              type="file"
-                              accept="application/pdf"
-                              required={
-                                !memoriaFase[linea]?.[clave]?.startsWith(
-                                  "data:application/pdf"
-                                ) && item.binding
+                          <input
+                            className="block w-full px-3 py-2 bg-[#1a1d23] border border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-white placeholder-gray-400 text-center"
+                            type="file"
+                            accept="application/pdf"
+                            required={
+                              !memoriaFase[linea]?.[clave]?.startsWith(
+                                "data:application/pdf"
+                              ) && item.binding
+                            }
+                            name={clave}
+                            onChange={(e) => {
+                              const file = e.target.files[0];
+                              if (file) {
+                                const reader = new FileReader();
+                                reader.onloadend = () => {
+                                  const base64 = reader.result;
+                                  setMemoriaFase((prev) => {
+                                    const actualizado = {
+                                      ...prev,
+                                      [linea]: {
+                                        ...prev[linea],
+                                        [clave]: base64,
+                                      },
+                                    };
+                                    saveToDB("memoria_fase", actualizado);
+                                    return actualizado;
+                                  });
+                                };
+                                reader.readAsDataURL(file);
                               }
-                              name={clave}
-                              onChange={(e) => {
-                                const file = e.target.files[0];
-                                if (file) {
-                                  const reader = new FileReader();
-                                  reader.onloadend = () => {
-                                    const base64 = reader.result;
-                                    setMemoriaFase((prev) => {
-                                      const actualizado = {
-                                        ...prev,
-                                        [linea]: {
-                                          ...prev[linea],
-                                          [clave]: base64,
-                                        },
-                                      };
-                                      saveToDB("memoria_fase", actualizado);
-                                      return actualizado;
-                                    });
-                                  };
-                                  reader.readAsDataURL(file);
-                                }
-                              }}
-                            />
-                          </div>
-                        )}
+                            }}
+                          />
+                        </div>
+                      )}
 
-                        {/* IMAGE */}
-                        {type === "image" && (
-                          <div>
-                            {memoriaFase[linea]?.[clave]?.startsWith(
-                              "data:image"
-                            ) && (
+                      {/* IMAGE */}
+                      {type === "image" && (
+                        <div>
+                          {memoriaFase[linea]?.[clave]?.startsWith(
+                            "data:image"
+                          ) && (
                               <div className="mb-2 justify-center flex">
                                 <img
                                   src={memoriaFase[linea][clave]}
@@ -746,67 +749,67 @@ const App = () => {
                               </div>
                             )}
 
-                            <input
-                              className="block w-full px-3 py-2 bg-[#1a1d23] border border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-white placeholder-gray-400 text-center"
-                              type="file"
-                              accept="image/*"
-                              required={
-                                !memoriaFase[linea]?.[clave]?.startsWith(
-                                  "data:image"
-                                ) && item.binding
-                              }
-                              name={clave}
-                              onChange={(e) => {
-                                const file = e.target.files[0];
-                                if (file) {
-                                  const reader = new FileReader();
-                                  reader.onloadend = () => {
-                                    const base64 = reader.result;
-                                    setMemoriaFase((prev) => {
-                                      const actualizado = {
-                                        ...prev,
-                                        [linea]: {
-                                          ...prev[linea],
-                                          [clave]: base64,
-                                        },
-                                      };
-                                      saveToDB("memoria_fase", actualizado);
-                                      return actualizado;
-                                    });
-                                  };
-                                  reader.readAsDataURL(file);
-                                }
-                              }}
-                            />
-                          </div>
-                        )}
-
-                        {/* SIGNATURE */}
-                        {type === "signature" && (
-                          <>
-                            <select
-                              className="text-center last:block w-full px-3 py-2 bg-[#1a1d23] border border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-white placeholder-gray-400 mb-2"
-                              value={
-                                memoriaFase[linea]?.[`tipo_entrada_${clave}`] ||
-                                ""
-                              }
-                              onChange={(e) => {
-                                const updated = { ...memoriaFase };
-                                updated[linea] = {
-                                  ...updated[linea],
-                                  [`tipo_entrada_${clave}`]: e.target.value,
+                          <input
+                            className="block w-full px-3 py-2 bg-[#1a1d23] border border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-white placeholder-gray-400 text-center"
+                            type="file"
+                            accept="image/*"
+                            required={
+                              !memoriaFase[linea]?.[clave]?.startsWith(
+                                "data:image"
+                              ) && item.binding
+                            }
+                            name={clave}
+                            onChange={(e) => {
+                              const file = e.target.files[0];
+                              if (file) {
+                                const reader = new FileReader();
+                                reader.onloadend = () => {
+                                  const base64 = reader.result;
+                                  setMemoriaFase((prev) => {
+                                    const actualizado = {
+                                      ...prev,
+                                      [linea]: {
+                                        ...prev[linea],
+                                        [clave]: base64,
+                                      },
+                                    };
+                                    saveToDB("memoria_fase", actualizado);
+                                    return actualizado;
+                                  });
                                 };
-                                setMemoriaFase(updated);
-                              }}
-                            >
-                              <option value="">-- Selecciona --</option>
-                              <option value="texto">Texto</option>
-                              <option value="firma">Firma</option>
-                            </select>
+                                reader.readAsDataURL(file);
+                              }
+                            }}
+                          />
+                        </div>
+                      )}
 
-                            {/* Mostrar Input si selecciona "texto" */}
-                            {memoriaFase[linea]?.[`tipo_entrada_${clave}`] ===
-                              "texto" && (
+                      {/* SIGNATURE */}
+                      {type === "signature" && (
+                        <>
+                          <select
+                            className="text-center last:block w-full px-3 py-2 bg-[#1a1d23] border border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-white placeholder-gray-400 mb-2"
+                            value={
+                              memoriaFase[linea]?.[`tipo_entrada_${clave}`] ||
+                              ""
+                            }
+                            onChange={(e) => {
+                              const updated = { ...memoriaFase };
+                              updated[linea] = {
+                                ...updated[linea],
+                                [`tipo_entrada_${clave}`]: e.target.value,
+                              };
+                              setMemoriaFase(updated);
+                            }}
+                          >
+                            <option value="">-- Selecciona --</option>
+                            <option value="texto">Texto</option>
+                            <option value="firma">Firma</option>
+                          </select>
+
+                          {/* Mostrar Input si selecciona "texto" */}
+                          {memoriaFase[linea]?.[`tipo_entrada_${clave}`] ===
+                            "texto" && (
                               <input
                                 type="text"
                                 className="text-center block w-full px-3 py-2 bg-[#1a1d23] border border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-white placeholder-gray-400"
@@ -817,9 +820,9 @@ const App = () => {
                               />
                             )}
 
-                            {/* Mostrar Firma si selecciona "firma" */}
-                            {memoriaFase[linea]?.[`tipo_entrada_${clave}`] ===
-                              "firma" && (
+                          {/* Mostrar Firma si selecciona "firma" */}
+                          {memoriaFase[linea]?.[`tipo_entrada_${clave}`] ===
+                            "firma" && (
                               <Firma
                                 type={type}
                                 item={item}
@@ -830,28 +833,28 @@ const App = () => {
                                 typeMem="memoria_fase"
                               />
                             )}
-                          </>
-                        )}
+                        </>
+                      )}
 
-                        {/* TEMPERATURE */}
-                        {type === "temperature" && (
-                          <>
-                            <input
-                              type="number"
-                              className="block w-full px-3 py-2 bg-[#1a1d23] border border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-white placeholder-gray-400 text-center"
-                              min={min}
-                              max={max}
-                              step="0.01"
-                              name={clave}
-                              value={memoriaFase[linea]?.[clave] ?? ""}
-                              required={item.binding}
-                              onChange={inputChange}
-                            />
-                            {memoriaFase[linea]?.[clave] !== undefined &&
-                              (memoriaFase[linea][clave] < min ||
-                                memoriaFase[linea][clave] > max) && (
-                                <p
-                                  className="
+                      {/* TEMPERATURE */}
+                      {type === "temperature" && (
+                        <>
+                          <input
+                            type="number"
+                            className="block w-full px-3 py-2 bg-[#1a1d23] border border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-white placeholder-gray-400 text-center"
+                            min={min}
+                            max={max}
+                            step="0.01"
+                            name={clave}
+                            value={memoriaFase[linea]?.[clave] ?? ""}
+                            required={item.binding}
+                            onChange={inputChange}
+                          />
+                          {memoriaFase[linea]?.[clave] !== undefined &&
+                            (memoriaFase[linea][clave] < min ||
+                              memoriaFase[linea][clave] > max) && (
+                              <p
+                                className="
                             mt-2 mb-2 px-4 py-2
                             text-sm text-center font-semibold
                             text-yellow-100
@@ -862,31 +865,30 @@ const App = () => {
                             animate-pulse
                             max-w-xs mx-auto
                           "
-                                >
-                                  ⚠️ Valor ingresado debe estar entre{" "}
-                                  <span className="font-bold">{min}</span> y{" "}
-                                  <span className="font-bold">{max}</span>.
-                                </p>
-                              )}
-                          </>
-                        )}
-                      </div>
-                    );
-                  })}
+                              >
+                                ⚠️ Valor ingresado debe estar entre{" "}
+                                <span className="font-bold">{min}</span> y{" "}
+                                <span className="font-bold">{max}</span>.
+                              </p>
+                            )}
+                        </>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+              <>
+                <hr className="border-t border-white/20 my-6" />
+                <div className="flex justify-center">
+                  <button
+                    type="submit"
+                    className="bg-blue-600 text-white px-5 py-2 text-sm rounded-lg hover:bg-blue-700 transition-all shadow-md"
+                  >
+                    Siguiente Fase
+                  </button>
                 </div>
-                <>
-                  <hr className="border-t border-white/20 my-6" />
-                  <div className="flex justify-center">
-                    <button
-                      type="submit"
-                      className="bg-blue-600 text-white px-5 py-2 text-sm rounded-lg hover:bg-blue-700 transition-all shadow-md"
-                    >
-                      Siguiente Fase
-                    </button>
-                  </div>
-                </>
-              </form>
-            </div>
+              </>
+            </form>
           </div>
         </>
       )}

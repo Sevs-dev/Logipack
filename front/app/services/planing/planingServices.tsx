@@ -162,3 +162,24 @@ export const actividades_ejecutadas = async (id: number) => {
         throw error;
     }
 }
+
+export const getConciliacion = async (id: number) => {
+    try {
+        const response = await Planning.get(`/getConciliacion/${id}`);
+        return response.data;
+    } catch (error: unknown) {
+        console.error("Error en getConciliacion:", error);
+        throw error;
+    }
+}
+
+export const guardar_conciliacion = async (data: any) => {
+    try {
+        const response = await Planning.post(`/guardar_conciliacion`, JSON.stringify(data));
+        console.log(response.data);
+        return response.data;
+    } catch (error: unknown) {
+        console.error("Error en guardar_conciliacion:", error);
+        throw error;
+    }
+}
