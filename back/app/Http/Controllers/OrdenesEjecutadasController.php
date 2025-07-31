@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\ActividadesEjecutadas;
 use App\Models\AdaptationDate;
 use App\Models\OrdenesEjecutadas;
+use App\Models\Conciliaciones;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -453,7 +454,7 @@ class OrdenesEjecutadasController extends Controller
                         'orden_ejecutada' => $orden->id,
                         'adaptation_date_id' => $orden->adaptation_date_id,
                         'number_order' => $orden->number_order,
-                        'description_maestra' => $orden->descripcion_maestra,
+                        'descripcion_maestra' => $orden->descripcion_maestra,
                     ],
                     'conciliacion' => [
                         'codart' => $ada_date->codart,
@@ -471,7 +472,7 @@ class OrdenesEjecutadasController extends Controller
                     'orden_ejecutada' => $orden->id,
                     'adaptation_date_id' => $orden->adaptation_date_id,
                     'number_order' => $orden->number_order,
-                    'description_maestra' => $orden->descripcion_maestra,
+                    'descripcion_maestra' => $orden->descripcion_maestra,
                 ],
                 'conciliacion' => [
                     'codart' => $ingredientes->codart,
@@ -486,6 +487,31 @@ class OrdenesEjecutadasController extends Controller
             'orden' => null,
             'estado' => 200,
         ]);
+    }
+
+    /**
+     * Guardar conciliacion
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function guardar_conciliacion(
+        Request $request
+    ): JsonResponse {
+        try {
+            $data = $request->all();
+            Conciliaciones::create($data);
+
+            return response()->json([
+                'message' => 'Formulario guardado correctamente',
+                'estado' => 200,
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Error al guardar el formulario | ' . $e->getMessage(),
+                'estado' => 500,
+            ]);
+        }
     }
 
     /**

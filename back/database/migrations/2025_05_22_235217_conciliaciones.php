@@ -20,7 +20,7 @@ return new class extends Migration
 
             // articulos a conciliar
             $table->string('codart')->nullable();
-            $table->string('codesart')->nullable();
+            $table->string('desart')->nullable();
             $table->double('quantityToProduce')->nullable();  // (a)
             $table->double('faltante')->nullable(); // (b)
             $table->double('adicionales')->nullable(); // (c)

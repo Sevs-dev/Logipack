@@ -215,6 +215,7 @@ Route::controller(OrdenesEjecutadasController::class)->group(function () {
     Route::get('/getActividadesEjecutadas/{id}', 'getActividadesEjecutadas');
     Route::get('/eliminar_orden/{id}', 'eliminar_orden');
     Route::get('/getConciliacion/{id}', 'getConciliacion');
+    Route::post('/guardar_conciliacion', 'guardar_conciliacion');
 });
 
 //Rutas Historial de Audits

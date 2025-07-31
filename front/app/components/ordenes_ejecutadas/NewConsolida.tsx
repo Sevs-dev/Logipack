@@ -6,7 +6,7 @@ const NewConsolida = () => {
         orden_ejecutada: '',
         adaptation_date_id: '',
         number_order: '',
-        description_maestra: '',
+        descripcion_maestra: '',
         codart: '',
         desart: '',
         quantityToProduce: '',
@@ -30,7 +30,7 @@ const NewConsolida = () => {
                     orden_ejecutada: response?.orden?.orden_ejecutada,
                     adaptation_date_id: response?.orden?.adaptation_date_id,
                     number_order: response?.orden?.number_order,
-                    description_maestra: response?.orden?.description_maestra,
+                    descripcion_maestra: response?.orden?.descripcion_maestra,
                     codart: response?.conciliacion?.codart,
                     desart: response?.conciliacion?.desart,
                     quantityToProduce: response?.conciliacion?.quantityToProduce,
@@ -171,7 +171,7 @@ const NewConsolida = () => {
                             Descripción Maestra
                         </label>
                         <p className="w-full rounded-md border border-gray-300 bg-white px-4 py-2 text-gray-900 shadow-sm">
-                            {data.description_maestra}
+                            {data.descripcion_maestra}
                         </p>
                     </div>
                 </div>
