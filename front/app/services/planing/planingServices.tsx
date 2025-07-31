@@ -162,3 +162,13 @@ export const actividades_ejecutadas = async (id: number) => {
         throw error;
     }
 }
+
+export const getConciliacion = async (id: number) => {
+    try {
+        const response = await Planning.get(`/getConciliacion/${id}`);
+        return response.data;
+    } catch (error: unknown) {
+        console.error("Error en getConciliacion:", error);
+        throw error;
+    }
+}

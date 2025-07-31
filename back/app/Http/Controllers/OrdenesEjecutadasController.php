@@ -428,6 +428,67 @@ class OrdenesEjecutadasController extends Controller
     }
 
     /**
+     * Conciliación
+     *
+     * @param int $id
+     * @return JsonResponse
+     */
+    public function getConciliacion($id): JsonResponse
+    {
+        $orden = DB::table('ordenes_ejecutadas')
+            ->where('adaptation_date_id', $id)
+            ->where('proceso', 'eject')
+            // ->where('estado', '100')
+            ->first();
+
+        if ($orden) {
+            $ada_date = DB::table('adaptation_dates')
+                ->where('id', $id)
+                ->first();
+
+            // maestra sin bom
+            if (strtolower($orden->descripcion_maestra) == 'maestra sin bom') {
+                return response()->json([
+                    'orden' => [
+                        'orden_ejecutada' => $orden->id,
+                        'adaptation_date_id' => $orden->adaptation_date_id,
+                        'number_order' => $orden->number_order,
+                        'description_maestra' => $orden->descripcion_maestra,
+                    ],
+                    'conciliacion' => [
+                        'codart' => $ada_date->codart,
+                        'desart' => '',  // no existe el campo desart, en la base de datos
+                        'quantityToProduce' => $ada_date->quantityToProduce,
+                    ],
+                    'estado' => 200,
+                ]);
+            }
+
+            // maestra con bom
+            $ingredientes = json_decode($ada_date->ingredients)[0];
+            return response()->json([
+                'orden' => [
+                    'orden_ejecutada' => $orden->id,
+                    'adaptation_date_id' => $orden->adaptation_date_id,
+                    'number_order' => $orden->number_order,
+                    'description_maestra' => $orden->descripcion_maestra,
+                ],
+                'conciliacion' => [
+                    'codart' => $ingredientes->codart,
+                    'desart' => $ingredientes->desart,
+                    'quantityToProduce' => $ingredientes->teorica,
+                ],
+                'estado' => 200,
+            ]);
+        }
+
+        return response()->json([
+            'orden' => null,
+            'estado' => 200,
+        ]);
+    }
+
+    /**
      * Guardar formulario
      *
      * @param Request $request

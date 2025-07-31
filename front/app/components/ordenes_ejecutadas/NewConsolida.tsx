@@ -1,7 +1,14 @@
 import React, { useState, useEffect } from 'react';
+import { getConciliacion } from '@/app/services/planing/planingServices';
 
 const NewConsolida = () => {
     const [data, setData] = useState({
+        orden_ejecutada: '',
+        adaptation_date_id: '',
+        number_order: '',
+        description_maestra: '',
+        codart: '',
+        desart: '',
         quantityToProduce: '',
         faltante: '',
         adicionales: '',
@@ -10,15 +17,46 @@ const NewConsolida = () => {
         devolucion: '',
         sobrante: '',
         total: '',
-        rendimiento: ''
+        rendimiento: '',
+        user: '',
     });
+
+    useEffect(() => {
+        const obtener_conciliacion = async () => {
+            try {
+                const response = await getConciliacion(9);
+                setData((prev) => ({
+                    ...prev,
+                    orden_ejecutada: response?.orden?.orden_ejecutada,
+                    adaptation_date_id: response?.orden?.adaptation_date_id,
+                    number_order: response?.orden?.number_order,
+                    description_maestra: response?.orden?.description_maestra,
+                    codart: response?.conciliacion?.codart,
+                    desart: response?.conciliacion?.desart,
+                    quantityToProduce: response?.conciliacion?.quantityToProduce,
+                }));
+            } catch (error: unknown) {
+                console.error("Error en getConciliacion:", error);
+                throw error;
+            }
+        }
+
+        obtener_conciliacion();
+    }, []);
 
     // Obtener los datos del formulario
     const inputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;
+
+        const usuario = document.cookie
+        .split("; ")
+        .find((row) => row.startsWith("role="))
+        ?.split("=")[1];
+
         setData(prev => ({
             ...prev,
-            [name]: value
+            [name]: value,
+            user: usuario || prev.user,
         }));
     };
 
@@ -83,6 +121,22 @@ const NewConsolida = () => {
         console.log('Datos enviados:', data);
     };
 
+    if (data?.orden_ejecutada === '') {
+        return (
+            <div>
+                <h1>Cargando...</h1>
+            </div>
+        )
+    }
+
+    if (data?.orden_ejecutada === undefined) {
+        return (
+            <div>
+                <h1>Sin datos de conciliación</h1>
+            </div>
+        )
+    }
+
     return (
         <div className="max-w-6xl mx-auto px-6 py-8 bg-white rounded-xl shadow-lg">
             <form
@@ -99,7 +153,7 @@ const NewConsolida = () => {
                             Orden Ejecutada
                         </label>
                         <p className="w-full rounded-md border border-gray-300 bg-white px-4 py-2 text-gray-900 shadow-sm">
-                            {/* {ordenEjecutada} */}
+                            {data.orden_ejecutada}
                         </p>
                     </div>
 
@@ -108,7 +162,7 @@ const NewConsolida = () => {
                             Número de Orden
                         </label>
                         <p className="w-full rounded-md border border-gray-300 bg-white px-4 py-2 text-gray-900 shadow-sm">
-                            {/* {numeroOrden} */}
+                            {data.number_order}
                         </p>
                     </div>
 
@@ -117,7 +171,7 @@ const NewConsolida = () => {
                             Descripción Maestra
                         </label>
                         <p className="w-full rounded-md border border-gray-300 bg-white px-4 py-2 text-gray-900 shadow-sm">
-                            {/* {descripcionMaestra} */}
+                            {data.description_maestra}
                         </p>
                     </div>
                 </div>
@@ -133,7 +187,7 @@ const NewConsolida = () => {
                                 Código Artículo
                             </label>
                             <p className="w-full rounded-md border border-gray-300 bg-white px-4 py-2 text-gray-900 shadow-sm">
-                                {/* {codigoArticulo} */}
+                                {data.codart}
                             </p>
                         </div>
                     </div>
@@ -149,7 +203,10 @@ const NewConsolida = () => {
                             <label htmlFor="quantityToProduce" className="block text-sm font-medium text-gray-700 mb-1">
                                 Cantidad Teorica (a)
                             </label>
-                            <input
+                            <p className="w-full rounded-md border border-gray-300 bg-white px-4 py-2 text-gray-900 shadow-sm">
+                                {data.quantityToProduce}
+                            </p>
+                            {/* <input
                                 type="number"
                                 step="any"
                                 id="quantityToProduce"
@@ -157,7 +214,7 @@ const NewConsolida = () => {
                                 value={data.quantityToProduce}
                                 onChange={inputChange}
                                 className="mt-1 w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 px-4 py-2 text-gray-900 bg-white border"
-                            />
+                            /> */}
                         </div>
                         <div>
                             <label htmlFor="faltante" className="block text-sm font-medium text-gray-700 mb-1">
@@ -168,6 +225,7 @@ const NewConsolida = () => {
                                 step="any"
                                 id="faltante"
                                 name="faltante"
+                                required
                                 value={data.faltante}
                                 onChange={inputChange}
                                 className="mt-1 w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 px-4 py-2 text-gray-900 bg-white border"
@@ -182,6 +240,7 @@ const NewConsolida = () => {
                                 step="any"
                                 id="adicionales"
                                 name="adicionales"
+                                required
                                 value={data.adicionales}
                                 onChange={inputChange}
                                 className="mt-1 w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 px-4 py-2 text-gray-900 bg-white border"
@@ -196,6 +255,7 @@ const NewConsolida = () => {
                                 step="any"
                                 id="rechazo"
                                 name="rechazo"
+                                required
                                 value={data.rechazo}
                                 onChange={inputChange}
                                 className="mt-1 w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 px-4 py-2 text-gray-900 bg-white border"
@@ -214,6 +274,7 @@ const NewConsolida = () => {
                                 step="any"
                                 id="danno_proceso"
                                 name="danno_proceso"
+                                required
                                 value={data.danno_proceso}
                                 onChange={inputChange}
                                 className="mt-1 w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 px-4 py-2 text-gray-900 bg-white border"
@@ -228,6 +289,7 @@ const NewConsolida = () => {
                                 step="any"
                                 id="devolucion"
                                 name="devolucion"
+                                required
                                 value={data.devolucion}
                                 onChange={inputChange}
                                 className="mt-1 w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 px-4 py-2 text-gray-900 bg-white border"
@@ -242,6 +304,7 @@ const NewConsolida = () => {
                                 step="any"
                                 id="sobrante"
                                 name="sobrante"
+                                required
                                 value={data.sobrante}
                                 onChange={inputChange}
                                 className="mt-1 w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 px-4 py-2 text-gray-900 bg-white border"
