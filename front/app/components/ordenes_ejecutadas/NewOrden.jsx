@@ -105,7 +105,7 @@ const App = () => {
   const [memoriaFase, setMemoriaFase] = useState({});
   const [timerData, setTimerData] = useState(null);
   const [timerReady, setTimerReady] = useState(false);
-  const [showModal_rol, setShowModal_rol] = useState(false);
+  const [showModal, setShowModal] = useState(false);
   const [showModal_fase, setShowModal_fase] = useState(false);
 
   // Cargar datos iniciales
@@ -150,7 +150,7 @@ const App = () => {
     const guardarTimer = async () => {
       if (!fase) return;
       try {
-        const adaptation = await controlStage(fase.adaptation_id);
+        const adaptation = await controlStage(fase.adaptation_id); 
         // Validaciones
         if (!adaptation?.id) return;
         // Obetenr id de la activiad ejecutada
@@ -165,6 +165,7 @@ const App = () => {
           orden_id: fase.orden_ejecutada,
           time,
         });
+        console.log(createResult);
         if (createResult?.exists) {
           // console.log("⚠️ Timer ya existía para:", ejecutadaId);
         }
@@ -209,17 +210,14 @@ const App = () => {
         .split("; ")
         .find((row) => row.startsWith("role="))
         ?.split("=")[1];
-      const tienePermiso = roles?.role
-        .split(",")
-        .map((r) => r.trim().toLowerCase())
-        .some((r) => r === perfil?.toLowerCase());
-      setShowModal_rol(!tienePermiso); // Mostrar modal solo si no tiene permiso
-      console.log("permiso", tienePermiso);
-      // setShowModal_rol(
-      //   // (roles?.role || "") === "" ||
-      //   // (perfil || "") === "" ||
-      //   permiso // roles?.role !== perfil
-      // );
+
+      // console.log(roles?.role !== perfil," :  Role ",roles?.role,"perfil ",perfil);
+      // Bloquear modal
+      setShowModal(
+        (roles?.role || "") === "" ||
+          (perfil || "") === "" ||
+          roles?.role !== perfil
+      );
       setShowModal_fase(resp.condicion_1 > 0);
     };
 
@@ -414,7 +412,7 @@ const App = () => {
 
               <div
                 className="px-8 py-6 grid grid-cols-1 sm:grid-cols-2 
-            md:grid-cols-3 lg:grid-cols-s gap-6 text-sm text-gray-200"
+          md:grid-cols-3 lg:grid-cols-s gap-6 text-sm text-gray-200"
               >
                 <div>
                   <p className="text-gray-500 text-center">Orden N°</p>
