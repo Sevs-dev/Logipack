@@ -88,7 +88,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         maxAge: 60 * 60, // 1 hora
       });
 
-      console.log("🔁 Token renovado automáticamente");
+      // console.log("🔁 Token renovado automáticamente");
     } catch (err) {
       console.warn("❌ Error al refrescar token", err);
       logout(true);
@@ -149,7 +149,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const expiraEnUnMinuto = tiempoRestante < 60 * 1000;
 
       if (expiraPronto && actividadReciente) {
-        console.log("🕒 Token expira pronto y hubo actividad, renovando...");
+        // console.log("🕒 Token expira pronto y hubo actividad, renovando...");
         refreshToken();
         setWarnedAboutExpiry(false);
         return;
