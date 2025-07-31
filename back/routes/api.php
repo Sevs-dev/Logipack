@@ -125,6 +125,7 @@ Route::controller(StagesController::class)->group(function () {
     Route::get('/getFase', 'getFase'); // Obtener todas las lineas
     Route::post('/newFase', 'newFase'); // Crear una nueva lineas
     Route::get('/FaseId/{id}', 'FaseId'); // Obtener una lineas específica
+    Route::get('/controlStages/{id}', 'controlStages'); // Obtener una lineas específica
     Route::get('/FaseName/{name}', 'FaseName'); // Obtener una lineas específica
     Route::put('/updateFase/{id}', 'updateFase'); // Actualizar una lineas
     Route::delete('/deleteFase/{id}', 'deleteFase'); // Eliminar una lineas

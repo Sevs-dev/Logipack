@@ -123,6 +123,15 @@ export const updateUser = async (id: number, data: UpdateUserData): Promise<User
   }
 };
 
+export const refresh = async (refreshToken: string): Promise<AuthResponse> => {
+  try {
+    const response = await authUser.post('/refresh', { refreshToken });
+    return { success: true, data: response.data };
+  } catch (error: unknown) {
+    return handleError(error);
+  }
+}
+
 // Manejo de errores reutilizable
 const handleError = (error: unknown): AuthResponse => {
   if (axios.isAxiosError(error)) {

@@ -3,64 +3,84 @@ import React, { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "../context/AuthProvider";
 import Loader from "../components/loader/Loader";
-import { parseCookies, destroyCookie } from "nookies";
+import { parseCookies, setCookie, destroyCookie } from "nookies";
 import { jwtDecode } from "jwt-decode";
+import axios from "axios";
 
 type JWTPayload = {
   exp: number;
-  [key: string]: any;
 };
 
-function isTokenExpired(): boolean {
-  const { token } = parseCookies();
+const clearAuthCookies = () => {
+  const keys = ["token", "email", "role", "name", "refresh_token"];
+  keys.forEach((key) => destroyCookie(null, key));
+  // console.log("🧹 Cookies eliminadas");
+};
 
-  if (!token) {
-    // console.warn("❌ No hay token en cookies.");
-    return true;
-  }
+const isTokenExpired = (): boolean => {
+  const { token } = parseCookies();
+  if (!token) return true;
 
   try {
     const decoded = jwtDecode<JWTPayload>(token);
     const now = Date.now() / 1000;
-    // console.log("🧠 Token expira en:", decoded.exp, "| Ahora:", now);
-    if (decoded.exp < now) {
-      // console.warn("⚠️ Token expirado");
-      clearAuthCookies();
-      return true;
-    }
-    return false;
-  } catch (error) {
-    // console.error("❌ Error al decodificar token:", error);
-    clearAuthCookies();
+    return decoded.exp < now;
+  } catch {
     return true;
   }
-}
+};
 
-function clearAuthCookies() {
-  const keys = ["token", "email", "role", "name"];
-  keys.forEach((key) => destroyCookie(null, key));
-  // console.log("🧹 Cookies eliminadas");
-}
+const refreshAccessToken = async (): Promise<boolean> => {
+  try {
+    const response = await axios.post("/api/refresh", {}, { withCredentials: true });
+    const newToken = response.data.token;
+
+    setCookie(null, "token", newToken, {
+      path: "/",
+      maxAge: 60 * 15, // 15 minutos
+    });
+
+    // console.log("🔁 Token renovado");
+    return true;
+  } catch {
+    // console.warn("❌ Falló el refresh token", error);
+    clearAuthCookies();
+    return false;
+  }
+};
 
 function withAuth<P extends object>(Component: React.ComponentType<P>): React.FC<P> {
   const AuthComponent: React.FC<P> = (props) => {
     const { user, loading } = useAuth();
     const router = useRouter();
+
     useEffect(() => {
-      if (loading) return; // Esperar hasta que loading sea false
-      // console.log("🔒 [withAuth] Estado:", { user, loading });
-      const expired = isTokenExpired();
-      if (expired || !user) {
-        // console.warn("🚫 Usuario no autenticado o token inválido. Redirigiendo...");
-        router.replace("/pages/noneUser");
-      }
-    }, [loading, user, router]);
+      if (loading) return;
+
+      const verify = async () => {
+        const expired = isTokenExpired();
+
+        if (expired) {
+          const refreshed = await refreshAccessToken();
+          if (!refreshed) return router.replace("/pages/noneUser");
+        }
+
+        if (!user) {
+          router.replace("/pages/noneUser");
+        }
+      };
+
+      verify();
+    }, [loading, user]);
+
     if (loading) return <Loader />;
     if (!user && !loading) return null;
+
     return <Component {...props} />;
   };
 
   AuthComponent.displayName = `withAuth(${Component.displayName || Component.name || "Component"})`;
   return AuthComponent;
 }
+
 export default withAuth;

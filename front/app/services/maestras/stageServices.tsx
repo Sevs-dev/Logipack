@@ -93,3 +93,13 @@ const handleAxiosError = (fn: string, error: unknown) => {
     console.error(`Error inesperado en ${fn}:`, error);
   }
 };
+
+export const controlStage = async (id: number): Promise<Stage> => {
+  try {
+    const response = await StageServ.get(`/controlStages/${id}`);
+    return response.data;
+  } catch (error: unknown) {
+    handleAxiosError("controlStage", error);
+    throw error;
+  }
+} 

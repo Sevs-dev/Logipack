@@ -76,6 +76,29 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     [parseJwt]
   );
 
+  const refreshToken = useCallback(async () => {
+    try {
+      const res = await fetch("/api/refresh", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${nookies.get().token}`,
+        },
+      });
+
+      if (!res.ok) throw new Error("Refresh falló");
+
+      const data = await res.json();
+      const nuevoToken = data.autorización.token;
+
+      nookies.set(null, "token", nuevoToken, {
+        path: "/",
+        maxAge: 60 * 60, // 1 hora
+      });
+    } catch {
+      logout(true);
+    }
+  }, [logout]);
+
   useEffect(() => {
     const cookies = nookies.get();
     const token = cookies.token;
@@ -101,16 +124,47 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setLoading(false);
       });
 
-    const interval = setInterval(() => {
-      const currentCookies = nookies.get();
-      const currentToken = currentCookies.token;
+    // Validación cada 30s para token vencido
+    const expireInterval = setInterval(() => {
+      const currentToken = nookies.get().token;
       if (!currentToken || isTokenExpired(currentToken)) {
         logout(true);
       }
     }, 30 * 1000);
 
-    return () => clearInterval(interval);
+    return () => clearInterval(expireInterval);
   }, [pathname, logout, isTokenExpired]);
+
+  useEffect(() => {
+    let lastActivity = Date.now();
+
+    const updateActivity = () => {
+      lastActivity = Date.now();
+    };
+
+    window.addEventListener("mousemove", updateActivity);
+    window.addEventListener("keydown", updateActivity);
+
+    const refreshInterval = setInterval(() => {
+      const token = nookies.get().token;
+      const decoded = token ? parseJwt(token) : null;
+      if (!decoded || !decoded.exp) return;
+
+      const tiempoRestante = decoded.exp * 1000 - Date.now();
+      const actividadReciente = Date.now() - lastActivity < 10 * 60 * 1000;
+      const expiraPronto = tiempoRestante < 5 * 60 * 1000;
+
+      if (expiraPronto && actividadReciente) {
+        refreshToken();
+      }
+    }, 60 * 1000); // cada minuto
+
+    return () => {
+      clearInterval(refreshInterval);
+      window.removeEventListener("mousemove", updateActivity);
+      window.removeEventListener("keydown", updateActivity);
+    };
+  }, [parseJwt, refreshToken]);
 
   if (loading) return <Loader />;
 

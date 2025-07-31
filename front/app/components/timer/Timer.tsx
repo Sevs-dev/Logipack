@@ -87,7 +87,7 @@ const Timer: React.FC<TimerProps> = ({ ejecutadaId, stageId, initialMinutes, ref
             if (!timerId) return;
             try {
                 const control = await getcontrolTimer(timerId);
-                console.log("Control de timer obtenido:", control);
+                // console.log("Control de timer obtenido:", control);
                 setControlData(control);
             } catch (error) {
                 console.error('Error al obtener control del timer:', error);

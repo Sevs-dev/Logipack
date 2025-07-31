@@ -76,11 +76,16 @@ class AdaptationController extends Controller
             // Procesar attachment general (único)
             if ($request->hasFile('attachment')) {
                 $file = $request->file('attachment');
-                $filename = 'general_' . now()->format('Ymd_His') . '.' . $file->getClientOriginalExtension();
+
+                // Usa el nuevo número de orden generado
+                $filename = $newNumberOrder . '_general.' . $file->getClientOriginalExtension();
                 $path = $file->storeAs('attachments', $filename, 'public');
+
                 $validatedData['attachment'] = $path;
+
                 Log::info('📎 Archivo general adjuntado', ['path' => $path]);
             }
+
 
             // Procesar attachments individuales (NO guardar en Adaptation)
             $articleAttachments = [];
@@ -94,8 +99,11 @@ class AdaptationController extends Controller
                     }
 
                     $safeCodart = preg_replace('/[^A-Za-z0-9_\-\.]/', '_', $codart);
-                    $filename = $safeCodart . '_' . now()->format('Ymd_His') . '.' . $file->getClientOriginalExtension();
+
+                    // 📁 Archivo nombrado con el número de orden + codart
+                    $filename = $newNumberOrder . '_' . $safeCodart . '.' . $file->getClientOriginalExtension();
                     $path = $file->storeAs('attachments', $filename, 'public');
+
                     $articleAttachments[$codart] = $path;
 
                     Log::info("📎 Archivo adjuntado para artículo {$codart}", ['path' => $path]);
@@ -428,13 +436,13 @@ class AdaptationController extends Controller
             OrdenesEjecutadas::where('adaptation_id', $adaptation->id)->update([
                 'estado' => '-11000',
             ]);
-            
+
             // Eliminar las fechas de adaptación
             AdaptationDate::where('adaptation_id', $adaptation->id)->delete();
 
             // Eliminar la adaptación
             $adaptation->delete();
-            
+
             return response()->json([
                 'message' => 'Adaptation and related dates deleted successfully'
             ], 200);
