@@ -4,12 +4,13 @@ import {
   useContext,
   useEffect,
   useState,
+  useRef,
   ReactNode,
   useCallback,
 } from "react";
 import nookies from "nookies";
 import { useRouter, usePathname } from "next/navigation";
-import { getUserByEmail } from "../services/userDash/authservices";
+import { getUserByEmail, refresh } from "../services/userDash/authservices";
 import Loader from "../components/loader/Loader";
 import { showWarning } from "../components/toastr/Toaster";
 
@@ -32,6 +33,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [role, setRole] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [hasNotified, setHasNotified] = useState(false);
+  const [warnedAboutExpiry, setWarnedAboutExpiry] = useState(false);
+  const lastActivityRef = useRef(Date.now()); // ✅ correctamente colocado aquí
 
   const router = useRouter();
   const pathname = usePathname();
@@ -78,23 +81,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const refreshToken = useCallback(async () => {
     try {
-      const res = await fetch("/api/refresh", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${nookies.get().token}`,
-        },
-      });
-
-      if (!res.ok) throw new Error("Refresh falló");
-
-      const data = await res.json();
-      const nuevoToken = data.autorización.token;
+      const nuevoToken = await refresh();
 
       nookies.set(null, "token", nuevoToken, {
         path: "/",
         maxAge: 60 * 60, // 1 hora
       });
-    } catch {
+
+      console.log("🔁 Token renovado automáticamente");
+    } catch (err) {
+      console.warn("❌ Error al refrescar token", err);
       logout(true);
     }
   }, [logout]);
@@ -124,7 +120,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setLoading(false);
       });
 
-    // Validación cada 30s para token vencido
     const expireInterval = setInterval(() => {
       const currentToken = nookies.get().token;
       if (!currentToken || isTokenExpired(currentToken)) {
@@ -136,10 +131,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, [pathname, logout, isTokenExpired]);
 
   useEffect(() => {
-    let lastActivity = Date.now();
-
     const updateActivity = () => {
-      lastActivity = Date.now();
+      lastActivityRef.current = Date.now();
     };
 
     window.addEventListener("mousemove", updateActivity);
@@ -151,20 +144,34 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (!decoded || !decoded.exp) return;
 
       const tiempoRestante = decoded.exp * 1000 - Date.now();
-      const actividadReciente = Date.now() - lastActivity < 10 * 60 * 1000;
+      const actividadReciente = Date.now() - lastActivityRef.current < 10 * 60 * 1000;
       const expiraPronto = tiempoRestante < 5 * 60 * 1000;
+      const expiraEnUnMinuto = tiempoRestante < 60 * 1000;
 
       if (expiraPronto && actividadReciente) {
+        console.log("🕒 Token expira pronto y hubo actividad, renovando...");
         refreshToken();
+        setWarnedAboutExpiry(false);
+        return;
       }
-    }, 60 * 1000); // cada minuto
+
+      if (expiraEnUnMinuto && !actividadReciente && !warnedAboutExpiry) {
+        showWarning("⚠️ Tu sesión se cerrará pronto si no hay actividad.");
+        setWarnedAboutExpiry(true);
+        return;
+      }
+
+      if (!expiraEnUnMinuto && warnedAboutExpiry) {
+        setWarnedAboutExpiry(false);
+      }
+    }, 60 * 1000);
 
     return () => {
       clearInterval(refreshInterval);
       window.removeEventListener("mousemove", updateActivity);
       window.removeEventListener("keydown", updateActivity);
     };
-  }, [parseJwt, refreshToken]);
+  }, [parseJwt, refreshToken, warnedAboutExpiry]);
 
   if (loading) return <Loader />;
 
