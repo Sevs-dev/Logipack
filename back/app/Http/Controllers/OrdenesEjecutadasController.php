@@ -503,7 +503,7 @@ class OrdenesEjecutadasController extends Controller
             Conciliaciones::create($data);
 
             return response()->json([
-                'message' => 'Formulario guardado correctamente',
+                'message' => 'ok',
                 'estado' => 200,
             ]);
         } catch (\Exception $e) {

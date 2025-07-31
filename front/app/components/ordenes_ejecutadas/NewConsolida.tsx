@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { getConciliacion } from '@/app/services/planing/planingServices';
+import { getConciliacion, guardar_conciliacion } from '@/app/services/planing/planingServices';
 
 const NewConsolida = () => {
     const [data, setData] = useState({
@@ -24,7 +24,7 @@ const NewConsolida = () => {
     useEffect(() => {
         const obtener_conciliacion = async () => {
             try {
-                const response = await getConciliacion(9);
+                const response = await getConciliacion(6);
                 setData((prev) => ({
                     ...prev,
                     orden_ejecutada: response?.orden?.orden_ejecutada,
@@ -116,9 +116,16 @@ const NewConsolida = () => {
         data.sobrante
     ]);
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        console.log('Datos enviados:', data);
+        
+        const response = await guardar_conciliacion(data);
+        if (response.message === 'ok') {
+            console.log('Formulario guardado correctamente');
+            // window.close();
+        } else {
+            console.log('Error al guardar el datos | ' + 'datos existentes.');
+        }
     };
 
     if (data?.orden_ejecutada === '') {
