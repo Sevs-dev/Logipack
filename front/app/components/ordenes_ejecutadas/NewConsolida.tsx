@@ -122,7 +122,7 @@ const NewConsolida = () => {
         const response = await guardar_conciliacion(data);
         if (response.message === 'ok') {
             console.log('Formulario guardado correctamente');
-            // window.close();
+            window.close();
         } else {
             console.log('Error al guardar el datos | ' + 'datos existentes.');
         }
