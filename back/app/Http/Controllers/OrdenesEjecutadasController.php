@@ -147,25 +147,20 @@ class OrdenesEjecutadasController extends Controller
             ->where('proceso', 'eject')
             ->first();
 
-        // Obtener solo las fases de planificación
+        // Obtener solo las fases de planificación, conciliación y actividades
         $linea_fases = DB::table('ordenes_ejecutadas as ada')
-            ->where('ada.adaptation_date_id', $id)
-            ->where('ada.proceso', 'eject')
-            ->leftJoin('stages as std', function ($join) {
+            ->join('stages as std', function($join) {
                 $join->on(
-                    DB::raw(
-                        "FIND_IN_SET(std.id, REPLACE(REPLACE(REPLACE(REPLACE(COALESCE
-                        (ada.maestra_fases_fk, ''), '[', ''), ']', ''), ' ', ''), '\"', ''))"
-                    ),
+                    DB::raw("FIND_IN_SET(std.id, REPLACE(REPLACE(REPLACE(REPLACE(COALESCE(ada.maestra_fases_fk, ''), '[', ''), ']', ''), ' ', ''), '\"', ''))"),
                     '>',
                     DB::raw('0')
                 );
             })
-            // , 'Conciliación' 'Conciliación', 
+            ->where('ada.adaptation_date_id', $id)
+            ->where('ada.proceso', 'eject')
             ->whereIn('std.phase_type', ['Planificación', 'Conciliación', 'Actividades'])
-            ->whereNotExists(function ($query) use ($id) {
-                $query
-                    ->select(DB::raw(1))
+            ->whereNotExists(function($query) use ($id) {
+                $query->select(DB::raw(1))
                     ->from('actividades_ejecutadas')
                     ->where('adaptation_date_id', $id)
                     ->where('estado_form', false)
@@ -176,15 +171,19 @@ class OrdenesEjecutadasController extends Controller
                 'std.id',
                 'std.description as descripcion',
                 'std.phase_type',
-                DB::raw("FIND_IN_SET(std.id, REPLACE(REPLACE(REPLACE(REPLACE(COALESCE
-                        (ada.maestra_fases_fk, ''), '[', ''), ']', ''), ' ', ''), '\"', '')) as posicion")
+                DB::raw("FIND_IN_SET(std.id, REPLACE(REPLACE(REPLACE(REPLACE(COALESCE(ada.maestra_fases_fk, ''), '[', ''), ']', ''), ' ', ''), '\"', '')) as posicion")
             )
-            ->orderByRaw('posicion ASC')
+            ->orderBy('posicion', 'asc')
             ->get();
 
         // Recorrer para validar estado de la lineas
         $fases = [];
         foreach ($linea_fases as $item) {
+            // Validar si la fase es conciliación
+            if ($item->phase_type == 'Conciliación') {
+                $fases[] = $item;
+            }
+
             // obtener tamaño de la linea
             $linea = DB::table('actividades_ejecutadas as atc')
                 ->where('atc.adaptation_date_id', $id)
@@ -194,7 +193,7 @@ class OrdenesEjecutadasController extends Controller
                     DB::raw('COUNT(*) as count')
                 )
                 ->first();
-
+                
             // Vlidar si la linea tiene todos los estados en 0
             if ($linea->count > 0) {
                 $fases[] = $item;
@@ -632,6 +631,7 @@ class OrdenesEjecutadasController extends Controller
                     DB::raw('0')
                 );
             })
+            ->where('std.phase_type', '!=', 'Conciliación')
             ->select(
                 'std.id',
                 'std.description as descripcion',
