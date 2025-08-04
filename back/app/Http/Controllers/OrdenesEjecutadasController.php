@@ -151,7 +151,7 @@ class OrdenesEjecutadasController extends Controller
         $linea_fases = DB::table('ordenes_ejecutadas as ada')
             ->where('ada.adaptation_date_id', $id)
             ->where('ada.proceso', 'eject')
-            ->join('stages as std', function ($join) {
+            ->leftJoin('stages as std', function ($join) {
                 $join->on(
                     DB::raw(
                         "FIND_IN_SET(std.id, REPLACE(REPLACE(REPLACE(REPLACE(COALESCE
@@ -161,7 +161,7 @@ class OrdenesEjecutadasController extends Controller
                     DB::raw('0')
                 );
             })
-            // , 'Conciliación'
+            // , 'Conciliación' 'Conciliación', 
             ->whereIn('std.phase_type', ['Planificación', 'Conciliación', 'Actividades'])
             ->whereNotExists(function ($query) use ($id) {
                 $query

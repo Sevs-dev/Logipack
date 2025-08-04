@@ -24,7 +24,7 @@ const NewConsolida = () => {
     useEffect(() => {
         const obtener_conciliacion = async () => {
             try {
-                const response = await getConciliacion(6);
+                const response = await getConciliacion(5);
                 setData((prev) => ({
                     ...prev,
                     orden_ejecutada: response?.orden?.orden_ejecutada,
