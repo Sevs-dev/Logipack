@@ -549,7 +549,7 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
         try {
             const data = await actividades_ejecutadas(plan.id);
             if (data?.actividades) {
-                window.open(`/pages/ejecuciones/${id}`);
+                window.open(`/pages/detalle/${plan.id}`);
             }
         } catch (error) {
             console.error('Error al obtener fases:', error);
