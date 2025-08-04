@@ -123,6 +123,22 @@ export const updateUser = async (id: number, data: UpdateUserData): Promise<User
   }
 };
 
+export const refresh = async (): Promise<string> => {
+  try {
+    const response = await authUser.post("/refresh", {}, {
+      withCredentials: true, // <-- importante para que las cookies se manden
+    });
+
+    const token = response.data?.autorización?.token || response.data?.token;
+    if (!token) throw new Error("Token vacío en respuesta");
+
+    return token;
+  } catch (error) {
+    console.error("❌ Error en refresh:", (error as AxiosError).message);
+    throw error;
+  }
+};
+
 // Manejo de errores reutilizable
 const handleError = (error: unknown): AuthResponse => {
   if (axios.isAxiosError(error)) {

@@ -1,8 +1,10 @@
 import { useEffect, useState, useCallback } from "react";
 // import "tailwindcss/tailwind.css";
 import { actividades_ejecutadas } from "@/app/services/planing/planingServices";
+import { useParams } from 'next/navigation';
 
 const NewDetalle = () => {
+  const params = useParams();
   const [orden, setOrden] = useState(null);
   const [actividades, setActividades] = useState([]);
   const [imagenAmpliada, setImagenAmpliada] = useState(null);
@@ -11,8 +13,8 @@ const NewDetalle = () => {
   // obtener actividades
   const obtenerActividades = useCallback(async () => {
     try {
-      const data = await actividades_ejecutadas(4);
-      console.log(data);
+      const data = await actividades_ejecutadas(Number(params.id));
+      // console.log(data);
       if (data?.actividades) {
         setOrden(data.orden);
         setActividades(data.actividades);
@@ -28,9 +30,14 @@ const NewDetalle = () => {
   }, [obtenerActividades]);
 
   // si no hay actividades
-  if (!actividades.length) {
-    return <div className="text-white">Cargando...</div>;
+  if (actividades.length < 1) {
+    return <div className="text-white">No hay actividades ejecutadas para mostrar</div>;
   }
+
+  // // si no hay actividades
+  // if (!actividades.length) {
+  //   return <div className="text-white">Cargando...</div>;
+  // }
 
   // si hay actividades
   return (

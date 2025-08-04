@@ -20,6 +20,16 @@ export const getPlanning = async () => {
     }
 }
 
+export const getConsultPlanning = async () => {
+    try {
+        const response = await Planning.get('/consult-planning');
+        return response.data;
+    } catch (error: unknown) {
+        console.error("Error en getPlan:", error);
+        throw error;
+    }
+}
+
 export const getPlanDash = async () => {
     try {
         const response = await Planning.get('/getPlanDash');
@@ -159,6 +169,27 @@ export const actividades_ejecutadas = async (id: number) => {
         return response.data;
     } catch (error: unknown) {
         console.error("Error en actividades_ejecutadas:", error);
+        throw error;
+    }
+}
+
+export const getConciliacion = async (id: number) => {
+    try {
+        const response = await Planning.get(`/getConciliacion/${id}`);
+        return response.data;
+    } catch (error: unknown) {
+        console.error("Error en getConciliacion:", error);
+        throw error;
+    }
+}
+
+export const guardar_conciliacion = async (data: any) => {
+    try {
+        const response = await Planning.post(`/guardar_conciliacion`, JSON.stringify(data));
+        console.log(response.data);
+        return response.data;
+    } catch (error: unknown) {
+        console.error("Error en guardar_conciliacion:", error);
         throw error;
     }
 }

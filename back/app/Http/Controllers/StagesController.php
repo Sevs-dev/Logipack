@@ -2,7 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Adaptation;
+use App\Models\Maestra;
 use App\Models\Stage;
+use finfo;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -81,10 +84,10 @@ class StagesController extends Controller
             return response()->json(['message' => 'Fase no encontrada'], 404);
         }
 
-        Log::info('📥 Request recibido para actualizar fase', [
-            'fase_id' => $id,
-            'request' => $request->all()
-        ]);
+       // Log::info('📥 Request recibido para actualizar fase', [
+        //     'fase_id' => $id,
+        //     'request' => $request->all()
+        // ]);
 
         // 🔁 Normalizamos repeatLine → repeat_line si viene con camelCase
         if ($request->has('repeatLine')) {
@@ -110,7 +113,7 @@ class StagesController extends Controller
             'role'            => 'string|nullable',
         ]);
 
-        Log::info('✅ Datos validados correctamente', $validatedData);
+       // Log::info('✅ Datos validados correctamente', $validatedData);
 
         // Desactivar versión anterior
         $Fase->active = false;
@@ -123,7 +126,7 @@ class StagesController extends Controller
             );
         }
 
-        Log::info('🔧 Datos listos para nueva versión', $validatedData);
+       // Log::info('🔧 Datos listos para nueva versión', $validatedData);
 
         // Crear nueva versión
         $newVersion = (int) $Fase->version + 1;
@@ -133,11 +136,11 @@ class StagesController extends Controller
         $newFase->reference_id = $Fase->reference_id ?? (string) Str::uuid();
         $newFase->active = true;
 
-        Log::info('🆕 Nueva fase antes de guardar', $newFase->toArray());
+       // Log::info('🆕 Nueva fase antes de guardar', $newFase->toArray());
 
         $newFase->save();
 
-        Log::info('💾 Nueva fase guardada', $newFase->toArray());
+       // Log::info('💾 Nueva fase guardada', $newFase->toArray());
 
         return response()->json([
             'message' => 'Fase actualizada como nueva versión correctamente',
@@ -157,5 +160,48 @@ class StagesController extends Controller
         $Fase->save();
 
         return response()->json(['message' => 'Fase eliminada correctamente']);
+    }
+
+    //Control Stages
+    public function controlStages($id): JsonResponse
+    {
+       // Log::info("🔍 Buscando adaptación con ID: $id");
+
+        $adaptation = Adaptation::find($id);
+        if (!$adaptation) {
+            Log::warning("❌ Adaptación no encontrada para ID: $id");
+            return response()->json(['message' => 'Adaptación no encontrada'], 404);
+        }
+
+       // Log::info("✅ Adaptación encontrada", ['adaptation_id' => $adaptation->id, 'master_id' => $adaptation->master]);
+
+        $master = Maestra::find($adaptation->master);
+        if (!$master) {
+            Log::warning("❌ Maestra no encontrada con ID: " . $adaptation->master);
+            return response()->json(['message' => 'Maestra no encontrada'], 404);
+        }
+
+       // Log::info("✅ Maestra encontrada", ['maestra_id' => $master->id, 'type_stage' => $master->type_stage]);
+
+        $stageIds = $master->type_stage;
+        if (!is_array($stageIds)) {
+            Log::error("❌ El campo 'type_stage' no es un array", ['type_stage' => $stageIds]);
+            return response()->json(['message' => 'type_stage no es un array'], 400);
+        }
+
+       // Log::info("📦 Buscando Stage con phase_type = 'Control' en IDs:", ['stage_ids' => $stageIds]);
+
+        $controlStage = Stage::whereIn('id', $stageIds)
+            ->whereRaw('LOWER(phase_type) = ?', ['control'])
+            ->first();
+
+        if (!$controlStage) {
+            Log::warning("⚠️ No se encontró ninguna fase con phase_type = 'Control'", ['searched_ids' => $stageIds]);
+            return response()->json(['message' => 'Fase tipo Control no encontrada'], 404);
+        }
+
+       // Log::info("✅ Fase tipo Control encontrada", ['stage_id' => $controlStage->id, 'phase_type' => $controlStage->phase_type]);
+
+        return response()->json($controlStage);
     }
 }

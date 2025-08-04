@@ -19,7 +19,7 @@ class TimerController extends Controller
             'time'         => 'required|integer|min:0',
         ]);
 
-        Log::info('🔔 [Timer Store] Petición recibida', $validated);
+        //// Log::info('🔔 [Timer Store] Petición recibida', $validated);
 
         // ✅ Validar si ya existe un timer para esta actividad, sin importar su estado
         $existingTimer = Timer::where('ejecutada_id', $validated['ejecutada_id'])->first();
@@ -93,7 +93,7 @@ class TimerController extends Controller
     // Finalizar un timer
     public function finish(Request $request)
     {
-        Log::info('🔔 [Timer Finish] Petición recibida', $request->all());
+       // Log::info('🔔 [Timer Finish] Petición recibida', $request->all());
 
         $request->validate([
             'ejecutada_id' => 'required|integer',
@@ -110,21 +110,21 @@ class TimerController extends Controller
             ], 404);
         }
 
-        Log::info('✅ [Timer Finish] Timer encontrado', [
-            'id' => $timer->id,
-            'status_actual' => $timer->status,
-            'finish_actual' => $timer->finish,
-        ]);
+       // Log::info('✅ [Timer Finish] Timer encontrado', [
+        //     'id' => $timer->id,
+        //     'status_actual' => $timer->status,
+        //     'finish_actual' => $timer->finish,
+        // ]);
 
         $timer->status = 'finished';
         $timer->finish = 1;
         $timer->save();
 
-        Log::info('✅ [Timer Finish] Timer actualizado correctamente', [
-            'id' => $timer->id,
-            'nuevo_status' => $timer->status,
-            'nuevo_finish' => $timer->finish,
-        ]);
+       // Log::info('✅ [Timer Finish] Timer actualizado correctamente', [
+        //     'id' => $timer->id,
+        //     'nuevo_status' => $timer->status,
+        //     'nuevo_finish' => $timer->finish,
+        // ]);
 
         return response()->json([
             'message' => 'Timer finalizado correctamente',

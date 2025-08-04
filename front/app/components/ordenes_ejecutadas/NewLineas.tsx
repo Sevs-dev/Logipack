@@ -53,6 +53,14 @@ const NewLineas = () => {
     const lista_procesos = Array.isArray(lista.linea_procesos) ? lista.linea_procesos : [];
     const lista_fases = Array.isArray(lista.linea_fases) ? lista.linea_fases : [];
 
+    if (orden?.estado === 11500) {
+        window.close();
+    }
+    console.log("orden", orden?.estado);
+    // if (lista_procesos.length === 0 && lista_fases.length === 0 && orden === null) {
+    //     window.close();
+    // }
+    
     const verificarYGenerar = async () => {
         if (orden === null && local) {
             const { message } = await generar_orden(local.id);
@@ -78,14 +86,19 @@ const NewLineas = () => {
         );
     }
 
-    const handleLinea = (id: number, tipo: string, descripcion: string) => {
+    const handleLinea = (id: number, tipo: string, descripcion: string, phase_type: string) => {
         if (!local) return;
         local.linea = id;
         local.tipo = tipo;
         local.descripcion = descripcion;
         local.orden = orden;
         localStorage.setItem("ejecutar", JSON.stringify(local));
-        window.open("/pages/ordenes_ejecutadas", "_blank");
+
+        if (phase_type === "Conciliación") {
+            window.open("/pages/consolidacion/" + local.id, "_blank");
+        } else {
+            window.open("/pages/ordenes_ejecutadas", "_blank");
+        }
         setTimeout(() => {
             requestIdleCallback(() => window.close());
         }, 1000);
@@ -152,7 +165,7 @@ const NewLineas = () => {
                                     role="button"
                                     tabIndex={0}
                                     aria-label={`Seleccionar línea: ${linea.descripcion}`}
-                                    onClick={() => handleLinea(linea.id, "linea", linea.descripcion)}
+                                    onClick={() => handleLinea(linea.id, "linea", linea.descripcion, linea.phase_type)}
                                     initial={{ opacity: 0, scale: 0.95 }}
                                     animate={{ opacity: 1, scale: 1 }}
                                     transition={{
@@ -177,6 +190,7 @@ const NewLineas = () => {
                     {/* Fases */}
                     <section className="px-[10px] pb-[10px] pt-[10px]">
                         <Text type="title" color="text-white">Fases</Text>
+                        {JSON.stringify(lista_fases)}
                         <div className="mt-3 flex flex-wrap justify-center gap-3">
                             {lista_fases.map((linea, index) => (
                                 <motion.div
@@ -184,7 +198,7 @@ const NewLineas = () => {
                                     role="button"
                                     tabIndex={0}
                                     aria-label={`Seleccionar línea: ${linea.descripcion}`}
-                                    onClick={() => handleLinea(linea.id, "fase", linea.descripcion)}
+                                    onClick={() => handleLinea(linea.id, "fase", linea.descripcion, linea.phase_type)}
                                     initial={{ opacity: 0, scale: 0.95 }}
                                     animate={{ opacity: 1, scale: 1 }}
                                     transition={{

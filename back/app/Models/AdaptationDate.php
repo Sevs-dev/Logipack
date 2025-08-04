@@ -16,7 +16,12 @@ class AdaptationDate extends Model
 
     // ✅ Convertir 'activities' automáticamente a array
     protected $casts = [
+        'machine' => 'array',
+        'users' => 'array',
+        'line' => 'array',
         'activities' => 'array',
+        'duration_breakdown' => 'array',
+        'ingredients' => 'array',
     ];
 
     /*
@@ -61,6 +66,13 @@ class AdaptationDate extends Model
         return $this->hasMany(Manufacturing::class, 'id', 'line');
     }
 
+    public function getLinesDataAttribute()
+    {
+        if (!is_array($this->line)) return [];
+
+        return Manufacturing::whereIn('id', $this->line)->get();
+    }
+
     // 🔗 Relación con máquinas
     public function machines()
     {
@@ -86,7 +98,7 @@ class AdaptationDate extends Model
 
     public static function getPlanByIdEloquent($id)
     {
-        Log::info("🔍 Buscando planificación con ID: {$id}");
+        // Log::info("🔍 Buscando planificación con ID: {$id}");
 
         $adaptationDate = self::with('adaptation.maestra')->find($id);
         if (!$adaptationDate) {
@@ -108,7 +120,7 @@ class AdaptationDate extends Model
 
         // Type Stage
         $typeStagesRaw = $maestra->type_stage ?? '[]';
-        Log::info("📦 type_stage (raw):", ['raw' => $typeStagesRaw]);
+        // Log::info("📦 type_stage (raw):", ['raw' => $typeStagesRaw]);
 
         if (is_string($typeStagesRaw)) {
             $decoded = json_decode($typeStagesRaw, true) ?: [];
@@ -118,11 +130,11 @@ class AdaptationDate extends Model
         } else {
             $typeStages = [];
         }
-        Log::info("✅ type_stage (decodificado):", $typeStages);
+        // Log::info("✅ type_stage (decodificado):", $typeStages);
 
         // Type Acondicionamiento
         $typeAcomRaw = $maestra->type_acondicionamiento ?? '[]';
-        Log::info("📦 type_acondicionamiento (raw):", ['raw' => $typeAcomRaw]);
+        // Log::info("📦 type_acondicionamiento (raw):", ['raw' => $typeAcomRaw]);
 
         if (is_string($typeAcomRaw)) {
             $decodedAcom = json_decode($typeAcomRaw, true) ?: [];
@@ -132,21 +144,21 @@ class AdaptationDate extends Model
         } else {
             $typeAcom = [];
         }
-        Log::info("✅ type_acondicionamiento (decodificado):", $typeAcom);
+        // Log::info("✅ type_acondicionamiento (decodificado):", $typeAcom);
 
         $stages = Stage::whereIn('id', $typeStages)
             ->where('phase_type', 'Procesos')
             ->get();
-        Log::info("📌 Stages encontrados:", $stages->pluck('id', 'description')->toArray());
+        // Log::info("📌 Stages encontrados:", $stages->pluck('id', 'description')->toArray());
 
         $lineaAcoms = LineaTipoAcondicionamiento::whereIn('tipo_acondicionamiento_id', $typeAcom)->get();
-        Log::info("📌 Líneas de acondicionamiento encontradas:", $lineaAcoms->pluck('id', 'tipo_acondicionamiento_id')->toArray());
+        // Log::info("📌 Líneas de acondicionamiento encontradas:", $lineaAcoms->pluck('id', 'tipo_acondicionamiento_id')->toArray());
 
         $result = collect();
 
         foreach ($stages as $stage) {
             $activityIds = $stage->activities->pluck('id')->toArray();
-            Log::info("🧩 Actividades para Stage {$stage->id} - {$stage->description}:", $activityIds);
+            // Log::info("🧩 Actividades para Stage {$stage->id} - {$stage->description}:", $activityIds);
 
             $result->push([
                 'ID_ADAPTACION' => $adaptation->id,
@@ -165,7 +177,7 @@ class AdaptationDate extends Model
                 $faseIds = [];
             }
 
-            Log::info("🔄 Recorriendo fases de línea de acondicionamiento {$linAcom->tipo_acondicionamiento_id}:", $faseIds);
+            // Log::info("🔄 Recorriendo fases de línea de acondicionamiento {$linAcom->tipo_acondicionamiento_id}:", $faseIds);
 
             foreach ($faseIds as $faseId) {
                 $stage = $stages->firstWhere('id', $faseId);
@@ -183,7 +195,7 @@ class AdaptationDate extends Model
             }
         }
 
-        Log::info("🗃️ Resultado sin agrupar (raw):", $result->toArray());
+        // Log::info("🗃️ Resultado sin agrupar (raw):", $result->toArray());
 
         $grouped = $result->groupBy('ID_FASE')->map(function ($items) {
             $esEditableMax = collect($items)->max('ES_EDITABLE');
@@ -209,7 +221,7 @@ class AdaptationDate extends Model
             ];
         })->values();
 
-        Log::info("✅ Resultado final agrupado:", $grouped->toArray());
+        // Log::info("✅ Resultado final agrupado:", $grouped->toArray());
 
         return $grouped;
     }

@@ -7,11 +7,16 @@ import {
   condiciones_fase,
   validate_rol,
 } from "@/app/services/planing/planingServices";
+import { getAdaptationsId } from "@/app/services/adaptation/adaptationServices";
+import { getMaestraId } from "../../services/maestras/maestraServices";
 import {
   createTimer,
   getTimerEjecutadaById,
 } from "../../services/timer/timerServices";
-import { getStageId } from "../../services/maestras/stageServices";
+import {
+  getStageId,
+  controlStage,
+} from "../../services/maestras/stageServices";
 import Firma from "../ordenes_ejecutadas/Firma";
 import ModalBlock from "../modal/ModalBlock";
 
@@ -145,34 +150,24 @@ const App = () => {
     const guardarTimer = async () => {
       if (!fase) return;
       try {
-        const stage = await getStageId(fase.fases_fk);
-        console.log("Stage:", stage);
-        const { fase_control: control } = await fase_control(
-          fase.orden_ejecutada
-        );
-
+        const adaptation = await controlStage(fase.adaptation_id); 
         // Validaciones
-        if (!stage?.id) return;
-        if (!control?.id) return;
-
+        if (!adaptation?.id) return;
         // Obetenr id de la activiad ejecutada
         const ejecutadaId = Number(fase.id);
         if (!Number.isFinite(ejecutadaId) || ejecutadaId <= 0) return;
-
         // Instancia de timer
-        const time = Number(stage.repeat_minutes ?? 0);
+        const time = Number(adaptation.repeat_minutes ?? 0);
         const createResult = await createTimer({
           ejecutada_id: ejecutadaId,
-          stage_id: stage?.id,
-          control_id: control?.id,
+          stage_id: adaptation?.id,
+          control_id: adaptation?.id,
           orden_id: fase.orden_ejecutada,
           time,
         });
-
         if (createResult?.exists) {
           // console.log("⚠️ Timer ya existía para:", ejecutadaId);
         }
-
         const timerResult = await getTimerEjecutadaById(ejecutadaId);
         if (
           timerResult?.timer &&
@@ -182,7 +177,7 @@ const App = () => {
         ) {
           setTimerData({
             ejecutadaId,
-            stageId: stage.id,
+            stageId: adaptation.id,
             initialMinutes: Number(timerResult.timer.time),
           });
           setTimerReady(true);
@@ -376,43 +371,42 @@ const App = () => {
   return (
     <>
       {/* Timer */}
-      {/* {!timerReady || !timerData ? (
+      <>
+        <ModalBlock
+          isOpen={showModal}
+          onClose={() => setShowModal(false)}
+          message="Tu acceso está bloqueado temporalmente. Contacta al administrador."
+        />
+
+        {/* Contenido principal */}
+        <ModalBlock
+          isOpen={showModal_fase}
+          onClose={() => setShowModal_fase(false)}
+          message="Fase bloqueado temporalmente. Contacta al administrador."
+        />
+      </>
+      {!timerReady || !timerData ? (
         <DateLoader
           message="Cargando datos del temporizador..."
           backgroundColor="#111827"
           color="#ffff"
         />
-      ) : ( */}
+      ) : (
         <>
-          {/* {linea !== "0" && (
+          {linea !== "0" && (
             <Timer
               ejecutadaId={timerData.ejecutadaId}
               stageId={timerData.stageId}
               initialMinutes={timerData.initialMinutes}
               refetchTimer={refetchTimer}
             />
-          )} */}
-
+          )}
           <div className="min-h-screen w-full bg-[#1b2535] text-white p-[10px] sm:p-[10px] flex flex-col rounded-2xl">
             <div className="w-full rounded-2xl bg-white/5 backdrop-blur-sm border border-white/10 shadow-md overflow-hidden">
               <div className="bg-white/2.5 px-[10px] py-[10px] border-b border-white/5 backdrop-blur-sm">
                 <Text type="title" color="text-white">
                   Información de la Orden
                 </Text>
-
-                {/* Contenido principal */}
-                <ModalBlock
-                  isOpen={showModal}
-                  onClose={() => setShowModal(false)}
-                  message="Tu acceso está bloqueado temporalmente. Contacta al administrador."
-                />
-
-                {/* Contenido principal */}
-                <ModalBlock
-                  isOpen={showModal_fase}
-                  onClose={() => setShowModal_fase(false)}
-                  message="Fase bloqueado temporalmente. Contacta al administrador."
-                />
               </div>
 
               <div
@@ -895,7 +889,7 @@ const App = () => {
             </div>
           </div>
         </>
-      {/* )} */}
+      )}
     </>
   );
 };

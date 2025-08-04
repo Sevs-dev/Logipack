@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\ActividadesEjecutadas;
 use App\Models\AdaptationDate;
 use App\Models\Clients;
+use App\Models\Factory;
 use App\Models\Machinery;
 use App\Models\Manufacturing;
 use App\Models\OrdenesEjecutadas;
@@ -361,6 +362,84 @@ class AdaptationDateController extends Controller
                 'error' => 'Error retrieving plan',
                 'details' => $e->getMessage(),
             ], 500);
+        }
+    }
+
+    public function getConsultPlanning()
+    {
+        try {
+            $planning = AdaptationDate::all();
+
+            $formatted = $planning->map(function ($plan) {
+                // Cliente y planta
+                $clientName = optional(Clients::find($plan->client_id))->name;
+                $factory = optional(Factory::find($plan->factory_id))->name;
+
+                // Relaciones múltiples (asegura que son arrays antes de consultar)
+                $line = is_array($plan->line)
+                    ? Manufacturing::whereIn('id', $plan->line)->pluck('id')
+                    : collect();
+
+                $machines = is_array($plan->machine)
+                    ? Machinery::whereIn('id', $plan->machine)->pluck('id')
+                    : collect();
+
+                $users = is_array($plan->users)
+                    ? User::whereIn('id', $plan->users)->pluck('id')
+                    : collect();
+
+                // Actividades complejas
+                $activities = is_array($plan->activities) ? $plan->activities : [];
+
+                // Desglose de duración
+                $durationBreakdown = is_array($plan->duration_breakdown) ? $plan->duration_breakdown : [];
+
+                return [
+                    'id' => $plan->id,
+                    'client_id' => $plan->client_id,
+                    'client_name' => $clientName,
+                    'factory_id' => $plan->factory_id,
+                    'factory' => $factory,
+                    'master' => $plan->master,
+                    'bom' => $plan->bom,
+                    'number_order' => $plan->number_order,
+                    'codart' => $plan->codart,
+                    'orderNumber' => $plan->orderNumber,
+                    'deliveryDate' => $plan->deliveryDate,
+                    'quantityToProduce' => $plan->quantityToProduce,
+                    'lot' => $plan->lot,
+                    'healthRegistration' => $plan->healthRegistration,
+                    'ingredients' => $plan->ingredients,
+                    'adaptation_id' => $plan->adaptation_id,
+                    'status_dates' => $plan->status_dates,
+                    'line' => $line,
+                    'machine' => $machines,
+                    'users' => $users,
+                    'activities' => $activities,
+                    'resource' => $plan->resource,
+                    'color' => $plan->color,
+                    'icon' => $plan->icon,
+                    'duration' => $plan->duration,
+                    'duration_breakdown' => $durationBreakdown,
+                    'start_date' => $plan->start_date,
+                    'end_date' => $plan->end_date,
+                    'clock' => $plan->clock,
+                    'pause' => $plan->pause,
+                    'finish_notificade' => $plan->finish_notificade,
+                    'out' => $plan->out,
+                    'user' => $plan->user,
+                    'created_at' => $plan->created_at,
+                    'updated_at' => $plan->updated_at,
+                ];
+            });
+
+            return response()->json($formatted);
+        } catch (\Exception $e) {
+            Log::error('❌ Error al obtener planificación:', [
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+            return response()->json(['error' => 'Error al obtener planificación'], 500);
         }
     }
 }

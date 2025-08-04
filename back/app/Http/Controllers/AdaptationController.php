@@ -28,7 +28,7 @@ class AdaptationController extends Controller
     public function newAdaptation(Request $request)
     {
         try {
-            Log::info('🔄 Iniciando creación de nueva adaptación', ['request' => $request->all()]);
+           // Log::info('🔄 Iniciando creación de nueva adaptación', ['request' => $request->all()]);
 
             $validatedData = $request->validate([
                 'client_id'    => 'required|exists:clients,id',
@@ -42,7 +42,7 @@ class AdaptationController extends Controller
                 'user'         => 'string|nullable',
             ]);
 
-            Log::info('✅ Datos validados correctamente', ['validated' => $validatedData]);
+           // Log::info('✅ Datos validados correctamente', ['validated' => $validatedData]);
 
             $now = Carbon::now();
             $prefix = Str::before($validatedData['number_order'], '-');
@@ -51,13 +51,13 @@ class AdaptationController extends Controller
 
             $consecutive = Consecutive::firstOrNew(['prefix' => $prefix]);
             if ($consecutive->year != $currentYear || $consecutive->month != $currentMonth) {
-                Log::info('🆕 Reiniciando consecutivo para nuevo año/mes', ['prefix' => $prefix]);
+               // Log::info('🆕 Reiniciando consecutivo para nuevo año/mes', ['prefix' => $prefix]);
                 $consecutive->year = $currentYear;
                 $consecutive->month = $currentMonth;
                 $consecutive->consecutive = '0000000';
             } else {
                 $consecutive->consecutive = str_pad((int)$consecutive->consecutive + 1, 7, '0', STR_PAD_LEFT);
-                Log::info('🔢 Consecutivo actualizado', ['consecutive' => $consecutive->consecutive]);
+               // Log::info('🔢 Consecutivo actualizado', ['consecutive' => $consecutive->consecutive]);
             }
 
             $consecutive->save();
@@ -71,16 +71,21 @@ class AdaptationController extends Controller
             );
             $validatedData['number_order'] = $newNumberOrder;
 
-            Log::info('📝 Nuevo número de orden generado', ['number_order' => $newNumberOrder]);
+           // Log::info('📝 Nuevo número de orden generado', ['number_order' => $newNumberOrder]);
 
             // Procesar attachment general (único)
             if ($request->hasFile('attachment')) {
                 $file = $request->file('attachment');
-                $filename = 'general_' . now()->format('Ymd_His') . '.' . $file->getClientOriginalExtension();
+
+                // Usa el nuevo número de orden generado
+                $filename = $newNumberOrder . '_general.' . $file->getClientOriginalExtension();
                 $path = $file->storeAs('attachments', $filename, 'public');
+
                 $validatedData['attachment'] = $path;
-                Log::info('📎 Archivo general adjuntado', ['path' => $path]);
+
+               // Log::info('📎 Archivo general adjuntado', ['path' => $path]);
             }
+
 
             // Procesar attachments individuales (NO guardar en Adaptation)
             $articleAttachments = [];
@@ -94,11 +99,14 @@ class AdaptationController extends Controller
                     }
 
                     $safeCodart = preg_replace('/[^A-Za-z0-9_\-\.]/', '_', $codart);
-                    $filename = $safeCodart . '_' . now()->format('Ymd_His') . '.' . $file->getClientOriginalExtension();
+
+                    // 📁 Archivo nombrado con el número de orden + codart
+                    $filename = $newNumberOrder . '_' . $safeCodart . '.' . $file->getClientOriginalExtension();
                     $path = $file->storeAs('attachments', $filename, 'public');
+
                     $articleAttachments[$codart] = $path;
 
-                    Log::info("📎 Archivo adjuntado para artículo {$codart}", ['path' => $path]);
+                   // Log::info("📎 Archivo adjuntado para artículo {$codart}", ['path' => $path]);
                 }
             }
 
@@ -107,7 +115,7 @@ class AdaptationController extends Controller
             $validatedData['reference_id'] = (string) Str::uuid();
             $adaptation = Adaptation::create($validatedData);
 
-            Log::info('🧾 Adaptación creada', ['adaptation_id' => $adaptation->id]);
+           // Log::info('🧾 Adaptación creada', ['adaptation_id' => $adaptation->id]);
 
             $masterDuration = null;
             $duration_breakdown = [];
@@ -116,7 +124,7 @@ class AdaptationController extends Controller
                 $master = Maestra::find($validatedData['master']);
                 $ingredients = json_decode($validatedData['ingredients'], true) ?? [];
 
-                Log::info('🍳 Ingredientes recibidos', ['ingredients' => $ingredients]);
+               // Log::info('🍳 Ingredientes recibidos', ['ingredients' => $ingredients]);
 
                 if ($master && is_array($master->type_stage)) {
                     $totalDuration = 0;
@@ -151,10 +159,10 @@ class AdaptationController extends Controller
                     ];
                     $masterDuration = $totalDuration;
 
-                    Log::info('📐 Duración calculada por etapas', [
-                        'masterDuration' => $masterDuration,
-                        'desglose'       => $duration_breakdown
-                    ]);
+                   // Log::info('📐 Duración calculada por etapas', [
+                    //     'masterDuration' => $masterDuration,
+                    //     'desglose'       => $duration_breakdown
+                    // ]);
                 }
             }
 
@@ -185,7 +193,7 @@ class AdaptationController extends Controller
                     'duration_breakdown'  => json_encode($duration_breakdown),
                     'user'                => $adaptation->user,
                 ]);
-                Log::info('📅 AdaptationDate creada para artículo', ['codart' => $article['codart']]);
+               // Log::info('📅 AdaptationDate creada para artículo', ['codart' => $article['codart']]);
             }
 
             // Consecutive_date
@@ -200,7 +208,7 @@ class AdaptationController extends Controller
                 'status'         => true,
             ]);
 
-            Log::info('🗂️ Consecutive_date registrada');
+           // Log::info('🗂️ Consecutive_date registrada');
 
             return response()->json([
                 'message'       => 'Adaptation saved successfully',
@@ -263,7 +271,7 @@ class AdaptationController extends Controller
     public function updateAdaptation(Request $request, $id)
     {
         try {
-            Log::info("🔧 Iniciando actualización de adaptación ID: {$id}");
+           // Log::info("🔧 Iniciando actualización de adaptación ID: {$id}");
 
             $adaptation = Adaptation::findOrFail($id);
 
@@ -278,16 +286,16 @@ class AdaptationController extends Controller
                 'ingredients'  => 'nullable|string',
             ]);
 
-            Log::info("📥 Payload recibido: ", $request->all());
-            Log::info("✅ Datos validados: ", $validatedData);
+           // Log::info("📥 Payload recibido: ", $request->all());
+           // Log::info("✅ Datos validados: ", $validatedData);
 
             $validatedData['article_code'] = json_decode($validatedData['article_code'], true);
             $validatedData['ingredients'] = isset($validatedData['ingredients'])
                 ? json_decode($validatedData['ingredients'], true)
                 : null;
 
-            Log::info("📦 article_code decodificado: ", $validatedData['article_code']);
-            Log::info("🥕 ingredients decodificados: ", $validatedData['ingredients'] ?? []);
+           // Log::info("📦 article_code decodificado: ", $validatedData['article_code']);
+           // Log::info("🥕 ingredients decodificados: ", $validatedData['ingredients'] ?? []);
 
             $articleAttachments = [];
 
@@ -360,7 +368,7 @@ class AdaptationController extends Controller
                 }
             }
 
-            Log::info("⏱ Duración calculada: ", ['total' => $masterDuration, 'desglose' => $duration_breakdown]);
+           // Log::info("⏱ Duración calculada: ", ['total' => $masterDuration, 'desglose' => $duration_breakdown]);
 
             // Actualizar solo campos válidos en Adaptation
             $adaptation->update([
@@ -428,13 +436,13 @@ class AdaptationController extends Controller
             OrdenesEjecutadas::where('adaptation_id', $adaptation->id)->update([
                 'estado' => '-11000',
             ]);
-            
+
             // Eliminar las fechas de adaptación
             AdaptationDate::where('adaptation_id', $adaptation->id)->delete();
 
             // Eliminar la adaptación
             $adaptation->delete();
-            
+
             return response()->json([
                 'message' => 'Adaptation and related dates deleted successfully'
             ], 200);

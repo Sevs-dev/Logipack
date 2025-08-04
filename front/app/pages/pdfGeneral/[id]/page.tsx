@@ -326,7 +326,7 @@ const PDFPage = ({ params }: { params: Promise<{ id: number }> }) => {
 
         <section>
           <h2 className="text-center text-xs font-semibold text-black uppercase tracking-wide border-b border-gray-300 pb-1 mb-3">
-            Controles de Producción
+            Controles de Procesos
           </h2>
 
           {data.timers.map((timer: Timer) => (

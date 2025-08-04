@@ -125,6 +125,7 @@ Route::controller(StagesController::class)->group(function () {
     Route::get('/getFase', 'getFase'); // Obtener todas las lineas
     Route::post('/newFase', 'newFase'); // Crear una nueva lineas
     Route::get('/FaseId/{id}', 'FaseId'); // Obtener una lineas específica
+    Route::get('/controlStages/{id}', 'controlStages'); // Obtener una lineas específica
     Route::get('/FaseName/{name}', 'FaseName'); // Obtener una lineas específica
     Route::put('/updateFase/{id}', 'updateFase'); // Actualizar una lineas
     Route::delete('/deleteFase/{id}', 'deleteFase'); // Eliminar una lineas
@@ -171,6 +172,7 @@ Route::controller(AdaptationDateController::class)->group(function () {
     Route::get('/getPlanId/{id}', 'getPlanById'); // Obtener una lineas específica  
     Route::get('/getPlannId/{id}', 'getPlanUnic'); // Obtener una lineas específica  
     Route::get('/getPlanByIdPDF/{id}', 'getPlanByIdPDF'); // Obtener una lineas específica  
+    Route::get('/consult-planning', 'getConsultPlanning'); // Obtener una lineas específica  
     Route::delete('/deletePlan/{id}', 'destroy'); // Eliminar una lineas
 });
 
@@ -214,6 +216,8 @@ Route::controller(OrdenesEjecutadasController::class)->group(function () {
     Route::get('/condiciones_fase/{id}/{fase}', 'condicionesFase');
     Route::get('/getActividadesEjecutadas/{id}', 'getActividadesEjecutadas');
     Route::get('/eliminar_orden/{id}', 'eliminar_orden');
+    Route::get('/getConciliacion/{id}', 'getConciliacion');
+    Route::post('/guardar_conciliacion', 'guardar_conciliacion');
 });
 
 //Rutas Historial de Audits

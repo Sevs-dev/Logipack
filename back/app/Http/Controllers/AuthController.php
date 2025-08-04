@@ -98,7 +98,7 @@ class AuthController extends Controller
      *  ======================= */
     public function create(Request $request)
     {
-        Log::info('Datos recibidos para crear usuario:', $request->all());
+       // Log::info('Datos recibidos para crear usuario:', $request->all());
 
         $request->validate([
             'name'          => 'required|string|max:255',
@@ -167,19 +167,19 @@ class AuthController extends Controller
         }
 
         // Log de los datos a actualizar antes del update (sin la contraseña)
-        Log::info('Actualizando usuario', [
-            'id' => $id,
-            'old_data' => $user->toArray(),
-            'new_data' => array_diff_key($newData, ['password' => '']), // Oculta la pass en logs
-            'hora' => Carbon::now('America/Bogota')->toDateTimeString()
-        ]);
+       // Log::info('Actualizando usuario', [
+        //     'id' => $id,
+        //     'old_data' => $user->toArray(),
+        //     'new_data' => array_diff_key($newData, ['password' => '']), // Oculta la pass en logs
+        //     'hora' => Carbon::now('America/Bogota')->toDateTimeString()
+        // ]);
 
         $user->update($newData);
 
-        Log::info("Usuario actualizado exitosamente", [
-            'id' => $id,
-            'hora' => Carbon::now('America/Bogota')->toDateTimeString()
-        ]);
+       // Log::info("Usuario actualizado exitosamente", [
+        //     'id' => $id,
+        //     'hora' => Carbon::now('America/Bogota')->toDateTimeString()
+        // ]);
 
         return response()->json([
             'estado' => 'éxito',

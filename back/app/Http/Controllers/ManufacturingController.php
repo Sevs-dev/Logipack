@@ -28,7 +28,7 @@ class ManufacturingController extends Controller
     public function newManu(Request $request): JsonResponse
     {
         try {
-            // Log::info('📥 Request recibido en newManu', ['data' => $request->all()]);
+            //// Log::info('📥 Request recibido en newManu', ['data' => $request->all()]);
 
             $validatedData = $request->validate([
                 'name' => 'required|string|max:255',
@@ -37,14 +37,14 @@ class ManufacturingController extends Controller
                 'user' => 'string|nullable',
             ]);
 
-            // Log::info('✅ Datos validados correctamente', ['validated' => $validatedData]);
+            //// Log::info('✅ Datos validados correctamente', ['validated' => $validatedData]);
 
             $validatedData['version'] = '1';
             $validatedData['reference_id'] = (string) Str::uuid();
 
             $Manu = Manufacturing::create($validatedData);
 
-            // Log::info('✅ Manufacturing creado exitosamente', ['Manu' => $Manu]);
+            //// Log::info('✅ Manufacturing creado exitosamente', ['Manu' => $Manu]);
 
             return response()->json([
                 'message' => 'Línea creada exitosamente',
