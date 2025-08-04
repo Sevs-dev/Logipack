@@ -86,14 +86,19 @@ const NewLineas = () => {
         );
     }
 
-    const handleLinea = (id: number, tipo: string, descripcion: string) => {
+    const handleLinea = (id: number, tipo: string, descripcion: string, phase_type: string) => {
         if (!local) return;
         local.linea = id;
         local.tipo = tipo;
         local.descripcion = descripcion;
         local.orden = orden;
         localStorage.setItem("ejecutar", JSON.stringify(local));
-        window.open("/pages/ordenes_ejecutadas", "_blank");
+
+        if (phase_type === "Conciliación") {
+            window.open("/pages/consolidacion", "_blank");
+        } else {
+            window.open("/pages/ordenes_ejecutadas", "_blank");
+        }
         setTimeout(() => {
             requestIdleCallback(() => window.close());
         }, 1000);
@@ -160,7 +165,7 @@ const NewLineas = () => {
                                     role="button"
                                     tabIndex={0}
                                     aria-label={`Seleccionar línea: ${linea.descripcion}`}
-                                    onClick={() => handleLinea(linea.id, "linea", linea.descripcion)}
+                                    onClick={() => handleLinea(linea.id, "linea", linea.descripcion, linea.phase_type)}
                                     initial={{ opacity: 0, scale: 0.95 }}
                                     animate={{ opacity: 1, scale: 1 }}
                                     transition={{
@@ -185,6 +190,7 @@ const NewLineas = () => {
                     {/* Fases */}
                     <section className="px-[10px] pb-[10px] pt-[10px]">
                         <Text type="title" color="text-white">Fases</Text>
+                        {JSON.stringify(lista_fases)}
                         <div className="mt-3 flex flex-wrap justify-center gap-3">
                             {lista_fases.map((linea, index) => (
                                 <motion.div
@@ -192,7 +198,7 @@ const NewLineas = () => {
                                     role="button"
                                     tabIndex={0}
                                     aria-label={`Seleccionar línea: ${linea.descripcion}`}
-                                    onClick={() => handleLinea(linea.id, "fase", linea.descripcion)}
+                                    onClick={() => handleLinea(linea.id, "fase", linea.descripcion, linea.phase_type)}
                                     initial={{ opacity: 0, scale: 0.95 }}
                                     animate={{ opacity: 1, scale: 1 }}
                                     transition={{
