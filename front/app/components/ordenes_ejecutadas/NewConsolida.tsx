@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { getConciliacion, guardar_conciliacion } from '@/app/services/planing/planingServices';
+import { useParams } from 'next/navigation';
 
 const NewConsolida = () => {
+    const params = useParams();
     const [data, setData] = useState({
         orden_ejecutada: '',
         adaptation_date_id: '',
@@ -24,7 +26,7 @@ const NewConsolida = () => {
     useEffect(() => {
         const obtener_conciliacion = async () => {
             try {
-                const response = await getConciliacion(5);
+                const response = await getConciliacion(Number(params.id));
                 setData((prev) => ({
                     ...prev,
                     orden_ejecutada: response?.orden?.orden_ejecutada,

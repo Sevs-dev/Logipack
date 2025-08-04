@@ -95,7 +95,7 @@ const NewLineas = () => {
         localStorage.setItem("ejecutar", JSON.stringify(local));
 
         if (phase_type === "Conciliación") {
-            window.open("/pages/consolidacion", "_blank");
+            window.open("/pages/consolidacion/" + local.id, "_blank");
         } else {
             window.open("/pages/ordenes_ejecutadas", "_blank");
         }
