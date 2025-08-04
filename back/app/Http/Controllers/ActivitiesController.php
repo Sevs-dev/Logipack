@@ -74,10 +74,10 @@ class ActivitiesController extends Controller
      */
     public function updateActividad(Request $request, $id)
     {
-        Log::info('Petición recibida para actualizar actividad', [
-            'id' => $id,
-            'payload' => $request->all()
-        ]);
+        //// Log::info('Petición recibida para actualizar actividad', [
+        //     'id' => $id,
+        //     'payload' => $request->all()
+        // ]);
 
         $original = Activitie::find($id);
 
@@ -96,7 +96,7 @@ class ActivitiesController extends Controller
                 'user' => 'string|nullable',
             ]);
 
-            Log::info('Validación exitosa', $request->all());
+            //// Log::info('Validación exitosa', $request->all());
 
             // Clonar el registro original
             $newActividad = $original->replicate();
@@ -122,7 +122,7 @@ class ActivitiesController extends Controller
             $original->active = false;
             $original->save();
 
-            Log::info("Actividad actualizada correctamente. Nueva ID: {$newActividad->id}");
+            //// Log::info("Actividad actualizada correctamente. Nueva ID: {$newActividad->id}");
 
             return response()->json([
                 'message' => 'Actividad actualizada. Nueva versión creada.',

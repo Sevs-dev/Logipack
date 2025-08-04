@@ -5,6 +5,12 @@ export interface ActivityDetail {
   config: string;
   binding: number | number[] | null;
   value?: string | number | boolean | null;
+  activities?: LineActivityGroup[];
+}
+
+export interface LineActivityGroup {
+  id: number; // id de la línea
+  activities: { id: number }[];
 }
 
 export interface Plan {
@@ -41,12 +47,18 @@ export interface Plan {
   activities?: ActivityDetail[];
   activitiesDetails?: ActivityDetail[]; // si estás usando este nombre aún
   lineActivities?: Record<number, number[]>;
+ 
+  order: string; 
+  lines: string[]; 
+  machines: string[]; 
+  status: string;  
 }
 
 export interface PlanServ {
   id: number;
   adaptation_id: number;
   bom: string | null;
+  master: string | null; // ← ✔ ahora acepta null
   client_id: number;
   factory_id: number;
   codart: string;
@@ -59,7 +71,6 @@ export interface PlanServ {
   lot: string;
   machine: number[];
   users: number[];
-  master: string;
   orderNumber: string;
   number_order: string;
   quantityToProduce: number;
@@ -70,10 +81,10 @@ export interface PlanServ {
   icon?: string;
   start_date?: string;
   end_date?: string;
-  duration?: number | string; // Puede venir como string también
+  duration?: number | string;
   duration_breakdown: string;
   activities?: { id: number; activities: { id: number }[] }[];
-  activitiesDetails?: ActivityDetail[]; // si estás usando este nombre aún
+  activitiesDetails?: ActivityDetail[];
   lineActivities?: Record<number, number[]>;
 }
 
@@ -214,4 +225,19 @@ export interface EnrichedPlan extends Omit<PlanFetch, 'factory' | 'users' | 'mac
 export interface LineActivity {
   id: number;
   activities: { id: number }[];
+}
+
+export interface PlanningItem {
+  id: number;
+  client_id: number;
+  client_name: string;
+  order: string;
+  codart: string; 
+  factory: string;
+  lines: string[];     // Nombres de líneas
+  machines: string[];  // Nombres de máquinas
+  users: string[];     // Nombres de usuarios
+  start_date: string;  // Formato ISO: "2025-07-30 13:11:00"
+  status: string;
+  created_at: string;  // ISO: "2025-07-29T20:48:39.000000Z"
 }

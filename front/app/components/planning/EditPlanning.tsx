@@ -14,10 +14,8 @@ import { UserPlaning } from "../../interfaces/CreateUser"
 import SelectorDual from "../SelectorDual/SelectorDual"
 import DateLoader from '@/app/components/loader/DateLoader';
 // 🔹 Servicios 
-import { getPlanning, updatePlanning, getActivitiesByPlanning, getPlanningById, validate_orden } from "../../services/planing/planingServices";
+import { updatePlanning, getActivitiesByPlanning, getPlanningById, validate_orden, getConsultPlanning } from "../../services/planing/planingServices";
 import { getActivitieId } from "../../services/maestras/activityServices"
-import { getClientsId } from "@/app/services/userDash/clientServices";
-import { getFactory } from "@/app/services/userDash/factoryServices";
 import { getManu } from "@/app/services/userDash/manufacturingServices";
 import { getMachin } from "@/app/services/userDash/machineryServices";
 import { getManuId } from "@/app/services/userDash/manufacturingServices";
@@ -30,7 +28,6 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
     const [planning, setPlanning] = useState<Plan[]>([]);
     const [isOpen, setIsOpen] = useState(false);
     const [currentPlan, setCurrentPlan] = useState<Plan | null>(null);
-    const [factories, setFactories] = useState<{ id: number, name: string }[]>([]);
     const [manu, setManu] = useState<{ id: number, name: string }[]>([]);
     const [machine, setMachine] = useState<{ id: number, name: string }[]>([]);
     const [user, setUser] = useState<{ id: number, name: string }[]>([]);
@@ -41,35 +38,35 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
     const [selectedMachines, setSelectedMachines] = useState<MachinePlanning[]>([]);
     const [selectedUsers, setSelectedUsers] = useState<UserPlaning[]>([]);
     const [isSaving, setIsSaving] = useState(false);
+    const [loadingModal, setLoadingModal] = useState(false);
 
+    useEffect(() => {
+        if (!isOpen) return;
+
+        const fetchModalData = async () => {
+            try {
+                const [manuData, machineData, userData] = await Promise.all([
+                    getManu(),
+                    getMachin(),
+                    getUsers(),
+                ]);
+                setManu(manuData);
+                setMachine(machineData);
+                setUser(userData);
+            } catch (error) {
+                showError("Error cargando datos para el modal");
+                console.error("❌ Error en fetchModalData:", error);
+            }
+        };
+
+        fetchModalData();
+    }, [isOpen]);
 
     const fetchAll = useCallback(async () => {
         try {
-            const [planningData, factoriesData, manuData, machineData, userData] = await Promise.all([
-                getPlanning(),
-                getFactory(),
-                getManu(),
-                getMachin(),
-                getUsers(),
-            ]);
-            const clientCache = new Map<number, { name: string }>();
-            const updatedPlanning = await Promise.all(
-                planningData.map(async (plan: Plan) => {
-                    if (!clientCache.has(plan.client_id)) {
-                        const clientData = await getClientsId(plan.client_id);
-                        clientCache.set(plan.client_id, clientData);
-                    }
-                    return {
-                        ...plan,
-                        client_name: clientCache.get(plan.client_id)!.name,
-                    };
-                })
-            );
-            setPlanning(updatedPlanning);
-            setFactories(factoriesData);
-            setManu(manuData);
-            setMachine(machineData);
-            setUser(userData);
+            const planningData = await getConsultPlanning();
+            // console.log(planningData)
+            setPlanning(planningData);
         } catch (error) {
             showError("Error cargando datos iniciales");
             console.error("Error en fetchAll:", error);
@@ -219,7 +216,7 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
                     id: lineId,
                     activities: filteredActivities.map(activity => ({ id: activity.id })),
                 };
-            });
+            }); 
             const planToSave: PlanServ = {
                 ...cleanedPlan,
                 adaptation_id: updatedPlan.adaptation_id,
@@ -242,6 +239,37 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
                 activitiesDetails: updatedPlan.activitiesDetails,
                 lineActivities: updatedPlan.lineActivities,
             };
+            // ✅ justo aquí 👇
+            const keysToStringify: (keyof Pick<PlanServ, 'duration_breakdown' | 'ingredients' | 'bom' | 'master'>)[] = [
+                'duration_breakdown',
+                'ingredients',
+                'bom',
+                'master',
+            ];
+
+            keysToStringify.forEach((key) => {
+                const value = planToSave[key];
+                if (typeof value === 'object' && value !== null) {
+                    planToSave[key] = JSON.stringify(value);
+                }
+            });
+
+            const keysToNullify: (keyof Pick<PlanServ, 'bom' | 'master'>)[] = ['bom', 'master'];
+
+            keysToNullify.forEach((key) => {
+                const value = planToSave[key];
+                if (value === 'null' || value === '') {
+                    planToSave[key] = null;
+                }
+            });
+
+            // ✅ limpia campos innecesarios para el backend
+            delete planToSave.activitiesDetails;
+            delete planToSave.lineActivities;
+            delete planToSave.client_name;
+
+            // 🚀 luego envías
+            // console.log("📤 Enviando plan:", planToSave);
             await updatePlanning(updatedPlan.id, planToSave);
             await fetchAll();
             setIsOpen(false);
@@ -261,91 +289,85 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
             showError("Planificación no encontrada localmente");
             return;
         }
+
+        setLoadingModal(true);
+
         try {
+            // ⚠️ Forzar carga previa si aún no está
+            let currentMachine = machine;
+            if (!machine.length) {
+                currentMachine = await getMachin();
+                setMachine(currentMachine);
+            }
+
+            let currentUsers = user;
+            if (!user.length) {
+                currentUsers = await getUsers();
+                setUser(currentUsers);
+            }
+
             const serverPlansWithDetails: ServerPlan[] = await fetchAndProcessPlans(id);
             if (!serverPlansWithDetails || serverPlansWithDetails.length === 0) {
                 showError("No se encontró información detallada en el servidor.");
                 return;
             }
+
             const matchedPlan = serverPlansWithDetails.find(
                 p => p.ID_ADAPTACION === selectedPlan.id
             ) || serverPlansWithDetails[0];
 
-            if (!matchedPlan) {
-                showError("No se encontraron detalles del plan.");
-                return;
-            }
-
             const activitiesDetails = matchedPlan.activitiesDetails ?? [];
-            const planActivities = selectedPlan.activities ?? [];
+
             const newLineActivities: Record<number, number[]> = {};
 
-            // ✅ Usamos plan.activities que tiene la relación correcta línea → actividades
-            planActivities.forEach((activity: ActivityDetail) => {
-                const binding = activity.binding;
-                const activityId = activity.id;
-
-                if (Array.isArray(binding)) {
-                    binding.forEach(lineId => {
-                        const lineKey = Number(lineId);
-                        if (!newLineActivities[lineKey]) newLineActivities[lineKey] = [];
-                        if (!newLineActivities[lineKey].includes(activityId)) {
-                            newLineActivities[lineKey].push(activityId);
-                        }
-                    });
-                } else if (typeof binding === "number" || typeof binding === "string") {
-                    const lineKey = Number(binding);
-                    if (!newLineActivities[lineKey]) newLineActivities[lineKey] = [];
-                    if (!newLineActivities[lineKey].includes(activityId)) {
-                        newLineActivities[lineKey].push(activityId);
-                    }
-                }
-            });
-
-            // 🧲 Ahora complementamos con los bindings directos de activitiesDetails
-            if (Array.isArray(activitiesDetails)) {
-                activitiesDetails.forEach((activity: ActivityDetail) => {
-                    const binding = activity.binding;
-                    if (Array.isArray(binding)) {
-                        binding.forEach(lineId => {
-                            const lineKey = Number(lineId);
-                            if (!newLineActivities[lineKey]) newLineActivities[lineKey] = [];
-                            if (!newLineActivities[lineKey].includes(activity.id)) {
-                                newLineActivities[lineKey].push(activity.id);
-                            }
-                        });
-                    } else if (typeof binding === "number" || typeof binding === "string") {
-                        const lineKey = Number(binding);
-                        if (!newLineActivities[lineKey]) newLineActivities[lineKey] = [];
-                        if (!newLineActivities[lineKey].includes(activity.id)) {
-                            newLineActivities[lineKey].push(activity.id);
-                        }
+            if (Array.isArray(selectedPlan.activities)) {
+                selectedPlan.activities.forEach(lineObj => {
+                    if (lineObj?.id && Array.isArray(lineObj.activities)) {
+                        newLineActivities[lineObj.id] = lineObj.activities.map(a => a.id);
                     }
                 });
             }
 
-            // ✅ Seteamos todo lo necesario
+            if (Object.keys(newLineActivities).length === 0 && activitiesDetails.length > 0) {
+                activitiesDetails.forEach((activity: ActivityDetail) => {
+                    const binding = activity.binding;
+                    const ids = Array.isArray(binding) ? binding : [binding];
+                    ids.forEach(lineId => {
+                        const lineKey = Number(lineId);
+                        if (!newLineActivities[lineKey]) newLineActivities[lineKey] = [];
+                        if (!newLineActivities[lineKey].includes(activity.id)) {
+                            newLineActivities[lineKey].push(activity.id);
+                        }
+                    });
+                });
+            }
+
             setLineActivities(newLineActivities);
             setActivitiesDetails(activitiesDetails);
+
+            // ✅ Usa los datos recién obtenidos, no `machine` y `user` directamente
             setSelectedMachines(
-                machine.filter(m => (selectedPlan.machine || []).includes(m.id))
+                currentMachine.filter(m => (selectedPlan.machine || []).includes(m.id))
             );
             setSelectedUsers(
-                user.filter(u => (selectedPlan.users || []).includes(u.id))
+                currentUsers.filter(u => (selectedPlan.users || []).includes(u.id))
             );
 
             const fullPlan: Plan = {
                 ...selectedPlan,
-                activitiesDetails: activitiesDetails,
+                activitiesDetails,
                 lineActivities: newLineActivities,
                 line: getLinesArray(selectedPlan.line),
             };
 
+            // console.log('Datos a editar:', fullPlan);
             setCurrentPlan(fullPlan);
             setIsOpen(true);
         } catch (error) {
             console.error("❌ Error fetching plan:", error);
             showError("Error al cargar la planificación para edición");
+        } finally {
+            setLoadingModal(false); // 👈 apagar loader
         }
     }, [planning, machine, user]);
 
@@ -559,9 +581,16 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
 
     return (
         <div className="break-inside-avoid mb-4">
-
             {isSaving && (
-                <DateLoader message="Cargando..." backgroundColor="rgba(0, 0, 0, 0.28)" color="rgba(255, 255, 0, 1)" />
+                <DateLoader message="Cargando..." backgroundColor="rgba(0, 0, 0, 0.69)" color="rgba(255, 255, 0, 1)" />
+            )}
+
+            {loadingModal && (
+                <DateLoader
+                    message="Cargando datos de planificación..."
+                    backgroundColor="rgba(0, 0, 0, 0.28)"
+                    color="rgba(255, 255, 0, 1)"
+                />
             )}
 
             {isOpen && currentPlan && (
@@ -652,22 +681,24 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
                             />
                         </div>
                         {/* 🔹 Cantidad a producir */}
-                        <div className="break-inside-avoid mb-4">
-                            <Text type="subtitle" color="#000">Cantidad a producir</Text>
-                            <input
-                                className="w-full border p-3 rounded-lg text-gray-800 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500 text-center"
-                                type="number"
-                                readOnly
-                                value={currentPlan.quantityToProduce.toString()}
-                                onChange={(e) =>
-                                    setCurrentPlan({
-                                        ...currentPlan,
-                                        quantityToProduce: parseFloat(e.target.value),
-                                    })
-                                }
-                                disabled={!canEdit}
-                            />
-                        </div>
+                        {currentPlan && (
+                            <div className="break-inside-avoid mb-4">
+                                <Text type="subtitle" color="#000">Cantidad a producir</Text>
+                                <input
+                                    className="w-full border p-3 rounded-lg text-gray-800 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500 text-center"
+                                    type="number"
+                                    readOnly
+                                    value={currentPlan.quantityToProduce?.toString() ?? ""}
+                                    onChange={(e) =>
+                                        setCurrentPlan({
+                                            ...currentPlan,
+                                            quantityToProduce: parseFloat(e.target.value),
+                                        })
+                                    }
+                                    disabled={!canEdit}
+                                />
+                            </div>
+                        )}
                         {/* 🔹 Cliente */}
                         <div className="break-inside-avoid mb-4">
                             <Text type="subtitle" color="#000">Cliente</Text>
@@ -686,9 +717,7 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
                             <Text type="subtitle" color="#000">Planta</Text>
                             <input
                                 className="w-full border p-3 rounded-lg text-gray-800 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500 text-center"
-                                value={
-                                    factories.find(f => f.id === currentPlan.factory_id)?.name || ""
-                                }
+                                value={currentPlan.factory || ""}
                                 readOnly
                                 disabled={!canEdit}
                             />
@@ -1005,7 +1034,7 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
 
                     <div className="flex justify-center gap-2 mt-6">
                         <Button onClick={() => setIsOpen(false)} variant="cancel" label="Cancelar" />
-                        {currentPlan?.status_dates !== "Planificación" && currentPlan?.status_dates !== "En ejecución" && (
+                        {currentPlan?.status_dates !== "Planificación" && currentPlan?.status_dates !== "En ejecución" && currentPlan?.status_dates !== "Ejecutado" && (
                             <Button
                                 onClick={async () => {
                                     if (isSaving) return;

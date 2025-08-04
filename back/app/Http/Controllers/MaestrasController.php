@@ -150,7 +150,7 @@ class MaestrasController extends Controller
 
     public function getMuestreo($id): JsonResponse
     {
-        Log::info("🔍 [MaestraIdStage] Buscando maestra con ID: $id");
+       // Log::info("🔍 [MaestraIdStage] Buscando maestra con ID: $id");
 
         $maestra = Maestra::find($id);
 
@@ -159,12 +159,12 @@ class MaestrasController extends Controller
             return response()->json(['message' => 'Maestra no encontrada'], 404);
         }
 
-        Log::info("✅ [MaestraIdStage] Maestra encontrada", ['maestra_id' => $maestra->id]);
+       // Log::info("✅ [MaestraIdStage] Maestra encontrada", ['maestra_id' => $maestra->id]);
 
         $actividadesMuestreo = collect();
 
         foreach ($maestra->stages as $stage) {
-            Log::info("➡️ [MaestraIdStage] Analizando stage", ['stage_id' => $stage->id]);
+           // Log::info("➡️ [MaestraIdStage] Analizando stage", ['stage_id' => $stage->id]);
 
             foreach ($stage->activities as $actividad) {
                 Log::debug("🔎 [MaestraIdStage] Actividad encontrada", [
@@ -175,19 +175,19 @@ class MaestrasController extends Controller
                 $config = json_decode($actividad->config, true);
 
                 if (isset($config['type']) && $config['type'] === 'muestreo') {
-                    Log::info("🎯 [MaestraIdStage] Actividad tipo 'muestreo' detectada", [
-                        'actividad_id' => $actividad->id,
-                    ]);
+                   // Log::info("🎯 [MaestraIdStage] Actividad tipo 'muestreo' detectada", [
+                    //     'actividad_id' => $actividad->id,
+                    // ]);
 
                     $actividadesMuestreo->push($actividad);
                 }
             }
         }
 
-        Log::info("📦 [MaestraIdStage] Actividades tipo muestreo recolectadas", [
-            'cantidad' => $actividadesMuestreo->count(),
-            'ids' => $actividadesMuestreo->pluck('id'),
-        ]);
+       // Log::info("📦 [MaestraIdStage] Actividades tipo muestreo recolectadas", [
+        //     'cantidad' => $actividadesMuestreo->count(),
+        //     'ids' => $actividadesMuestreo->pluck('id'),
+        // ]);
 
         return response()->json([
             'maestra_id' => $maestra->id,

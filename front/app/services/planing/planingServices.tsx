@@ -20,6 +20,16 @@ export const getPlanning = async () => {
     }
 }
 
+export const getConsultPlanning = async () => {
+    try {
+        const response = await Planning.get('/consult-planning');
+        return response.data;
+    } catch (error: unknown) {
+        console.error("Error en getPlan:", error);
+        throw error;
+    }
+}
+
 export const getPlanDash = async () => {
     try {
         const response = await Planning.get('/getPlanDash');
