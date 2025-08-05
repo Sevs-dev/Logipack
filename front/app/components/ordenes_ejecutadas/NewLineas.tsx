@@ -189,8 +189,7 @@ const NewLineas = () => {
 
                     {/* Fases */}
                     <section className="px-[10px] pb-[10px] pt-[10px]">
-                        <Text type="title" color="text-white">Fases</Text>
-                        {JSON.stringify(lista_fases)}
+                        <Text type="title" color="text-white">Fases</Text> 
                         <div className="mt-3 flex flex-wrap justify-center gap-3">
                             {lista_fases.map((linea, index) => (
                                 <motion.div

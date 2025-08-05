@@ -216,7 +216,7 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
                     id: lineId,
                     activities: filteredActivities.map(activity => ({ id: activity.id })),
                 };
-            }); 
+            });
             const planToSave: PlanServ = {
                 ...cleanedPlan,
                 adaptation_id: updatedPlan.adaptation_id,
@@ -499,8 +499,9 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
     const handleTerciario = useCallback(async (id: number) => {
         const { plan } = await getPlanningById(id);
 
+        console.log(plan);
         // Validar si la orden tiene linea asignada
-        if (plan.line === null || plan.line.length < 3) {
+        if (plan.line === null) {
             showError("No se asignó línea a la planificación");
             return;
         }
@@ -558,9 +559,14 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
         setSelectedUsers(selectedUsers.filter(m => m.id !== id));
     };
 
-    const handlePDF = useCallback((id: number) => {
-        window.open(`/pages/pdfGeneral/${id}`,);
-    }, []);
+    // const handlePDF = useCallback((id: number) => {
+    //     window.open(`/pages/pdfGeneral/${id}`,);
+    // }, []);
+
+    const handlePDF = (id: number) => {
+        const url = `http://localhost:8000/api/pdf/plan/${id}`;
+        window.open(url, '_blank');
+    };
 
     const obtenerActividades = useCallback(async (id: number) => {
         const { plan } = await getPlanningById(id);
