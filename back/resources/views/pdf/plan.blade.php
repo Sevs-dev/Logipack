@@ -83,8 +83,8 @@
             word-break: break-word;
             white-space: normal;
             overflow-wrap: anywhere;
-        } 
-        
+        }
+
         .table td,
         .table th {
             word-break: break-word;
@@ -477,10 +477,18 @@
                             <tr>
                                 <td>{{ $form['descripcion_activitie'] ?? '—' }}</td>
                                 <td>
-                                    @if (isset($form['valor']) && str_starts_with($form['valor'], 'data:image'))
+                                    @if (isset($form['valor']) && is_string($form['valor']) && str_starts_with($form['valor'], 'data:image'))
                                         <img src="{{ $form['valor'] }}" alt="Evidencia" class="evidence-img">
+                                    @elseif(is_string($form['valor']))
+                                        <span class="data-label">{{ $form['valor'] }}</span>
+                                    @elseif(is_array($form['valor']))
+                                        <span class="data-label">
+                                            @foreach ($form['valor'] as $val)
+                                                • {{ $val }}<br>
+                                            @endforeach
+                                        </span>
                                     @else
-                                        <span class="data-label">{{ $form['valor'] ?? '—' }}</span>
+                                        <span class="data-label">—</span>
                                     @endif
                                 </td>
                                 <td>{{ $form['linea'] ?? '—' }}</td>
