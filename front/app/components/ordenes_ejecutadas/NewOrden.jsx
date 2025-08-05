@@ -154,8 +154,8 @@ const App = () => {
         // Validaciones
         if (!adaptation?.id) return;
         // Obetenr id de la activiad ejecutada
-        const ejecutadaId = Number(fase.adaptation_date_id);
-        // console.log(fase);
+        const ejecutadaId = Number(fase.id);
+        console.log(fase);
         if (!Number.isFinite(ejecutadaId) || ejecutadaId <= 0) return;
         // Instancia de timer
         const time = Number(adaptation.repeat_minutes ?? 0);
