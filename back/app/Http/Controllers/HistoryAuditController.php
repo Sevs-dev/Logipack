@@ -16,7 +16,7 @@ class HistoryAuditController extends Controller
         $audits = Audit::orderByDesc('created_at')->get();
         return response()->json($audits);
     }
-    
+
     public function indexAdaptation(): JsonResponse
     {
         $audits = AdaptationAudit::orderByDesc('created_at')->get();
@@ -53,11 +53,17 @@ class HistoryAuditController extends Controller
             ->where('reference_id', $instance->reference_id)
             ->where('action', 'create') // <-- filtro clave aquí
             ->orderBy('version', 'asc')
-            ->get();
+            ->get()
+            ->map(function ($a) {
+                if ((int)($a->version ?? 0) > 1) {
+                    $a->action = 'update';
+                }
+                return $a;
+            });
 
         return response()->json($audits);
     }
-    
+
     public function byModelAdaptation(string $model, int $id): JsonResponse
     {
         $modelClass = 'App\\Models\\' . ucfirst($model);
@@ -81,11 +87,17 @@ class HistoryAuditController extends Controller
             ->where('reference_id', $instance->reference_id)
             ->where('action', 'create') // <-- filtro clave aquí
             ->orderBy('version', 'asc')
-            ->get();
+            ->get()
+            ->map(function ($a) {
+                if ((int)($a->version ?? 0) > 1) {
+                    $a->action = 'update';
+                }
+                return $a;
+            });
 
         return response()->json($audits);
     }
-    
+
     public function byModelAdmin(string $model, int $id): JsonResponse
     {
         $modelClass = 'App\\Models\\' . ucfirst($model);
@@ -109,7 +121,13 @@ class HistoryAuditController extends Controller
             ->where('reference_id', $instance->reference_id)
             ->where('action', 'create') // <-- filtro clave aquí
             ->orderBy('version', 'asc')
-            ->get();
+            ->get()
+            ->map(function ($a) {
+                if ((int)($a->version ?? 0) > 1) {
+                    $a->action = 'update';
+                }
+                return $a;
+            });
 
         return response()->json($audits);
     }
