@@ -20,6 +20,7 @@ export interface OrdenType {
 export interface LineaItem {
     id: number;
     descripcion: string;
+    phase_type: string;
 };
 
 export interface LineasResponse {

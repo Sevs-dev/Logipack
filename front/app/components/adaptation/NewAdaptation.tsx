@@ -447,8 +447,7 @@ function NewAdaptation({ canEdit = false, canView = false }: CreateClientProps) 
 
     const handleEdit = async (id: number) => {
         try {
-            const { adaptation } = await getAdaptationsId(id);
-            console.log("🔍 Adaptación encontrada:", adaptation.master);
+            const { adaptation } = await getAdaptationsId(id); 
             if (!adaptation) {
                 showError("La adaptación no existe");
                 console.warn("⚠️ Adaptation no encontrada con ID:", id);

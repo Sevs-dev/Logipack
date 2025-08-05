@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from "react";
 // import "tailwindcss/tailwind.css";
 import { actividades_ejecutadas } from "@/app/services/planing/planingServices";
 import { useParams } from 'next/navigation';
+import Mini from "../loader/MiniLoader";
 
 const NewDetalle = () => {
   const params = useParams();
@@ -31,7 +32,12 @@ const NewDetalle = () => {
 
   // si no hay actividades
   if (actividades.length < 1) {
-    return <div className="text-white">No hay actividades ejecutadas para mostrar</div>;
+    return <div className="text-white">
+      <div className="flex items-center justify-center gap-2 mb-4">
+        <span>No hay actividades finalizadas para mostrar.</span>
+        <Mini />
+      </div>
+    </div>;
   }
 
   // // si no hay actividades

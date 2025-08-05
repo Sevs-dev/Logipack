@@ -147,9 +147,7 @@ const Timer: React.FC<TimerProps> = ({ ejecutadaId, stageId, initialMinutes, ref
                     };
                 }),
             };
-
-            const res = await createTimerControl(payload);
-            console.log("✔ Control de timer guardado correctamente", res);
+            await createTimerControl(payload);
         } catch (err) {
             console.error("❌ Error al guardar control de timer", err);
         }

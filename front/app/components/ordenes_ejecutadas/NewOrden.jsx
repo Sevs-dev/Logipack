@@ -105,7 +105,7 @@ const App = () => {
   const [memoriaFase, setMemoriaFase] = useState({});
   const [timerData, setTimerData] = useState(null);
   const [timerReady, setTimerReady] = useState(false);
-  const [showModal, setShowModal] = useState(false);
+  const [showModal_rol, setShowModal_rol] = useState(false);
   const [showModal_fase, setShowModal_fase] = useState(false);
 
   // Cargar datos iniciales
@@ -150,11 +150,12 @@ const App = () => {
     const guardarTimer = async () => {
       if (!fase) return;
       try {
-        const adaptation = await controlStage(fase.adaptation_id); 
+        const adaptation = await controlStage(fase.adaptation_id);
         // Validaciones
         if (!adaptation?.id) return;
         // Obetenr id de la activiad ejecutada
-        const ejecutadaId = Number(fase.id);
+        const ejecutadaId = Number(fase.adaptation_date_id);
+        // console.log(fase);
         if (!Number.isFinite(ejecutadaId) || ejecutadaId <= 0) return;
         // Instancia de timer
         const time = Number(adaptation.repeat_minutes ?? 0);
@@ -209,14 +210,17 @@ const App = () => {
         .split("; ")
         .find((row) => row.startsWith("role="))
         ?.split("=")[1];
-
-      // console.log(roles?.role !== perfil," :  Role ",roles?.role,"perfil ",perfil);
-      // Bloquear modal
-      setShowModal(
-        (roles?.role || "") === "" ||
-          (perfil || "") === "" ||
-          roles?.role !== perfil
-      );
+      const tienePermiso = roles?.role
+        .split(",")
+        .map((r) => r.trim().toLowerCase())
+        .some((r) => r === perfil?.toLowerCase());
+      setShowModal_rol(!tienePermiso); // Mostrar modal solo si no tiene permiso
+      console.log("permiso", tienePermiso);
+      // setShowModal_rol(
+      //   // (roles?.role || "") === "" ||
+      //   // (perfil || "") === "" ||
+      //   permiso // roles?.role !== perfil
+      // );
       setShowModal_fase(resp.condicion_1 > 0);
     };
 
@@ -373,8 +377,8 @@ const App = () => {
       {/* Timer */}
       <>
         <ModalBlock
-          isOpen={showModal}
-          onClose={() => setShowModal(false)}
+          isOpen={showModal_rol}
+          onClose={() => setShowModal_rol(false)}
           message="Tu acceso está bloqueado temporalmente. Contacta al administrador."
         />
 
@@ -411,7 +415,7 @@ const App = () => {
 
               <div
                 className="px-8 py-6 grid grid-cols-1 sm:grid-cols-2 
-          md:grid-cols-3 lg:grid-cols-s gap-6 text-sm text-gray-200"
+            md:grid-cols-3 lg:grid-cols-s gap-6 text-sm text-gray-200"
               >
                 <div>
                   <p className="text-gray-500 text-center">Orden N°</p>

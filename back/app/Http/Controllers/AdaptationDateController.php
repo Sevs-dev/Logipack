@@ -15,6 +15,8 @@ use App\Models\User;
 use App\Services\ArticleService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Dompdf\Dompdf;
+use Dompdf\Options;
 
 class AdaptationDateController extends Controller
 {
@@ -363,6 +365,146 @@ class AdaptationDateController extends Controller
                 'details' => $e->getMessage(),
             ], 500);
         }
+    }
+    public function getPlanDataForPDF($id)
+    {
+        try {
+            $plan = AdaptationDate::with('adaptation.maestra')->find($id);
+            if (!$plan) {
+                Log::warning("❌ Plan no encontrado para ID: $id");
+                return null;
+            }
+            $cliente = $plan->adaptation?->client_id;
+            $codart = $plan->codart;
+            $maestra = $plan->adaptation?->maestra;
+            $clientes = Clients::where('id', $cliente)->first();
+            $coddiv = $clientes->code ?? null;
+            $desart = $coddiv ? ArticleService::getDesartByCodart($coddiv, $codart) : null;
+            $stageIds = [];
+            if ($maestra && isset($maestra->type_stage)) {
+                $stageRaw = $maestra->type_stage;
+                if (is_string($stageRaw)) {
+                    $decoded = json_decode($stageRaw, true);
+                    $stageIds = is_array($decoded) ? $decoded : [];
+                } elseif (is_array($stageRaw)) {
+                    $stageIds = $stageRaw;
+                }
+            }
+            $stages = Stage::whereIn('id', $stageIds)->get();
+            $stages = $stages->sortBy(function ($stage) use ($stageIds) {
+                return array_search($stage->id, $stageIds);
+            })->values();
+
+            $masterIds = is_array($plan->master) ? $plan->master : (is_null($plan->master) ? [] : [$plan->master]);
+            $lineIds = is_array($plan->line) ? $plan->line : (is_null($plan->line) ? [] : [$plan->line]);
+            $machineIds = is_array($plan->machine) ? $plan->machine : (is_null($plan->machine) ? [] : [$plan->machine]);
+            $userIds = is_array($plan->users) ? $plan->users : (is_null($plan->users) ? [] : [$plan->users]);
+            $lines = Manufacturing::whereIn('id', $lineIds)->get();
+            $lineMap = $lines->pluck('name', 'id');
+            $ordenasEje = OrdenesEjecutadas::where('adaptation_date_id', $plan->id)->first();
+            $actividadesEje = ActividadesEjecutadas::where('adaptation_date_id', $plan->id)->get();
+            $actividadesEje = $actividadesEje->map(function ($actividad) use ($lineMap) {
+                $actividadArr = $actividad->toArray();
+                try {
+                    $forms = json_decode($actividadArr['forms'], true);
+                    if (!is_array($forms)) {
+                        $forms = [];
+                    }
+                    foreach ($forms as &$form) {
+                        if (isset($form['linea']) && isset($lineMap[$form['linea']])) {
+                            $form['linea'] = $lineMap[$form['linea']];
+                        }
+                    }
+                    $actividadArr['forms'] = $forms;
+                } catch (\Throwable $e) {
+                    Log::warning("⚠️ Error al decodificar forms", [
+                        'actividad_id' => $actividad->id,
+                        'error' => $e->getMessage(),
+                    ]);
+                    $actividadArr['forms'] = [];
+                }
+                return $actividadArr;
+            });
+            $masterStages = Stage::whereIn('id', $masterIds)->get();
+            $machines = Machinery::whereIn('id', $machineIds)->get();
+            $users = User::whereIn('id', $userIds)->get();
+
+            $timers = Timer::with('timerControls')
+                ->where('ejecutada_id', $plan->id)
+                ->get();
+            Log::info("🔍 Verificando ID de plan para timers", ['plan_id' => $plan->id]);
+            Log::info("✅ Datos cargados exitosamente para PDF", ['timers' => $timers->toArray()]);
+
+            return [
+                'plan' => $plan,
+                'cliente' => $clientes,
+                'ordenadas' => $ordenasEje,
+                'actividadesEjecutadas' => $actividadesEje,
+                'stages' => $stages,
+                'masterStages' => $masterStages,
+                'lines' => $lines,
+                'machines' => $machines,
+                'users' => $users,
+                'desart' => $desart,
+                'timers' => $timers,
+            ];
+        } catch (\Exception $e) {
+            Log::error("💥 Error en getPlanDataForPDF: " . $e->getMessage());
+            return null;
+        }
+    }
+
+    public function generatePDFView($id)
+    {
+        $data = $this->getPlanDataForPDF($id);
+        if (!$data) {
+            return response()->json(['error' => 'Plan not found'], 404);
+        }
+
+        $options = new Options();
+        $options->set('defaultFont', 'Georgia');
+        $options->set('isHtml5ParserEnabled', true);
+        $options->set('isPhpEnabled', true); // No usar si vamos sin <script>
+
+        $dompdf = new Dompdf($options);
+
+        $html = view('pdf.plan', $data)->render();
+
+        $dompdf->loadHtml($html);
+        $dompdf->setPaper('A4', 'portrait');
+        $dompdf->render();
+
+        // ✅ Inserta la paginación después de renderizar
+        $canvas = $dompdf->getCanvas();
+        $font = $dompdf->getFontMetrics()->getFont('Georgia', 'normal');
+
+        $canvas->page_script(function ($pageNumber, $pageCount, $canvas, $fontMetrics) use ($font) {
+            $text = "Página $pageNumber de $pageCount";
+            $fontSize = 10;
+            $width = $fontMetrics->getTextWidth($text, $font, $fontSize);
+            $x = 520 - $width; // izquierda si querés mover
+            $y = 25;
+            $canvas->text($x, $y, $text, $font, $fontSize);
+        });
+
+        return response($dompdf->output(), 200)
+            ->header('Content-Type', 'application/pdf');
+    }
+
+    public function testImage()
+    {
+        $path = public_path('images/pharex.png');
+
+        if (!file_exists($path)) {
+            dd('❌ Imagen no encontrada en: ' . $path);
+        }
+
+        $info = getimagesize($path);
+        dd([
+            'path' => $path,
+            'mime' => $info['mime'],
+            'size' => filesize($path),
+        ]);
     }
 
     public function getConsultPlanning()
