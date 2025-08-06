@@ -1,10 +1,24 @@
 import React, { useState } from "react";
 import {
-  FaEdit, FaTrash, FaCheck, FaTimes, FaPlus, FaHistory, FaAngleLeft, FaAngleRight, FaRegFilePdf, FaRegPlusSquare, FaVoteYea 
+  FaEdit, FaTrash, FaCheck, FaTimes, FaPlus, FaHistory, FaAngleLeft, FaAngleRight,
+  FaRegFilePdf, FaRegPlusSquare, FaVoteYea
 } from "react-icons/fa";
 import { motion } from "framer-motion";
 
-type Variant = "save" | "cancel" | "edit" | "delete" | "create" | "create2" | "terciario" | "history" | "after" | "before" | "pdf" | "add" | "view";
+type Variant =
+  | "save"
+  | "cancel"
+  | "edit"
+  | "delete"
+  | "create"
+  | "create2"
+  | "terciario"
+  | "history"
+  | "after"
+  | "before"
+  | "pdf"
+  | "add"
+  | "view";
 
 interface ButtonProps {
   type?: "button" | "submit" | "reset";
@@ -45,8 +59,8 @@ const icons: Record<Variant, React.ReactNode> = {
   pdf: <FaRegFilePdf />,
   after: <FaAngleRight />,
   before: <FaAngleLeft />,
-  add: <FaRegPlusSquare />, // NUEVO
-  view: <FaVoteYea  />, // Icono genérico para "view"
+  add: <FaRegPlusSquare />,
+  view: <FaVoteYea />,
 };
 
 const labels: Record<Variant, string> = {
@@ -55,14 +69,14 @@ const labels: Record<Variant, string> = {
   edit: "Editar",
   delete: "Eliminar",
   create: "Crear",
-  create2: "Finalizar",
-  terciario: "Finalizar",
+  create2: "Orden",
+  terciario: "Orden",
   history: "Historial",
   pdf: "PDF",
   after: "Siguiente",
   before: "Anterior",
-  add: "Agregar", // NUEVO
-  view: "Ver", // Etiqueta para el botón de vista
+  add: "Agregar",
+  view: "Ver",
 };
 
 const sizeStyles = {
@@ -86,7 +100,6 @@ const Button: React.FC<ButtonProps> = ({
 
   const handleClick = () => {
     if (onClick) onClick();
-    // Solo partículas en botones principales
     if (["save", "create", "terciario", "add", "view"].includes(variant)) {
       const newParticles = Array.from({ length: 8 }, (_, i) => i);
       setParticles(newParticles);
@@ -94,7 +107,6 @@ const Button: React.FC<ButtonProps> = ({
     }
   };
 
-  // Si solo es icono, añade aria-label
   const showLabel = !["edit", "delete", "pdf", "history", "after", "before", "create2", "view"].includes(variant);
 
   return (
@@ -113,29 +125,30 @@ const Button: React.FC<ButtonProps> = ({
         ${className}
       `}
       aria-label={label ?? labels[variant]}
+      title={!showLabel ? (label ?? labels[variant]) : undefined} // <-- TOOLTIP AQUÍ
     >
       {icon ?? icons[variant]}
       {showLabel ? (label ?? labels[variant] ?? "") : null}
 
-      {/* Partículas solo si aplica */}
       {particles.map((_, i) => (
         <motion.span
           key={i}
           className="absolute w-1 h-1 rounded-full"
           style={{
-            background: variant === "add"
-              ? "#10b981" // emerald-500 para add
-              : variant === "terciario"
-                ? "#facc15"
-                : variant === "save"
-                  ? "#22c55e"
-                  : variant === "create2"
-                    ? "#f59e0b"
-                    : variant === "view"
-                      ? "#9ca3af" 
-                    : variant === "create"
-                      ? "#22d3ee"
-                      : "#fff"
+            background:
+              variant === "add"
+                ? "#10b981"
+                : variant === "terciario"
+                  ? "#facc15"
+                  : variant === "save"
+                    ? "#22c55e"
+                    : variant === "create2"
+                      ? "#f59e0b"
+                      : variant === "view"
+                        ? "#9ca3af"
+                        : variant === "create"
+                          ? "#22d3ee"
+                          : "#fff",
           }}
           initial={{ opacity: 1, x: 0, y: 0 }}
           animate={{
