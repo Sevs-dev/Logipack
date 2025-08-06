@@ -578,14 +578,18 @@ function NewStage({ canEdit = false, canView = false }: CreateClientProps) {
                             </div>
 
                             <div className="flex items-center gap-2">
-                                <input
-                                    type="checkbox"
-                                    checked={alert}
-                                    onChange={(e) => setAlert(e.target.checked)}
-                                    className="h-5 w-5 text-blue-600"
-                                    disabled={!canEdit}
-                                />
-                                <span className="text-sm text-black">Activar Alerta</span>
+                                {phaseType === "Control" && (
+                                    <>
+                                        <input
+                                            type="checkbox"
+                                            checked={alert}
+                                            onChange={(e) => setAlert(e.target.checked)}
+                                            className="h-5 w-5 text-blue-600"
+                                            disabled={!canEdit}
+                                        />
+                                        <span className="text-sm text-black">Activar Alerta</span>
+                                    </>
+                                )}
                             </div>
 
                             <div className="flex items-center gap-2">
