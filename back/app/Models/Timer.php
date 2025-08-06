@@ -13,5 +13,10 @@ class Timer extends Model
     public function timerControls()
     {
         return $this->hasMany(TimerControl::class);
-    } 
+    }
+
+    public function ejecutada()
+    {
+        return $this->belongsTo(ActividadesEjecutadas::class, 'ejecutada_id');
+    }
 }

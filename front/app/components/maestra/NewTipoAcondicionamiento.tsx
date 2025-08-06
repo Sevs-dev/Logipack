@@ -93,8 +93,7 @@ export default function NewTipoAcondicionamiento({ canEdit = false, canView = fa
     const handleBtnAgregarLinea = async () => {
         const response = await createLineaTipoAcom(unknown);
         if (response.status === 201) {
-
-            // resetear los datos de la linea tipo de acondicionamiento
+            // reset
             setObjectLineaTipoAcom((prev) => ({
                 ...prev,
                 id: 0,
@@ -108,10 +107,12 @@ export default function NewTipoAcondicionamiento({ canEdit = false, canView = fa
                 descripcion_fase_control: "",
             }));
 
-            // Cambiar estado y obtener la lista de tipos de acondicionamiento
-            await getListLineaTipoAcom();
+            // ⚠️ actualizar ambas listas
+            const updatedList = await getLineaTipoAcomById(unknown.tipo_acondicionamiento_id);
+            setLineaTipoAcom(updatedList);
+            setLineaTipoAcomEdit(updatedList);
         }
-    }
+    };
 
     // función para eliminar un tipo de acondicionamiento
     const handleDelete = async (id: number) => {
