@@ -359,7 +359,7 @@ function NewStage({ canEdit = false, canView = false }: CreateClientProps) {
                                 type="text"
                                 value={description}
                                 onChange={(e) => setDescription(e.target.value)}
-                                className="mt-1 w-full text-center p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 text-black"
+                                className="mt-1 w-full text-center p-2 border border-gray-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 text-black"
                                 disabled={!canEdit}
                             />
                         </div>
