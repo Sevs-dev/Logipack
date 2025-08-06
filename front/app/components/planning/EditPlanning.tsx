@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { COLORS } from "@/app/constants/colors";
+import dayjs from "dayjs";
 // 🔹 Componentes
 import Button from "../buttons/buttons";
 import { showSuccess, showError } from "../toastr/Toaster";
@@ -194,9 +195,10 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
             setIsSaving(false);
             return;
         }
-        const durationInMinutes = Number(updatedPlan.duration);
-        if (isNaN(durationInMinutes) || durationInMinutes < 5) {
-            showError("La duración mínima del plan debe ser de al menos 5 minutos.");
+        const diffInMinutes = dayjs(updatedPlan.end_date).diff(dayjs(updatedPlan.start_date), "minute");
+
+        if (diffInMinutes < 5) {
+            showError("La duración entre la fecha de inicio y fin debe ser de al menos 5 minutos.");
             setIsSaving(false);
             return;
         }

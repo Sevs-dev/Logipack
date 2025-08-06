@@ -387,77 +387,116 @@
         @endforeach
 
         <h2>Controles de Proceso</h2>
+        <style>
+            .tabla-container {
+                text-align: left;
+                width: 100%;
+            }
 
-        @php
-            $allControls = collect($timers)->flatMap(function ($timer) {
-                return $timer->timerControls->map(function ($control) use ($timer) {
-                    return [
-                        'control' => $control,
-                        'rows' => is_array($control->data) ? $control->data : [],
-                        'created_at' => $control->created_at,
-                        'user' => $control->user ?? ($control->user_id ?? '—'),
-                        'timer_id' => $timer->id,
-                    ];
-                });
-            });
-        @endphp
+            .tabla-item {
+                display: inline-block;
+                vertical-align: top;
+                width: 48%;
+                margin: 0 2% 16px 0;
+                page-break-inside: avoid;
+            }
 
-        @if ($allControls->count())
-            <table class="table table-striped">
-                <thead>
-                    <tr>
-                        <th style="width: 35%">Descripción</th>
-                        <th style="width: 35%">Resultado</th>
-                        <th style="width: 15%">Usuario</th>
-                        <th style="width: 15%">Fecha y Hora</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach ($allControls as $entry)
-                        @foreach ($entry['rows'] as $item)
-                            @php
-                                $desc = $item['descripcion'] ?? ($item['description'] ?? '—');
-                                $valor = $item['valor'] ?? null;
+            .tabla-item:nth-child(2n) {
+                margin-right: 0;
+            }
 
-                                $isImg = is_string($valor) && str_starts_with($valor, 'data:image');
-                                $isArray = is_array($valor);
+            .table {
+                width: 100%;
+                border-collapse: collapse;
+                font-size: 11px;
+            }
 
-                                $isTemp =
-                                    is_array($valor) &&
-                                    array_key_exists('min', $valor) &&
-                                    array_key_exists('max', $valor) &&
-                                    array_key_exists('valor', $valor);
-                            @endphp
-                            <tr>
-                                <td>{{ $desc }}</td>
-                                <td>
-                                    @if ($isImg)
-                                        <img src="{{ $valor }}" alt="Evidencia" class="evidence-img">
-                                    @elseif ($isTemp)
-                                        <div class="data-label">
-                                            Min: {{ $valor['min'] }} | Máx: {{ $valor['max'] }} |
-                                            Medido: <strong>{{ $valor['valor'] }}</strong>
-                                        </div>
-                                    @elseif ($isArray)
-                                        <span
-                                            class="data-label">{{ json_encode($valor, JSON_UNESCAPED_UNICODE) }}</span>
-                                    @else
-                                        <span class="data-label">{{ $valor ?? '—' }}</span>
-                                    @endif
-                                </td>
-                                <td>{{ is_object($entry['user']) ? urldecode($entry['user']->name ?? '—') : urldecode($entry['user']) }}
-                                </td>
-                                <td>{{ \Carbon\Carbon::parse($entry['created_at'])->format('Y-m-d H:i') }}</td>
-                            </tr>
-                        @endforeach
-                    @endforeach
-                </tbody>
-            </table>
-        @else
-            <p style="text-align:center; color:#6b7280; font-size:11px; margin:12px 0;">
-                No hay controles de proceso registrados.
-            </p>
-        @endif
+            .table th,
+            .table td {
+                border: 1px solid #e5e7eb;
+                padding: 6px 8px;
+                text-align: center;
+                word-break: break-word;
+            }
+
+            .table th {
+                background-color: #eff6ff;
+                font-weight: bold;
+                color: #1e3a8a;
+            }
+
+            .evidence-img {
+                max-width: 100%;
+                max-height: 100px;
+                object-fit: contain;
+            }
+
+            .data-label {
+                font-weight: 500;
+                color: #4b5563;
+            }
+        </style>
+
+        <div class="tabla-container">
+            @forelse ($timers as $timer)
+                @forelse ($timer->timerControls as $control)
+                    @php $rows = is_array($control->data) ? $control->data : []; @endphp
+
+                    @if (count($rows))
+                        <div class="tabla-item">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 26%">Descripción</th>
+                                        <th style="width: 35%">Resultado</th>
+                                        <th style="width: 21%">Usuario</th>
+                                        <th style="width: 18%">Fecha y Hora</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach ($rows as $item)
+                                        @php
+                                            $desc = $item['descripcion'] ?? ($item['description'] ?? '—');
+                                            $valor = $item['valor'] ?? null;
+                                            $isImg = is_string($valor) && str_starts_with($valor, 'data:image');
+                                            $isArray = is_array($valor);
+                                            $isTemp = $isArray && isset($valor['min'], $valor['max'], $valor['valor']);
+                                        @endphp
+                                        <tr>
+                                            <td>{{ $desc }}</td>
+                                            <td>
+                                                @if ($isImg)
+                                                    <img src="{{ $valor }}" alt="Evidencia"
+                                                        class="evidence-img">
+                                                @elseif ($isTemp)
+                                                    <div class="data-label">
+                                                        Min: {{ $valor['min'] }} | Máx: {{ $valor['max'] }} |
+                                                        Medido: <strong>{{ $valor['valor'] }}</strong>
+                                                    </div>
+                                                @elseif ($isArray)
+                                                    <span
+                                                        class="data-label">{{ json_encode($valor, JSON_UNESCAPED_UNICODE) }}</span>
+                                                @else
+                                                    <span class="data-label">{{ $valor ?? '—' }}</span>
+                                                @endif
+                                            </td>
+                                            <td>{{ $control->user->name ?? ($control->user ?? '—') }}</td>
+                                            <td>{{ \Carbon\Carbon::parse($control->created_at)->format('Y-m-d H:i') }}
+                                            </td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+                    @endif
+                @empty
+                @endforelse
+            @empty
+                <p style="text-align:center; color:#6b7280; font-size:11px; margin:12px 0;">
+                    No hay controles de proceso registrados.
+                </p>
+            @endforelse
+        </div>
 
         <footer>
             Documento generado automáticamente – Pharex S.A. | Confidencial

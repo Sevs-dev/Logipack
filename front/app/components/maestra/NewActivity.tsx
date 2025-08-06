@@ -317,7 +317,7 @@ export default function NewActivity({ canEdit = false, canView = false }: Create
                             onChange={(e) =>
                                 setFormData({ ...formData, description: e.target.value })
                             }
-                            className="w-full border p-2 rounded-md text-black mb-4 text-center"
+                            className="w-full border p-2 rounded-md text-black mb-4 text-center border-gray-400"
                             disabled={!canEdit && !isEditing}
                         />
                     </div>
@@ -328,7 +328,7 @@ export default function NewActivity({ canEdit = false, canView = false }: Create
                         <select
                             value={selectedType}
                             onChange={(e) => handleTypeChange(e.target.value)}
-                            className="w-full border p-2 rounded-md text-black mb-4 text-center"
+                            className="w-full border p-2 rounded-md text-black mb-4 text-center border-gray-400"
                             disabled={!canEdit && !isEditing}
                         >
                             {Object.keys(activityTypes).map((type) => (
@@ -359,7 +359,7 @@ export default function NewActivity({ canEdit = false, canView = false }: Create
                                 type="checkbox"
                                 checked={formData.binding}
                                 onChange={(e) => setFormData({ ...formData, binding: e.target.checked })}
-                                className="h-5 w-5 text-blue-500 rounded-md focus:ring-2 focus:ring-blue-500"
+                                className="h-5 w-5 text-blue-500 rounded-md focus:ring-2 focus:ring-blue-500 border-gray-400"
                                 disabled={!canEdit && !isEditing}
                             />
                         </div>
@@ -372,7 +372,7 @@ export default function NewActivity({ canEdit = false, canView = false }: Create
                                 type="checkbox"
                                 checked={formData.has_time}
                                 onChange={(e) => setFormData({ ...formData, has_time: e.target.checked })}
-                                className="h-5 w-5 text-blue-500 rounded-md focus:ring-2 focus:ring-blue-500"
+                                className="h-5 w-5 text-blue-500 rounded-md focus:ring-2 focus:ring-blue-500 border-gray-400"
                                 disabled={!canEdit && !isEditing}
                             />
                         </div>
@@ -409,7 +409,7 @@ export default function NewActivity({ canEdit = false, canView = false }: Create
                                                 duration: raw === "" || isNaN(parsed) ? undefined : parsed,
                                             });
                                         }}
-                                        className="w-[140px] border p-2 pl-9 rounded-md text-black focus:ring-2 focus:ring-blue-500"
+                                        className="w-[140px] border p-2 pl-9 rounded-md text-black focus:ring-2 focus:ring-blue-500 border-gray-400"
                                         disabled={!canEdit && !isEditing}
                                     />
                                 </div>
@@ -444,7 +444,7 @@ export default function NewActivity({ canEdit = false, canView = false }: Create
                                         setFormData({ ...formData, config: JSON.stringify(updatedConfig, null, 2) });
                                     }}
                                     placeholder="Mín °C"
-                                    className="w-[100px] border p-2 rounded-md text-black text-center"
+                                    className="w-[100px] border p-2 rounded-md text-black text-center border-gray-400"
                                 />
                                 <input
                                     type="number"
@@ -455,7 +455,7 @@ export default function NewActivity({ canEdit = false, canView = false }: Create
                                         setFormData({ ...formData, config: JSON.stringify(updatedConfig, null, 2) });
                                     }}
                                     placeholder="Máx °C"
-                                    className="w-[100px] border p-2 rounded-md text-black text-center"
+                                    className="w-[100px] border p-2 rounded-md text-black text-center border-gray-400"
                                 />
                             </div>
                         )}
@@ -565,7 +565,7 @@ export default function NewActivity({ canEdit = false, canView = false }: Create
                                                 setFormData({ ...formData, config: JSON.stringify({ ...parsedConfig, items }, null, 2) });
                                             }}
                                             placeholder="Min"
-                                            className="w-[80px] border p-2 rounded-md text-black text-center"
+                                            className="w-[80px] border p-2 rounded-md text-black text-center border-gray-400"
                                         />
                                         <input
                                             type="number"
@@ -577,7 +577,7 @@ export default function NewActivity({ canEdit = false, canView = false }: Create
                                                 setFormData({ ...formData, config: JSON.stringify({ ...parsedConfig, items }, null, 2) });
                                             }}
                                             placeholder="Max"
-                                            className="w-[80px] border p-2 rounded-md text-black text-center"
+                                            className="w-[80px] border p-2 rounded-md text-black text-center border-gray-400"
                                         />
                                         <input
                                             type="number"
@@ -589,7 +589,7 @@ export default function NewActivity({ canEdit = false, canView = false }: Create
                                                 setFormData({ ...formData, config: JSON.stringify({ ...parsedConfig, items }, null, 2) });
                                             }}
                                             placeholder="Valor"
-                                            className="w-[80px] border p-2 rounded-md text-black text-center"
+                                            className="w-[80px] border p-2 rounded-md text-black text-center border-gray-400"
                                         />
                                         <Button
                                             onClick={() => {
