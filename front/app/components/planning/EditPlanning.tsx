@@ -194,6 +194,12 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
             setIsSaving(false);
             return;
         }
+        const durationInMinutes = Number(updatedPlan.duration);
+        if (isNaN(durationInMinutes) || durationInMinutes < 5) {
+            showError("La duración mínima del plan debe ser de al menos 5 minutos.");
+            setIsSaving(false);
+            return;
+        }
         try {
             const cleanedPlan = sanitizePlan(updatedPlan);
             const lines: number[] = getLinesArray(updatedPlan.line);
@@ -289,7 +295,7 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
             showError("Planificación no encontrada localmente");
             return;
         }
-
+        console.log(selectedPlan)
         setLoadingModal(true);
 
         try {

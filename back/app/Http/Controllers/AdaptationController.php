@@ -140,15 +140,15 @@ class AdaptationController extends Controller
                         $stage = Stage::find($stageId);
                         if (!$stage) continue;
 
-                        $duracionEtapa = $stage->multi ? $stage->duration * $teoricaTotal : $stage->duration;
+                        $duracionEtapa = $stage->multi ? $stage->duration_user * $teoricaTotal : $stage->duration_user;
                         $totalDuration += $duracionEtapa;
 
                         $duration_breakdown[] = [
                             'fase'           => $stage->description,
                             'multi'          => $stage->multi,
-                            'duracion_base'  => $stage->duration,
+                            'duracion_base'  => $stage->duration_user,
                             'teorica_total'  => $stage->multi ? $teoricaTotal : null,
-                            'multiplicacion' => $stage->multi ? "{$stage->duration} * {$teoricaTotal}" : null,
+                            'multiplicacion' => $stage->multi ? "{$stage->duration_user} * {$teoricaTotal}" : null,
                             'resultado'      => $duracionEtapa,
                         ];
                     }
@@ -346,15 +346,15 @@ class AdaptationController extends Controller
                         $stage = Stage::find($stageId);
                         if (!$stage) continue;
 
-                        $duracionEtapa = $stage->multi ? $stage->duration * $teoricaTotal : $stage->duration;
+                        $duracionEtapa = $stage->multi ? $stage->duration_user * $teoricaTotal : $stage->duration_user;
                         $totalDuration += $duracionEtapa;
 
                         $duration_breakdown[] = [
                             'fase'           => $stage->description,
                             'multi'          => $stage->multi,
-                            'duracion_base'  => $stage->duration,
+                            'duracion_base'  => $stage->duration_user,
                             'teorica_total'  => $stage->multi ? $teoricaTotal : null,
-                            'multiplicacion' => $stage->multi ? "{$stage->duration} * {$teoricaTotal}" : null,
+                            'multiplicacion' => $stage->multi ? "{$stage->duration_user} * {$teoricaTotal}" : null,
                             'resultado'      => $duracionEtapa,
                         ];
                     }

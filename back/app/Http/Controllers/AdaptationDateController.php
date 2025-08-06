@@ -366,6 +366,7 @@ class AdaptationDateController extends Controller
             ], 500);
         }
     }
+
     public function getPlanDataForPDF($id)
     {
         try {
@@ -374,6 +375,11 @@ class AdaptationDateController extends Controller
                 Log::warning("❌ Plan no encontrado para ID: $id");
                 return null;
             }
+
+            // Log::info("✅ Plan encontrado", [
+            //     'plan_id' => $plan,
+            // ]);
+            
             $cliente = $plan->adaptation?->client_id;
             $codart = $plan->codart;
             $maestra = $plan->adaptation?->maestra;
@@ -429,12 +435,47 @@ class AdaptationDateController extends Controller
             $machines = Machinery::whereIn('id', $machineIds)->get();
             $users = User::whereIn('id', $userIds)->get();
 
-            $timers = Timer::with('timerControls')
-                ->where('ejecutada_id', $plan->id)
-                ->get();
-            Log::info("🔍 Verificando ID de plan para timers", ['plan_id' => $plan->id]);
-            Log::info("✅ Datos cargados exitosamente para PDF", ['timers' => $timers->toArray()]);
+            // 1. Buscar la actividad ejecutada relacionada con el plan
+            $actividad = ActividadesEjecutadas::where('adaptation_date_id', $plan->id)->first();
 
+            if (!$actividad) {
+                Log::warning("❌ No se encontró actividad ejecutada para adaptation_date_id: $plan->id");
+                return;
+            }
+            // 2. Obtener todos los timers asociados a esa actividad
+            $timers = Timer::with(['timerControls', 'ejecutada'])
+                ->where('ejecutada_id', $actividad->id)
+                ->get();
+
+            if ($timers->isEmpty()) {
+                Log::warning("⚠️ No se encontraron timers para la actividad ejecutada ID: {$actividad->id}");
+                return;
+            }
+            // 3. Recorrer timers y sus controles
+            foreach ($timers as $timer) {
+                $fase = $timer->ejecutada->description_fase ?? 'Sin fase';
+                if ($timer->timerControls->isEmpty()) {
+                    Log::info("🔍 Timer ID {$timer->id} no tiene controles asociados.");
+                    continue;
+                }
+
+                foreach ($timer->timerControls as $control) {
+                    // ✅ FIX: evitar error de tipo si ya es array
+                    $data = is_string($control->data) ? json_decode($control->data, true) : $control->data;
+
+                    if (!is_array($data)) {
+                        Log::warning("❌ Data inválida o no decodificable en Control ID: {$control->id}");
+                        continue;
+                    }
+
+                    foreach ($data as $registro) {
+                        $tipo = $registro['tipo'] ?? '—';
+                        $descripcion = $registro['descripcion'] ?? '—';
+                        $valor = $registro['valor'] ?? '—';
+                        $unidad = $registro['unidad'] ?? '';
+                    }
+                }
+            }
             return [
                 'plan' => $plan,
                 'cliente' => $clientes,
@@ -481,14 +522,18 @@ class AdaptationDateController extends Controller
         $canvas->page_script(function ($pageNumber, $pageCount, $canvas, $fontMetrics) use ($font) {
             $text = "Página $pageNumber de $pageCount";
             $fontSize = 10;
+            $color = "#6e737c";
             $width = $fontMetrics->getTextWidth($text, $font, $fontSize);
             $x = 520 - $width; // izquierda si querés mover
             $y = 25;
-            $canvas->text($x, $y, $text, $font, $fontSize);
+            $canvas->text($x, $y, $text, $font, $fontSize, $color);
         });
 
+        $clienteName = preg_replace('/[^a-zA-Z0-9_-]/', '_', $data['cliente']->name ?? 'cliente');
+
         return response($dompdf->output(), 200)
-            ->header('Content-Type', 'application/pdf');
+            ->header('Content-Type', 'application/pdf')
+            ->header('Content-Disposition', 'inline; filename="Orden_' . $data['plan']->number_order . '_' . $clienteName . '.pdf"');
     }
 
     public function testImage()

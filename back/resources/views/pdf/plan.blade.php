@@ -12,7 +12,6 @@
         body {
             font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
             font-size: 12px;
-            color: #374151;
             background-color: #ffffff;
             padding: 0;
             line-height: 1.6;
@@ -52,62 +51,87 @@
             margin: 24px 0 8px;
         }
 
-        /* Tabla general */
+        /* === Tablas === */
         .table {
             width: 100%;
             border-collapse: collapse;
             margin: 12px 0 24px;
             font-size: 11.5px;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-            border-radius: 6px;
-            overflow: hidden;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            table-layout: auto;
+
+            page-break-inside: auto;
+            /* <- NUEVO */
+            break-inside: auto;
+            /* <- NUEVO */
+        }
+
+        .table th,
+        .table td {
+            padding: 6px 8px;
+            border-bottom: 1px solid #e5e7eb;
+            vertical-align: middle;
+            word-break: break-word;
+            white-space: normal;
+            overflow-wrap: break-word;
         }
 
         .table th {
             background-color: #eff6ff;
-            color: #1e40af;
+            color: #0026a1;
             font-weight: 600;
-            padding: 8px 10px;
+            font-size: 11px;
             text-align: center;
-            border-bottom: 1px solid #bfdbfe;
-            word-break: break-word;
-            white-space: normal;
-            overflow-wrap: anywhere;
         }
 
         .table td {
-            padding: 8px 10px;
-            text-align: center;
-            border-bottom: 1px solid #e0e7ff;
             background-color: #ffffff;
-            word-break: break-word;
-            white-space: normal;
-            overflow-wrap: anywhere;
+            color: #374151;
+            font-size: 11px;
+            text-align: center;
         }
 
-        .table td,
-        .table th {
-            word-break: break-word;
-            white-space: normal;
-            overflow-wrap: anywhere;
-        }
-
-        .table tr:nth-child(even) {
-            background-color: #f8fafc;
+        .table tr:nth-child(even) td {
+            background-color: #f9fafb;
         }
 
         .table tr:last-child td {
             border-bottom: none;
         }
 
-        /* Tabla con rayas */
-        .table-striped tbody tr:nth-child(odd) {
-            background-color: #f1f5f9;
+        .table-centered th,
+        .table-centered td {
+            text-align: center;
         }
 
-        .table-striped tbody tr:hover {
-            background-color: #e0f2fe;
+        .table td.nowrap {
+            white-space: nowrap;
+        }
+
+        .table td.right {
+            text-align: right;
+        }
+
+        /* Stripe y hover */
+        .table-striped tbody tr:nth-child(odd) td {
+            background-color: #fff;
+        }
+
+        .table-striped tbody tr:hover td {
+            background-color: #fff;
             transition: background-color 0.2s ease;
+        }
+
+        /* 🔥 NUEVO: evitar que una fila se parta entre páginas */
+        .table tr {
+            page-break-inside: avoid;
+            break-inside: avoid;
+        }
+
+        /* 🔥 NUEVO: repetir encabezado si se parte */
+        thead {
+            display: table-header-group;
         }
 
         /* Listas */
@@ -125,8 +149,8 @@
 
         /* Imágenes en celdas */
         .evidence-img {
-            max-width: 60px;
-            max-height: 40px;
+            max-width: 210px;
+            max-height: 110px;
             object-fit: contain;
             border-radius: 4px;
             border: 1px solid #d1d5db;
@@ -146,12 +170,13 @@
         .watermark {
             position: fixed;
             top: 50%;
-            left: 50%;
+            left: 40%;
             transform: translate(-50%, -50%) rotate(-30deg);
+            transform-origin: center center;
             opacity: 0.08;
             pointer-events: none;
-            z-index: 0;
-            width: 280px;
+            z-index: 999;
+            width: 680px;
             filter: grayscale(100%);
         }
 
@@ -161,122 +186,69 @@
             color: #4b5563;
         }
 
-        /* ===== Diagrama Snake (HTML + CSS, sin SVG) ===== */
-        /* ===== Diagrama Snake Corregido ===== */
-        .diagram {
-            max-width: 744px;
-            margin: 16px auto;
+        /* Diagrama tipo snake */
+        .timeline-horizontal {
+            display: table;
+            width: 100%;
+            table-layout: fixed;
+            border-collapse: separate;
+            border-spacing: 6px 0;
             page-break-inside: avoid;
+            margin: 24px 0;
         }
 
-        .diagram .row {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 16px;
-            margin: 6px 0;
-        }
-
-        .diagram .row.reverse {
-            flex-direction: row-reverse;
-        }
-
-        .diagram .node {
-            width: 170px;
-            min-height: 70px;
-            background: #ffffff;
-            border: 2px solid #3b82f6;
-            border-radius: 12px;
-            padding: 10px 8px;
+        .timeline-step {
+            display: table-cell;
             text-align: center;
+            vertical-align: top;
+            padding: 0;
             position: relative;
-            line-height: 1.3;
-            word-break: break-word;
+        }
+
+        .timeline-label {
+            font-size: 10px;
+            color: #1e3a8a;
+            background: #ffffff;
+            padding: 0 6px;
+            border-radius: 6px;
+            border: 1px solid #c7d2fe;
+            box-shadow: 0 1px 1px rgba(0, 0, 0, 0.04);
+            min-width: 80px;
+            max-width: 100px;
+            height: 30px;
             display: flex;
-            flex-direction: column;
             align-items: center;
             justify-content: center;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+            text-align: center;
+            vertical-align: middle;
+            word-break: break-word;
+            white-space: normal;
+            margin: auto;
+            line-height: 1.2;
         }
 
-        .diagram .node .badge {
-            position: absolute;
-            top: -12px;
-            left: 10px;
+        .timeline-circle {
             background: #eff6ff;
-            border: 1px solid #bfdbfe;
+            border: 1.5px solid #3b82f6;
             color: #1e40af;
-            border-radius: 8px;
-            padding: 1px 6px;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            font-weight: bold;
             font-size: 10px;
-            font-weight: 600;
+            text-align: center;
+            line-height: 20px;
+            margin: auto;
         }
 
-        .diagram .node .label {
-            font-size: 11.5px;
-            color: #1e3a8a;
-            margin-top: 4px;
-        }
-
-        .diagram .arrow-h {
-            width: 40px;
-            height: 2px;
-            background: #3b82f6;
-            position: relative;
-            flex-shrink: 0;
-        }
-
-        .diagram .arrow-h::after {
-            content: "";
-            position: absolute;
-            top: -5px;
-            right: 0;
-            border-top: 6px solid transparent;
-            border-bottom: 6px solid transparent;
-            border-left: 8px solid #3b82f6;
-        }
-
-        .diagram .arrow-h.reverse {
-            transform: rotate(180deg);
-        }
-
-        .diagram .arrow-v {
-            width: 2px;
-            height: 40px;
-            background: #3b82f6;
-            position: relative;
-        }
-
-        .diagram .arrow-v::after {
-            content: "";
-            position: absolute;
-            left: -6px;
-            bottom: -1px;
-            border-left: 6px solid transparent;
-            border-right: 6px solid transparent;
-            border-top: 8px solid #3b82f6;
-        }
-
-        /* Espaciadores para alinear flecha vertical */
-        .diagram .handoff-row {
-            display: flex;
-            justify-content: center;
-            align-items: flex-start;
-            gap: 16px;
-            margin: -20px 0 10px;
-            /* ajuste visual */
-        }
-
-        .diagram .ph-node {
-            width: 170px;
-            height: 0;
-            flex: 0 0 170px;
-        }
-
-        .diagram .ph-arrow {
-            width: 40px;
-            height: 0;
-            flex: 0 0 40px;
+        .timeline-arrow {
+            display: table-cell;
+            text-align: center;
+            vertical-align: middle;
+            width: 16px;
+            font-size: 14px;
+            color: #6b7280;
+            line-height: 1;
         }
     </style>
 </head>
@@ -285,7 +257,7 @@
 
     {{-- ✅ Marca de agua --}}
     @php
-        $path = public_path('images/pharex.png');
+        $path = public_path('images/logo.png');
         $type = pathinfo($path, PATHINFO_EXTENSION);
         $data = file_get_contents($path);
         $base64 = 'data:image/' . $type . ';base64,' . base64_encode($data);
@@ -333,7 +305,7 @@
         </table>
 
         {{-- ===== Diagrama Snake (HTML+CSS) ===== --}}
-        <h2>Diagrama de Operaciones a Realizar</h2>
+        <h2>Diagrama de Operaciones</h2>
         @php
             $stagesArr = collect($stages ?? [])
                 ->map(function ($s) {
@@ -343,103 +315,15 @@
                 })
                 ->values()
                 ->toArray();
-
-            $NODES_PER_ROW = 3;
-            $chunks = array_chunk($stagesArr, $NODES_PER_ROW);
         @endphp
 
         @if (count($stagesArr))
-            <div class="diagram" style="margin:16px auto; text-align:center; font-size:11px;">
-                @php $processedSoFar = 0; @endphp
-
-                @foreach ($chunks as $chunkIndex => $row)
-                    @php
-                        $isReverse = $chunkIndex % 2 !== 0;
-                        $itemsInRow = count($row);
-                        $cellWidth = number_format(100 / $NODES_PER_ROW, 2);
-                        $arrowWidth =
-                            $itemsInRow > 1
-                                ? number_format((100 - $cellWidth * $itemsInRow) / ($itemsInRow - 1), 2)
-                                : 0;
-                        $rowStartIndex = $processedSoFar + 1;
-                    @endphp
-
-                    <!-- Fila de nodos -->
-                    <table style="width:100%; border-collapse:collapse; margin:10px 0;" role="presentation">
-                        <tr>
-                            @foreach ($row as $colIndex => $stage)
-                                @php
-                                    $ordinalInRow = $isReverse ? $itemsInRow - 1 - $colIndex : $colIndex;
-                                    $displayIndex = $rowStartIndex + $ordinalInRow;
-                                    $isVisualEnd = $isReverse ? $colIndex === 0 : $colIndex === $itemsInRow - 1;
-                                @endphp
-
-                                <td style="width: {{ $cellWidth }}%; padding:2px; vertical-align:top;">
-                                    <div
-                                        style="
-                                width:100%; min-height:50px; max-width:150px; margin:0 auto;
-                                background:#fff; border:2px solid #3b82f6; border-radius:8px;
-                                padding:6px 4px; text-align:center; line-height:1.3; word-break:break-word;
-                                position:relative; box-shadow:0 1px 2px rgba(0,0,0,0.06); font-size:11px;
-                            ">
-                                        <span
-                                            style="
-                                    position:absolute; top:-10px; left:8px;
-                                    background:#eff6ff; border:1px solid #bfdbfe; color:#1e40af;
-                                    border-radius:6px; padding:1px 5px; font-size:9px; font-weight:600;
-                                ">
-                                            {{ $displayIndex }}
-                                        </span>
-                                        <div style="color:#1e3a8a;">{{ $stage['label'] }}</div>
-                                    </div>
-                                </td>
-
-                                <!-- Flecha horizontal -->
-                                @if (!$isVisualEnd)
-                                    <td style="width: {{ $arrowWidth }}%; padding:2px; text-align:center;">
-                                        <div
-                                            style="
-                                    width:30px; height:1.5px; background:#3b82f6; margin:24px auto; position:relative;
-                                ">
-                                            <div
-                                                style="
-                                        content:''; position:absolute; top:-4px;
-                                        {{ $isReverse ? 'left:0;' : 'right:0;' }}
-                                        border-top:5px solid transparent; border-bottom:5px solid transparent;
-                                        {{ $isReverse ? 'border-right:6px solid #3b82f6;' : 'border-left:6px solid #3b82f6;' }}
-                                    ">
-                                            </div>
-                                        </div>
-                                    </td>
-                                @endif
-                            @endforeach
-                        </tr>
-                    </table>
-
-                    <!-- Flecha vertical (baja del extremo visual de la fila) -->
-                    @if ($chunkIndex < count($chunks) - 1)
-                        @php
-                            $extremePos = $isReverse ? 0 : $itemsInRow - 1;
-                            $leftPos = $extremePos * $cellWidth + $cellWidth / 2;
-                        @endphp
-                        <div style="text-align:center; margin:10px 0 6px;">
-                            <div
-                                style="
-                        display:inline-block; width:1.5px; height:30px; background:#3b82f6;
-                        margin-left: {{ $leftPos }}%; position:relative; transform:translateX(-50%);
-                    ">
-                                <div
-                                    style="
-                            content:''; position:absolute; left:-5px; bottom:-2px;
-                            border-left:5px solid transparent; border-right:5px solid transparent;
-                            border-top:7px solid #3b82f6;
-                        ">
-                                </div>
-                            </div>
-                        </div>
-                    @endif
-
-                    @php $processedSoFar += $itemsInRow; @endphp
+            <div class="timeline-horizontal">
+                @foreach ($stagesArr as $index => $stage)
+                    <div class="timeline-step">
+                        <div class="timeline-label">{{ $stage['label'] }}</div>
+                        <div class="timeline-circle">{{ $index + 1 }}</div>
+                    </div>
                 @endforeach
             </div>
         @else
@@ -447,14 +331,15 @@
                 No hay etapas para mostrar en el diagrama.
             </p>
         @endif
-
         {{-- ===== Fin Diagrama ===== --}}
         <table class="table">
             <tr>
-                <th style="width: 15%">Receta validada por</th>
-                <td style="width: 35%">{{ $plan->user }}</td>
+                <th style="width: 10%">Receta validada por</th>
+                <td style="width: 35%">
+                    {{ $plan->user ? urldecode(preg_replace('/[\r\n]+/', '', $plan->user)) : 'Sin usuario' }}
+                </td>
                 <th style="width: 15%">Cliente</th>
-                <td style="width: 35%">{{ $cliente->updated_at ?? '—' }}</td>
+                <td style="width: 15%">{{ $cliente->updated_at ?? '—' }}</td>
             </tr>
         </table>
 
@@ -492,7 +377,7 @@
                                     @endif
                                 </td>
                                 <td>{{ $form['linea'] ?? '—' }}</td>
-                                <td>{{ $actividad['user'] ?? '—' }}</td>
+                                <td>{{ isset($actividad['user']) ? urldecode($actividad['user']) : '—' }}</td>
                                 <td>{{ \Carbon\Carbon::parse($actividad['created_at'])->format('H:i') }}</td>
                             </tr>
                         @endforeach
@@ -501,90 +386,78 @@
             @endif
         @endforeach
 
-        <h2>Máquinas Utilizadas</h2>
-        <ul>
-            @forelse ($machines as $machine)
-                <li>{{ $machine->name }}</li>
-            @empty
-                <li><em>No se registraron máquinas.</em></li>
-            @endforelse
-        </ul>
-
-        <h2>Usuarios Involucrados</h2>
-        <ul>
-            @forelse ($users as $user)
-                <li>{{ $user->name }}</li>
-            @empty
-                <li><em>No se registraron usuarios.</em></li>
-            @endforelse
-        </ul>
-
         <h2>Controles de Proceso</h2>
 
-        @forelse ($timers as $timer)
-            @forelse ($timer->timerControls as $control)
-                @php
-                    $rows = is_array($control->data) ? $control->data : [];
-                @endphp
+        @php
+            $allControls = collect($timers)->flatMap(function ($timer) {
+                return $timer->timerControls->map(function ($control) use ($timer) {
+                    return [
+                        'control' => $control,
+                        'rows' => is_array($control->data) ? $control->data : [],
+                        'created_at' => $control->created_at,
+                        'user' => $control->user ?? ($control->user_id ?? '—'),
+                        'timer_id' => $timer->id,
+                    ];
+                });
+            });
+        @endphp
 
-                @if (count($rows))
-                    <table class="table table-striped">
-                        <thead>
+        @if ($allControls->count())
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th style="width: 35%">Descripción</th>
+                        <th style="width: 35%">Resultado</th>
+                        <th style="width: 15%">Usuario</th>
+                        <th style="width: 15%">Fecha y Hora</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach ($allControls as $entry)
+                        @foreach ($entry['rows'] as $item)
+                            @php
+                                $desc = $item['descripcion'] ?? ($item['description'] ?? '—');
+                                $valor = $item['valor'] ?? null;
+
+                                $isImg = is_string($valor) && str_starts_with($valor, 'data:image');
+                                $isArray = is_array($valor);
+
+                                $isTemp =
+                                    is_array($valor) &&
+                                    array_key_exists('min', $valor) &&
+                                    array_key_exists('max', $valor) &&
+                                    array_key_exists('valor', $valor);
+                            @endphp
                             <tr>
-                                <th style="width: 35%">Descripción</th>
-                                <th style="width: 35%">Resultado</th>
-                                <th style="width: 15%">Usuario</th>
-                                <th style="width: 15%">Fecha y Hora</th>
+                                <td>{{ $desc }}</td>
+                                <td>
+                                    @if ($isImg)
+                                        <img src="{{ $valor }}" alt="Evidencia" class="evidence-img">
+                                    @elseif ($isTemp)
+                                        <div class="data-label">
+                                            Min: {{ $valor['min'] }} | Máx: {{ $valor['max'] }} |
+                                            Medido: <strong>{{ $valor['valor'] }}</strong>
+                                        </div>
+                                    @elseif ($isArray)
+                                        <span
+                                            class="data-label">{{ json_encode($valor, JSON_UNESCAPED_UNICODE) }}</span>
+                                    @else
+                                        <span class="data-label">{{ $valor ?? '—' }}</span>
+                                    @endif
+                                </td>
+                                <td>{{ is_object($entry['user']) ? urldecode($entry['user']->name ?? '—') : urldecode($entry['user']) }}
+                                </td>
+                                <td>{{ \Carbon\Carbon::parse($entry['created_at'])->format('Y-m-d H:i') }}</td>
                             </tr>
-                        </thead>
-                        <tbody>
-                            @foreach ($rows as $item)
-                                @php
-                                    $desc = $item['descripcion'] ?? ($item['description'] ?? '—');
-                                    $valor = $item['valor'] ?? null;
-
-                                    $isImg = is_string($valor) && str_starts_with($valor, 'data:image');
-                                    $isArray = is_array($valor);
-
-                                    // Caso especial: temperatura { min, max, valor }
-                                    $isTemp =
-                                        is_array($valor) &&
-                                        array_key_exists('min', $valor) &&
-                                        array_key_exists('max', $valor) &&
-                                        array_key_exists('valor', $valor);
-                                @endphp
-                                <tr>
-                                    <td>{{ $desc }}</td>
-                                    <td>
-                                        @if ($isImg)
-                                            <img src="{{ $valor }}" alt="Evidencia" class="evidence-img">
-                                        @elseif ($isTemp)
-                                            <div class="data-label">
-                                                Min: {{ $valor['min'] }} | Máx: {{ $valor['max'] }} | Medido:
-                                                <strong>{{ $valor['valor'] }}</strong>
-                                            </div>
-                                        @elseif ($isArray)
-                                            <span
-                                                class="data-label">{{ json_encode($valor, JSON_UNESCAPED_UNICODE) }}</span>
-                                        @else
-                                            <span class="data-label">{{ $valor ?? '—' }}</span>
-                                        @endif
-                                    </td>
-                                    <td>{{ $control->user->name ?? ($control->user ?? '—') }}</td>
-                                    <td>{{ \Carbon\Carbon::parse($control->created_at)->format('Y-m-d H:i') }}</td>
-                                </tr>
-                            @endforeach
-                        </tbody>
-                    </table>
-                @endif
-            @empty
-                {{-- sin controles en este timer --}}
-            @endforelse
-        @empty
+                        @endforeach
+                    @endforeach
+                </tbody>
+            </table>
+        @else
             <p style="text-align:center; color:#6b7280; font-size:11px; margin:12px 0;">
                 No hay controles de proceso registrados.
             </p>
-        @endforelse
+        @endif
 
         <footer>
             Documento generado automáticamente – Pharex S.A. | Confidencial
