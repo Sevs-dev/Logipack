@@ -359,7 +359,7 @@ function NewStage({ canEdit = false, canView = false }: CreateClientProps) {
                                 type="text"
                                 value={description}
                                 onChange={(e) => setDescription(e.target.value)}
-                                className="mt-1 w-full text-center p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 text-black"
+                                className="mt-1 w-full text-center p-2 border border-gray-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 text-black"
                                 disabled={!canEdit}
                             />
                         </div>
@@ -578,14 +578,18 @@ function NewStage({ canEdit = false, canView = false }: CreateClientProps) {
                             </div>
 
                             <div className="flex items-center gap-2">
-                                <input
-                                    type="checkbox"
-                                    checked={alert}
-                                    onChange={(e) => setAlert(e.target.checked)}
-                                    className="h-5 w-5 text-blue-600"
-                                    disabled={!canEdit}
-                                />
-                                <span className="text-sm text-black">Activar Alerta</span>
+                                {phaseType === "Control" && (
+                                    <>
+                                        <input
+                                            type="checkbox"
+                                            checked={alert}
+                                            onChange={(e) => setAlert(e.target.checked)}
+                                            className="h-5 w-5 text-blue-600"
+                                            disabled={!canEdit}
+                                        />
+                                        <span className="text-sm text-black">Activar Alerta</span>
+                                    </>
+                                )}
                             </div>
 
                             <div className="flex items-center gap-2">
