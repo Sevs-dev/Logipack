@@ -6,38 +6,64 @@ use App\Http\Controllers\Controller;
 use App\Models\Role;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Log;
 
 class RolesController extends Controller
 {
     // Método para obtener todos los registros de Role y devolverlos en formato JSON
     public function getRole(): JsonResponse
     {
-        // Se obtiene la colección de todos los roles desde la base de datos
-        $Role = Role::all();
+        $roles = Role::where('active', true)
+            ->where('name', '<>', 'Master') // excluir Master
+            ->whereIn('version', function ($query) {
+                $query->selectRaw('MAX(version)')
+                    ->from('roles as a2')
+                    ->whereColumn('a2.reference_id', 'roles.reference_id');
+            })
+            ->get();
 
-        // Se devuelve la colección de roles en formato JSON
-        return response()->json($Role);
+        return response()->json($roles, 200);
     }
 
     // Método para crear un nuevo Role
     public function newRole(Request $request): JsonResponse
     {
-        // Se valida que el campo 'name' sea obligatorio, de tipo string y con máximo 255 caracteres
-        $request->validate([
-            'name' => 'required|string|max:255',
+        $data = $request->validate([
+            'name'      => 'required|string|max:255|unique:roles,name',
+            'user'      => 'nullable|string',
+            'active'    => 'sometimes|boolean',
+            'can_edit'  => 'sometimes|boolean',
+            'can_view'  => 'sometimes|boolean',
         ]);
 
-        // Se crea un nuevo registro en la tabla Role  
-        // - Si no, se guarda un array vacío codificado a JSON.
-        $Role = Role::create([
-            'name' => $request->name, 
-        ]);
+        // Prepara datos completos para INSERT
+        $roleData = [
+            'name'         => $data['name'],
+            'version'      => 1, // si tu migración tiene default(1), puedes omitir esta línea
+            'active'       => $data['active'] ?? true,
+            'can_edit'     => $data['can_edit'] ?? false,
+            'can_view'     => $data['can_view'] ?? false,
+            'reference_id' => (string) Str::uuid(),
+            'user'         => $data['user'],
+        ];
 
-        // Se devuelve una respuesta JSON con un mensaje de éxito y el objeto Role creado, usando el código HTTP 201 (Creado)
-        return response()->json([
-            'message' => 'Línea creada exitosamente',
-            'Role' => $Role
-        ], 201);
+        try {
+            $role = Role::create($roleData);
+
+            return response()->json([
+                'message' => 'Rol creado exitosamente',
+                'Role'    => $role,
+            ], 201);
+        } catch (\Throwable $e) {
+            Log::error('💥 Error creando rol', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+            return response()->json([
+                'message' => 'No se pudo crear el rol',
+            ], 500);
+        }
     }
 
     // Método para obtener un Role específico por su ID
@@ -61,23 +87,46 @@ class RolesController extends Controller
         // Se busca el Role por el ID proporcionado
         $Role = Role::find($id);
 
-        // Si el Role no existe, se retorna un mensaje de error con código 404
         if (!$Role) {
-            return response()->json(['message' => 'Role no encontrada'], 404);
+            return response()->json(['message' => 'Role no encontrado'], 404);
         }
 
-        // Se valida que, si se envía, el campo 'name' sea de tipo string y tenga un máximo de 255 caracteres
-        $request->validate([
+        // Validar campos
+        $validatedData = $request->validate([
             'name' => 'sometimes|string|max:255',
+            'user' => 'string|nullable',
+            'can_edit' => 'sometimes|boolean',
+            'can_view' => 'sometimes|boolean',
         ]);
 
-        // Se actualiza el Role con todos los datos enviados en la solicitud
-        $Role->update($request->all());
+        // Desactivar la versión anterior
+        $Role->active = false;
+        $Role->save();
 
-        // Se devuelve una respuesta JSON con un mensaje de éxito y el Role actualizado
+        // Crear nueva versión
+        $newVersion = (int) $Role->version + 1;
+
+        $new = $Role->replicate();
+        $new->version = $newVersion;
+        $new->fill($validatedData);
+        $new->reference_id = $Role->reference_id ?? (string) Str::uuid();
+        $new->active = true;
+        $new->user = $Role->user;
+        if (array_key_exists('can_edit', $validatedData)) {
+            $new->can_edit = (bool) $validatedData['can_edit'];
+        }
+        if (array_key_exists('can_view', $validatedData)) {
+            $new->can_view = (bool) $validatedData['can_view'];
+        }
+        if (array_key_exists('user', $validatedData)) {
+            $new->user = $validatedData['user'];
+        }
+
+        $new->save();
+
         return response()->json([
             'message' => 'Role actualizada correctamente',
-            'Role' => $Role
+            'Role' => $new
         ]);
     }
 

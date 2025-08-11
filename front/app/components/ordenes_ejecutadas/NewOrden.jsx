@@ -198,32 +198,40 @@ const App = () => {
       // Validar si hay fase
       if (!fase) return;
 
-      // Validar condicion de la fase
+      // Validar condición de la fase (esto no lo tocamos)
       const resp = await condiciones_fase(
         fase.adaptation_date_id,
         fase.fases_fk
       );
-
-      // Validar roles
-      const { roles } = await validate_rol(fase.fases_fk);
-      const perfil = document.cookie
+      // Obtener rol del cookie (soporta URL-encoding y espacios raros)
+      const rawPerfil = document.cookie
         .split("; ")
         .find((row) => row.startsWith("role="))
         ?.split("=")[1];
+      const perfil = rawPerfil
+        ? decodeURIComponent(rawPerfil).replace(/"/g, "").trim()
+        : "";
+      // Bypass para Administrador y Master
+      const isPrivileged = ["administrador", "master"].includes(
+        perfil.toLowerCase()
+      );
+      if (isPrivileged) {
+        setShowModal_rol(false); // siempre pasa
+        setShowModal_fase(resp.condicion_1 > 0); // mantén la lógica de condición de fase
+        console.log("permiso", true, "(bypass Administrador/Master)");
+        return;
+      }
+      // Validar roles normales
+      const { roles } = await validate_rol(fase.fases_fk);
       const tienePermiso = roles?.role
+        ?.toString()
         .split(",")
         .map((r) => r.trim().toLowerCase())
-        .some((r) => r === perfil?.toLowerCase());
+        .some((r) => r === perfil.toLowerCase());
       setShowModal_rol(!tienePermiso); // Mostrar modal solo si no tiene permiso
-      console.log("permiso", tienePermiso);
-      // setShowModal_rol(
-      //   // (roles?.role || "") === "" ||
-      //   // (perfil || "") === "" ||
-      //   permiso // roles?.role !== perfil
-      // );
+      console.log("permiso", !!tienePermiso);
       setShowModal_fase(resp.condicion_1 > 0);
     };
-
     // Validar condicion de la fase
     condicionFase();
     guardarTimer();
@@ -405,17 +413,19 @@ const App = () => {
               refetchTimer={refetchTimer}
             />
           )}
-          <div className="min-h-screen w-full bg-[#1b2535] text-white p-[10px] sm:p-[10px] flex flex-col rounded-2xl">
+          <div className="min-h-screen w-full bg-[#1b2535] text-white p-3 sm:p-4 md:p-[10px] flex flex-col rounded-2xl">
             <div className="w-full rounded-2xl bg-white/5 backdrop-blur-sm border border-white/10 shadow-md overflow-hidden">
-              <div className="bg-white/2.5 px-[10px] py-[10px] border-b border-white/5 backdrop-blur-sm">
+              <div className="bg-white/5 px-3 sm:px-[10px] py-3 sm:py-[10px] border-b border-white/10 backdrop-blur-sm">
                 <Text type="title" color="text-white">
                   Información de la Orden
                 </Text>
               </div>
-
               <div
-                className="px-8 py-6 grid grid-cols-1 sm:grid-cols-2 
-            md:grid-cols-3 lg:grid-cols-s gap-6 text-sm text-gray-200"
+                className="
+                  px-3 sm:px-6 md:px-8 py-4 sm:py-6
+                  grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-6
+                  gap-3 sm:gap-4 text-sm text-gray-200
+                "
               >
                 <div>
                   <p className="text-gray-500 text-center">Orden N°</p>

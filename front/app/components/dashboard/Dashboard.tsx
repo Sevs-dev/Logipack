@@ -308,14 +308,14 @@ const Dashboard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-gray-950 text-white px-4 md:px-10 py-6">
+    <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-gray-950 text-white px-4 sm:px-6 md:px-10 py-6">
       <main role="main" className="max-w-7xl mx-auto">
         {/* Header */}
         <header className="flex flex-col items-center text-center mb-12">
-          <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight text-white drop-shadow mb-2">
+          <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold tracking-tight text-white drop-shadow mb-2">
             Panel de Control
           </h1>
-          <p className="text-lg md:text-xl text-gray-300 flex items-center gap-2">
+          <p className="text-base sm:text-lg md:text-xl text-gray-300 flex flex-wrap justify-center items-center gap-2 text-center">
             Bienvenido,&nbsp;
             <span className="text-cyan-400 font-bold underline underline-offset-4 decoration-wavy">
               {userName}
@@ -327,7 +327,7 @@ const Dashboard = () => {
                 animate={{ opacity: 1, scale: 1, rotate: 0, y: 0 }}
                 exit={{ opacity: 0, scale: 0.4, rotate: 30, y: 20 }}
                 transition={{ type: "spring", stiffness: 500, damping: 25, duration: 0.5 }}
-                className="text-3xl md:text-4xl inline-block"
+                className="text-2xl sm:text-3xl md:text-4xl inline-block"
               >
                 {emojis[emojiIndex]}
               </motion.span>
@@ -335,26 +335,27 @@ const Dashboard = () => {
           </p>
         </header>
 
-        {/* Widgets Dinámicos */}
-        <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-12 text-center">
+        {/* Widgets */}
+        <section className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12 text-center">
           {estadosKPIs.map(({ label, color, icon, value }) => (
             <div
               key={label}
               className="backdrop-blur-md bg-white/10 border border-white/10 p-6 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300"
             >
-              <h2 className="text-xl font-semibold text-white mb-2">
+              <h2 className="text-base sm:text-lg md:text-xl font-semibold text-white mb-2">
                 {icon} {label}
               </h2>
-              <p className={`text-3xl font-bold ${color}`}>
+              <p className={`text-2xl sm:text-3xl font-bold ${color}`}>
                 <CountUp end={value} duration={2} />
               </p>
               <p className="text-xs text-gray-400 mt-2">Datos Actualizados</p>
             </div>
           ))}
+
           {/* KPI: Órdenes creadas hoy */}
           <div className="backdrop-blur-md bg-white/10 border border-white/10 p-6 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300">
-            <h2 className="text-xl font-semibold text-white mb-2">📅 Órdenes hoy</h2>
-            <p className="text-3xl font-bold text-fuchsia-400">
+            <h2 className="text-base sm:text-lg md:text-xl font-semibold text-white mb-2">📅 Órdenes hoy</h2>
+            <p className="text-2xl sm:text-3xl font-bold text-fuchsia-400">
               <CountUp end={ordenesHoy} duration={2} />
             </p>
             <p className="text-xs text-gray-400 mt-2">Órdenes creadas hoy ({hoy})</p>
@@ -365,16 +366,16 @@ const Dashboard = () => {
         <section className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-16">
           {/* Pie Chart */}
           <Card>
-            <h2 className="text-xl md:text-2xl font-extrabold mb-5 text-center text-cyan-200 tracking-wider flex items-center justify-center gap-2 drop-shadow-sm">
-              <span className="text-3xl md:text-4xl animate-pulse">📊</span>
+            <h2 className="text-lg sm:text-xl md:text-2xl font-extrabold mb-5 text-center text-cyan-200 tracking-wider flex items-center justify-center gap-2 drop-shadow-sm">
+              <span className="text-2xl sm:text-3xl md:text-4xl animate-pulse">📊</span>
               <span className="drop-shadow">Distribución de Estados</span>
             </h2>
 
             <div className="w-full flex flex-col items-center min-h-[280px]">
               {dataEstados.every((d) => d.value === 0) ? (
                 <div className="flex flex-col items-center py-14 opacity-70 select-none">
-                  <span className="text-6xl mb-3 animate-bounce">🤷‍♂️</span>
-                  <span className="text-base md:text-lg text-cyan-100/90 font-medium">
+                  <span className="text-5xl sm:text-6xl mb-3 animate-bounce">🤷‍♂️</span>
+                  <span className="text-base sm:text-lg text-cyan-100/90 font-medium">
                     No hay datos para mostrar.
                   </span>
                 </div>
@@ -412,11 +413,10 @@ const Dashboard = () => {
                         }}
                         cursor={{ fill: "#0ea5e930" }}
                       />
-                      {/* <Legend ... /> REMOVIDO */}
                     </PieChart>
                   </ResponsiveContainer>
 
-                  {/* ✅ Leyenda personalizada afuera */}
+                  {/* Leyenda personalizada */}
                   <div className="flex flex-wrap justify-center gap-4 mt-5">
                     {dataEstadosFiltrados.map((entry, i) => (
                       <div key={i} className="flex items-center space-x-2">
@@ -435,17 +435,16 @@ const Dashboard = () => {
             </div>
           </Card>
 
-
           {/* Top 5 Clientes */}
           <Card>
-            <h2 className="text-lg font-bold mb-4 text-center text-amber-200 tracking-wide flex items-center justify-center gap-2">
-              <span className="text-2xl">🏆</span> Top 5 Clientes
+            <h2 className="text-base sm:text-lg md:text-xl font-bold mb-4 text-center text-amber-200 tracking-wide flex items-center justify-center gap-2">
+              <span className="text-xl sm:text-2xl">🏆</span> Top 5 Clientes
             </h2>
-            <ol className="space-y-3">
+            <ol className="space-y-2 sm:space-y-3">
               {topClientes.length === 0 ? (
                 <div className="flex flex-col items-center py-12 opacity-60">
-                  <span className="text-5xl mb-2 animate-bounce">🤷‍♂️</span>
-                  <span className="text-base">Sin clientes destacados.</span>
+                  <span className="text-4xl sm:text-5xl mb-2 animate-bounce">🤷‍♂️</span>
+                  <span className="text-sm sm:text-base">Sin clientes destacados.</span>
                 </div>
               ) : (
                 topClientes.map(([clienteName, cantidad], idx) => (
@@ -454,26 +453,27 @@ const Dashboard = () => {
                     initial={{ opacity: 0, x: 20 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: idx * 0.05 }}
-                    className={`flex items-center justify-between px-4 py-2 rounded-xl shadow-sm ${idx === 0
-                      ? "bg-gradient-to-r from-amber-400/30 via-white/0 to-white/0"
-                      : idx === 1
-                        ? "bg-gradient-to-r from-gray-300/20 via-white/0 to-white/0"
-                        : idx === 2
-                          ? "bg-gradient-to-r from-amber-700/30 via-white/0 to-white/0"
-                          : "bg-white/0"
+                    className={`flex items-center justify-between px-3 sm:px-4 py-2 rounded-xl shadow-sm ${idx === 0
+                        ? "bg-gradient-to-r from-amber-400/30 via-white/0 to-white/0"
+                        : idx === 1
+                          ? "bg-gradient-to-r from-gray-300/20 via-white/0 to-white/0"
+                          : idx === 2
+                            ? "bg-gradient-to-r from-amber-700/30 via-white/0 to-white/0"
+                            : "bg-white/0"
                       }`}
                   >
-                    <span className="font-bold text-lg flex items-center gap-2">
+                    <span className="font-bold text-base sm:text-lg flex items-center gap-2">
                       {["🥇", "🥈", "🥉"][idx] || <span className="text-gray-500">#{idx + 1}</span>}{" "}
                       <span className="ml-2">{clienteName}</span>
                     </span>
-                    <span className="text-2xl font-extrabold text-emerald-400 drop-shadow-sm">{cantidad}</span>
+                    <span className="text-xl sm:text-2xl font-extrabold text-emerald-400 drop-shadow-sm">{cantidad}</span>
                   </motion.li>
                 ))
               )}
             </ol>
           </Card>
         </section>
+
 
         {/* Filtros dinámicos de estado */}
         <div className="flex flex-wrap gap-2 mb-6 items-center justify-center">
