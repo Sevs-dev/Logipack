@@ -9,16 +9,32 @@ import ModalSection from "../modal/ModalSection";
 import { CreateClientProps } from "../../interfaces/CreateClientProps";
 import AuditModal from "../history/AuditModal";
 
-// Servicios 
-import { getClients, getClientsId } from "@/app/services/userDash/clientServices";
-import { getArticleByCode, newArticle, getArticlesId, deleteArticle, updateArticle, getBoms } from "@/app/services/bom/articleServices";
+// Servicios
+import {
+  getClients,
+  getClientsId,
+} from "@/app/services/userDash/clientServices";
+import {
+  getArticleByCode,
+  newArticle,
+  getArticlesId,
+  deleteArticle,
+  updateArticle,
+  getBoms,
+} from "@/app/services/bom/articleServices";
 import { getAuditsByModel } from "../../services/history/historyAuditServices";
 
 // Tipos e interfaces
-import { Article, Ingredient, Bom, BomView, BomPayload } from "@/app/interfaces/BOM";
+import {
+  Article,
+  Ingredient,
+  Bom,
+  BomView,
+  BomPayload,
+} from "@/app/interfaces/BOM";
 import { Audit } from "../../interfaces/Audit";
 import { Client } from "@/app/interfaces/Client";
-import DateLoader from '@/app/components/loader/DateLoader';
+import DateLoader from "@/app/components/loader/DateLoader";
 
 // 🆕 helper para uid estable por fila (no usar index como key)
 const uid = () =>
@@ -50,7 +66,9 @@ function BOMManager({ canEdit = false, canView = false }: CreateClientProps) {
   const [, setSelectedAudit] = useState<Audit | null>(null);
 
   // 🆕 buscador independiente por ingrediente (clave = uid)
-  const [ingredientSearch, setIngredientSearch] = useState<Record<string, string>>({});
+  const [ingredientSearch, setIngredientSearch] = useState<
+    Record<string, string>
+  >({});
 
   const filteredArticles = useMemo(() => {
     if (!searchTerm.trim()) return articles;
@@ -142,7 +160,9 @@ function BOMManager({ canEdit = false, canView = false }: CreateClientProps) {
 
           // 🆕 al cargar ingredientes, anexar uid por fila y limpiar buscadores
           const ingr: Ingredient[] =
-            bom.ingredients && bom.ingredients !== "undefined" && bom.ingredients !== null
+            bom.ingredients &&
+            bom.ingredients !== "undefined" &&
+            bom.ingredients !== null
               ? JSON.parse(bom.ingredients)
               : [];
 
@@ -179,7 +199,9 @@ function BOMManager({ canEdit = false, canView = false }: CreateClientProps) {
         let fetchedArticles: Article[] = articlesData?.data || [];
         setAllArticles(fetchedArticles);
         if (selectedArticle) {
-          fetchedArticles = fetchedArticles.filter((a) => a.codart !== selectedArticle.codart);
+          fetchedArticles = fetchedArticles.filter(
+            (a) => a.codart !== selectedArticle.codart
+          );
         }
         setArticles(fetchedArticles);
       } catch (error) {
@@ -206,7 +228,9 @@ function BOMManager({ canEdit = false, canView = false }: CreateClientProps) {
   // Seleccionar artículo principal
   const handleSelectArticle = (article: Article) => {
     if (selectedArticle) {
-      showError("Ya has seleccionado un artículo. Elimina el actual para seleccionar otro.");
+      showError(
+        "Ya has seleccionado un artículo. Elimina el actual para seleccionar otro."
+      );
       return;
     }
     setSelectedArticle(article);
@@ -222,7 +246,11 @@ function BOMManager({ canEdit = false, canView = false }: CreateClientProps) {
   };
 
   // Cambiar campo de ingrediente
-  const handleIngredientChange = (index: number, field: keyof Ingredient, value: string) => {
+  const handleIngredientChange = (
+    index: number,
+    field: keyof Ingredient,
+    value: string
+  ) => {
     setIngredients((prev) => {
       const copy = [...prev];
       copy[index] = { ...copy[index], [field]: value };
@@ -275,7 +303,9 @@ function BOMManager({ canEdit = false, canView = false }: CreateClientProps) {
       );
 
       // 🧹 sacar uid del array antes de persistir
-      const cleanIngredients: Ingredient[] = ingredients.map(({ uid: _uid, ...rest }) => rest);
+      const cleanIngredients: Ingredient[] = ingredients.map(
+        ({ uid: _uid, ...rest }) => rest
+      );
 
       const bomPayload: BomPayload = {
         client_id: Number(selectedClient),
@@ -336,13 +366,20 @@ function BOMManager({ canEdit = false, canView = false }: CreateClientProps) {
       setBomStatus(bom.status);
 
       const articleData =
-        bom.details && bom.details !== "undefined" ? JSON.parse(bom.details).article : null;
+        bom.details && bom.details !== "undefined"
+          ? JSON.parse(bom.details).article
+          : null;
       setSelectedArticle(articleData);
 
       const ingr: Ingredient[] =
-        bom.ingredients && bom.ingredients !== "undefined" ? JSON.parse(bom.ingredients) : [];
+        bom.ingredients && bom.ingredients !== "undefined"
+          ? JSON.parse(bom.ingredients)
+          : [];
 
-      const ingrWithUid: LocalIngredient[] = ingr.map((it) => ({ ...it, uid: uid() }));
+      const ingrWithUid: LocalIngredient[] = ingr.map((it) => ({
+        ...it,
+        uid: uid(),
+      }));
       setIngredients(ingrWithUid);
       setIngredientSearch(
         ingrWithUid.reduce<Record<string, string>>((acc, it) => {
@@ -426,7 +463,10 @@ function BOMManager({ canEdit = false, canView = false }: CreateClientProps) {
       )}
 
       {isModalOpen && (
-        <ModalSection isVisible={isModalOpen} onClose={() => setIsModalOpen(false)}>
+        <ModalSection
+          isVisible={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+        >
           <Text type="title" color="text-[#000]">
             {currentBomId ? "Editar BOM" : "Crear BOM"}
           </Text>
@@ -474,12 +514,18 @@ function BOMManager({ canEdit = false, canView = false }: CreateClientProps) {
                       <li
                         key={article.codart}
                         className={`border-b py-1 px-2 text-black cursor-pointer transition ${
-                          canEdit ? "hover:bg-blue-100" : "text-gray-400 cursor-not-allowed"
+                          canEdit
+                            ? "hover:bg-blue-100"
+                            : "text-gray-400 cursor-not-allowed"
                         }`}
                         onClick={() => {
                           if (canEdit) handleSelectArticle(article);
                         }}
-                        title={!canEdit ? "No tienes permiso para seleccionar artículos" : ""}
+                        title={
+                          !canEdit
+                            ? "No tienes permiso para seleccionar artículos"
+                            : ""
+                        }
                       >
                         {article.desart} ({article.codart})
                       </li>
@@ -508,7 +554,9 @@ function BOMManager({ canEdit = false, canView = false }: CreateClientProps) {
                     </button>
                   </div>
                 ) : (
-                  <Text type="alert">No se ha seleccionado ningún artículo.</Text>
+                  <Text type="alert">
+                    No se ha seleccionado ningún artículo.
+                  </Text>
                 )}
               </div>
             </div>
@@ -562,8 +610,12 @@ function BOMManager({ canEdit = false, canView = false }: CreateClientProps) {
                     const term = ingredientSearch[ing.uid] ?? "";
                     const rowFilteredArticles = allArticles.filter(
                       (article) =>
-                        article.desart.toLowerCase().includes(term.toLowerCase()) ||
-                        article.codart.toLowerCase().includes(term.toLowerCase())
+                        article.desart
+                          .toLowerCase()
+                          .includes(term.toLowerCase()) ||
+                        article.codart
+                          .toLowerCase()
+                          .includes(term.toLowerCase())
                     );
 
                     return (
@@ -607,7 +659,10 @@ function BOMManager({ canEdit = false, canView = false }: CreateClientProps) {
                                         value={article.codart}
                                         checked={ing.codart === article.codart}
                                         onChange={() =>
-                                          handleIngredientSelect(index, article.codart)
+                                          handleIngredientSelect(
+                                            index,
+                                            article.codart
+                                          )
                                         }
                                         disabled={!canEdit}
                                       />
@@ -623,6 +678,7 @@ function BOMManager({ canEdit = false, canView = false }: CreateClientProps) {
                             </div>
 
                             {/* Inputs y botón */}
+                            {/* Inputs y botón */}
                             <div className="mt-8">
                               <div>
                                 <Text type="subtitle" color="#000">
@@ -636,12 +692,17 @@ function BOMManager({ canEdit = false, canView = false }: CreateClientProps) {
                                   placeholder="0"
                                   value={ing.quantity}
                                   onChange={(e) =>
-                                    handleIngredientChange(index, "quantity", e.target.value)
+                                    handleIngredientChange(
+                                      index,
+                                      "quantity",
+                                      e.target.value
+                                    )
                                   }
                                   disabled={!canEdit}
                                 />
                               </div>
-                              <div>
+
+                              <div className="mt-3">
                                 <Text type="subtitle" color="#000">
                                   % Merma
                                 </Text>
@@ -653,11 +714,47 @@ function BOMManager({ canEdit = false, canView = false }: CreateClientProps) {
                                   placeholder="0"
                                   value={ing.merma}
                                   onChange={(e) =>
-                                    handleIngredientChange(index, "merma", e.target.value)
+                                    handleIngredientChange(
+                                      index,
+                                      "merma",
+                                      e.target.value
+                                    )
                                   }
                                   disabled={!canEdit}
                                 />
                               </div>
+
+                              {/* 🆕 Cálculo mostrado en vivo */}
+                              {(() => {
+                                // parseo robusto (soporta vacío y comas)
+                                const qty =
+                                  parseFloat(
+                                    String(ing.quantity ?? "").replace(",", ".")
+                                  ) || 0;
+                                const rawWaste =
+                                  parseFloat(
+                                    String(ing.merma ?? "").replace(",", ".")
+                                  ) || 0;
+                                // clamp merma entre 0 y 100
+                                const waste = Math.min(
+                                  100,
+                                  Math.max(0, rawWaste)
+                                );
+                                const net = qty * (1 - waste / 100);
+
+                                return (
+                                  <div className="mt-2 text-sm text-gray-700">
+                                    Neta:{" "}
+                                    <span className="font-semibold">
+                                      {net.toFixed(3)}
+                                    </span>{" "}
+                                    <span className="opacity-70">
+                                      ({qty.toFixed(3)} × (1 −{" "}
+                                      {waste.toFixed(2)}%))
+                                    </span>
+                                  </div>
+                                );
+                              })()}
 
                               <div className="pt-4">
                                 <button
@@ -705,7 +802,11 @@ function BOMManager({ canEdit = false, canView = false }: CreateClientProps) {
 
           <hr className="my-4 border-t border-gray-600 w-full max-w-lg mx-auto opacity-60" />
           <div className="flex justify-center gap-4 mt-6">
-            <Button onClick={() => setIsModalOpen(false)} variant="cancel" label="Cancelar" />
+            <Button
+              onClick={() => setIsModalOpen(false)}
+              variant="cancel"
+              label="Cancelar"
+            />
             {canEdit && (
               <Button
                 onClick={handleSaveBOM}
@@ -731,7 +832,9 @@ function BOMManager({ canEdit = false, canView = false }: CreateClientProps) {
         onEdit={handleEdit}
         onHistory={handleHistory}
       />
-      {auditList.length > 0 && <AuditModal audit={auditList} onClose={() => setAuditList([])} />}
+      {auditList.length > 0 && (
+        <AuditModal audit={auditList} onClose={() => setAuditList([])} />
+      )}
     </div>
   );
 }
