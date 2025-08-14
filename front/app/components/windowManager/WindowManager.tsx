@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef, useCallback, useId } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Loader from "../loader/Loader";
 import { Menu } from "lucide-react";
@@ -13,53 +13,126 @@ interface Window {
 
 interface WindowManagerProps {
     windowsData?: Window[];
+    initialActiveId?: number | null;
 }
 
-const WindowManager: React.FC<WindowManagerProps> = ({ windowsData = [] }) => {
-    const cacheRef = useRef<Window[]>([]);
+const WindowManager: React.FC<WindowManagerProps> = ({ windowsData = [], initialActiveId = null }) => {
     const [windows, setWindows] = useState<Window[]>([]);
-    const [activeWindow, setActiveWindow] = useState<number | null>(null);
+    const [activeWindow, setActiveWindow] = useState<number | null>(initialActiveId);
     const [isLoading, setIsLoading] = useState<boolean>(false);
     const [menuOpen, setMenuOpen] = useState<boolean>(false);
+    const closedRef = useRef<Set<number>>(new Set());
+    const tabsListId = useId();
 
-    // Cargar caché inicial solo si está vacía
+    // Sync con windowsData respetando cierres locales
     useEffect(() => {
-        if (windowsData.length && cacheRef.current.length === 0) {
-            cacheRef.current = windowsData;
-        }
-        setWindows(cacheRef.current);
-        if (cacheRef.current.length > 0) {
-            setActiveWindow(cacheRef.current[0].id);
-        }
-    }, [windowsData]);
+        // Filtra data entrante por las cerradas localmente
+        const incoming = (windowsData ?? []).filter(w => !closedRef.current.has(w.id));
 
-    // Simula carga al cambiar ventana
+        setWindows(prev => {
+            // Mapa previo (solo las no cerradas)
+            const prevMap = new Map<number, Window>(
+                prev.filter(p => !closedRef.current.has(p.id)).map(p => [p.id, p])
+            );
+            // Mezcla entrante (agrega/actualiza)
+            for (const w of incoming) {
+                const before = prevMap.get(w.id);
+                prevMap.set(w.id, { ...before, ...w });
+            }
+            return Array.from(prevMap.values());
+        });
+
+        setActiveWindow(curr => {
+            if (curr != null && incoming.some(w => w.id === curr)) return curr;
+            // Si hay initialActiveId y existe, úsalo; si no, primera disponible o null
+            if (initialActiveId != null && incoming.some(w => w.id === initialActiveId)) return initialActiveId;
+            return incoming[0]?.id ?? null;
+        });
+    }, [windowsData, initialActiveId]);
+
+    // Simulación de carga al cambiar de ventana
     useEffect(() => {
-        if (activeWindow !== null) {
-            setIsLoading(true);
-            const timeout = setTimeout(() => setIsLoading(false), 400); // más rápido
-            return () => clearTimeout(timeout);
-        }
+        if (activeWindow === null) return;
+        let cancelled = false;
+        setIsLoading(true);
+        const t = setTimeout(() => {
+            if (!cancelled) setIsLoading(false);
+        }, 400);
+        return () => {
+            cancelled = true;
+            clearTimeout(t);
+        };
     }, [activeWindow]);
 
-    const currentWindow = useMemo(() => windows.find(win => win.id === activeWindow), [windows, activeWindow]);
+    const currentWindow = useMemo(
+        () => windows.find(win => win.id === activeWindow) ?? null,
+        [windows, activeWindow]
+    );
 
-    const closeWindow = (id: number) => {
+    const closeWindow = useCallback((id: number) => {
+        closedRef.current.add(id);
         setWindows(prev => {
             const filtered = prev.filter(win => win.id !== id);
-            if (activeWindow === id) {
-                setActiveWindow(filtered.length ? filtered[0].id : null);
-            }
             return filtered;
         });
-    };
+        setActiveWindow(curr => {
+            if (curr !== id) return curr;
+            // siguiente: la de la derecha; si no, la primera; si no, null
+            const idx = windows.findIndex(w => w.id === id);
+            const right = windows[idx + 1]?.id ?? windows[0]?.id ?? null;
+            return right === id ? null : right;
+        });
+    }, [windows]);
+
+    // Middle click en tab -> cerrar
+    const handleTabMouseUp = useCallback((e: React.MouseEvent, id: number) => {
+        if (e.button === 1) {
+            e.preventDefault();
+            closeWindow(id);
+        }
+    }, [closeWindow]);
+
+    // Atajos de teclado: Ctrl+Tab / Ctrl+Shift+Tab / Ctrl+W
+    useEffect(() => {
+        const onKey = (e: KeyboardEvent) => {
+            if (!windows.length) return;
+            const isCtrl = e.ctrlKey || e.metaKey;
+            if (isCtrl && e.key.toLowerCase() === "w") {
+                e.preventDefault();
+                if (activeWindow != null) {
+                    const win = windows.find(w => w.id === activeWindow);
+                    if (win && !win.isProtected) closeWindow(activeWindow);
+                }
+                return;
+            }
+            if (isCtrl && e.key === "Tab") {
+                e.preventDefault();
+                const idx = windows.findIndex(w => w.id === activeWindow);
+                if (idx === -1) {
+                    setActiveWindow(windows[0].id);
+                    return;
+                }
+                const next = e.shiftKey
+                    ? windows[(idx - 1 + windows.length) % windows.length]
+                    : windows[(idx + 1) % windows.length];
+                setActiveWindow(next.id);
+            }
+        };
+        window.addEventListener("keydown", onKey);
+        return () => window.removeEventListener("keydown", onKey);
+    }, [windows, activeWindow, closeWindow]);
 
     return (
         <div className="relative h-auto flex flex-col bg-gray-900 rounded-xl border border-gray-500 text-white overflow-hidden shadow-lg mt-2 mx-2 w-auto">
             {/* Header móvil */}
             <div className="sm:hidden flex justify-between items-center px-4 py-2 bg-gray-850 border-b border-gray-700">
-                <span className="text-white font-semibold">Ventanas</span>
-                <button onClick={() => setMenuOpen(!menuOpen)} className="text-white p-2 hover:bg-gray-700 rounded-md">
+                <span className="text-white font-semibold ml-16">Ventanas</span>
+                <button
+                    onClick={() => setMenuOpen(v => !v)}
+                    className="text-white p-2 hover:bg-gray-700 rounded-md"
+                    aria-expanded={menuOpen}
+                    aria-controls="mobile-window-menu"
+                >
                     <Menu size={24} />
                 </button>
             </div>
@@ -68,48 +141,83 @@ const WindowManager: React.FC<WindowManagerProps> = ({ windowsData = [] }) => {
             <AnimatePresence>
                 {menuOpen && (
                     <motion.div
+                        id="mobile-window-menu"
                         initial={{ opacity: 0, y: -10 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -10 }}
                         className="sm:hidden absolute top-12 left-0 w-full bg-gray-850 border-b border-gray-700 z-10"
                     >
                         {windows.map(win => (
-                            <button
-                                key={win.id}
-                                aria-label={`Ventana ${win.title}`}
-                                className={`block w-full px-4 py-2 text-left text-sm font-semibold border-b border-gray-700 transition-all ${activeWindow === win.id ? "bg-gray-950 text-white" : "bg-gray-800 text-gray-300 hover:bg-gray-700"
-                                    }`}
-                                onClick={() => { setActiveWindow(win.id); setMenuOpen(false); }}
-                            >
-                                {win.title}
-                            </button>
+                            <div key={win.id} className="relative">
+                                <button
+                                    aria-label={`Ventana ${win.title}`}
+                                    className={[
+                                        "block w-full px-4 py-2 text-left text-sm font-semibold border-b border-gray-700 transition-all",
+                                        activeWindow === win.id ? "bg-gray-950 text-white" : "bg-gray-800 text-gray-300 hover:bg-gray-700"
+                                    ].join(" ")}
+                                    onClick={() => {
+                                        setActiveWindow(win.id);
+                                        setMenuOpen(false);
+                                    }}
+                                >
+                                    {win.title}
+                                </button>
+                                {!win.isProtected && (
+                                    <button
+                                        onClick={(e) => { e.stopPropagation(); closeWindow(win.id); }}
+                                        className="absolute top-1 right-2 text-red-400 hover:text-red-300 text-xs"
+                                        aria-label={`Cerrar ${win.title}`}
+                                    >
+                                        ✖
+                                    </button>
+                                )}
+                            </div>
                         ))}
                     </motion.div>
                 )}
             </AnimatePresence>
 
             {/* Tabs escritorio */}
-            <div className="hidden sm:flex flex-wrap items-center gap-1 px-3 py-2 bg-gray-850 rounded-t-xl shadow-md border-b border-gray-700">
-                {windows.map(win => (
-                    <div key={win.id} className="relative">
-                        <button
-                            aria-label={`Ventana ${win.title}`}
-                            className={`px-4 py-2 text-xs sm:text-sm font-semibold rounded-t-md transition-all flex items-center gap-2 border border-gray-700 shadow-sm ${activeWindow === win.id ? "bg-gray-950 text-white border-blue-500" : "bg-gray-800 text-gray-300 hover:bg-gray-700"
-                                }`}
-                            onClick={() => setActiveWindow(win.id)}
-                        >
-                            <span className="truncate max-w-[80px] sm:max-w-none">{win.title}</span>
-                        </button>
-                        {!win.isProtected && (
-                            <span
-                                className="absolute top-0 right-0 transform translate-x-1 -translate-y-1 text-red-400 hover:text-red-300 cursor-pointer text-xs hover:scale-110"
-                                onClick={(e) => { e.stopPropagation(); closeWindow(win.id); }}
+            <div
+                className="hidden sm:flex flex-wrap items-center gap-1 px-3 py-2 bg-gray-850 rounded-t-xl shadow-md border-b border-gray-700"
+                role="tablist"
+                aria-orientation="horizontal"
+                id={tabsListId}
+            >
+                {windows.map(win => {
+                    const selected = activeWindow === win.id;
+                    const panelId = `panel-${win.id}`;
+                    const tabId = `tab-${win.id}`;
+                    return (
+                        <div key={win.id} className="relative">
+                            <button
+                                id={tabId}
+                                role="tab"
+                                aria-selected={selected}
+                                aria-controls={panelId}
+                                tabIndex={selected ? 0 : -1}
+                                className={[
+                                    "px-4 py-2 text-xs sm:text-sm font-semibold rounded-t-md transition-all flex items-center gap-2 border border-gray-700 shadow-sm ml-6",
+                                    selected ? "bg-gray-950 text-white border-blue-500" : "bg-gray-800 text-gray-300 hover:bg-gray-700"
+                                ].join(" ")}
+                                onClick={() => setActiveWindow(win.id)}
+                                onMouseUp={(e) => handleTabMouseUp(e, win.id)}
+                                onAuxClick={(e) => { if (e.button === 1) closeWindow(win.id); }}
                             >
-                                ✖
-                            </span>
-                        )}
-                    </div>
-                ))}
+                                <span className="truncate max-w-[120px] sm:max-w-none">{win.title}</span>
+                            </button>
+                            {!win.isProtected && (
+                                <button
+                                    className="absolute -top-1 -right-1 text-red-400 hover:text-red-300 cursor-pointer text-xs hover:scale-110"
+                                    onClick={(e) => { e.stopPropagation(); closeWindow(win.id); }}
+                                    aria-label={`Cerrar ${win.title}`}
+                                >
+                                    ✖
+                                </button>
+                            )}
+                        </div>
+                    );
+                })}
             </div>
 
             {/* Contenido */}
@@ -126,17 +234,29 @@ const WindowManager: React.FC<WindowManagerProps> = ({ windowsData = [] }) => {
                         >
                             <Loader />
                         </motion.div>
-                    ) : currentWindow && (
+                    ) : currentWindow ? (
                         <motion.div
                             key={currentWindow.id}
+                            id={`panel-${currentWindow.id}`}
+                            role="tabpanel"
+                            aria-labelledby={`tab-${currentWindow.id}`}
                             initial={{ opacity: 0, x: 20 }}
                             animate={{ opacity: 1, x: 0 }}
                             exit={{ opacity: 0, x: -20 }}
                             transition={{ duration: 0.3, ease: "easeOut" }}
-                            className="w-full h-full overflow-auto p-[20x]"
+                            className="w-full h-full overflow-auto p-[20px]"
                         >
                             {currentWindow.content}
                             {currentWindow.component}
+                        </motion.div>
+                    ) : (
+                        <motion.div
+                            key="empty"
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            className="w-full h-full flex items-center justify-center text-gray-400 text-sm"
+                        >
+                            No hay ventanas abiertas.
                         </motion.div>
                     )}
                 </AnimatePresence>

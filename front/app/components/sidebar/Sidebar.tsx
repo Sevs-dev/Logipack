@@ -10,18 +10,18 @@ import nookies from "nookies";
 import { useRouter, usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { getUserByEmail } from "../../services/userDash/authservices";
-import Image from 'next/image';
+import Image from "next/image";
 import SidebarFlyoutPortal from "./SidebarFlyoutPortal";
 
-// ---- Custom Hook para Mobile ----
-function useIsMobile(breakpoint = 768) {
-  const [isMobile, setIsMobile] = useState(() =>
+// ---- Hook Mobile ----
+function useIsMobile(breakpoint = 1024) { // <= lg
+  const [isMobile, setIsMobile] = useState(
     typeof window !== "undefined" ? window.innerWidth < breakpoint : false
   );
   useEffect(() => {
-    const handleResize = () => setIsMobile(window.innerWidth < breakpoint);
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
+    const onResize = () => setIsMobile(window.innerWidth < breakpoint);
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
   }, [breakpoint]);
   return isMobile;
 }
@@ -31,7 +31,6 @@ interface SidebarProps {
   sidebarOpen: boolean;
   setSidebarOpen: React.Dispatch<React.SetStateAction<boolean>>;
 }
-
 interface MenuItem {
   key: string;
   label: string;
@@ -42,90 +41,41 @@ interface MenuItem {
 
 // ---- Menu Data ----
 const menuItems: MenuItem[] = [
+  { key: "inicio", label: "Inicio", link: "/pages/dashboard", icon: <FaHome /> },
   {
-    key: "inicio",
-    label: "Inicio",
-    link: "/pages/dashboard",
-    icon: <FaHome />,
-  },
-  {
-    key: "seteos",
-    label: "Seteos",
-    icon: <FaBook />,
-    children: [
-      {
-        key: "maestras",
-        label: "Config. de Maestras",
-        icon: <FaVials />,
-        link: "/pages/maestra",
-      },
-      {
-        key: "bom",
-        label: "Config. de BOM",
-        icon: <FaIoxhost />,
-        link: "/pages/bom",
-      },
+    key: "seteos", label: "Seteos", icon: <FaBook />, children: [
+      { key: "maestras", label: "Config. de Maestras", icon: <FaVials />, link: "/pages/maestra" },
+      { key: "bom", label: "Config. de BOM", icon: <FaIoxhost />, link: "/pages/bom" },
     ],
   },
   {
-    key: "datos",
-    label: "Datos",
-    icon: <FaBorderAll />,
-    children: [
-      {
-        key: "ordenes",
-        label: "Ordenes de Acon.",
-        icon: <FaFileInvoice />,
-        link: "/pages/adaptation",
-      },
-      {
-        key: "planing",
-        label: "Gestión de Ordenes",
-        icon: <FaBookmark />,
-        link: "/pages/planificacion",
-      },
+    key: "datos", label: "Datos", icon: <FaBorderAll />, children: [
+      { key: "ordenes", label: "Ordenes de Acon.", icon: <FaFileInvoice />, link: "/pages/adaptation" },
+      { key: "planing", label: "Gestión de Ordenes", icon: <FaBookmark />, link: "/pages/planificacion" },
     ],
   },
   {
-    key: "analisis",
-    label: "Analisis",
-    icon: <FaChartLine />,
-    children: [
-      {
-        key: "inventario",
-        label: "Inventario",
-        icon: <FaDolly />,
-        link: "/pages/inventory",
-      },
-      {
-        key: "calendario",
-        label: "Calendario",
-        icon: <FaCalendarAlt />,
-        link: "/pages/calendar",
-      }
+    key: "analisis", label: "Analisis", icon: <FaChartLine />, children: [
+      { key: "inventario", label: "Inventario", icon: <FaDolly />, link: "/pages/inventory" },
+      { key: "calendario", label: "Calendario", icon: <FaCalendarAlt />, link: "/pages/calendar" },
     ],
   },
-  {
-    key: "ajustes",
-    label: "Ajustes",
-    icon: <FaCog />,
-    children: [
-      { key: "general", label: "General", icon: <FaCog />, link: "/pages/perfil" },
-    ],
-  },
+  { key: "ajustes", label: "Ajustes", icon: <FaCog />, children: [
+    { key: "general", label: "General", icon: <FaCog />, link: "/pages/perfil" },
+  ]},
 ];
 
 const Sidebar: React.FC<SidebarProps> = ({ sidebarOpen, setSidebarOpen }) => {
-  const [openSubMenus, setOpenSubMenus] = useState<{ [key: string]: boolean }>({});
+  const [openSubMenus, setOpenSubMenus] = useState<{ [k: string]: boolean }>({});
   const [hoveredMenu, setHoveredMenu] = useState<string | null>(null);
-  const [flyoutPosition, setFlyoutPosition] = useState<{ top: number, left: number } | null>(null);
+  const [flyoutPosition, setFlyoutPosition] = useState<{ top: number; left: number } | null>(null);
   const [userName, setUserName] = useState("");
   const router = useRouter();
   const pathname = usePathname();
   const isMobile = useIsMobile();
   const isAuthenticated = Boolean(nookies.get(null).token);
 
-  // Carga datos de usuario si está autenticado
+  // Cargar usuario (igual que tenías)
   useEffect(() => {
     const fetchUserData = async () => {
       try {
@@ -138,15 +88,68 @@ const Sidebar: React.FC<SidebarProps> = ({ sidebarOpen, setSidebarOpen }) => {
             setUserName((user.usuario as { name?: string }).name || "");
           }
         }
-      } catch (error) {
-        console.error("Error fetching user:", error);
+      } catch (e) {
+        console.error("Error fetching user:", e);
       }
     };
-
-    if (isAuthenticated) {
-      fetchUserData();
-    }
+    if (isAuthenticated) fetchUserData();
   }, [isAuthenticated]);
+
+  // Cerrar en navegación si estás en móvil
+  useEffect(() => {
+    if (isMobile) setSidebarOpen(false);
+  }, [pathname, isMobile, setSidebarOpen]);
+
+  // ESC para cerrar en móvil
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && isMobile && sidebarOpen) setSidebarOpen(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [isMobile, sidebarOpen, setSidebarOpen]);
+
+  // Bloquear scroll del body cuando el sidebar móvil está abierto
+  useEffect(() => {
+    if (!isMobile) return;
+    const original = document.body.style.overflow;
+    document.body.style.overflow = sidebarOpen ? "hidden" : original || "";
+    return () => { document.body.style.overflow = original || ""; };
+  }, [isMobile, sidebarOpen]);
+
+  // Swipe-to-close (móvil opcional)
+  useEffect(() => {
+    if (!isMobile) return;
+    let startX = 0;
+    let currentX = 0;
+    let touching = false;
+
+    const onTouchStart = (e: TouchEvent) => {
+      touching = true;
+      startX = e.touches[0].clientX;
+      currentX = startX;
+    };
+    const onTouchMove = (e: TouchEvent) => {
+      if (!touching) return;
+      currentX = e.touches[0].clientX;
+    };
+    const onTouchEnd = () => {
+      if (!touching) return;
+      const delta = currentX - startX;
+      // deslizar hacia la izquierda para cerrar
+      if (delta < -60 && sidebarOpen) setSidebarOpen(false);
+      touching = false;
+    };
+
+    document.addEventListener("touchstart", onTouchStart);
+    document.addEventListener("touchmove", onTouchMove);
+    document.addEventListener("touchend", onTouchEnd);
+    return () => {
+      document.removeEventListener("touchstart", onTouchStart);
+      document.removeEventListener("touchmove", onTouchMove);
+      document.removeEventListener("touchend", onTouchEnd);
+    };
+  }, [isMobile, sidebarOpen, setSidebarOpen]);
 
   const handleLogout = () => {
     if (isMobile) setSidebarOpen(false);
@@ -156,293 +159,289 @@ const Sidebar: React.FC<SidebarProps> = ({ sidebarOpen, setSidebarOpen }) => {
     router.push("/");
   };
 
-  // ---- Helpers para activos ----
-  const isMenuItemActive = (item: MenuItem) => {
-    if (item.link && pathname === item.link) return true;
-    if (item.children && item.children.some(child => child.link === pathname)) return true;
-    return false;
-  };
-  const isSubMenuItemActive = (subItem: MenuItem) => subItem.link === pathname;
+  const isMenuItemActive = (item: MenuItem) =>
+    (item.link && pathname === item.link) ||
+    (item.children && item.children.some((c) => c.link === pathname));
 
-  // ---- Render ----
+  const isSubMenuItemActive = (sub: MenuItem) => sub.link === pathname;
+
+  // --- Botón hamburguesa flotante SOLO móvil ---
+  const MobileHamburger = () =>
+    !sidebarOpen ? (
+      <button
+        aria-label="Abrir menú"
+        onClick={() => setSidebarOpen(true)}
+        className="lg:hidden fixed top-3 left-3 z-[60] rounded-full p-2 bg-black/70 text-white shadow-md active:scale-95"
+      >
+        <FaBars />
+      </button>
+    ) : null;
+
   return (
-    <motion.aside
-      animate={{ width: sidebarOpen ? 256 : 64 }}
-      transition={{ duration: 0.4, ease: "easeInOut" }}
-      className="h-screen sticky top-0 bg-[#242424] z-20"
-    >
-      <div className="h-full w-full bg-[#242424] backdrop-blur-lg rounded-xl shadow-lg flex flex-col">
-        {/* Header */}
+    <>
+      {/* Backdrop móvil */}
+      {isMobile && sidebarOpen && (
         <div
-          className={`flex items-center ${sidebarOpen ? "justify-between" : "justify-center"
-            } p-4 border-b border-white/20`}
-        >
-          {sidebarOpen && (
-            <Image
-              src="/logipack_2.png"
-              alt="Logipack"
-              width={60}
-              height={40}
-              priority
-            />
-          )}
-          <button
-            onClick={() => setSidebarOpen((prev) => !prev)}
-            className="p-2 bg-black/50 text-white rounded hover:bg-black/70 transition-colors"
-            aria-label={sidebarOpen ? "Cerrar Sidebar" : "Abrir Sidebar"}
-            tabIndex={0}
-          >
-            {sidebarOpen ? <FaArrowLeft /> : <FaBars />}
-          </button>
-        </div>
+          onClick={() => setSidebarOpen(false)}
+          className="fixed inset-0 z-40 bg-black/50 backdrop-blur-[1px]"
+          aria-hidden="true"
+        />
+      )}
 
-        {/* Menú de navegación */}
-        <nav className="flex-1 overflow-y-auto py-2">
-          {menuItems.map((item) =>
-            item.children ? (
-              <div
-                key={item.key}
-                onMouseEnter={e => {
-                  if (sidebarOpen) {
-                    setOpenSubMenus((prev) => ({ ...prev, [item.key]: true }));
-                  } else {
-                    setHoveredMenu(item.key);
+      {/* Hamburguesa móvil */}
+      <MobileHamburger />
 
-                    // Calcula la posición del ítem para el flyout
-                    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-                    setFlyoutPosition({
-                      top: rect.top,
-                      left: rect.right + 6, // Ajusta el offset a gusto
-                    });
-                  }
-                }}
-                onMouseLeave={() => {
-                  if (sidebarOpen) {
-                    setOpenSubMenus((prev) => ({ ...prev, [item.key]: false }));
-                  } else {
-                    setHoveredMenu(null);
-                    setFlyoutPosition(null);
-                  }
-                }}
-                className="relative"
-              >
-                {/* Botón principal */}
+      {/* Sidebar: fijo off-canvas en móvil, sticky en desktop.
+         - En móvil se desplaza con translate-x
+         - En desktop mantiene tu animación de width */}
+      <motion.aside
+        // Animar width sólo en desktop
+        animate={!isMobile ? { width: sidebarOpen ? 256 : 64 } : {}}
+        transition={{ duration: 0.35, ease: "easeInOut" }}
+        className={[
+          "z-50 bg-[#242424] rounded-none lg:rounded-xl shadow-lg",
+          // móvil: panel fijo deslizante
+          "fixed lg:sticky inset-y-0 left-0",
+          "w-72 max-w-[85vw] lg:w-auto",
+          "transform transition-transform duration-300 ease-in-out",
+          isMobile ? (sidebarOpen ? "translate-x-0" : "-translate-x-full") : "translate-x-0",
+          "lg:top-0 lg:h-screen",
+        ].join(" ")}
+        role="dialog"
+        aria-modal={isMobile ? true : false}
+        aria-label="Barra lateral de navegación"
+      >
+        <div className="h-full w-full bg-[#242424] flex flex-col">
+          {/* Header */}
+          <div className={`flex items-center ${sidebarOpen ? "justify-between" : "justify-center"} p-4 border-b border-white/20`}>
+            {sidebarOpen && (
+              <Image src="/logipack_2.png" alt="Logipack" width={60} height={40} priority />
+            )}
+            <button
+              onClick={() => setSidebarOpen((p) => !p)}
+              className="p-2 bg-black/50 text-white rounded hover:bg-black/70 transition-colors"
+              aria-label={sidebarOpen ? "Cerrar Sidebar" : "Abrir Sidebar"}
+            >
+              {sidebarOpen ? <FaArrowLeft /> : <FaBars />}
+            </button>
+          </div>
+
+          {/* Menú */}
+          <nav className="flex-1 overflow-y-auto py-2">
+            {menuItems.map((item) =>
+              item.children ? (
                 <div
-                  role="button"
-                  tabIndex={0}
-                  aria-expanded={!!openSubMenus[item.key]}
-                  onClick={() => {
-                    if (!sidebarOpen) {
-                      setSidebarOpen(true);
-                    } else {
-                      setOpenSubMenus((prev) => ({
-                        ...prev,
-                        [item.key]: !prev[item.key],
-                      }));
+                  key={item.key}
+                  onMouseEnter={(e) => {
+                    if (!isMobile && sidebarOpen) {
+                      setOpenSubMenus((prev) => ({ ...prev, [item.key]: true }));
+                    } else if (!isMobile && !sidebarOpen) {
+                      setHoveredMenu(item.key);
+                      const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+                      setFlyoutPosition({ top: rect.top, left: rect.right + 6 });
                     }
                   }}
-                  onKeyDown={e => {
-                    if (e.key === "Enter" || e.key === " ") {
-                      e.preventDefault();
-                      if (!sidebarOpen) setSidebarOpen(true);
-                      else setOpenSubMenus((prev) => ({
-                        ...prev,
-                        [item.key]: !prev[item.key],
-                      }));
+                  onMouseLeave={() => {
+                    if (!isMobile && sidebarOpen) {
+                      setOpenSubMenus((prev) => ({ ...prev, [item.key]: false }));
+                    } else if (!isMobile) {
+                      setHoveredMenu(null);
+                      setFlyoutPosition(null);
                     }
                   }}
-                  className={`relative cursor-pointer p-2 hover:bg-white/20 rounded transition-colors select-none ${sidebarOpen ? "flex items-center" : "flex justify-center"
-                    } group`}
-                  style={{
-                    borderLeft: isMenuItemActive(item) ? "4px solid #eab308" : "4px solid transparent",
-                    background: isMenuItemActive(item) ? "rgba(255,255,255,0.08)" : "transparent",
-                    transition: "border-color 0.2s, background 0.2s",
-                  }}
+                  className="relative"
                 >
-                  <span className="text-lg text-white mr-2">{item.icon}</span>
-                  {sidebarOpen && (
-                    <div className="flex items-center w-full">
-                      <span className="text-white mr-2">{item.label}</span>
-                      <span className="ml-auto text-white transition-transform duration-300 transform">
-                        <FaAngleDown
-                          className={`${openSubMenus[item.key] ? "rotate-180" : ""}`}
-                        />
-                      </span>
-                    </div>
-                  )}
-                </div>
+                  {/* Botón principal */}
+                  <div
+                    role="button"
+                    tabIndex={0}
+                    aria-expanded={!!openSubMenus[item.key]}
+                    onClick={() => {
+                      if (!sidebarOpen) setSidebarOpen(true);
+                      else
+                        setOpenSubMenus((prev) => ({ ...prev, [item.key]: !prev[item.key] }));
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        if (!sidebarOpen) setSidebarOpen(true);
+                        else
+                          setOpenSubMenus((prev) => ({ ...prev, [item.key]: !prev[item.key] }));
+                      }
+                    }}
+                    className={[
+                      "relative cursor-pointer p-2 hover:bg-white/20 rounded transition-colors select-none",
+                      sidebarOpen ? "flex items-center" : "flex justify-center",
+                    ].join(" ")}
+                    style={{
+                      borderLeft: isMenuItemActive(item) ? "4px solid #eab308" : "4px solid transparent",
+                      background: isMenuItemActive(item) ? "rgba(255,255,255,0.08)" : "transparent",
+                      transition: "border-color 0.2s, background 0.2s",
+                    }}
+                  >
+                    <span className="text-lg text-white mr-2">{item.icon}</span>
+                    {sidebarOpen && (
+                      <div className="flex items-center w-full">
+                        <span className="text-white mr-2">{item.label}</span>
+                        <span className="ml-auto text-white transition-transform duration-300 transform">
+                          <FaAngleDown className={`${openSubMenus[item.key] ? "rotate-180" : ""}`} />
+                        </span>
+                      </div>
+                    )}
+                  </div>
 
-                {/* Flyout portal para submenu */}
-                <AnimatePresence>
-                  {!sidebarOpen && hoveredMenu === item.key && flyoutPosition && (
-                    <SidebarFlyoutPortal>
-                      <motion.div
-                        key={item.key}
-                        initial={{ opacity: 0, x: 10 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        exit={{ opacity: 0, x: 10 }}
-                        transition={{ duration: 0.18 }}
-                        className="fixed z-[9999] min-w-[180px] bg-[#232323] rounded-xl shadow-xl border border-gray-700 py-2"
-                        style={{
-                          top: flyoutPosition.top,
-                          left: flyoutPosition.left,
-                          boxShadow: "0 2px 12px 0 #00000060"
-                        }}
-                        // Soporta mantener abierto el flyout si pasas el mouse rápido al submenú
-                        onMouseLeave={() => {
-                          setHoveredMenu(null);
-                          setFlyoutPosition(null);
-                        }}
-                        onMouseEnter={() => setHoveredMenu(item.key)}
-                      >
-                        {item.children.map((subItem) => (
-                          <div
-                            key={subItem.key}
-                            role="button"
-                            tabIndex={0}
-                            aria-current={isSubMenuItemActive(subItem)}
-                            className="flex items-center cursor-pointer p-2 hover:bg-white/20 rounded transition-colors select-none"
-                            onClick={() => {
-                              if (subItem.link) router.push(subItem.link);
-                              setHoveredMenu(null);
-                              setFlyoutPosition(null);
-                            }}
-                            onKeyDown={e => {
-                              if (e.key === "Enter" || e.key === " ") {
-                                e.preventDefault();
-                                if (subItem.link) router.push(subItem.link);
+                  {/* Flyout (solo desktop/hover) */}
+                  <AnimatePresence>
+                    {!isMobile && !sidebarOpen && hoveredMenu === item.key && flyoutPosition && (
+                      <SidebarFlyoutPortal>
+                        <motion.div
+                          key={item.key}
+                          initial={{ opacity: 0, x: 10 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          exit={{ opacity: 0, x: 10 }}
+                          transition={{ duration: 0.18 }}
+                          className="fixed z-[9999] min-w-[180px] bg-[#232323] rounded-xl shadow-xl border border-gray-700 py-2"
+                          style={{ top: flyoutPosition.top, left: flyoutPosition.left, boxShadow: "0 2px 12px 0 #00000060" }}
+                          onMouseLeave={() => {
+                            setHoveredMenu(null);
+                            setFlyoutPosition(null);
+                          }}
+                          onMouseEnter={() => setHoveredMenu(item.key)}
+                        >
+                          {item.children.map((sub) => (
+                            <div
+                              key={sub.key}
+                              role="button"
+                              tabIndex={0}
+                              aria-current={isSubMenuItemActive(sub)}
+                              className="flex items-center cursor-pointer p-2 hover:bg-white/20 rounded transition-colors select-none"
+                              onClick={() => {
+                                if (sub.link) router.push(sub.link);
                                 setHoveredMenu(null);
                                 setFlyoutPosition(null);
+                              }}
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter" || e.key === " ") {
+                                  e.preventDefault();
+                                  if (sub.link) router.push(sub.link);
+                                  setHoveredMenu(null);
+                                  setFlyoutPosition(null);
+                                }
+                              }}
+                              style={{
+                                borderLeft: isSubMenuItemActive(sub) ? "3px solid #22d3ee" : "3px solid transparent",
+                                background: isSubMenuItemActive(sub) ? "rgba(34,211,238,0.1)" : "transparent",
+                                transition: "border-color 0.2s, background 0.2s",
+                              }}
+                            >
+                              <span className="text-lg text-white mr-2">{sub.icon}</span>
+                              <span className="text-white">{sub.label}</span>
+                            </div>
+                          ))}
+                        </motion.div>
+                      </SidebarFlyoutPortal>
+                    )}
+                  </AnimatePresence>
+
+                  {/* Submenú acordeón (cuando está abierto el sidebar) */}
+                  <AnimatePresence initial={false}>
+                    {openSubMenus[item.key] && sidebarOpen && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: "auto" }}
+                        exit={{ opacity: 0, height: 0 }}
+                        transition={{ duration: 0.2, ease: "easeOut" }}
+                        className="ml-8 overflow-hidden"
+                      >
+                        {item.children.map((sub) => (
+                          <div
+                            key={sub.key}
+                            role="button"
+                            tabIndex={0}
+                            aria-current={isSubMenuItemActive(sub)}
+                            className="flex items-center cursor-pointer p-2 hover:bg-white/20 rounded transition-colors select-none"
+                            onClick={() => sub.link && router.push(sub.link)}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter" || e.key === " ") {
+                                e.preventDefault();
+                                if (sub.link) router.push(sub.link);
                               }
                             }}
                             style={{
-                              borderLeft: isSubMenuItemActive(subItem)
-                                ? "3px solid #22d3ee"
-                                : "3px solid transparent",
-                              background: isSubMenuItemActive(subItem)
-                                ? "rgba(34,211,238,0.1)"
-                                : "transparent",
+                              borderLeft: isSubMenuItemActive(sub) ? "3px solid #22d3ee" : "3px solid transparent",
+                              background: isSubMenuItemActive(sub) ? "rgba(34,211,238,0.1)" : "transparent",
                               transition: "border-color 0.2s, background 0.2s",
                             }}
                           >
-                            <span className="text-lg text-white mr-2">{subItem.icon}</span>
-                            <span className="text-white">{subItem.label}</span>
+                            <span className="text-lg text-white mr-2">{sub.icon}</span>
+                            {sidebarOpen && <span className="text-white">{sub.label}</span>}
                           </div>
                         ))}
                       </motion.div>
-                    </SidebarFlyoutPortal>
-                  )}
-                </AnimatePresence>
-
-                {/* Submenú tradicional cuando sidebar está abierto */}
-                <AnimatePresence initial={false}>
-                  {openSubMenus[item.key] && sidebarOpen && (
-                    <motion.div
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: "auto" }}
-                      exit={{ opacity: 0, height: 0 }}
-                      transition={{ duration: 0.2, ease: "easeOut" }}
-                      className="ml-8 overflow-hidden"
-                    >
-                      {item.children.map((subItem) => (
-                        <div
-                          key={subItem.key}
-                          role="button"
-                          tabIndex={0}
-                          aria-current={isSubMenuItemActive(subItem)}
-                          className="flex items-center cursor-pointer p-2 hover:bg-white/20 rounded transition-colors select-none"
-                          onClick={() =>
-                            subItem.link && router.push(subItem.link)
-                          }
-                          onKeyDown={e => {
-                            if (e.key === "Enter" || e.key === " ") {
-                              e.preventDefault();
-                              if (subItem.link) router.push(subItem.link);
-                            }
-                          }}
-                          style={{
-                            borderLeft: isSubMenuItemActive(subItem)
-                              ? "3px solid #22d3ee"
-                              : "3px solid transparent",
-                            background: isSubMenuItemActive(subItem)
-                              ? "rgba(34,211,238,0.1)"
-                              : "transparent",
-                            transition: "border-color 0.2s, background 0.2s",
-                          }}
-                        >
-                          <span className="text-lg text-white mr-2">{subItem.icon}</span>
-                          {sidebarOpen && (
-                            <span className="text-white">{subItem.label}</span>
-                          )}
-                        </div>
-                      ))}
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
-            ) : (
-              <div key={item.key}>
-                <div
-                  role="button"
-                  tabIndex={0}
-                  aria-current={isMenuItemActive(item)}
-                  onClick={() => item.link && router.push(item.link)}
-                  onKeyDown={e => {
-                    if (e.key === "Enter" || e.key === " ") {
-                      e.preventDefault();
-                      if (item.link) router.push(item.link);
-                    }
-                  }}
-                  className={`relative cursor-pointer p-2 hover:bg-white/20 rounded transition-colors select-none ${sidebarOpen ? "flex items-center" : "flex justify-center"
-                    }`}
-                  style={{
-                    borderLeft: isMenuItemActive(item) ? "4px solid #eab308" : "4px solid transparent",
-                    background: isMenuItemActive(item) ? "rgba(255,255,255,0.08)" : "transparent",
-                    transition: "border-color 0.2s, background 0.2s",
-                  }}
-                >
-                  <span className="text-lg text-white mr-2">{item.icon}</span>
-                  {sidebarOpen && (
-                    <div className="flex items-center">
-                      <span className="text-white">{item.label}</span>
-                    </div>
-                  )}
+                    )}
+                  </AnimatePresence>
                 </div>
-              </div>
-            )
-          )}
-        </nav>
+              ) : (
+                <div key={item.key}>
+                  <div
+                    role="button"
+                    tabIndex={0}
+                    aria-current={isMenuItemActive(item)}
+                    onClick={() => item.link && router.push(item.link)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        if (item.link) router.push(item.link);
+                      }
+                    }}
+                    className={[
+                      "relative cursor-pointer p-2 hover:bg-white/20 rounded transition-colors select-none",
+                      sidebarOpen ? "flex items-center" : "flex justify-center",
+                    ].join(" ")}
+                    style={{
+                      borderLeft: isMenuItemActive(item) ? "4px solid #eab308" : "4px solid transparent",
+                      background: isMenuItemActive(item) ? "rgba(255,255,255,0.08)" : "transparent",
+                      transition: "border-color 0.2s, background 0.2s",
+                    }}
+                  >
+                    <span className="text-lg text-white mr-2">{item.icon}</span>
+                    {sidebarOpen && <span className="text-white">{item.label}</span>}
+                  </div>
+                </div>
+              )
+            )}
+          </nav>
 
-        {/* Footer */}
-        <div className="mt-auto p-3 border-t border-white/20">
-          <div className="mb-2 flex items-center">
-            <Image
-              src="/avatar.png"
-              alt={userName || "Usuario"}
-              width={40}
-              height={40}
-              priority
-              className="w-[40px] h-[40px] rounded-full object-cover cursor-pointer hover:opacity-80 transition-opacity"
-              onClick={() => router.push("/pages/userProfile")}
-            />
-            {sidebarOpen && (
-              <span className="ml-2 text-white font-medium truncate max-w-[120px]">
-                {userName}
-              </span>
-            )}
+          {/* Footer */}
+          <div className="mt-auto p-3 border-t border-white/20">
+            <div className="mb-2 flex items-center">
+              <Image
+                src="/avatar.png"
+                alt={userName || "Usuario"}
+                width={40}
+                height={40}
+                priority
+                className="w-[40px] h-[40px] rounded-full object-cover cursor-pointer hover:opacity-80 transition-opacity"
+                onClick={() => {
+                  router.push("/pages/userProfile");
+                  if (isMobile) setSidebarOpen(false);
+                }}
+              />
+              {sidebarOpen && (
+                <span className="ml-2 text-white font-medium truncate max-w-[120px]">{userName}</span>
+              )}
+            </div>
+            <button
+              onClick={handleLogout}
+              className="w-full bg-red-600 hover:bg-red-500 text-white rounded-md transition-colors flex items-center justify-center p-2"
+            >
+              <FaSignOutAlt className="text-xl" />
+              {sidebarOpen && <span className="text-sm ml-2">Cerrar Sesión</span>}
+            </button>
           </div>
-          <button
-            onClick={handleLogout}
-            className="w-full bg-red-600 hover:bg-red-500 text-white rounded-md transition-colors flex items-center justify-center p-2"
-          >
-            <FaSignOutAlt className="text-xl" />
-            {sidebarOpen && (
-              <span className="text-sm ml-2">Cerrar Sesión</span>
-            )}
-          </button>
         </div>
-      </div>
-    </motion.aside>
+      </motion.aside>
+    </>
   );
 };
 
