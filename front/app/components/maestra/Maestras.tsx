@@ -6,11 +6,17 @@ import NewActivity from "./NewActivity";
 import useUserData from '../../hooks/useUserData';
 import NewTipos from "./NewTipoAcondicionamiento";
 import PermissionWrapper from "../PermissionWrapper/PermissionWrapper";
-import NonePermission from "../loader/NonePermission";
+import NonePermission from "../loader/MiniLoader";
+import DateLoader from '@/app/components/loader/DateLoader';
 
 function Maestras() {
     const { userName } = useUserData();
-    if (!userName) return <p>No estás logueado. Por favor, inicia sesión.</p>;
+    if (!userName) {
+        return (
+            <DateLoader message="No estás logueado. Por favor, inicia sesión." backgroundColor="#242424" color="#ffff" />
+        );
+    }
+    <DateLoader message="Generando PDF..." backgroundColor="#242424" color="#ffff" />
     return (
         <div >
             <WindowManager

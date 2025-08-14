@@ -271,6 +271,51 @@ function Table<T extends { id: number }>({
                 </motion.div>
             </AnimatePresence>
 
+            {/* Vista en formato tarjetas para pantallas pequeñas */}
+            <div className="md:hidden space-y-4 mt-4">
+                {paginatedRows.map((row, index) => (
+                    <div
+                        key={index}
+                        className="bg-gray-800 p-4 rounded-lg shadow-md transition-all duration-300 hover:shadow-lg"
+                    >
+                        {columns.map((column) => (
+                            <div
+                                key={column}
+                                className="flex justify-between items-center py-1 border-b border-gray-700 last:border-none"
+                            >
+                                <span className="font-semibold text-gray-400 text-sm">
+                                    {columnLabels[column] || column}
+                                </span>
+                                <span className="text-gray-300 text-sm text-right max-w-[60%] truncate">
+                                    {String(row[column]) ?? ""}
+                                </span>
+                            </div>
+                        ))}
+
+                        <div className="flex justify-end flex-wrap gap-2 mt-3">
+                            {showEditButton && onEdit && (
+                                <Button onClick={() => onEdit(row.id)} variant="edit" />
+                            )}
+                            {showDeleteButton && onDelete && (
+                                <Button onClick={() => onDelete(row.id)} variant="delete" />
+                            )}
+                            {showTerciarioButton && onTerciario && (!showTerciarioCondition || showTerciarioCondition(row)) && (
+                                <Button onClick={() => onTerciario(row.id)} variant="create2" />
+                            )}
+                            {showViewButton && onView && (!showViewCondition || showViewCondition(row)) && (
+                                <Button onClick={() => onView(row.id)} variant="view" />
+                            )}
+                            {showPDF && onPDF && (!showPDFCondition || showPDFCondition(row)) && (
+                                <Button onClick={() => onPDF(row.id)} variant="pdf" />
+                            )}
+                            {showHistory && onHistory && (
+                                <Button onClick={() => onHistory(row.id)} variant="history" />
+                            )}
+                        </div>
+                    </div>
+                ))}
+            </div>
+
             {/* Paginación */}
             {filteredRows.length > 0 && (
                 <div className="relative flex items-center w-full mt-4">

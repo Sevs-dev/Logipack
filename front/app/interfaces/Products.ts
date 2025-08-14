@@ -1,24 +1,24 @@
 export interface Manu {
-    id?: number;
-    name: string;
-    products: number[];
-    factory_id: number;
-    factory?: string;
-    user?: string;
+  id?: number;
+  name: string;
+  products: number[];
+  factory_id: number;
+  factory?: string;
+  user?: string;
 }
 
 export interface ManuServ {
-    id: number;
-    name: string;
-    products: number[];
-    factory_id: number;
-    factory?: string;
-    user?: string;
+  id: number;
+  name: string;
+  products: number[];
+  factory_id: number;
+  factory?: string;
+  user?: string;
 }
 
 export interface Factory {
-    id: number;
-    name: string;
+  id: number;
+  name: string;
 }
 
 export interface Product {
@@ -36,6 +36,8 @@ export interface AuditEntry {
 }
 
 export interface Data {
-    name: string;
-    user?: string;
+  name: string;
+  user?: string;
+  canEdit?: boolean;
+  canView?: boolean;
 }
