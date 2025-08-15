@@ -10,6 +10,7 @@ export type ActivityType = {
   clase?: string;
   nivel?: string;
   subnivel?: string;
+  signatureSpecific?: boolean; allowedRoles?: number[]
 };
 
 export interface NewActivity {

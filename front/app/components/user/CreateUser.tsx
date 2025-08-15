@@ -3,7 +3,14 @@ import { useState, useEffect } from "react";
 import { FiEye, FiEyeOff } from "react-icons/fi";
 import { BiLock } from "react-icons/bi";
 import { InfoPopover } from "../buttons/InfoPopover";
-import { post, updateUser, getRole, deleteUser, getUsers, getDate } from "../../services/userDash/authservices";
+import {
+  post,
+  updateUser,
+  getRole,
+  deleteUser,
+  getUsers,
+  getDate,
+} from "../../services/userDash/authservices";
 import { getFactory } from "../../services/userDash/factoryServices";
 import Text from "../text/Text";
 import ModalSection from "../modal/ModalSection";
@@ -13,8 +20,8 @@ import Table from "../table/Table";
 import { Factory, Role } from "@/app/interfaces/CreateUser";
 import { User } from "@/app/interfaces/Auth";
 import { CreateClientProps } from "../../interfaces/CreateClientProps";
-import SelectorDual from "../SelectorDual/SelectorDual"
-import DateLoader from '@/app/components/loader/DateLoader';
+import SelectorDual from "../SelectorDual/SelectorDual";
+import DateLoader from "@/app/components/loader/DateLoader";
 
 function CreateUser({ canEdit = false, canView = false }: CreateClientProps) {
   // Estados para formulario
@@ -22,6 +29,7 @@ function CreateUser({ canEdit = false, canView = false }: CreateClientProps) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [signature_bpm, setSignatureBPM] = useState("");
+  const [security_pass, setSecurityPASS] = useState("");
   const [role, setRole] = useState("");
   // Otros estados
   const [loading, setLoading] = useState(false);
@@ -67,8 +75,15 @@ function CreateUser({ canEdit = false, canView = false }: CreateClientProps) {
       setName(userToEdit.name);
       setEmail(userToEdit.email);
       setRole(userToEdit.role);
-      setSignatureBPM(typeof userToEdit.signature_bpm === "string" ? userToEdit.signature_bpm : "");
-      setSelectedFactorys(Array.isArray(userToEdit.factory) ? userToEdit.factory : []);
+      setSignatureBPM(
+        typeof userToEdit.signature_bpm === "string"
+          ? userToEdit.signature_bpm
+          : ""
+      );
+      setSecurityPASS("");
+      setSelectedFactorys(
+        Array.isArray(userToEdit.factory) ? userToEdit.factory : []
+      );
       setPassword("");
       setIsModalOpen(true);
     }
@@ -80,6 +95,7 @@ function CreateUser({ canEdit = false, canView = false }: CreateClientProps) {
     setEmail("");
     setPassword("");
     setSignatureBPM("");
+    setSecurityPASS("");
     setSelectedFactorys([]);
     setRole("");
     setShowPassword(false);
@@ -108,7 +124,12 @@ function CreateUser({ canEdit = false, canView = false }: CreateClientProps) {
       return false;
     }
     // Validar contraseña solo si es creación o si se modificó la contraseña al editar
-    if ((!userToEdit || password) && !/^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d!@#$%^&*()_+{}\[\]:;<>,.?~\\/-]{8,}$/.test(password)) {
+    if (
+      (!userToEdit || password) &&
+      !/^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d!@#$%^&*()_+{}\[\]:;<>,.?~\\/-]{8,}$/.test(
+        password
+      )
+    ) {
       showError(
         "La contraseña debe tener al menos 8 caracteres, incluir letras y números, y puede contener caracteres especiales"
       );
@@ -130,7 +151,8 @@ function CreateUser({ canEdit = false, canView = false }: CreateClientProps) {
         password,
         role,
         signature_bpm,
-        factory: selectedFactorys.map(f => f.id),
+        security_pass,
+        factory: selectedFactorys.map((f) => f.id),
       });
       showSuccess("Usuario creado exitosamente");
       const newUsers = await getUsers();
@@ -157,9 +179,9 @@ function CreateUser({ canEdit = false, canView = false }: CreateClientProps) {
       // Solo IDs para el backend
       const factoryValue =
         Array.isArray(selectedFactorys) && selectedFactorys.length > 0
-          ? selectedFactorys.map(f =>
-            typeof f === "object" && "id" in f ? f.id : f
-          )
+          ? selectedFactorys.map((f) =>
+              typeof f === "object" && "id" in f ? f.id : f
+            )
           : null;
 
       await updateUser(userToEdit!.id, {
@@ -169,6 +191,7 @@ function CreateUser({ canEdit = false, canView = false }: CreateClientProps) {
         password_confirmation: password || undefined,
         role,
         signature_bpm,
+        security_pass,
         factory: factoryValue,
       });
 
@@ -227,13 +250,17 @@ function CreateUser({ canEdit = false, canView = false }: CreateClientProps) {
           const parsed = JSON.parse(userFactory);
           if (Array.isArray(parsed)) {
             factoryParsed = parsed
-              .map(f =>
+              .map((f) =>
                 typeof f === "object" && f !== null && "id" in f
                   ? Number(f.id)
                   : Number(f)
               )
-              .filter(n => !isNaN(n));
-          } else if (typeof parsed === "object" && parsed !== null && "id" in parsed) {
+              .filter((n) => !isNaN(n));
+          } else if (
+            typeof parsed === "object" &&
+            parsed !== null &&
+            "id" in parsed
+          ) {
             factoryParsed = [Number(parsed.id)];
           } else {
             const singleNumber = Number(parsed);
@@ -242,13 +269,17 @@ function CreateUser({ canEdit = false, canView = false }: CreateClientProps) {
         } else if (Array.isArray(userFactory)) {
           // Array de objetos, números o strings
           factoryParsed = userFactory
-            .map(f =>
+            .map((f) =>
               typeof f === "object" && f !== null && "id" in f
                 ? Number(f.id)
                 : Number(f)
             )
-            .filter(n => !isNaN(n));
-        } else if (typeof userFactory === "object" && userFactory !== null && "id" in userFactory) {
+            .filter((n) => !isNaN(n));
+        } else if (
+          typeof userFactory === "object" &&
+          userFactory !== null &&
+          "id" in userFactory
+        ) {
           // Un solo objeto fábrica
           factoryParsed = [Number(userFactory.id)];
         } else if (typeof userFactory === "number") {
@@ -260,7 +291,9 @@ function CreateUser({ canEdit = false, canView = false }: CreateClientProps) {
       }
 
       // Obtener los objetos completos de fábrica a partir de sus IDs
-      const selectedFactoryObjects = factory.filter(f => factoryParsed.includes(f.id));
+      const selectedFactoryObjects = factory.filter((f) =>
+        factoryParsed.includes(f.id)
+      );
 
       // Setear usuario a editar con factories como objetos completos
       setUserToEdit({
@@ -271,7 +304,6 @@ function CreateUser({ canEdit = false, canView = false }: CreateClientProps) {
       setSelectedFactorys(selectedFactoryObjects);
 
       setIsModalOpen(true);
-
     } catch (error) {
       console.error("Error obteniendo datos del usuario:", error);
       showError("Error obteniendo datos del usuario");
@@ -279,13 +311,13 @@ function CreateUser({ canEdit = false, canView = false }: CreateClientProps) {
   };
 
   const agregarMaquina = (Factory: Factory) => {
-    if (!selectedFactorys.find(m => m.id === Factory.id)) {
+    if (!selectedFactorys.find((m) => m.id === Factory.id)) {
       setSelectedFactorys([...selectedFactorys, Factory]);
     }
   };
 
   const removerMaquina = (id: number) => {
-    setSelectedFactorys(selectedFactorys.filter(m => m.id !== id));
+    setSelectedFactorys(selectedFactorys.filter((m) => m.id !== id));
   };
 
   return (
@@ -298,16 +330,26 @@ function CreateUser({ canEdit = false, canView = false }: CreateClientProps) {
       )}
 
       {isSaving && (
-        <DateLoader message="Cargando..." backgroundColor="rgba(0, 0, 0, 0.28)" color="rgba(255, 255, 0, 1)" />
+        <DateLoader
+          message="Cargando..."
+          backgroundColor="rgba(0, 0, 0, 0.28)"
+          color="rgba(255, 255, 0, 1)"
+        />
       )}
       {/* Modal crear/editar usuario */}
       {isModalOpen && (
         <ModalSection isVisible={isModalOpen || editForm} onClose={closeModal}>
-          <Text type="title" color="text-[#000]">{userToEdit ? "Editar Usuario" : "Crear Usuario"}</Text>
+          <Text type="title" color="text-[#000]">
+            {userToEdit ? "Editar Usuario" : "Crear Usuario"}
+          </Text>
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
             {/* Nombre */}
             <div>
-              <Text type="subtitle" color="#000">Nombre de Usuario</Text>
+              <Text type="subtitle" color="#000">
+                Nombre de Usuario
+                <InfoPopover content="Nombre completo o identificador del usuario en el sistema." />
+              </Text>
               <input
                 type="text"
                 placeholder="Nombre"
@@ -320,7 +362,10 @@ function CreateUser({ canEdit = false, canView = false }: CreateClientProps) {
 
             {/* Email */}
             <div>
-              <Text type="subtitle" color="#000">Correo Electrónico</Text>
+              <Text type="subtitle" color="#000">
+                Correo Electrónico
+                <InfoPopover content="Correo principal para notificaciones y acceso al sistema." />
+              </Text>
               <input
                 type="email"
                 placeholder="email@dominio.com"
@@ -335,9 +380,11 @@ function CreateUser({ canEdit = false, canView = false }: CreateClientProps) {
             <div className="relative">
               <Text type="subtitle" color="#000">
                 Contraseña
-                {userToEdit && <InfoPopover content="Para no cambiar la contraseña dejar el campo en blanco" />}
+                {userToEdit && (
+                  <InfoPopover content="Para no cambiar la contraseña, deja este campo vacío." />
+                )}
+                <InfoPopover content="Debe incluir mayúsculas, minúsculas, números y símbolos." />
               </Text>
-
               <input
                 type={showPassword ? "text" : "password"}
                 placeholder="Contraseña"
@@ -349,7 +396,7 @@ function CreateUser({ canEdit = false, canView = false }: CreateClientProps) {
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-10 top-12 text-gray-500"
+                className="absolute right-10 top-12 text-gray-500 mt-3"
                 disabled={!canEdit}
               >
                 {showPassword ? <FiEyeOff size={20} /> : <FiEye size={20} />}
@@ -357,16 +404,35 @@ function CreateUser({ canEdit = false, canView = false }: CreateClientProps) {
               <button
                 type="button"
                 onClick={generatePassword}
-                className="absolute right-2 top-12 bg-yellow-500 text-white p-1 rounded"
+                className="absolute right-2 top-12 bg-yellow-500 text-white p-1 rounded mt-2"
                 disabled={!canEdit}
               >
                 <BiLock size={16} />
               </button>
             </div>
 
+            {/* Contraseña de seguridad */}
+            <div>
+              <Text type="subtitle" color="#000">
+                Contraseña de Seguridad
+                <InfoPopover content="Dependiendo del rol (p. ej., Calidad), se pedirá al firmar para validar la identidad." />
+              </Text>
+              <input
+                type="text"
+                placeholder="Requerido según el Rol"
+                value={security_pass}
+                onChange={(e) => setSecurityPASS(e.target.value)}
+                className="w-full text-black border border-gray-300 rounded p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                disabled={!canEdit}
+              />
+            </div>
+
             {/* Rol */}
             <div>
-              <Text type="subtitle" color="#000">Rol</Text>
+              <Text type="subtitle" color="#000">
+                Rol
+                <InfoPopover content="Define los permisos y accesos que tendrá este usuario." />
+              </Text>
               <select
                 value={role}
                 onChange={(e) => setRole(e.target.value)}
@@ -384,7 +450,10 @@ function CreateUser({ canEdit = false, canView = false }: CreateClientProps) {
 
             {/* Firma BPM */}
             <div>
-              <Text type="subtitle" color="#000">Firma BPM</Text>
+              <Text type="subtitle" color="#000">
+                Firma BPM
+                <InfoPopover content="Firma utilizada en procesos BPM para validar acciones." />
+              </Text>
               <input
                 type="text"
                 placeholder="Firma BPM"
@@ -405,7 +474,6 @@ function CreateUser({ canEdit = false, canView = false }: CreateClientProps) {
                 onQuitar={removerMaquina}
               />
             </div>
-
           </div>
 
           {/* Botones */}
@@ -416,7 +484,15 @@ function CreateUser({ canEdit = false, canView = false }: CreateClientProps) {
               <Button
                 onClick={userToEdit ? handleEditUser : handleCreateUser}
                 variant="save"
-                label={loading ? "Guardando..." : userToEdit ? "Guardar cambios" : isSaving ? "Guardando..." : "Crear usuario"}
+                label={
+                  loading
+                    ? "Guardando..."
+                    : userToEdit
+                    ? "Guardar cambios"
+                    : isSaving
+                    ? "Guardando..."
+                    : "Crear usuario"
+                }
                 disabled={loading || isSaving}
               />
             )}
@@ -431,12 +507,11 @@ function CreateUser({ canEdit = false, canView = false }: CreateClientProps) {
         columnLabels={{
           name: "Nombre",
           email: "Email",
-          role: "Rol"
+          role: "Rol",
         }}
         onDelete={canEdit ? handleDelete : undefined}
         onEdit={handleEdit}
       />
-
     </div>
   );
 }

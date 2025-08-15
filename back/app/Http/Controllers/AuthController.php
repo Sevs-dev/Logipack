@@ -106,6 +106,7 @@ class AuthController extends Controller
             'password'      => 'required|string|min:6',
             'role'          => 'required|string',
             'signature_bpm' => 'required|string|max:255|unique:users',
+            'security_pass' => 'nullable|string|max:255|',
             'factory'       => 'nullable|array',
         ]);
 
@@ -116,6 +117,7 @@ class AuthController extends Controller
                 'password'      => Hash::make($request->password),
                 'role'          => $request->role,
                 'signature_bpm' => $request->signature_bpm,
+                'security_pass' => $request->security_pass,
                 'factory'       => $request->factory,
             ]);
 
@@ -147,6 +149,7 @@ class AuthController extends Controller
             'role'          => 'required|string',
             'factory'       => 'nullable|array',
             'signature_bpm' => "required|string|max:255|unique:users,signature_bpm,$id",
+            'security_pass' => "nullable|string|max:255|",
             // Password es opcional, pero si se envía debe ser válida
             'password'      => 'nullable|string|min:8|confirmed',
             // Si usas confirmación: debes enviar password_confirmation desde el frontend
@@ -159,6 +162,7 @@ class AuthController extends Controller
             'role'          => $request->role,
             'factory'       => $request->factory,
             'signature_bpm' => $request->signature_bpm,
+            'security_pass' => $request->security_pass,
         ];
 
         // Si se envía la contraseña y no viene vacía, la hasheamos
