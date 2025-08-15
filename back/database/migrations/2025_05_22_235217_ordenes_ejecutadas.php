@@ -18,6 +18,7 @@ return new class extends Migration
             $table->string('maestra_id')->nullable();
             $table->string('number_order')->nullable();
             $table->string('descripcion_maestra')->nullable();
+            $table->boolean('requiere_bom');
             $table->string('maestra_fases_fk')->nullable();
             // $table->string('maestra_tipo_acondicionamiento_fk')->nullable();
             $table->string('linea_produccion')->nullable();
