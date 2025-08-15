@@ -15,14 +15,13 @@ class RolesController extends Controller
     public function getRole(): JsonResponse
     {
         $roles = Role::where('active', true)
-            ->where('name', '<>', 'Master') // excluir Master
+            ->whereRaw("LOWER(TRIM(name)) <> 'master'")
             ->whereIn('version', function ($query) {
                 $query->selectRaw('MAX(version)')
                     ->from('roles as a2')
                     ->whereColumn('a2.reference_id', 'roles.reference_id');
             })
             ->get();
-
         return response()->json($roles, 200);
     }
 

@@ -107,7 +107,9 @@ const App = () => {
   const [timerReady, setTimerReady] = useState(false);
   const [showModal_rol, setShowModal_rol] = useState(false);
   const [showModal_fase, setShowModal_fase] = useState(false);
-
+  const isProceso =
+    typeof fase?.phase_type === "string" &&
+    fase.phase_type.toLowerCase().includes("proceso"); // "Proceso" o "Procesos"
   // Cargar datos iniciales
   useEffect(() => {
     try {
@@ -151,13 +153,11 @@ const App = () => {
       if (!fase) return;
       try {
         const adaptation = await controlStage(fase.adaptation_id);
-        // Validaciones
         if (!adaptation?.id) return;
-        // Obetenr id de la activiad ejecutada
+
         const ejecutadaId = Number(fase.id);
-        console.log(fase);
         if (!Number.isFinite(ejecutadaId) || ejecutadaId <= 0) return;
-        // Instancia de timer
+
         const time = Number(adaptation.repeat_minutes ?? 0);
         const createResult = await createTimer({
           ejecutada_id: ejecutadaId,
@@ -166,9 +166,7 @@ const App = () => {
           orden_id: fase.orden_ejecutada,
           time,
         });
-        if (createResult?.exists) {
-          // console.log("⚠️ Timer ya existía para:", ejecutadaId);
-        }
+
         const timerResult = await getTimerEjecutadaById(ejecutadaId);
         if (
           timerResult?.timer &&
@@ -193,17 +191,13 @@ const App = () => {
       }
     };
 
-    // Validar condicion de la fase
     const condicionFase = async () => {
-      // Validar si hay fase
       if (!fase) return;
-
-      // Validar condición de la fase (esto no lo tocamos)
       const resp = await condiciones_fase(
         fase.adaptation_date_id,
         fase.fases_fk
       );
-      // Obtener rol del cookie (soporta URL-encoding y espacios raros)
+
       const rawPerfil = document.cookie
         .split("; ")
         .find((row) => row.startsWith("role="))
@@ -211,30 +205,36 @@ const App = () => {
       const perfil = rawPerfil
         ? decodeURIComponent(rawPerfil).replace(/"/g, "").trim()
         : "";
-      // Bypass para Administrador y Master
+
       const isPrivileged = ["administrador", "master"].includes(
         perfil.toLowerCase()
       );
       if (isPrivileged) {
-        setShowModal_rol(false); // siempre pasa
-        setShowModal_fase(resp.condicion_1 > 0); // mantén la lógica de condición de fase
-        console.log("permiso", true, "(bypass Administrador/Master)");
+        setShowModal_rol(false);
+        setShowModal_fase(resp.condicion_1 > 0);
         return;
       }
-      // Validar roles normales
+
       const { roles } = await validate_rol(fase.fases_fk);
       const tienePermiso = roles?.role
         ?.toString()
         .split(",")
         .map((r) => r.trim().toLowerCase())
         .some((r) => r === perfil.toLowerCase());
-      setShowModal_rol(!tienePermiso); // Mostrar modal solo si no tiene permiso
-      console.log("permiso", !!tienePermiso);
+      setShowModal_rol(!tienePermiso);
       setShowModal_fase(resp.condicion_1 > 0);
     };
-    // Validar condicion de la fase
+
     condicionFase();
-    guardarTimer();
+
+    // 🔒 Timer solo para Procesos
+    if (isProceso) {
+      guardarTimer();
+    } else {
+      // Asegura que no muestre loader ni timer en fases NO-Procesos
+      setTimerData(null);
+      setTimerReady(false);
+    }
   }, [fase]);
 
   // Manejador de cambio de inputs
@@ -350,7 +350,7 @@ const App = () => {
   }
 
   const refetchTimer = async () => {
-    if (!fase) return;
+    if (!fase || !isProceso) return; // 👈 evita recargar timer en fases no-Procesos
 
     const stage = await getStageId(fase.fases_fk);
     if (!stage?.id) return;
@@ -397,160 +397,431 @@ const App = () => {
           message="Fase bloqueado temporalmente. Contacta al administrador."
         />
       </>
-      {!timerReady || !timerData ? (
+      {/* 🔔 TIMER SOLO EN PROCESOS */}
+      {isProceso && (!timerReady || !timerData) && (
         <DateLoader
           message="Cargando datos del temporizador..."
           backgroundColor="#111827"
           color="#ffff"
         />
-      ) : (
-        <>
-          {linea !== "0" && (
-            <Timer
-              ejecutadaId={timerData.ejecutadaId}
-              stageId={timerData.stageId}
-              initialMinutes={timerData.initialMinutes}
-              refetchTimer={refetchTimer}
-            />
-          )}
-          <div className="min-h-screen w-full bg-[#1b2535] text-white p-3 sm:p-4 md:p-[10px] flex flex-col rounded-2xl">
-            <div className="w-full rounded-2xl bg-white/5 backdrop-blur-sm border border-white/10 shadow-md overflow-hidden">
-              <div className="bg-white/5 px-3 sm:px-[10px] py-3 sm:py-[10px] border-b border-white/10 backdrop-blur-sm">
-                <Text type="title" color="text-white">
-                  Información de la Orden
-                </Text>
-              </div>
-              <div
-                className="
+      )}
+
+      {isProceso && timerReady && timerData && linea !== "0" && (
+        <Timer
+          ejecutadaId={timerData.ejecutadaId}
+          stageId={timerData.stageId}
+          initialMinutes={timerData.initialMinutes}
+          refetchTimer={refetchTimer}
+        />
+      )}
+
+      {/* 🔽 Contenido principal SIEMPRE visible */}
+      <div className="min-h-screen w-full bg-[#1b2535] text-white p-3 sm:p-4 md:p-[10px] flex flex-col rounded-2xl">
+        <div className="w-full rounded-2xl bg-white/5 backdrop-blur-sm border border-white/10 shadow-md overflow-hidden">
+          <div className="bg-white/5 px-3 sm:px-[10px] py-3 sm:py-[10px] border-b border-white/10 backdrop-blur-sm">
+            <Text type="title" color="text-white">
+              Información de la Orden
+            </Text>
+          </div>
+          <div
+            className="
                   px-3 sm:px-6 md:px-8 py-4 sm:py-6
                   grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-6
                   gap-3 sm:gap-4 text-sm text-gray-200
                 "
-              >
-                <div>
-                  <p className="text-gray-500 text-center">Orden N°</p>
-                  <p className="font-medium text-gray-200 text-center">
-                    {orden?.number_order}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-gray-500 text-center">Cliente</p>
-                  <p className="font-medium text-gray-200 text-center">
-                    {orden?.cliente}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-gray-500 text-center">Planta</p>
-                  <p className="font-medium text-gray-200 text-center">
-                    {orden?.planta}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-gray-500 text-center">Maestra</p>
-                  <p className="font-medium text-gray-200 text-center">
-                    {orden?.descripcion_maestra}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-gray-500 text-center">Línea</p>
-                  <p className="font-medium text-gray-200 text-center">
-                    {linea} ({local.descripcion})
-                  </p>
-                </div>
-                <div>
-                  <p className="text-gray-500 text-center">
-                    Cantidad a producir
-                  </p>
-                  <p className="font-medium text-gray-200 text-center">
-                    {orden?.cantidad_producir}
-                  </p>
-                </div>
-              </div>
+          >
+            <div>
+              <p className="text-gray-500 text-center">Orden N°</p>
+              <p className="font-medium text-gray-200 text-center">
+                {orden?.number_order}
+              </p>
             </div>
-            {/* Fase */}
-            <div className="w-full rounded-2xl bg-white/5 backdrop-blur-sm border border-white/10 shadow-md overflow-hidden mt-4">
-              <div className="bg-white/2.5 px-[10px] py-[10px] border-b border-white/5 backdrop-blur-sm">
-                <Text type="title" color="text-white">
-                  Fase de {fase?.description_fase} ({fase?.phase_type})
-                </Text>
-              </div>
-              {/* Formulario */}
-              <form
-                ref={formRef}
-                onSubmit={handleSubmit}
-                className="min-h-screen w-full bg-[#1b2535] text-white p-[10px] sm:p-[10px] flex flex-col rounded-2xl"
-              >
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {forms.map((item, index) => {
-                    // obtener tipo de actividad
-                    let config = item.config;
-                    try {
-                      if (typeof config === "string") {
-                        config = JSON.parse(config);
-                      }
+            <div>
+              <p className="text-gray-500 text-center">Cliente</p>
+              <p className="font-medium text-gray-200 text-center">
+                {orden?.cliente}
+              </p>
+            </div>
+            <div>
+              <p className="text-gray-500 text-center">Planta</p>
+              <p className="font-medium text-gray-200 text-center">
+                {orden?.planta}
+              </p>
+            </div>
+            <div>
+              <p className="text-gray-500 text-center">Maestra</p>
+              <p className="font-medium text-gray-200 text-center">
+                {orden?.descripcion_maestra}
+              </p>
+            </div>
+            <div>
+              <p className="text-gray-500 text-center">Línea</p>
+              <p className="font-medium text-gray-200 text-center">
+                {linea} ({local.descripcion})
+              </p>
+            </div>
+            <div>
+              <p className="text-gray-500 text-center">Cantidad a producir</p>
+              <p className="font-medium text-gray-200 text-center">
+                {orden?.cantidad_producir}
+              </p>
+            </div>
+          </div>
+        </div>
+        {/* Fase */}
+        <div className="w-full rounded-2xl bg-white/5 backdrop-blur-sm border border-white/10 shadow-md overflow-hidden mt-4">
+          <div className="bg-white/2.5 px-[10px] py-[10px] border-b border-white/5 backdrop-blur-sm">
+            <Text type="title" color="text-white">
+              Fase de {fase?.description_fase} ({fase?.phase_type})
+            </Text>
+          </div>
+          {/* Formulario */}
+          <form
+            ref={formRef}
+            onSubmit={handleSubmit}
+            className="min-h-screen w-full bg-[#1b2535] text-white p-[10px] sm:p-[10px] flex flex-col rounded-2xl"
+          >
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {forms.map((item, index) => {
+                // obtener tipo de actividad
+                let config = item.config;
+                try {
+                  if (typeof config === "string") {
+                    config = JSON.parse(config);
+                  }
 
-                      if (typeof config === "string") {
-                        config = JSON.parse(config);
-                      }
-                    } catch (error) {
-                      config = {};
-                    }
-                    const { type, options, min, max, items } = config;
-                    const clave = item.clave;
-                    return (
-                      <div key={index}>
-                        <Text type="subtitle" color="text-white">
-                          {item.descripcion_activitie}
-                        </Text>
+                  if (typeof config === "string") {
+                    config = JSON.parse(config);
+                  }
+                } catch (error) {
+                  config = {};
+                }
+                const { type, options, min, max, items, signatureSpecific } =
+                  config;
+                const clave = item.clave;
+                return (
+                  <div key={index}>
+                    <Text type="subtitle" color="text-white">
+                      {item.descripcion_activitie}
+                    </Text>
 
-                        {/* MUESTREO */}
-                        {type === "muestreo" && (
-                          <p className="text-red-500">
-                            {items.map(({ min, max, valor }) => {
-                              if (
-                                min <= orden.cantidad_producir &&
-                                orden.cantidad_producir <= max
-                              ) {
-                                return valor;
+                    {/* MUESTREO */}
+                    {type === "muestreo" && (
+                      <p className="text-red-500">
+                        {items.map(({ min, max, valor }) => {
+                          if (
+                            min <= orden.cantidad_producir &&
+                            orden.cantidad_producir <= max
+                          ) {
+                            return valor;
+                          }
+                        })}
+                      </p>
+                    )}
+
+                    {/* TEXT */}
+                    {type === "text" && (
+                      <input
+                        type="text"
+                        className="block w-full px-3 py-2 bg-[#1a1d23] border border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-white placeholder-gray-400 text-center"
+                        name={clave}
+                        value={memoriaFase[linea]?.[clave] ?? ""}
+                        required={item.binding}
+                        onChange={inputChange}
+                      />
+                    )}
+                    {/* TEXTAREA */}
+
+                    {type === "textarea" && (
+                      <textarea
+                        rows={1}
+                        style={{ maxHeight: "15rem" }}
+                        className="block w-full px-3 py-2 bg-[#1a1d23] border border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-white placeholder-gray-400 text-center"
+                        name={clave}
+                        value={memoriaFase[linea]?.[clave] ?? ""}
+                        required={item.binding}
+                        onChange={(e) => {
+                          e.target.style.height = "auto"; // Reinicia el alto
+                          e.target.style.height = `${e.target.scrollHeight}px`; // Ajusta al contenido
+                          inputChange(e);
+                        }}
+                      />
+                    )}
+
+                    {/* NUMBER */}
+                    {type === "number" && (
+                      <input
+                        type="number"
+                        className="block w-full px-3 py-2 bg-[#1a1d23] border border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-white placeholder-gray-400 text-center"
+                        name={clave}
+                        value={memoriaFase[linea]?.[clave] ?? ""}
+                        required={item.binding}
+                        onChange={inputChange}
+                      />
+                    )}
+
+                    {/* DATE */}
+                    {type === "date" && (
+                      <input
+                        type="date"
+                        className="block w-full px-3 py-2 bg-[#1a1d23] border border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-white placeholder-gray-400 text-center"
+                        name={clave}
+                        value={memoriaFase[linea]?.[clave] ?? ""}
+                        required={item.binding}
+                        onChange={inputChange}
+                        style={{
+                          colorScheme: "dark",
+                          WebkitCalendarPickerIndicator: {
+                            filter: "invert(1)",
+                          },
+                        }}
+                      />
+                    )}
+
+                    {/* TIME */}
+                    {type === "time" && (
+                      <input
+                        type="time"
+                        className="block w-full px-3 py-2 bg-[#1a1d23] border border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-white placeholder-gray-400 text-center"
+                        name={clave}
+                        value={memoriaFase[linea]?.[clave] ?? ""}
+                        required={item.binding}
+                        onChange={inputChange}
+                      />
+                    )}
+
+                    {/* SELECT */}
+                    {type === "select" && (
+                      <select
+                        className="block w-full px-3 py-2 bg-[#1a1d23] border border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-white placeholder-gray-400 text-center"
+                        name={clave}
+                        value={memoriaFase[linea]?.[clave] ?? ""}
+                        required={item.binding}
+                        onChange={inputChange}
+                      >
+                        <option value="">Seleccione</option>
+                        {options.map((opt, k) => (
+                          <option key={`opt-${k}`} value={opt}>
+                            {opt}
+                          </option>
+                        ))}
+                      </select>
+                    )}
+
+                    {/* RADIO */}
+                    {type === "radio" && (
+                      <div className="flex justify-center flex-wrap gap-4 mt-2">
+                        {options.map((opt, idx) => (
+                          <label
+                            key={idx}
+                            className="flex items-center gap-2 text-white"
+                          >
+                            <input
+                              type="radio"
+                              name={clave}
+                              value={opt}
+                              required={item.binding}
+                              checked={memoriaFase[linea]?.[clave] === opt}
+                              onChange={inputChange}
+                              className="appearance-none w-4 h-4 border border-gray-600 rounded-full checked:bg-blue-500 checked:border-transparent focus:outline-none"
+                            />
+                            <span className="text-sm">{opt}</span>
+                          </label>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* CHECKBOX */}
+                    {type === "checkbox" && (
+                      <div className="flex justify-center flex-wrap gap-4 mt-2">
+                        {options.map((opt, idx) => (
+                          <label
+                            key={idx}
+                            className="flex items-center gap-2 text-white"
+                          >
+                            <input
+                              type="checkbox"
+                              name={clave}
+                              required={
+                                item.binding &&
+                                (!Array.isArray(memoriaFase[linea]?.[clave]) ||
+                                  memoriaFase[linea][clave].length === 0)
                               }
-                            })}
-                          </p>
+                              checked={
+                                Array.isArray(memoriaFase[linea]?.[clave]) &&
+                                memoriaFase[linea][clave].includes(opt)
+                              }
+                              onChange={(e) => {
+                                const checked = e.target.checked;
+                                setMemoriaFase((prev) => {
+                                  const prevArr = Array.isArray(
+                                    prev[linea]?.[clave]
+                                  )
+                                    ? prev[linea][clave]
+                                    : [];
+                                  const newArr = checked
+                                    ? [...prevArr, opt]
+                                    : prevArr.filter((val) => val !== opt);
+                                  const actualizado = {
+                                    ...prev,
+                                    [linea]: {
+                                      ...prev[linea],
+                                      [clave]: newArr,
+                                    },
+                                  };
+                                  saveToDB("memoria_fase", actualizado);
+                                  return actualizado;
+                                });
+                              }}
+                              className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                            />
+                            <span className="text-sm">{opt}</span>
+                          </label>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* FILE (PDF) */}
+                    {type === "file" && (
+                      <div>
+                        {memoriaFase[linea]?.[clave]?.startsWith(
+                          "data:application/pdf"
+                        ) && (
+                          <div className="mb-2">
+                            <object
+                              data={memoriaFase[linea][clave]}
+                              type="application/pdf"
+                              width="100%"
+                              height="400px"
+                            >
+                              <p className="text-gray-600">
+                                No se pudo mostrar el PDF.{" "}
+                                <a
+                                  href={memoriaFase[linea][clave]}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-blue-600 underline"
+                                >
+                                  Haz clic aquí para verlo
+                                </a>
+                              </p>
+                            </object>
+                          </div>
                         )}
 
-                        {/* TEXT */}
-                        {type === "text" && (
+                        <input
+                          className="block w-full px-3 py-2 bg-[#1a1d23] border border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-white placeholder-gray-400 text-center"
+                          type="file"
+                          accept="application/pdf"
+                          required={
+                            !memoriaFase[linea]?.[clave]?.startsWith(
+                              "data:application/pdf"
+                            ) && item.binding
+                          }
+                          name={clave}
+                          onChange={(e) => {
+                            const file = e.target.files[0];
+                            if (file) {
+                              const reader = new FileReader();
+                              reader.onloadend = () => {
+                                const base64 = reader.result;
+                                setMemoriaFase((prev) => {
+                                  const actualizado = {
+                                    ...prev,
+                                    [linea]: {
+                                      ...prev[linea],
+                                      [clave]: base64,
+                                    },
+                                  };
+                                  saveToDB("memoria_fase", actualizado);
+                                  return actualizado;
+                                });
+                              };
+                              reader.readAsDataURL(file);
+                            }
+                          }}
+                        />
+                      </div>
+                    )}
+
+                    {/* IMAGE */}
+                    {type === "image" && (
+                      <div>
+                        {memoriaFase[linea]?.[clave]?.startsWith(
+                          "data:image"
+                        ) && (
+                          <div className="mb-2 justify-center flex">
+                            <img
+                              src={memoriaFase[linea][clave]}
+                              alt="Imagen guardada"
+                              className="max-h-48 rounded shadow object-contain"
+                            />
+                          </div>
+                        )}
+
+                        <input
+                          className="block w-full px-3 py-2 bg-[#1a1d23] border border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-white placeholder-gray-400 text-center"
+                          type="file"
+                          accept="image/*"
+                          required={
+                            !memoriaFase[linea]?.[clave]?.startsWith(
+                              "data:image"
+                            ) && item.binding
+                          }
+                          name={clave}
+                          onChange={(e) => {
+                            const file = e.target.files[0];
+                            if (file) {
+                              const reader = new FileReader();
+                              reader.onloadend = () => {
+                                const base64 = reader.result;
+                                setMemoriaFase((prev) => {
+                                  const actualizado = {
+                                    ...prev,
+                                    [linea]: {
+                                      ...prev[linea],
+                                      [clave]: base64,
+                                    },
+                                  };
+                                  saveToDB("memoria_fase", actualizado);
+                                  return actualizado;
+                                });
+                              };
+                              reader.readAsDataURL(file);
+                            }
+                          }}
+                        />
+                      </div>
+                    )}
+
+                    {/* SIGNATURE */}
+                    {type === "signature" && (
+                      <>
+                        <select
+                          className="text-center last:block w-full px-3 py-2 bg-[#1a1d23] border border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-white placeholder-gray-400 mb-2"
+                          value={
+                            memoriaFase[linea]?.[`tipo_entrada_${clave}`] || ""
+                          }
+                          onChange={(e) => {
+                            const updated = { ...memoriaFase };
+                            updated[linea] = {
+                              ...updated[linea],
+                              [`tipo_entrada_${clave}`]: e.target.value,
+                            };
+                            setMemoriaFase(updated);
+                          }}
+                        >
+                          <option value="">-- Selecciona --</option>
+                          <option value="texto">Texto</option>
+                          <option value="firma">Firma</option>
+                        </select>
+
+                        {/* Mostrar Input si selecciona "texto" */}
+                        {memoriaFase[linea]?.[`tipo_entrada_${clave}`] ===
+                          "texto" && (
                           <input
                             type="text"
-                            className="block w-full px-3 py-2 bg-[#1a1d23] border border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-white placeholder-gray-400 text-center"
-                            name={clave}
-                            value={memoriaFase[linea]?.[clave] ?? ""}
-                            required={item.binding}
-                            onChange={inputChange}
-                          />
-                        )}
-                        {/* TEXTAREA */}
-
-                        {type === "textarea" && (
-                          <textarea
-                            rows={1}
-                            style={{ maxHeight: "15rem" }}
-                            className="block w-full px-3 py-2 bg-[#1a1d23] border border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-white placeholder-gray-400 text-center"
-                            name={clave}
-                            value={memoriaFase[linea]?.[clave] ?? ""}
-                            required={item.binding}
-                            onChange={(e) => {
-                              e.target.style.height = "auto"; // Reinicia el alto
-                              e.target.style.height = `${e.target.scrollHeight}px`; // Ajusta al contenido
-                              inputChange(e);
-                            }}
-                          />
-                        )}
-
-                        {/* NUMBER */}
-                        {type === "number" && (
-                          <input
-                            type="number"
-                            className="block w-full px-3 py-2 bg-[#1a1d23] border border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-white placeholder-gray-400 text-center"
+                            className="text-center block w-full px-3 py-2 bg-[#1a1d23] border border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-white placeholder-gray-400"
                             name={clave}
                             value={memoriaFase[linea]?.[clave] ?? ""}
                             required={item.binding}
@@ -558,314 +829,41 @@ const App = () => {
                           />
                         )}
 
-                        {/* DATE */}
-                        {type === "date" && (
-                          <input
-                            type="date"
-                            className="block w-full px-3 py-2 bg-[#1a1d23] border border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-white placeholder-gray-400 text-center"
-                            name={clave}
-                            value={memoriaFase[linea]?.[clave] ?? ""}
-                            required={item.binding}
-                            onChange={inputChange}
-                            style={{
-                              colorScheme: "dark",
-                              WebkitCalendarPickerIndicator: {
-                                filter: "invert(1)",
-                              },
-                            }}
+                        {/* Mostrar Firma si selecciona "firma" */}
+                        {memoriaFase[linea]?.[`tipo_entrada_${clave}`] ===
+                          "firma" && (
+                          <Firma
+                            type={type}
+                            item={item}
+                            info={memoriaFase[linea]}
+                            lineaIndex={linea}
+                            setMemoriaGeneral={setMemoriaFase}
+                            saveToDB={saveToDB}
+                            typeMem="memoria_fase"
                           />
                         )}
+                      </>
+                    )}
 
-                        {/* TIME */}
-                        {type === "time" && (
-                          <input
-                            type="time"
-                            className="block w-full px-3 py-2 bg-[#1a1d23] border border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-white placeholder-gray-400 text-center"
-                            name={clave}
-                            value={memoriaFase[linea]?.[clave] ?? ""}
-                            required={item.binding}
-                            onChange={inputChange}
-                          />
-                        )}
-
-                        {/* SELECT */}
-                        {type === "select" && (
-                          <select
-                            className="block w-full px-3 py-2 bg-[#1a1d23] border border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-white placeholder-gray-400 text-center"
-                            name={clave}
-                            value={memoriaFase[linea]?.[clave] ?? ""}
-                            required={item.binding}
-                            onChange={inputChange}
-                          >
-                            <option value="">Seleccione</option>
-                            {options.map((opt, k) => (
-                              <option key={`opt-${k}`} value={opt}>
-                                {opt}
-                              </option>
-                            ))}
-                          </select>
-                        )}
-
-                        {/* RADIO */}
-                        {type === "radio" && (
-                          <div className="flex justify-center flex-wrap gap-4 mt-2">
-                            {options.map((opt, idx) => (
-                              <label
-                                key={idx}
-                                className="flex items-center gap-2 text-white"
-                              >
-                                <input
-                                  type="radio"
-                                  name={clave}
-                                  value={opt}
-                                  required={item.binding}
-                                  checked={memoriaFase[linea]?.[clave] === opt}
-                                  onChange={inputChange}
-                                  className="appearance-none w-4 h-4 border border-gray-600 rounded-full checked:bg-blue-500 checked:border-transparent focus:outline-none"
-                                />
-                                <span className="text-sm">{opt}</span>
-                              </label>
-                            ))}
-                          </div>
-                        )}
-
-                        {/* CHECKBOX */}
-                        {type === "checkbox" && (
-                          <div className="flex justify-center flex-wrap gap-4 mt-2">
-                            {options.map((opt, idx) => (
-                              <label
-                                key={idx}
-                                className="flex items-center gap-2 text-white"
-                              >
-                                <input
-                                  type="checkbox"
-                                  name={clave}
-                                  required={
-                                    item.binding &&
-                                    (!Array.isArray(
-                                      memoriaFase[linea]?.[clave]
-                                    ) ||
-                                      memoriaFase[linea][clave].length === 0)
-                                  }
-                                  checked={
-                                    Array.isArray(
-                                      memoriaFase[linea]?.[clave]
-                                    ) && memoriaFase[linea][clave].includes(opt)
-                                  }
-                                  onChange={(e) => {
-                                    const checked = e.target.checked;
-                                    setMemoriaFase((prev) => {
-                                      const prevArr = Array.isArray(
-                                        prev[linea]?.[clave]
-                                      )
-                                        ? prev[linea][clave]
-                                        : [];
-                                      const newArr = checked
-                                        ? [...prevArr, opt]
-                                        : prevArr.filter((val) => val !== opt);
-                                      const actualizado = {
-                                        ...prev,
-                                        [linea]: {
-                                          ...prev[linea],
-                                          [clave]: newArr,
-                                        },
-                                      };
-                                      saveToDB("memoria_fase", actualizado);
-                                      return actualizado;
-                                    });
-                                  }}
-                                  className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                                />
-                                <span className="text-sm">{opt}</span>
-                              </label>
-                            ))}
-                          </div>
-                        )}
-
-                        {/* FILE (PDF) */}
-                        {type === "file" && (
-                          <div>
-                            {memoriaFase[linea]?.[clave]?.startsWith(
-                              "data:application/pdf"
-                            ) && (
-                              <div className="mb-2">
-                                <object
-                                  data={memoriaFase[linea][clave]}
-                                  type="application/pdf"
-                                  width="100%"
-                                  height="400px"
-                                >
-                                  <p className="text-gray-600">
-                                    No se pudo mostrar el PDF.{" "}
-                                    <a
-                                      href={memoriaFase[linea][clave]}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      className="text-blue-600 underline"
-                                    >
-                                      Haz clic aquí para verlo
-                                    </a>
-                                  </p>
-                                </object>
-                              </div>
-                            )}
-
-                            <input
-                              className="block w-full px-3 py-2 bg-[#1a1d23] border border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-white placeholder-gray-400 text-center"
-                              type="file"
-                              accept="application/pdf"
-                              required={
-                                !memoriaFase[linea]?.[clave]?.startsWith(
-                                  "data:application/pdf"
-                                ) && item.binding
-                              }
-                              name={clave}
-                              onChange={(e) => {
-                                const file = e.target.files[0];
-                                if (file) {
-                                  const reader = new FileReader();
-                                  reader.onloadend = () => {
-                                    const base64 = reader.result;
-                                    setMemoriaFase((prev) => {
-                                      const actualizado = {
-                                        ...prev,
-                                        [linea]: {
-                                          ...prev[linea],
-                                          [clave]: base64,
-                                        },
-                                      };
-                                      saveToDB("memoria_fase", actualizado);
-                                      return actualizado;
-                                    });
-                                  };
-                                  reader.readAsDataURL(file);
-                                }
-                              }}
-                            />
-                          </div>
-                        )}
-
-                        {/* IMAGE */}
-                        {type === "image" && (
-                          <div>
-                            {memoriaFase[linea]?.[clave]?.startsWith(
-                              "data:image"
-                            ) && (
-                              <div className="mb-2 justify-center flex">
-                                <img
-                                  src={memoriaFase[linea][clave]}
-                                  alt="Imagen guardada"
-                                  className="max-h-48 rounded shadow object-contain"
-                                />
-                              </div>
-                            )}
-
-                            <input
-                              className="block w-full px-3 py-2 bg-[#1a1d23] border border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-white placeholder-gray-400 text-center"
-                              type="file"
-                              accept="image/*"
-                              required={
-                                !memoriaFase[linea]?.[clave]?.startsWith(
-                                  "data:image"
-                                ) && item.binding
-                              }
-                              name={clave}
-                              onChange={(e) => {
-                                const file = e.target.files[0];
-                                if (file) {
-                                  const reader = new FileReader();
-                                  reader.onloadend = () => {
-                                    const base64 = reader.result;
-                                    setMemoriaFase((prev) => {
-                                      const actualizado = {
-                                        ...prev,
-                                        [linea]: {
-                                          ...prev[linea],
-                                          [clave]: base64,
-                                        },
-                                      };
-                                      saveToDB("memoria_fase", actualizado);
-                                      return actualizado;
-                                    });
-                                  };
-                                  reader.readAsDataURL(file);
-                                }
-                              }}
-                            />
-                          </div>
-                        )}
-
-                        {/* SIGNATURE */}
-                        {type === "signature" && (
-                          <>
-                            <select
-                              className="text-center last:block w-full px-3 py-2 bg-[#1a1d23] border border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-white placeholder-gray-400 mb-2"
-                              value={
-                                memoriaFase[linea]?.[`tipo_entrada_${clave}`] ||
-                                ""
-                              }
-                              onChange={(e) => {
-                                const updated = { ...memoriaFase };
-                                updated[linea] = {
-                                  ...updated[linea],
-                                  [`tipo_entrada_${clave}`]: e.target.value,
-                                };
-                                setMemoriaFase(updated);
-                              }}
-                            >
-                              <option value="">-- Selecciona --</option>
-                              <option value="texto">Texto</option>
-                              <option value="firma">Firma</option>
-                            </select>
-
-                            {/* Mostrar Input si selecciona "texto" */}
-                            {memoriaFase[linea]?.[`tipo_entrada_${clave}`] ===
-                              "texto" && (
-                              <input
-                                type="text"
-                                className="text-center block w-full px-3 py-2 bg-[#1a1d23] border border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-white placeholder-gray-400"
-                                name={clave}
-                                value={memoriaFase[linea]?.[clave] ?? ""}
-                                required={item.binding}
-                                onChange={inputChange}
-                              />
-                            )}
-
-                            {/* Mostrar Firma si selecciona "firma" */}
-                            {memoriaFase[linea]?.[`tipo_entrada_${clave}`] ===
-                              "firma" && (
-                              <Firma
-                                type={type}
-                                item={item}
-                                info={memoriaFase[linea]}
-                                lineaIndex={linea}
-                                setMemoriaGeneral={setMemoriaFase}
-                                saveToDB={saveToDB}
-                                typeMem="memoria_fase"
-                              />
-                            )}
-                          </>
-                        )}
-
-                        {/* TEMPERATURE */}
-                        {type === "temperature" && (
-                          <>
-                            <input
-                              type="number"
-                              className="block w-full px-3 py-2 bg-[#1a1d23] border border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-white placeholder-gray-400 text-center"
-                              min={min}
-                              max={max}
-                              step="0.01"
-                              name={clave}
-                              value={memoriaFase[linea]?.[clave] ?? ""}
-                              required={item.binding}
-                              onChange={inputChange}
-                            />
-                            {memoriaFase[linea]?.[clave] !== undefined &&
-                              (memoriaFase[linea][clave] < min ||
-                                memoriaFase[linea][clave] > max) && (
-                                <p
-                                  className="
+                    {/* TEMPERATURE */}
+                    {type === "temperature" && (
+                      <>
+                        <input
+                          type="number"
+                          className="block w-full px-3 py-2 bg-[#1a1d23] border border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-white placeholder-gray-400 text-center"
+                          min={min}
+                          max={max}
+                          step="0.01"
+                          name={clave}
+                          value={memoriaFase[linea]?.[clave] ?? ""}
+                          required={item.binding}
+                          onChange={inputChange}
+                        />
+                        {memoriaFase[linea]?.[clave] !== undefined &&
+                          (memoriaFase[linea][clave] < min ||
+                            memoriaFase[linea][clave] > max) && (
+                            <p
+                              className="
                             mt-2 mb-2 px-4 py-2
                             text-sm text-center font-semibold
                             text-yellow-100
@@ -876,34 +874,32 @@ const App = () => {
                             animate-pulse
                             max-w-xs mx-auto
                           "
-                                >
-                                  ⚠️ Valor ingresado debe estar entre{" "}
-                                  <span className="font-bold">{min}</span> y{" "}
-                                  <span className="font-bold">{max}</span>.
-                                </p>
-                              )}
-                          </>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-                <>
-                  <hr className="border-t border-white/20 my-6" />
-                  <div className="flex justify-center">
-                    <button
-                      type="submit"
-                      className="bg-blue-600 text-white px-5 py-2 text-sm rounded-lg hover:bg-blue-700 transition-all shadow-md"
-                    >
-                      Siguiente Fase
-                    </button>
+                            >
+                              ⚠️ Valor ingresado debe estar entre{" "}
+                              <span className="font-bold">{min}</span> y{" "}
+                              <span className="font-bold">{max}</span>.
+                            </p>
+                          )}
+                      </>
+                    )}
                   </div>
-                </>
-              </form>
+                );
+              })}
             </div>
-          </div>
-        </>
-      )}
+            <>
+              <hr className="border-t border-white/20 my-6" />
+              <div className="flex justify-center">
+                <button
+                  type="submit"
+                  className="bg-blue-600 text-white px-5 py-2 text-sm rounded-lg hover:bg-blue-700 transition-all shadow-md"
+                >
+                  Siguiente Fase
+                </button>
+              </div>
+            </>
+          </form>
+        </div>
+      </div>
     </>
   );
 };
