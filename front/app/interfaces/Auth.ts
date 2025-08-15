@@ -11,6 +11,7 @@ export interface UserData {
   password: string;
   role: string;
   signature_bpm: string;
+  security_pass: string;
   factory: number[];
 }
 

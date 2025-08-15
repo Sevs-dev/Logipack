@@ -22,6 +22,7 @@ return new class extends Migration
             $table->string('phone')->nullable();
             $table->string('cargo')->nullable();
             $table->string('signature_bpm')->unique()->nullable();
+            $table->string('security_pass')->nullable();
             $table->json('factory')->nullable();
             $table->string('role')->default('user');
             $table->timestamp('last_login_at')->nullable();

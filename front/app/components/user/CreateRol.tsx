@@ -1,11 +1,5 @@
 import { useState, useEffect } from "react";
-import {
-  getRole,
-  getRoleId,
-  createRole,
-  updateRole,
-  deleteRole,
-} from "../../services/userDash/rolesServices";
+import { getRole, getRoleId, createRole, updateRole, deleteRole, } from "../../services/userDash/rolesServices";
 import Table from "../table/Table";
 import { showSuccess, showError, showConfirm } from "../toastr/Toaster";
 import Button from "../buttons/buttons";
