@@ -8,4 +8,9 @@ class Conciliaciones extends Model
 {
     //
     protected $guarded = [];
+
+    public function adaptationDate()
+    {
+        return $this->belongsTo(AdaptationDate::class, 'adaptation_date_id');
+    }
 }
