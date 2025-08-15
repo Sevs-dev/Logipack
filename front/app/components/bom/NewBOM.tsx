@@ -37,9 +37,9 @@ import { Client } from "@/app/interfaces/Client";
 import DateLoader from "@/app/components/loader/DateLoader";
 
 // 🆕 helper para uid estable por fila (no usar index como key)
-const uid = () =>
-  typeof crypto !== "undefined" && "randomUUID" in crypto
-    ? (crypto as any).randomUUID()
+const uid = (): string =>
+  typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
+    ? crypto.randomUUID()
     : Math.random().toString(36).slice(2);
 
 // 🆕 Tipo local solo para la UI (payload seguirá usando Ingredient)
@@ -55,7 +55,8 @@ function BOMManager({ canEdit = false, canView = false }: CreateClientProps) {
   const [selectedArticle, setSelectedArticle] = useState<Article | null>(null);
   const [loadingArticles, setLoadingArticles] = useState(false);
   const [baseQuantity, setBaseQuantity] = useState(0);
-  // ❌ antes: Ingredient[]  ✅ ahora: LocalIngredient[]
+  const [sticker, setSticker] = useState("");
+  const [sticker2, setSticker2] = useState("");
   const [ingredients, setIngredients] = useState<LocalIngredient[]>([]);
   const [boms, setBoms] = useState<Bom[]>([]);
   const [bomStatus, setBomStatus] = useState(false); // false = inactivo, true = activo
@@ -64,6 +65,10 @@ function BOMManager({ canEdit = false, canView = false }: CreateClientProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [auditList, setAuditList] = useState<Audit[]>([]);
   const [, setSelectedAudit] = useState<Audit | null>(null);
+  const [clientQuery, setClientQuery] = useState("");
+  const [clientListOpen, setClientListOpen] = useState(false);
+  const [showStickers, setShowStickers] = useState(false);
+  const [showStickers2, setShowStickers2] = useState(false);
 
   // 🆕 buscador independiente por ingrediente (clave = uid)
   const [ingredientSearch, setIngredientSearch] = useState<
@@ -151,7 +156,6 @@ function BOMManager({ canEdit = false, canView = false }: CreateClientProps) {
           setSelectedClient(clientData.id.toString());
           setBaseQuantity(Number(bom.base_quantity));
           setBomStatus(bom.status);
-
           const articleData =
             bom.details && bom.details !== "undefined" && bom.details !== null
               ? JSON.parse(bom.details).article
@@ -196,6 +200,8 @@ function BOMManager({ canEdit = false, canView = false }: CreateClientProps) {
       setLoadingArticles(true);
       try {
         const articlesData = await getArticleByCode(client.code as string);
+        console.log(articlesData);
+
         let fetchedArticles: Article[] = articlesData?.data || [];
         setAllArticles(fetchedArticles);
         if (selectedArticle) {
@@ -279,7 +285,9 @@ function BOMManager({ canEdit = false, canView = false }: CreateClientProps) {
       const removed = copy.splice(index, 1)[0];
       if (removed) {
         setIngredientSearch((s) => {
-          const { [removed.uid]: _, ...rest } = s;
+          const rest = Object.fromEntries(
+            Object.entries(s).filter(([key]) => key !== removed.uid)
+          );
           return rest;
         });
       }
@@ -294,27 +302,52 @@ function BOMManager({ canEdit = false, canView = false }: CreateClientProps) {
       return;
     }
 
+    const hasAtLeastOneIngredient = ingredients.some((i) => i.codart?.trim());
+    if (!hasAtLeastOneIngredient) {
+      showError("Agrega al menos un ingrediente válido.");
+      return;
+    }
+
     setIsSaving(true);
 
     try {
       const code_details = JSON.stringify({ codart: selectedArticle.codart });
+
       const code_ingredients = JSON.stringify(
-        ingredients.map((ing) => ({ codart: ing.codart }))
+        ingredients
+          .filter((ing) => ing.codart?.trim())
+          .map((ing) => ({ codart: ing.codart }))
       );
 
-      // 🧹 sacar uid del array antes de persistir
-      const cleanIngredients: Ingredient[] = ingredients.map(
-        ({ uid: _uid, ...rest }) => rest
-      );
+      const cleanIngredients: Ingredient[] = ingredients
+        .filter((ing) => ing.codart?.trim())
+        .map((ing) => {
+          /* eslint-disable-next-line @typescript-eslint/no-unused-vars */
+          const { uid, ...rest } = ing;
+
+          const parseNum = (v: unknown): string => {
+            const n = parseFloat(String(v ?? "").replace(",", "."));
+            return Number.isFinite(n) ? String(n) : "0";
+          };
+
+          return {
+            ...rest,
+            quantity: parseNum(rest.quantity),
+            merma: parseNum(rest.merma),
+            teorica: rest.teorica ?? "",
+          };
+        });
 
       const bomPayload: BomPayload = {
         client_id: Number(selectedClient),
-        base_quantity: baseQuantity.toString(),
+        base_quantity: String(baseQuantity ?? 0),
         details: JSON.stringify({ article: selectedArticle }),
         code_details,
         ingredients: JSON.stringify(cleanIngredients),
         code_ingredients,
         status: bomStatus,
+        sticker, // <-- guardar
+        sticker2,
       };
 
       if (currentBomId) {
@@ -344,6 +377,8 @@ function BOMManager({ canEdit = false, canView = false }: CreateClientProps) {
     setIngredientSearch({});
     setBaseQuantity(0);
     setBomStatus(false);
+    setSticker("");
+    setSticker2("");
     setCurrentBomId(null);
   };
 
@@ -364,6 +399,8 @@ function BOMManager({ canEdit = false, canView = false }: CreateClientProps) {
       setCurrentBomId(bom.id);
       setBaseQuantity(Number(bom.base_quantity));
       setBomStatus(bom.status);
+      setSticker(bom.sticker ?? "");
+      setSticker2(bom.sticker2 ?? "");
 
       const articleData =
         bom.details && bom.details !== "undefined"
@@ -428,6 +465,7 @@ function BOMManager({ canEdit = false, canView = false }: CreateClientProps) {
     }
   };
 
+  //Gistorial
   const handleHistory = async (id: number) => {
     const model = "Bom";
     try {
@@ -439,9 +477,24 @@ function BOMManager({ canEdit = false, canView = false }: CreateClientProps) {
     }
   };
 
+  //Filtro
+  const filteredClientsByQuery = useMemo(() => {
+    const q = clientQuery.trim().toLowerCase();
+    if (!q) return clients;
+    return clients.filter(
+      (c) =>
+        c.name.toLowerCase().includes(q) ||
+        String(c.code ?? "")
+          .toLowerCase()
+          .includes(q) ||
+        String(c.id).includes(q)
+    );
+  }, [clientQuery, clients]);
+
   return (
-    <div>
-      <div className="flex justify-center space-x-2 mb-2">
+    <div className="space-y-6">
+      {/* Acciones superiores */}
+      <div className="flex justify-center">
         {canEdit && (
           <Button
             onClick={() => {
@@ -454,6 +507,7 @@ function BOMManager({ canEdit = false, canView = false }: CreateClientProps) {
         )}
       </div>
 
+      {/* Loader */}
       {isSaving && (
         <DateLoader
           message="Cargando..."
@@ -462,363 +516,539 @@ function BOMManager({ canEdit = false, canView = false }: CreateClientProps) {
         />
       )}
 
+      {/* Modal */}
       {isModalOpen && (
         <ModalSection
           isVisible={isModalOpen}
           onClose={() => setIsModalOpen(false)}
         >
-          <Text type="title" color="text-[#000]">
-            {currentBomId ? "Editar BOM" : "Crear BOM"}
-          </Text>
+          {/* Contenedor con header y footer fijos */}
+          <div className=" flex flex-col">
+            {/* Header modal */}
+            <div className=" bg-white border-b border-gray-200 px-2 sm:px-4 py-3">
+              <Text type="title" color="text-[#000]">
+                {currentBomId ? "Editar BOM" : "Crear BOM"}
+              </Text>
+            </div>
 
-          <div className="mb-4">
-            <Text type="subtitle" color="#000">
-              Selecciona un Cliente:
-            </Text>
-            <select
-              className="w-full border p-2 rounded text-black text-center"
-              value={selectedClient}
-              onChange={(e) => setSelectedClient(e.target.value)}
-              disabled={!canEdit}
-            >
-              <option value="">Seleccione...</option>
-              {clients.map((client) => (
-                <option key={client.code} value={client.id.toString()}>
-                  {client.name}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {(selectedClient || currentBomId) && (
-            <div className="mt-4 grid grid-cols-2 gap-4">
-              <div>
+            {/* Body scrollable */}
+            <div className="px-2 sm:px-4 py-4 space-y-6 overflow-y-auto">
+              {/* Cliente */}
+              <section className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5 space-y-4">
                 <Text type="subtitle" color="#000">
-                  Artículos Disponibles:
+                  Selecciona un Cliente
                 </Text>
-                <div className="mb-2">
+
+                <div className="relative">
                   <input
                     type="text"
-                    placeholder="Buscar artículos..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="border p-2 rounded w-full text-black"
+                    placeholder="Buscar por nombre, código o ID…"
+                    value={clientQuery}
+                    onChange={(e) => {
+                      setClientQuery(e.target.value);
+                      setClientListOpen(true);
+                    }}
+                    onFocus={() => setClientListOpen(true)}
+                    className="w-full border border-gray-300 rounded-lg px-4 py-3 text-black text-base text-center focus:outline-none focus:ring-2 focus:ring-blue-500"
                     disabled={!canEdit}
+                    aria-label="Buscador de clientes"
                   />
-                </div>
-                {loadingArticles ? (
-                  <p className="text-blue-500">Cargando artículos...</p>
-                ) : filteredArticles.length > 0 ? (
-                  <ul className="border p-2 rounded bg-gray-100 h-40 overflow-y-auto">
-                    {filteredArticles.map((article) => (
-                      <li
-                        key={article.codart}
-                        className={`border-b py-1 px-2 text-black cursor-pointer transition ${
-                          canEdit
-                            ? "hover:bg-blue-100"
-                            : "text-gray-400 cursor-not-allowed"
-                        }`}
-                        onClick={() => {
-                          if (canEdit) handleSelectArticle(article);
-                        }}
-                        title={
-                          !canEdit
-                            ? "No tienes permiso para seleccionar artículos"
-                            : ""
-                        }
-                      >
-                        {article.desart} ({article.codart})
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <Text type="error">No se encontraron coincidencias.</Text>
-                )}
-              </div>
 
-              <div>
-                <Text type="subtitle" color="#000">
-                  Artículo Seleccionado:
-                </Text>
-                {selectedArticle ? (
-                  <div className="border p-2 rounded bg-gray-100 flex justify-between items-center">
-                    <span className="text-black">
-                      {selectedArticle.desart} ({selectedArticle.codart})
-                    </span>
-                    <button
-                      onClick={handleDeselectArticle}
-                      className="bg-red-500 text-white px-2 py-1 rounded"
-                      disabled={!canEdit}
+                  {clientListOpen && (
+                    <div
+                      className="absolute left-0 right-0 z-20 mt-1 max-h-64 overflow-y-auto bg-white border border-gray-200 rounded-lg shadow-xl scrollbar-thin"
+                      onMouseLeave={() => setClientListOpen(false)}
                     >
-                      X
+                      {filteredClientsByQuery.length > 0 ? (
+                        filteredClientsByQuery.map((client) => (
+                          <button
+                            type="button"
+                            key={client.id}
+                            className={`w-full px-4 py-3 text-black text-left text-base transition ${
+                              selectedClient === String(client.id)
+                                ? "bg-blue-100"
+                                : "hover:bg-blue-50"
+                            }`}
+                            onClick={() => {
+                              setSelectedClient(String(client.id));
+                              setClientQuery(
+                                `${client.name} (${client.code ?? client.id})`
+                              );
+                              setClientListOpen(false);
+                            }}
+                            disabled={!canEdit}
+                            title={client.name}
+                          >
+                            <div className="font-medium truncate">
+                              {client.name}
+                            </div>
+                            <div className="text-sm text-gray-600">
+                              Código: {client.code ?? "—"} · ID: {client.id}
+                            </div>
+                          </button>
+                        ))
+                      ) : (
+                        <div className="px-4 py-3 text-gray-600">
+                          Sin coincidencias.
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-gray-700">
+                    Seleccionado:{" "}
+                    {selectedClient
+                      ? (() => {
+                          const c = clients.find(
+                            (x) => String(x.id) === selectedClient
+                          );
+                          return c ? `${c.name} (${c.code ?? c.id})` : "—";
+                        })()
+                      : "—"}
+                  </span>
+
+                  {selectedClient && canEdit && (
+                    <button
+                      type="button"
+                      className="ml-auto bg-red-500 hover:bg-red-400 text-white text-xs px-2 py-1 rounded"
+                      onClick={() => {
+                        setSelectedClient("");
+                        setClientQuery("");
+                      }}
+                    >
+                      Limpiar
                     </button>
+                  )}
+                </div>
+              </section>
+
+              {/* Artículos */}
+              {(selectedClient || currentBomId) && (
+                <section className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Lista */}
+                  <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-4 space-y-3">
+                    <Text type="subtitle" color="#000">
+                      Artículos Disponibles
+                    </Text>
+
+                    <input
+                      type="text"
+                      placeholder="Buscar artículos..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="border border-gray-300 rounded-lg p-2.5 w-full text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      disabled={!canEdit}
+                      aria-label="Buscador de artículos"
+                    />
+
+                    {loadingArticles ? (
+                      <p className="text-blue-500">Cargando artículos...</p>
+                    ) : filteredArticles.length > 0 ? (
+                      <ul className="border border-gray-200 rounded-lg bg-gray-50 h-48 overflow-y-auto divide-y divide-gray-200 scrollbar-thin">
+                        {filteredArticles.map((article) => (
+                          <li
+                            key={article.codart}
+                            className={`px-3 py-2 text-black cursor-pointer transition ${
+                              canEdit
+                                ? "hover:bg-blue-100"
+                                : "text-gray-400 cursor-not-allowed"
+                            }`}
+                            onClick={() => {
+                              if (canEdit) handleSelectArticle(article);
+                            }}
+                            title={
+                              !canEdit
+                                ? "No tienes permiso para seleccionar artículos"
+                                : ""
+                            }
+                          >
+                            <span className="font-medium">
+                              {article.desart}
+                            </span>{" "}
+                            <span className="text-gray-600">
+                              ({article.codart})
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <div className="text-sm text-gray-600">
+                        No se encontraron coincidencias.
+                      </div>
+                    )}
                   </div>
-                ) : (
-                  <Text type="alert">
-                    No se ha seleccionado ningún artículo.
-                  </Text>
-                )}
-              </div>
-            </div>
-          )}
 
-          <div className="flex justify-center space-x-2">
-            <div className="mt-4">
-              <Text type="subtitle" color="#000">
-                Cantidad Base:
-              </Text>
-              <input
-                type="number"
-                min="0"
-                step="any"
-                placeholder="0"
-                className="w-full border p-2 rounded text-black text-center"
-                value={baseQuantity === 0 ? "" : baseQuantity}
-                onChange={(e) => {
-                  const val = e.target.value;
-                  setBaseQuantity(val === "" ? 0 : Number(val));
-                }}
-                disabled={!canEdit}
-              />
-            </div>
+                  {/* Seleccionado */}
+                  <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-4 space-y-3">
+                    <Text type="subtitle" color="#000">
+                      Artículo Seleccionado
+                    </Text>
+                    {selectedArticle ? (
+                      <div className="border border-gray-200 rounded-lg bg-gray-50 px-3 py-2 flex items-center gap-3">
+                        <span className="text-black truncate">
+                          {selectedArticle.desart} ({selectedArticle.codart})
+                        </span>
+                        <button
+                          onClick={handleDeselectArticle}
+                          className="ml-auto bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded"
+                          disabled={!canEdit}
+                          aria-label="Quitar artículo seleccionado"
+                        >
+                          X
+                        </button>
+                      </div>
+                    ) : (
+                      <Text type="alert">
+                        No se ha seleccionado ningún artículo.
+                      </Text>
+                    )}
+                  </div>
+                </section>
+              )}
 
-            <div className="mt-4">
-              <Text type="subtitle" color="#000">
-                Estado:
-              </Text>
-              <select
-                className="w-full border p-2 rounded text-black text-center"
-                value={bomStatus ? "activo" : "inactivo"}
-                onChange={(e) => setBomStatus(e.target.value === "activo")}
-                disabled={!canEdit}
-              >
-                <option value="activo">Activo</option>
-                <option value="inactivo">Inactivo</option>
-              </select>
-            </div>
-          </div>
-
-          {selectedArticle && (
-            <div className="mt-6">
-              <Text type="subtitle" color="text-gray-800">
-                Materiales:
-              </Text>
-
-              {ingredients.length > 0 ? (
+              {/* Config básica + Ingredientes */}
+              {selectedArticle && (
                 <>
-                  {ingredients.map((ing, index) => {
-                    const term = ingredientSearch[ing.uid] ?? "";
-                    const rowFilteredArticles = allArticles.filter(
-                      (article) =>
-                        article.desart
-                          .toLowerCase()
-                          .includes(term.toLowerCase()) ||
-                        article.codart
-                          .toLowerCase()
-                          .includes(term.toLowerCase())
-                    );
+                  {/* Config básica */}
+                  <section className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-4 space-y-2">
+                      <Text type="subtitle" color="#000">
+                        Cantidad Base
+                      </Text>
+                      <input
+                        type="number"
+                        min="0"
+                        step="any"
+                        placeholder="0"
+                        className="w-full border border-gray-300 rounded-lg p-2.5 text-black text-center focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        value={baseQuantity === 0 ? "" : baseQuantity}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setBaseQuantity(val === "" ? 0 : Number(val));
+                        }}
+                        disabled={!canEdit}
+                      />
+                    </div>
 
-                    return (
-                      <div key={ing.uid}>
-                        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 mb-6 hover:shadow-md transition-shadow duration-300">
-                          <div className="flex flex-col md:flex-row gap-2">
-                            {/* Buscador + Lista de artículos */}
-                            <div className="flex-1">
-                              <Text type="subtitle" color="#000">
-                                Buscar artículo
-                              </Text>
-                              <input
-                                type="text"
-                                placeholder="Nombre o código del artículo..."
-                                className="w-full px-5 py-3 border border-gray-300 rounded-xl text-base text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                value={term}
-                                onChange={(e) =>
-                                  setIngredientSearch((prev) => ({
-                                    ...prev,
-                                    [ing.uid]: e.target.value,
-                                  }))
-                                }
-                                disabled={!canEdit}
-                              />
+                    <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-4 space-y-2">
+                      <Text type="subtitle" color="#000">
+                        Estado
+                      </Text>
+                      <select
+                        className="w-full border border-gray-300 rounded-lg p-2.5 text-black text-center focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        value={bomStatus ? "activo" : "inactivo"}
+                        onChange={(e) =>
+                          setBomStatus(e.target.value === "activo")
+                        }
+                        disabled={!canEdit}
+                      >
+                        <option value="activo">Activo</option>
+                        <option value="inactivo">Inactivo</option>
+                      </select>
+                    </div>
+                  </section>
 
-                              <div className="mt-4 max-h-64 overflow-y-auto border border-gray-300 rounded-xl divide-y divide-gray-100 shadow-inner bg-white">
-                                {rowFilteredArticles.length > 0 ? (
-                                  rowFilteredArticles.map((article) => (
-                                    <label
-                                      key={article.codart}
-                                      className={`flex items-center px-5 py-3 text-base cursor-pointer text-black transition-colors duration-150 ${
-                                        ing.codart === article.codart
-                                          ? "bg-blue-100 text-black font-medium"
-                                          : "hover:bg-blue-50"
-                                      }`}
+                  {/* Ingredientes */}
+                  <section className="space-y-4">
+                    <Text type="subtitle" color="text-gray-800">
+                      Materiales
+                    </Text>
+
+                    {ingredients.length > 0 ? (
+                      <>
+                        {ingredients.map((ing, index) => {
+                          const term = ingredientSearch[ing.uid] ?? "";
+                          const rowFilteredArticles = allArticles.filter(
+                            (article) =>
+                              article.desart
+                                .toLowerCase()
+                                .includes(term.toLowerCase()) ||
+                              article.codart
+                                .toLowerCase()
+                                .includes(term.toLowerCase())
+                          );
+
+                          return (
+                            <div
+                              key={ing.uid}
+                              className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5 hover:shadow-md transition-shadow"
+                            >
+                              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                {/* Buscador y lista */}
+                                <div className="md:col-span-2 space-y-2">
+                                  <Text type="subtitle" color="#000">
+                                    Buscar artículo
+                                  </Text>
+                                  <input
+                                    type="text"
+                                    placeholder="Nombre o código del artículo..."
+                                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    value={term}
+                                    onChange={(e) =>
+                                      setIngredientSearch((prev) => ({
+                                        ...prev,
+                                        [ing.uid]: e.target.value,
+                                      }))
+                                    }
+                                    disabled={!canEdit}
+                                  />
+
+                                  <div className="mt-3 max-h-56 overflow-y-auto border border-gray-200 rounded-lg divide-y divide-gray-100 bg-white scrollbar-thin">
+                                    {rowFilteredArticles.length > 0 ? (
+                                      rowFilteredArticles.map((article) => (
+                                        <label
+                                          key={article.codart}
+                                          className={`flex items-center gap-3 px-4 py-2.5 cursor-pointer text-black transition ${
+                                            ing.codart === article.codart
+                                              ? "bg-blue-100 font-medium"
+                                              : "hover:bg-blue-50"
+                                          }`}
+                                        >
+                                          <input
+                                            type="radio"
+                                            name={`article-${ing.uid}`}
+                                            className="accent-blue-600"
+                                            value={article.codart}
+                                            checked={
+                                              !!(ing.codart === article.codart)
+                                            }
+                                            onChange={() =>
+                                              handleIngredientSelect(
+                                                index,
+                                                article.codart
+                                              )
+                                            }
+                                            disabled={!canEdit}
+                                          />
+                                          <span className="truncate">
+                                            {article.desart} ({article.codart})
+                                          </span>
+                                        </label>
+                                      ))
+                                    ) : (
+                                      <div className="p-4 text-sm text-gray-500">
+                                        No se encontraron artículos.
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+
+                                {/* Cantidades y acción */}
+                                <div className="space-y-3">
+                                  <div>
+                                    <Text type="subtitle" color="#000">
+                                      Cantidad
+                                    </Text>
+                                    <input
+                                      type="number"
+                                      min="0"
+                                      step="any"
+                                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-center text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                      placeholder="0"
+                                      value={ing.quantity}
+                                      onChange={(e) =>
+                                        handleIngredientChange(
+                                          index,
+                                          "quantity",
+                                          e.target.value
+                                        )
+                                      }
+                                      disabled={!canEdit}
+                                    />
+                                  </div>
+
+                                  <div>
+                                    <Text type="subtitle" color="#000">
+                                      % Merma
+                                    </Text>
+                                    <input
+                                      type="number"
+                                      min="0"
+                                      step="any"
+                                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-center text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                      placeholder="0"
+                                      value={ing.merma}
+                                      onChange={(e) =>
+                                        handleIngredientChange(
+                                          index,
+                                          "merma",
+                                          e.target.value
+                                        )
+                                      }
+                                      disabled={!canEdit}
+                                    />
+                                  </div>
+
+                                  {/* Cálculo neto */}
+                                  {(() => {
+                                    const qty =
+                                      parseFloat(
+                                        String(ing.quantity ?? "").replace(
+                                          ",",
+                                          "."
+                                        )
+                                      ) || 0;
+                                    const rawWaste =
+                                      parseFloat(
+                                        String(ing.merma ?? "").replace(
+                                          ",",
+                                          "."
+                                        )
+                                      ) || 0;
+                                    const waste = Math.min(
+                                      100,
+                                      Math.max(0, rawWaste)
+                                    );
+                                    const net = qty * (1 - waste / 100);
+
+                                    return (
+                                      <div className="text-sm text-gray-700">
+                                        Neta:{" "}
+                                        <span className="font-semibold">
+                                          {net.toFixed(3)}
+                                        </span>{" "}
+                                        <span className="opacity-70">
+                                          ({qty.toFixed(3)} × (1 −{" "}
+                                          {waste.toFixed(2)}
+                                          %))
+                                        </span>
+                                      </div>
+                                    );
+                                  })()}
+
+                                  <div className="pt-1">
+                                    <button
+                                      onClick={() => removeIngredientRow(index)}
+                                      className="w-full bg-red-500 hover:bg-red-600 text-white text-sm font-semibold px-4 py-2 rounded-lg transition"
+                                      disabled={!canEdit}
                                     >
-                                      <input
-                                        type="radio"
-                                        name={`article-${ing.uid}`}
-                                        className="mr-3 accent-blue-600 scale-110"
-                                        value={article.codart}
-                                        checked={ing.codart === article.codart}
-                                        onChange={() =>
-                                          handleIngredientSelect(
-                                            index,
-                                            article.codart
-                                          )
-                                        }
-                                        disabled={!canEdit}
-                                      />
-                                      {article.desart} ({article.codart})
-                                    </label>
-                                  ))
-                                ) : (
-                                  <div className="p-5 text-base text-gray-500">
-                                    No se encontraron artículos.
+                                      Eliminar
+                                    </button>
                                   </div>
-                                )}
+                                </div>
                               </div>
                             </div>
+                          );
+                        })}
 
-                            {/* Inputs y botón */}
-                            {/* Inputs y botón */}
-                            <div className="mt-8">
-                              <div>
-                                <Text type="subtitle" color="#000">
-                                  Cantidad
-                                </Text>
-                                <input
-                                  type="number"
-                                  min="0"
-                                  step="any"
-                                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-center text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                  placeholder="0"
-                                  value={ing.quantity}
-                                  onChange={(e) =>
-                                    handleIngredientChange(
-                                      index,
-                                      "quantity",
-                                      e.target.value
-                                    )
-                                  }
-                                  disabled={!canEdit}
-                                />
-                              </div>
+                        {/* Stickers */}
 
-                              <div className="mt-3">
-                                <Text type="subtitle" color="#000">
-                                  % Merma
-                                </Text>
-                                <input
-                                  type="number"
-                                  min="0"
-                                  step="any"
-                                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-center text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                  placeholder="0"
-                                  value={ing.merma}
-                                  onChange={(e) =>
-                                    handleIngredientChange(
-                                      index,
-                                      "merma",
-                                      e.target.value
-                                    )
-                                  }
-                                  disabled={!canEdit}
-                                />
-                              </div>
-
-                              {/* 🆕 Cálculo mostrado en vivo */}
-                              {(() => {
-                                // parseo robusto (soporta vacío y comas)
-                                const qty =
-                                  parseFloat(
-                                    String(ing.quantity ?? "").replace(",", ".")
-                                  ) || 0;
-                                const rawWaste =
-                                  parseFloat(
-                                    String(ing.merma ?? "").replace(",", ".")
-                                  ) || 0;
-                                // clamp merma entre 0 y 100
-                                const waste = Math.min(
-                                  100,
-                                  Math.max(0, rawWaste)
-                                );
-                                const net = qty * (1 - waste / 100);
-
-                                return (
-                                  <div className="mt-2 text-sm text-gray-700">
-                                    Neta:{" "}
-                                    <span className="font-semibold">
-                                      {net.toFixed(3)}
-                                    </span>{" "}
-                                    <span className="opacity-70">
-                                      ({qty.toFixed(3)} × (1 −{" "}
-                                      {waste.toFixed(2)}%))
-                                    </span>
-                                  </div>
-                                );
-                              })()}
-
-                              <div className="pt-4">
-                                <button
-                                  onClick={() => removeIngredientRow(index)}
-                                  className="w-full bg-red-500 hover:bg-red-600 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-all duration-200"
-                                  disabled={!canEdit}
-                                >
-                                  Eliminar
-                                </button>
-                              </div>
-                            </div>
-                          </div>
+                        <div className="border-t border-gray-200 pt-4 flex justify-center">
+                          <Button
+                            onClick={addIngredientRow}
+                            variant="create"
+                            label="Agregar Ingrediente"
+                            disabled={!canEdit}
+                          />
+                        </div>
+                      </>
+                    ) : (
+                      <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 text-center space-y-4">
+                        <Text type="alert">No hay ingredientes agregados.</Text>
+                        <div className="flex justify-center">
+                          <Button
+                            onClick={addIngredientRow}
+                            variant="create"
+                            label="Agregar Ingrediente"
+                            disabled={!canEdit}
+                          />
                         </div>
                       </div>
-                    );
-                  })}
+                    )}
+                  </section>
 
-                  {/* Botón único para agregar ingrediente */}
-                  <hr className="my-4 border-t border-gray-600 w-full max-w-lg mx-auto opacity-60" />
-                  <div className="flex justify-center gap-4 mt-6">
-                    <Button
-                      onClick={addIngredientRow}
-                      variant="create"
-                      label="Agregar Ingrediente"
-                      disabled={!canEdit}
-                    />
-                  </div>
+                  <section className="bg-white rounded-2xl border border-gray-200 shadow-sm p-4 space-y-3">
+                    <div className="flex flex-wrap justify-center gap-6">
+                      <label className="flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          id="toggleStickers1"
+                          className="h-4 w-4"
+                          checked={showStickers}
+                          onChange={(e) => setShowStickers(e.target.checked)}
+                          disabled={!canEdit}
+                        />
+                        <span className="text-sm text-black">
+                          Añadir Sticker
+                        </span>
+                      </label>
+
+                      <label className="flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          id="toggleStickers2"
+                          className="h-4 w-4"
+                          checked={showStickers2}
+                          onChange={(e) => setShowStickers2(e.target.checked)}
+                          disabled={!canEdit}
+                        />
+                        <span className="text-sm text-black">
+                          Añadir Sticker Blanco
+                        </span>
+                      </label>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {showStickers && (
+                        <div className="space-y-2">
+                          <Text type="subtitle" color="#000">
+                            Sticker
+                          </Text>
+                          <input
+                            type="text"
+                            className="w-full border border-gray-300 rounded-lg p-2.5 text-black text-center focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            value={sticker}
+                            onChange={(e) => setSticker(e.target.value)}
+                            disabled={!canEdit}
+                          />
+                        </div>
+                      )}
+
+                      {showStickers2 && (
+                        <div className="space-y-2">
+                          <Text type="subtitle" color="#000">
+                            Sticker Blanco
+                          </Text>
+                          <input
+                            type="text"
+                            className="w-full border border-gray-300 rounded-lg p-2.5 text-black text-center focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            value={sticker2}
+                            onChange={(e) => setSticker2(e.target.value)}
+                            disabled={!canEdit}
+                          />
+                        </div>
+                      )}
+                    </div>
+                  </section>
                 </>
-              ) : (
-                <div>
-                  <Text type="alert">No hay ingredientes agregados.</Text>
-                  <hr className="my-4 border-t border-gray-600 w-full max-w-lg mx-auto opacity-60" />
-                  <div className="flex justify-center gap-4 mt-6">
-                    <Button
-                      onClick={addIngredientRow}
-                      variant="create"
-                      label="Agregar Ingrediente"
-                      disabled={!canEdit}
-                    />
-                  </div>
-                </div>
               )}
             </div>
-          )}
 
-          <hr className="my-4 border-t border-gray-600 w-full max-w-lg mx-auto opacity-60" />
-          <div className="flex justify-center gap-4 mt-6">
-            <Button
-              onClick={() => setIsModalOpen(false)}
-              variant="cancel"
-              label="Cancelar"
-            />
-            {canEdit && (
-              <Button
-                onClick={handleSaveBOM}
-                variant="create"
-                label={currentBomId ? "Actualizar BOM" : "Guardar BOM"}
-                disabled={loadingArticles || isSaving}
-              />
-            )}
+            {/* Footer acciones */}
+            <div className="sticky bottom-0 z-10 bg-white border-t border-gray-200 px-2 sm:px-4 py-3">
+              <div className="flex justify-center gap-3">
+                <Button
+                  onClick={() => setIsModalOpen(false)}
+                  variant="cancel"
+                  label="Cancelar"
+                />
+                {canEdit && (
+                  <Button
+                    onClick={handleSaveBOM}
+                    variant="create"
+                    label={currentBomId ? "Actualizar BOM" : "Guardar BOM"}
+                    disabled={loadingArticles || isSaving}
+                  />
+                )}
+              </div>
+            </div>
           </div>
         </ModalSection>
       )}
 
+      {/* Tabla principal */}
       <Table
         columns={["client_name", "article_codart", "article_desart", "status"]}
         rows={boms}
@@ -832,6 +1062,7 @@ function BOMManager({ canEdit = false, canView = false }: CreateClientProps) {
         onEdit={handleEdit}
         onHistory={handleHistory}
       />
+
       {auditList.length > 0 && (
         <AuditModal audit={auditList} onClose={() => setAuditList([])} />
       )}
