@@ -386,6 +386,259 @@
             @endif
         @endforeach
 
+        @php
+            $c = $conciliacion;
+            $nf = fn($v) => is_null($v) || $v === '' ? '—' : number_format((float) $v, 2, ',', '.');
+            $pf = fn($v) => is_null($v) || $v === '' ? '—' : $nf($v) . '%';
+
+            $desvMap = [
+                'faltante' => 'Faltante',
+                'adicionales' => 'Adicionales',
+                'rechazo' => 'Rechazo',
+                'danno_proceso' => 'Daño Proceso',
+                'devolucion' => 'Devolución',
+                'sobrante' => 'Sobrante',
+            ];
+            $desvPresentes = [];
+            if ($c) {
+                foreach ($desvMap as $key => $label) {
+                    $val = $c->{$key} ?? null;
+                    if (!is_null($val) && (float) $val != 0) {
+                        $desvPresentes[$key] = $label;
+                    }
+                }
+            }
+            $rend = (float) ($c->rendimiento ?? 0);
+            $rendClass = $rend >= 99.5 ? 'conc-badge-ok' : ($rend >= 98.0 ? 'conc-badge-mid' : 'conc-badge-warn');
+        @endphp
+
+        @if ($c)
+            <h2>Resumen de Conciliación</h2>
+
+            <style>
+                /* ===== Estilos seguros para DOMPDF ===== */
+                .conc-wrap {
+                    width: 100%;
+                }
+
+                .conc-row {
+                    width: 100%;
+                }
+
+                .conc-col {
+                    display: inline-block;
+                    vertical-align: top;
+                    width: 49%;
+                    margin: 0 1% 0 0;
+                }
+
+                .conc-col:last-child {
+                    margin-right: 0;
+                }
+
+                .conc-card {
+                    background: #fff;
+                    border: 1px solid #e5e7eb;
+                    border-radius: 8px;
+                    padding: 10px;
+                    page-break-inside: avoid;
+                }
+
+                .conc-title {
+                    margin: 0 0 6px 0;
+                    font-size: 12px;
+                    color: #1e40af;
+                    font-weight: 700;
+                }
+
+                .conc-kpi {
+                    font-size: 12.75px;
+                    color: #111827;
+                    line-height: 1.45;
+                }
+
+                .conc-kpi small {
+                    color: #6b7280;
+                    font-weight: 500;
+                }
+
+                .conc-rowflex {
+                    display: block;
+                }
+
+                /* evitar flex real en dompdf */
+                .conc-strong {
+                    font-weight: 600;
+                }
+
+                .conc-list {
+                    margin: 0;
+                    padding: 0;
+                    list-style: none;
+                    font-size: 12.5px;
+                }
+
+                .conc-list li {
+                    margin: 2px 0;
+                }
+
+                .conc-mono {
+                    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+                }
+
+                .conc-table {
+                    width: 100%;
+                    border-collapse: collapse;
+                    font-size: 11px;
+                    margin-top: 8px;
+                }
+
+                .conc-table th,
+                .conc-table td {
+                    border: 1px solid #e5e7eb;
+                    padding: 6px 8px;
+                    text-align: center;
+                    word-break: break-word;
+                }
+
+                .conc-table th {
+                    background: #eff6ff;
+                    color: #1e3a8a;
+                    font-weight: 600;
+                }
+
+                .conc-badge-ok {
+                    display: inline-block;
+                    padding: 2px 6px;
+                    border-radius: 6px;
+                    border: 1px solid #d1fae5;
+                    background: #ecfdf5;
+                    color: #065f46;
+                    font-size: 10.5px;
+                }
+
+                .conc-badge-mid {
+                    display: inline-block;
+                    padding: 2px 6px;
+                    border-radius: 6px;
+                    border: 1px solid #fef3c7;
+                    background: #fffbeb;
+                    color: #92400e;
+                    font-size: 10.5px;
+                }
+
+                .conc-badge-warn {
+                    display: inline-block;
+                    padding: 2px 6px;
+                    border-radius: 6px;
+                    border: 1px solid #fee2e2;
+                    background: #fef2f2;
+                    color: #991b1b;
+                    font-size: 10.5px;
+                }
+
+                .conc-avoid-break {
+                    page-break-inside: avoid;
+                    break-inside: avoid;
+                }
+            </style>
+
+            <div class="conc-wrap">
+                {{-- Fila superior: 2 tarjetas lado a lado --}}
+                <div class="conc-row conc-avoid-break" style="margin-bottom:8px;">
+                    <div class="conc-col">
+                        <div class="conc-card">
+                            <div class="conc-title">Identificación</div>
+                            <ul class="conc-list">
+                                <li><small>Orden:</small> <span
+                                        class="conc-mono">{{ $c->number_order ?? $plan->number_order }}</span></li>
+                                <li><small>Cod. Artículo:</small> <span
+                                        class="conc-mono">{{ $c->codart ?? $plan->codart }}</span></li>
+                                <li><small>Producto:</small> {{ $c->desart ?? ($desart ?? '—') }}</li>
+                                <li><small>Usuario:</small> {{ $c->user ?? '—' }}</li>
+                                <li><small>Fecha:</small>
+                                    {{ \Carbon\Carbon::parse($c->updated_at)->format('Y-m-d H:i') }}</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="conc-col">
+                        <div class="conc-card">
+                            <div class="conc-title">Totales</div>
+                            <div class="conc-kpi"><small>Cant. a producir:</small> <span
+                                    class="conc-strong">{{ $nf($c->quantityToProduce ?? $plan->quantityToProduce) }}</span>
+                            </div>
+                            <div class="conc-kpi conc-rowflex">
+                                <small>Total resultante:</small> <span class="conc-strong">{{ $nf($c->total) }}</span>
+                                <span class="{{ $rendClass }}" style="margin-left:6px;">Rendimiento:
+                                    {{ $pf($rend) }}</span>
+                            </div>
+                            @if (!is_null($c->total) && !is_null($c->quantityToProduce ?? $plan->quantityToProduce))
+                                @php $delta = (float)$c->total - (float)($c->quantityToProduce ?? $plan->quantityToProduce); @endphp
+                                <div class="conc-kpi"><small>Diferencia:</small> <span
+                                        class="{{ $delta >= 0 ? 'conc-strong' : '' }}">{{ $nf($delta) }}</span>
+                                </div>
+                            @endif
+                        </div>
+                    </div>
+                </div>
+
+                {{-- Fila inferior: Desvíos a lo ancho --}}
+                <div class="conc-row conc-avoid-break">
+                    <div class="conc-card">
+                        <div class="conc-title">Desvíos</div>
+                        @if (count($desvPresentes))
+                            <table class="conc-table">
+                                <thead>
+                                    <tr>
+                                        @foreach ($desvPresentes as $label)
+                                            <th>{{ $label }}</th>
+                                        @endforeach
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        @foreach ($desvPresentes as $key => $label)
+                                            <td>{{ $nf($c->{$key}) }}</td>
+                                        @endforeach
+                                    </tr>
+                                </tbody>
+                            </table>
+                        @else
+                            <div class="conc-kpi"><span class="conc-badge-ok">Sin desvíos registrados</span></div>
+                        @endif
+                    </div>
+                </div>
+            </div>
+
+            {{-- Línea de detalle resumida --}}
+            <table class="table conc-avoid-break" style="margin-top:8px;">
+                <thead>
+                    <tr>
+                        <th>Orden Ejecutada</th>
+                        <th>Descripción Maestra</th>
+                        <th>Total</th>
+                        <th>Rendimiento</th>
+                        <th>Actualizado</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>{{ $c->orden_ejecutada ?? '—' }}</td>
+                        <td>{{ $c->descripcion_maestra ?? '—' }}</td>
+                        <td>{{ $nf($c->total) }}</td>
+                        <td>{{ is_null($c->rendimiento) ? '—' : $pf($c->rendimiento) }}</td>
+                        <td>{{ \Carbon\Carbon::parse($c->updated_at)->format('Y-m-d H:i') }}</td>
+                    </tr>
+                </tbody>
+            </table>
+        @else
+            <h2>Resumen de Conciliación</h2>
+            <p style="text-align:center; color:#6b7280; font-size:11px; margin:12px 0;">
+                No hay conciliación registrada para esta orden.
+            </p>
+        @endif
+
         <h2>Controles de Proceso</h2>
         <style>
             .tabla-container {
