@@ -4,8 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\ActividadesEjecutadas;
 use App\Models\AdaptationDate;
-use App\Models\OrdenesEjecutadas;
 use App\Models\Conciliaciones;
+use App\Models\OrdenesEjecutadas;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -149,7 +149,7 @@ class OrdenesEjecutadasController extends Controller
 
         // Obtener solo las fases de planificación, conciliación y actividades
         $linea_fases = DB::table('ordenes_ejecutadas as ada')
-            ->join('stages as std', function($join) {
+            ->join('stages as std', function ($join) {
                 $join->on(
                     DB::raw("FIND_IN_SET(std.id, REPLACE(REPLACE(REPLACE(REPLACE(COALESCE(ada.maestra_fases_fk, ''), '[', ''), ']', ''), ' ', ''), '\"', ''))"),
                     '>',
@@ -159,14 +159,14 @@ class OrdenesEjecutadasController extends Controller
             ->where('ada.adaptation_date_id', $id)
             ->where('ada.proceso', 'eject')
             ->whereIn('std.phase_type', ['Planificación', 'Conciliación', 'Actividades'])
-            ->whereNotExists(function($query) use ($id) {
-                $query->select(DB::raw(1))
-                    ->from('actividades_ejecutadas')
-                    ->where('adaptation_date_id', $id)
-                    ->where('estado_form', false)
-                    ->where('repeat_line', 1)
-                    ->whereIn('phase_type', ['Actividades', 'Procesos']);
-            })
+            // ->whereNotExists(function($query) use ($id) {
+            //     $query->select(DB::raw(1))
+            //         ->from('actividades_ejecutadas')
+            //         ->where('adaptation_date_id', $id)
+            //         ->where('estado_form', false)
+            //         ->where('repeat_line', 1)
+            //         ->whereIn('phase_type', ['Actividades', 'Procesos']);
+            // })
             ->select(
                 'std.id',
                 'std.description as descripcion',
@@ -193,7 +193,7 @@ class OrdenesEjecutadasController extends Controller
                     DB::raw('COUNT(*) as count')
                 )
                 ->first();
-                
+
             // Vlidar si la linea tiene todos los estados en 0
             if ($linea->count > 0) {
                 $fases[] = $item;
@@ -447,7 +447,7 @@ class OrdenesEjecutadasController extends Controller
                 ->first();
 
             // maestra sin bom
-            if (strtolower($orden->descripcion_maestra) == 'maestra sin bom') {
+            if (strtolower($orden->requiere_bom) == '0') {
                 return response()->json([
                     'orden' => [
                         'orden_ejecutada' => $orden->id,
