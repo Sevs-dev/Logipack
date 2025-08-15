@@ -14,6 +14,7 @@ import { MachinePlanning } from "../../interfaces/NewMachine"
 import { UserPlaning } from "../../interfaces/CreateUser"
 import SelectorDual from "../SelectorDual/SelectorDual"
 import DateLoader from '@/app/components/loader/DateLoader';
+import { API_URL } from '../../config/api'
 // 🔹 Servicios 
 import { updatePlanning, getActivitiesByPlanning, getPlanningById, validate_orden, getConsultPlanning } from "../../services/planing/planingServices";
 import { getActivitieId } from "../../services/maestras/activityServices"
@@ -572,7 +573,7 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
     // }, []);
 
     const handlePDF = (id: number) => {
-        const url = `http://localhost:8000/api/pdf/plan/${id}`;
+        const url = `${API_URL}/pdf/plan/${id}`;
         window.open(url, '_blank');
     };
 

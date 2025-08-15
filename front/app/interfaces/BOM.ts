@@ -11,6 +11,9 @@ export interface Article {
   desart: string;
   coddiv: string;
   numberOrder?: string;
+  lot?: string;
+  sticker?: string;
+  sticker2?: string;
 }
 
 export interface Ingredient {
@@ -31,6 +34,9 @@ export interface Bom {
   article_desart: string;
   client_id: number;
   base_quantity: string;
+  sticker?: string;
+  sticker2?: string;
+  lot?: string;
   details: string;
   status: boolean;
   version: string;
@@ -51,6 +57,8 @@ export interface BomPayload {
   code_ingredients: string;
   status: boolean;
   user?: string;
+  sticker?: string; 
+  sticker2?: string; 
 }
 
 export interface Bom extends BomPayload {
@@ -66,4 +74,3 @@ export interface ArticleResponse {
 export interface BomResponse {
   boms: Bom[];
 }
-

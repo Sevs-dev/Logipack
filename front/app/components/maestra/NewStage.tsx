@@ -15,7 +15,7 @@ import { CreateClientProps } from "../../interfaces/CreateClientProps";
 import ModalSection from "../modal/ModalSection";
 import AuditModal from "../history/AuditModal";
 import { Audit } from "../../interfaces/Audit";
-import { getRole } from "../../services/userDash/authservices";
+import { getRole } from "../../services/userDash/rolesServices";
 import { Role } from "@/app/interfaces/CreateUser";
 import DateLoader from '@/app/components/loader/DateLoader';
 import SelectorDual from "../../components/SelectorDual/SelectorDual";
