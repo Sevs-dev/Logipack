@@ -49,7 +49,7 @@ const Firma = ({
     item.binding && info[item.clave]?.startsWith("data:image");
 
   return (
-    <div className="bg-[#0f1116] border border-gray-700 rounded-xl p-4 space-y-4 shadow-inner">
+    <div className="bg-[#ffffff] border border-gray-700 rounded-xl p-4 space-y-4 shadow-inner">
       {/* Vista previa */}
       {firmaValida && (
         <div className="mb-2">
@@ -62,10 +62,10 @@ const Firma = ({
       )}
 
       {/* Área de firma */}
-      <div className="rounded-lg border-2 border-dashed border-gray-600 overflow-hidden bg-[#1a1d23]">
+      <div className="rounded-lg border-2 border-dashed border-gray-600 overflow-hidden bg-[#ffffff]">
         <SignatureCanvas
           ref={sigCanvasRef}
-          penColor="#ffffff"
+          penColor="#000000"
           canvasProps={{
             width: 400,
             height: 180,
