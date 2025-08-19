@@ -1,37 +1,32 @@
-import { jwtDecode } from "jwt-decode"; // ✅
-import nookies from 'nookies';
+import { jwtDecode, JwtPayload } from "jwt-decode";
+import nookies from "nookies";
 
-type JWTPayload = {
-  exp: number; // tiempo de expiración en segundos (Unix timestamp)
-  [key: string]: any;
-};
+// Reclamaciones del JWT con `exp` obligatorio y claims extra tipados
+type JWTPayload = JwtPayload & { exp: number } & Record<string, unknown>;
 
 export function isTokenExpired(): boolean {
   const { token } = nookies.get(null);
-
   if (!token) return true;
 
   try {
     const decoded = jwtDecode<JWTPayload>(token);
-    const now = Date.now() / 1000; // tiempo actual en segundos
+    const now = Math.floor(Date.now() / 1000); // segundos
 
-    if (decoded.exp < now) {
-      // Token expirado
+    if (decoded.exp <= now) {
       clearAuthCookies();
       return true;
     }
-
     return false;
-  } catch (error) {
-    // Token inválido
+  } catch {
+    // Token inválido o corrupto
     clearAuthCookies();
     return true;
   }
 }
 
 export function clearAuthCookies() {
-  nookies.destroy(null, 'token');
-  nookies.destroy(null, 'email');
-  nookies.destroy(null, 'role');
-  nookies.destroy(null, 'name');
+  const opts = { path: "/" };
+  ["token", "email", "role", "name"].forEach((k) =>
+    nookies.destroy(null, k, opts)
+  );
 }

@@ -2,6 +2,7 @@
 import { use, useEffect, useState, useCallback } from "react";
 import { actividades_ejecutadas } from "@/app/services/planing/planingServices";
 import DateLoader from "@/app/components/loader/DateLoader";
+import Image from "next/image";
 
 // ---- Tipos ----
 type OrdenType = {
@@ -82,7 +83,7 @@ const NewDetalle = ({ params }: { params: Promise<{ id: number }> }) => {
                         role="dialog"
                         aria-modal="true"
                     >
-                        <img
+                        <Image
                             src={imagenAmpliada}
                             alt="Vista ampliada"
                             className="max-w-full max-h-[85vh] rounded-xl shadow-2xl border-2 border-cyan-300/20 animate-fade-in drop-shadow-2xl"
@@ -199,7 +200,7 @@ const NewDetalle = ({ params }: { params: Promise<{ id: number }> }) => {
                                                                                     onClick={() => setImagenAmpliada(item.valor)}
                                                                                     title="Ampliar imagen"
                                                                                 >
-                                                                                    <img
+                                                                                    <Image
                                                                                         src={item.valor}
                                                                                         alt="Vista previa"
                                                                                         className="rounded-md border border-cyan-800/30 shadow max-h-28 object-contain cursor-zoom-in transition-transform duration-300 hover:scale-105"

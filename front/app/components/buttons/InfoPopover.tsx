@@ -10,7 +10,10 @@ interface InfoPopoverProps {
 export function InfoPopover({ content }: InfoPopoverProps) {
   const [open, setOpen] = useState(false);
   const [isTouch, setIsTouch] = useState(false);
-  const [position, setPosition] = useState<{ top: number; left: number }>({ top: 0, left: 0 });
+  const [position, setPosition] = useState<{ top: number; left: number }>({
+    top: 0,
+    left: 0,
+  });
   const triggerRef = useRef<HTMLDivElement | null>(null);
   const popoverRef = useRef<HTMLDivElement | null>(null);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -35,7 +38,7 @@ export function InfoPopover({ content }: InfoPopoverProps) {
   const handleClick = () => {
     if (!isTouch) return;
     updatePopoverPosition();
-    setOpen(prev => !prev);
+    setOpen((prev) => !prev);
   };
 
   const updatePopoverPosition = () => {
@@ -45,7 +48,7 @@ export function InfoPopover({ content }: InfoPopoverProps) {
 
     if (triggerRect) {
       let left = triggerRect.left + window.scrollX;
-      let top = triggerRect.bottom + window.scrollY + padding;
+      const top = triggerRect.bottom + window.scrollY + padding;
 
       const rightEdge = left + popoverWidth;
       const viewportWidth = window.innerWidth;

@@ -1,8 +1,7 @@
 import React from "react";
 
 function ModalBlock({
-    isOpen,
-    onClose,
+    isOpen, 
     message,
 }: {
     isOpen: boolean;
