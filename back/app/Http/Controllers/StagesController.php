@@ -14,18 +14,16 @@ use Illuminate\Support\Facades\Log;
 class StagesController extends Controller
 {
     // Obtener todas las Fases
-    public function getFase(): JsonResponse
+    public function getFase(Request $r): JsonResponse
     {
-        $Fases = Stage::where('active', true)
-            ->whereIn('version', function ($query) {
-                $query->selectRaw('MAX(version)')
-                    ->from('stages as a2')
-                    ->whereColumn('a2.reference_id', 'stages.reference_id');
-            })
+        $rows = Stage::query()
+            ->onlyActive($r->boolean('only_active', true)) // ?only_active=0 para ver todas
+            ->latestPerReference()
             ->get();
 
-        return response()->json($Fases, 200);
+        return response()->json($rows, 200);
     }
+
 
     // Crear una nueva Fase
     public function newFase(Request $request): JsonResponse
@@ -84,7 +82,7 @@ class StagesController extends Controller
             return response()->json(['message' => 'Fase no encontrada'], 404);
         }
 
-       // Log::info('📥 Request recibido para actualizar fase', [
+        // Log::info('📥 Request recibido para actualizar fase', [
         //     'fase_id' => $id,
         //     'request' => $request->all()
         // ]);
@@ -113,7 +111,7 @@ class StagesController extends Controller
             'role'            => 'string|nullable',
         ]);
 
-       // Log::info('✅ Datos validados correctamente', $validatedData);
+        // Log::info('✅ Datos validados correctamente', $validatedData);
 
         // Desactivar versión anterior
         $Fase->active = false;
@@ -126,7 +124,7 @@ class StagesController extends Controller
             );
         }
 
-       // Log::info('🔧 Datos listos para nueva versión', $validatedData);
+        // Log::info('🔧 Datos listos para nueva versión', $validatedData);
 
         // Crear nueva versión
         $newVersion = (int) $Fase->version + 1;
@@ -136,11 +134,11 @@ class StagesController extends Controller
         $newFase->reference_id = $Fase->reference_id ?? (string) Str::uuid();
         $newFase->active = true;
 
-       // Log::info('🆕 Nueva fase antes de guardar', $newFase->toArray());
+        // Log::info('🆕 Nueva fase antes de guardar', $newFase->toArray());
 
         $newFase->save();
 
-       // Log::info('💾 Nueva fase guardada', $newFase->toArray());
+        // Log::info('💾 Nueva fase guardada', $newFase->toArray());
 
         return response()->json([
             'message' => 'Fase actualizada como nueva versión correctamente',
@@ -165,7 +163,7 @@ class StagesController extends Controller
     //Control Stages
     public function controlStages($id): JsonResponse
     {
-       // Log::info("🔍 Buscando adaptación con ID: $id");
+        // Log::info("🔍 Buscando adaptación con ID: $id");
 
         $adaptation = Adaptation::find($id);
         if (!$adaptation) {
@@ -173,7 +171,7 @@ class StagesController extends Controller
             return response()->json(['message' => 'Adaptación no encontrada'], 404);
         }
 
-       // Log::info("✅ Adaptación encontrada", ['adaptation_id' => $adaptation->id, 'master_id' => $adaptation->master]);
+        // Log::info("✅ Adaptación encontrada", ['adaptation_id' => $adaptation->id, 'master_id' => $adaptation->master]);
 
         $master = Maestra::find($adaptation->master);
         if (!$master) {
@@ -181,7 +179,7 @@ class StagesController extends Controller
             return response()->json(['message' => 'Maestra no encontrada'], 404);
         }
 
-       // Log::info("✅ Maestra encontrada", ['maestra_id' => $master->id, 'type_stage' => $master->type_stage]);
+        // Log::info("✅ Maestra encontrada", ['maestra_id' => $master->id, 'type_stage' => $master->type_stage]);
 
         $stageIds = $master->type_stage;
         if (!is_array($stageIds)) {
@@ -189,7 +187,7 @@ class StagesController extends Controller
             return response()->json(['message' => 'type_stage no es un array'], 400);
         }
 
-       // Log::info("📦 Buscando Stage con phase_type = 'Control' en IDs:", ['stage_ids' => $stageIds]);
+        // Log::info("📦 Buscando Stage con phase_type = 'Control' en IDs:", ['stage_ids' => $stageIds]);
 
         $controlStage = Stage::whereIn('id', $stageIds)
             ->whereRaw('LOWER(phase_type) = ?', ['control'])
@@ -200,7 +198,7 @@ class StagesController extends Controller
             return response()->json(['message' => 'Fase tipo Control no encontrada'], 404);
         }
 
-       // Log::info("✅ Fase tipo Control encontrada", ['stage_id' => $controlStage->id, 'phase_type' => $controlStage->phase_type]);
+        // Log::info("✅ Fase tipo Control encontrada", ['stage_id' => $controlStage->id, 'phase_type' => $controlStage->phase_type]);
 
         return response()->json($controlStage);
     }
