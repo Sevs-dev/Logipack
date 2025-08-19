@@ -387,6 +387,7 @@
         @endforeach
 
         @php
+
             $c = $conciliacion;
             $nf = fn($v) => is_null($v) || $v === '' ? '—' : number_format((float) $v, 2, ',', '.');
             $pf = fn($v) => is_null($v) || $v === '' ? '—' : $nf($v) . '%';
@@ -615,8 +616,7 @@
             <table class="table conc-avoid-break" style="margin-top:8px;">
                 <thead>
                     <tr>
-                        <th>Orden Ejecutada</th>
-                        <th>Descripción Maestra</th>
+                        <th>Número de Orden</th>
                         <th>Total</th>
                         <th>Rendimiento</th>
                         <th>Actualizado</th>
@@ -624,8 +624,7 @@
                 </thead>
                 <tbody>
                     <tr>
-                        <td>{{ $c->orden_ejecutada ?? '—' }}</td>
-                        <td>{{ $c->descripcion_maestra ?? '—' }}</td>
+                        <td>{{ $plan->orderNumber ?? '—' }}</td>
                         <td>{{ $nf($c->total) }}</td>
                         <td>{{ is_null($c->rendimiento) ? '—' : $pf($c->rendimiento) }}</td>
                         <td>{{ \Carbon\Carbon::parse($c->updated_at)->format('Y-m-d H:i') }}</td>
