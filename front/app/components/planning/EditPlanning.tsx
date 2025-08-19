@@ -146,7 +146,7 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
 
             return newLineActivities;
         });
-    }, [currentPlan?.line]);
+    }, [currentPlan]);
 
 
     function calculateEndDateRespectingWorkHours(start: string, durationMinutes: number): string {

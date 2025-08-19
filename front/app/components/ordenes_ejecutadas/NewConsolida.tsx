@@ -47,7 +47,7 @@ const NewConsolida = () => {
     };
 
     obtener_conciliacion();
-  }, []);
+  }, [params.id]); 
 
   // Obtener los datos del formulario
   const inputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
