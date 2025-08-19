@@ -10,7 +10,7 @@ interface PermissionRoleResponse {
 // 🧠 Simple caché en memoria
 const permissionCache: Record<string, string[]> = {};
 
-export const useHasPermission = (requiredPermission: string) => {
+export const useHasPermission = (requiredPermission: string) => { 
     const { role, loading } = useAuth();
     const [hasPermission, setHasPermission] = useState(false);
     const [fetched, setFetched] = useState(false);
