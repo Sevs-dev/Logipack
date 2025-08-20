@@ -14,16 +14,23 @@ use Illuminate\Support\Facades\Log;
 class StagesController extends Controller
 {
     // Obtener todas las Fases
-    public function getFase(Request $r): JsonResponse
+    public function getFase(): JsonResponse
     {
-        $rows = Stage::query()
-            ->onlyActive($r->boolean('only_active', true)) // ?only_active=0 para ver todas
-            ->latestPerReference()
+        $latestActive = Stage::query()
+            ->selectRaw('reference_id, MAX(version) as max_version')
+            ->where('active', true)
+            ->groupBy('reference_id');
+
+        $fases = Stage::query()
+            ->joinSub($latestActive, 'l', function ($join) {
+                $join->on('stages.reference_id', '=', 'l.reference_id')
+                    ->on('stages.version', '=', 'l.max_version');
+            })
+            ->where('stages.active', true)
             ->get();
 
-        return response()->json($rows, 200);
+        return response()->json($fases, 200);
     }
-
 
     // Crear una nueva Fase
     public function newFase(Request $request): JsonResponse
