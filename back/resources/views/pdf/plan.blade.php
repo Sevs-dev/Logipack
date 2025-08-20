@@ -452,16 +452,11 @@
                             @if ($idx < count($row) - 1)
                                 <div class="snake-conn avoid-break">
                                     <div class="conn-line"></div>
-                                    <div class="conn-arrow"> ---&gt; </div>
+                                    <div class="conn-arrow"> --&gt; </div>
                                 </div>
                             @endif
                         @endforeach
-                    </div>
-
-                    {{-- Flecha a la siguiente fila (si aplica) --}}
-                    @if (!$loop->last)
-                        <div class="down-arrow avoid-break"><span>↓</span></div>
-                    @endif
+                    </div> 
                 @endforeach
             </div>
         @else
@@ -469,7 +464,7 @@
                 No hay etapas para mostrar en el diagrama.
             </p>
         @endif
-        {{-- ===== Fin Diagrama ===== --}}
+        {{-- ===== Fin Diagrama ===== --}} 
 
         <table class="table">
             <tr>
