@@ -386,12 +386,19 @@
             @endif
         @endforeach
 
+        {{-- ===== Resumen de Conciliación ===== --}}
+
         @php
+            // Normaliza conciliación: si es array => objeto, si no existe => null
+            $cRaw = $conciliacion ?? null;
+            $c = is_array($cRaw) ? (object) $cRaw : $cRaw;
 
-            $c = $conciliacion;
-            $nf = fn($v) => is_null($v) || $v === '' ? '—' : number_format((float) $v, 2, ',', '.');
-            $pf = fn($v) => is_null($v) || $v === '' ? '—' : $nf($v) . '%';
+            // Helpers seguros
+            $nf = fn($v) => $v === null || $v === '' ? '—' : number_format((float) $v, 2, ',', '.');
+            $pf = fn($v) => $v === null || $v === '' ? '—' : $nf($v) . '%';
+            $val = fn($key, $default = null) => data_get($c, $key, $default); // seguro p/ null/array/obj
 
+            // Desvíos presentes
             $desvMap = [
                 'faltante' => 'Faltante',
                 'adicionales' => 'Adicionales',
@@ -403,17 +410,25 @@
             $desvPresentes = [];
             if ($c) {
                 foreach ($desvMap as $key => $label) {
-                    $val = $c->{$key} ?? null;
-                    if (!is_null($val) && (float) $val != 0) {
+                    $v = (float) $val($key, 0);
+                    if ($v != 0.0) {
                         $desvPresentes[$key] = $label;
                     }
                 }
             }
-            $rend = (float) ($c->rendimiento ?? 0);
+
+            // Rendimiento y clase (NO accedas $c->... directo)
+            $rend = (float) $val('rendimiento', 0);
             $rendClass = $rend >= 99.5 ? 'conc-badge-ok' : ($rend >= 98.0 ? 'conc-badge-mid' : 'conc-badge-warn');
+
+            // Fecha segura
+            $fechaConc = $val('updated_at') ? \Carbon\Carbon::parse($val('updated_at'))->format('Y-m-d H:i') : '—';
+
+            // ¿Hay conciliación “real”? (no solo objeto vacío)
+            $hasConc = $c && collect((array) $c)->filter(fn($v) => $v !== null && $v !== '')->isNotEmpty();
         @endphp
 
-        @if ($c)
+        @if ($hasConc)
             <h2>Resumen de Conciliación</h2>
 
             <style>
