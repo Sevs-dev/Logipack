@@ -904,7 +904,7 @@
                     @endif
                 @empty
                 @endforelse
-
+            @empty
             @endforelse
         </div>
 
