@@ -304,10 +304,9 @@
             </tr>
         </table>
 
-        {{-- ===== Diagrama Snake (HTML+CSS) ===== --}}
+        {{-- ===== Diagrama Snake (HTML+CSS) — 3 por fila ===== --}}
         <h2>Diagrama de Operaciones</h2>
         @php
-            // Mapear etapas -> label limpio + secuencia global
             $stagesArr = collect($stages ?? [])
                 ->values()
                 ->map(function ($s, $i) {
@@ -316,15 +315,15 @@
                     return [
                         'id' => $s->id,
                         'label' => $label ?: 'Etapa ' . ($s->id ?? '?'),
-                        'seq' => $i + 1, // número global para mostrar en el círculo
+                        'seq' => $i + 1, // numeración global
                     ];
                 })
                 ->toArray();
 
-            // Agrupar en filas de 4
-            $rows = array_chunk($stagesArr, 4);
+            // Agrupar en filas de 3
+            $rows = array_chunk($stagesArr, 3);
 
-            // Modo serpentina: si true, las filas impares se invierten en pantalla
+            // Serpentina: invierte visualmente filas impares
             $serpentine = true;
         @endphp
 
@@ -343,18 +342,21 @@
                 .snake-cell {
                     display: inline-block;
                     vertical-align: top;
-                    width: 24%;
-                    /* 4 por fila */
-                    margin-right: 1.333%;
+                    width: 32%;
+                    /* 3 por fila */
+                    margin-right: 2%;
+                    /* 32 + 32 + 32 + 2 + 2 = 100 */
                     border: 1px solid #e5e7eb;
                     border-radius: 8px;
                     padding: 8px;
                     page-break-inside: avoid;
                 }
 
-                .snake-cell:last-child {
+                .snake-cell:nth-child(3) {
                     margin-right: 0;
                 }
+
+                /* última de la fila */
 
                 .snake-label {
                     font-size: 11.5px;
@@ -380,11 +382,7 @@
             <div class="snake-wrap">
                 @foreach ($rows as $rowIndex => $row)
                     @php
-                        $rowItems = $row;
-                        if ($serpentine && $rowIndex % 2 === 1) {
-                            // Invertimos la visualización para efecto "snake", pero mantenemos seq global
-                            $rowItems = array_reverse($rowItems);
-                        }
+                        $rowItems = $serpentine && $rowIndex % 2 === 1 ? array_reverse($row) : $row;
                     @endphp
                     <div class="snake-row">
                         @foreach ($rowItems as $stage)
@@ -402,7 +400,6 @@
             </p>
         @endif
         {{-- ===== Fin Diagrama ===== --}}
-
 
         <table class="table">
             <tr>
