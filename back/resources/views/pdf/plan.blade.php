@@ -304,10 +304,9 @@
             </tr>
         </table>
 
-        {{-- ===== Diagrama de Operaciones (3 por fila, mejorado para PDF) ===== --}}
+        {{-- ===== Diagrama de Operaciones (3 por fila, color único + flecha " ---> ") ===== --}}
         <h2>Diagrama de Operaciones</h2>
         @php
-            // Prepara datos: label limpio + metadata opcional
             $stagesArr = collect($stages ?? [])
                 ->values()
                 ->map(function ($s, $i) {
@@ -316,27 +315,17 @@
                     return [
                         'id' => $s->id,
                         'label' => $label ?: 'Etapa ' . ($s->id ?? '?'),
-                        'seq' => $i + 1, // numeración global
-                        'type' => $s->phase_type ?? null,
-                        'duration' => $s->duration ?? null, // si tu modelo lo trae
+                        'seq' => $i + 1,
                     ];
                 })
                 ->toArray();
 
-            // 3 por fila
-            $rows = array_chunk($stagesArr, 3);
-
-            // Opcional: mapa de color por tipo de fase
-            $typeColor = [
-                'Control' => 'card-type-control',
-                'Procesos' => 'card-type-proceso',
-                // agrega más si necesitas
-            ];
+            $rows = array_chunk($stagesArr, 3); // 3 por fila, 1-2-3 / 4-5-6 / ...
         @endphp
 
         @if (count($rows))
             <style>
-                /* ===== Estilos seguros para DOMPDF ===== */
+                /* Seguro para DOMPDF */
                 .snake-wrap {
                     width: 100%;
                 }
@@ -348,7 +337,7 @@
                     page-break-inside: avoid;
                 }
 
-                /* Celdas y conectores: 31% + 3.5% + 31% + 3.5% + 31% = 100% */
+                /* 31% + 3.5% + 31% + 3.5% + 31% = 100% */
                 .snake-cell,
                 .snake-conn {
                     display: inline-block;
@@ -358,7 +347,6 @@
 
                 .snake-cell {
                     width: 31%;
-                    margin-right: 0;
                 }
 
                 .snake-conn {
@@ -366,9 +354,11 @@
                     text-align: center;
                 }
 
-                /* Tarjeta interna: padding/border aquí, no en el contenedor externo */
+                /* Tarjeta interna (mismo color para todos) */
                 .snake-card {
                     border: 1px solid #e5e7eb;
+                    border-left: 4px solid #3b82f6;
+                    /* color único */
                     border-radius: 8px;
                     padding: 8px;
                     background: #fff;
@@ -394,7 +384,7 @@
                     color: #6b7280;
                 }
 
-                /* Badge circular del número */
+                /* Badge numerado (mismo color) */
                 .snake-badge {
                     display: inline-block;
                     min-width: 26px;
@@ -402,132 +392,75 @@
                     line-height: 26px;
                     text-align: center;
                     border-radius: 50%;
-                    border: 1px solid #c7d2fe;
-                    background: #eef2ff;
+                    border: 1px solid #93c5fd;
+                    /* azul claro */
+                    background: #eff6ff;
+                    /* azul muy claro */
                     color: #1e3a8a;
+                    /* azul oscuro */
                     font-weight: 700;
                     font-size: 11px;
                 }
 
-                /* Conector con flecha (unicode) sobre línea discontinua */
+                /* Conector: línea y flecha " ---> " */
                 .snake-conn .conn-line {
-                    border-top: 1px dashed #9ca3af;
+                    border-top: 1px dashed #94a3b8;
                     margin-top: 18px;
-                    /* alinea aprox. con la badge */
                 }
 
                 .snake-conn .conn-arrow {
-                    font-size: 14px;
-                    color: #6b7280;
+                    font-size: 12px;
+                    color: #1e3a8a;
                     line-height: 1;
-                    margin-top: -10px;
+                    margin-top: 4px;
+                    white-space: nowrap;
+                    font-family: ui-monospace, Menlo, Consolas, monospace;
                 }
 
-                /* Temas por tipo (borde izquierdo) */
-                .card-type-control {
-                    border-left: 4px solid #10b981;
+                /* Flecha hacia la siguiente fila */
+                .down-arrow {
+                    text-align: right;
+                    margin: -4px 0 8px;
                 }
 
-                .card-type-proceso {
-                    border-left: 4px solid #3b82f6;
+                .down-arrow span {
+                    font-size: 12px;
+                    color: #6b7280;
                 }
 
-                .card-type-default {
-                    border-left: 4px solid #9ca3af;
-                }
-
-                /* Leyenda */
-                .snake-legend {
-                    font-size: 11px;
-                    color: #374151;
-                    margin: 6px 0 10px;
-                }
-
-                .snake-legend span {
-                    display: inline-block;
-                    margin-right: 10px;
-                }
-
-                .lg-dot {
-                    display: inline-block;
-                    width: 10px;
-                    height: 10px;
-                    border-radius: 50%;
-                    vertical-align: middle;
-                    margin-right: 4px;
-                }
-
-                .lg-green {
-                    background: #10b981;
-                }
-
-                .lg-blue {
-                    background: #3b82f6;
-                }
-
-                .lg-gray {
-                    background: #9ca3af;
-                }
-
-                /* Evitar cortes feos */
+                /* Utilidades */
                 .avoid-break {
                     page-break-inside: avoid;
                     break-inside: avoid;
                 }
-
-                .mono {
-                    font-family: ui-monospace, Menlo, Consolas, monospace;
-                }
             </style>
 
-            {{-- Leyenda opcional: comenta si no la quieres --}}
-            <div class="snake-legend">
-                <span><i class="lg-dot lg-green"></i> Control</span>
-                <span><i class="lg-dot lg-blue"></i> Proceso</span>
-                <span><i class="lg-dot lg-gray"></i> Otro</span>
-            </div>
-
             <div class="snake-wrap">
-                @foreach ($rows as $row)
+                @foreach ($rows as $rowIndex => $row)
                     <div class="snake-row">
                         @foreach ($row as $idx => $stage)
-                            {{-- Celda --}}
                             <div class="snake-cell">
-                                @php
-                                    $cls = $typeColor[$stage['type'] ?? ''] ?? 'card-type-default';
-                                @endphp
-                                <div class="snake-card {{ $cls }}">
+                                <div class="snake-card">
                                     <div class="snake-label">
                                         <span class="snake-badge">{{ $stage['seq'] }}</span>
                                         <span style="margin-left:6px;">{{ $stage['label'] }}</span>
                                     </div>
-
-                                    {{-- Meta opcional: muestra sólo si hay dato --}}
-                                    @if (!empty($stage['type']))
-                                        <div class="snake-meta"><small>Tipo:</small> {{ $stage['type'] }}</div>
-                                    @endif
-                                    @if (!is_null($stage['duration']))
-                                        <div class="snake-meta"><small>Duración:</small> {{ $stage['duration'] }} min
-                                        </div>
-                                    @endif
                                 </div>
                             </div>
 
-                            {{-- Conector (no después del último elemento de la fila) --}}
+                            {{-- Conector horizontal " ---> " (no después del último) --}}
                             @if ($idx < count($row) - 1)
                                 <div class="snake-conn avoid-break">
                                     <div class="conn-line"></div>
-                                    <div class="conn-arrow">→</div>
+                                    <div class="conn-arrow"> ---&gt; </div>
                                 </div>
                             @endif
                         @endforeach
                     </div>
 
-                    {{-- Flecha a siguiente fila (si no es la última) --}}
+                    {{-- Flecha a la siguiente fila (si aplica) --}}
                     @if (!$loop->last)
-                        <div class="avoid-break" style="text-align:right; margin:-4px 0 8px;">
-                            <span style="font-size:12px; color:#6b7280;">↓</span>
-                        </div>
+                        <div class="down-arrow avoid-break"><span>↓</span></div>
                     @endif
                 @endforeach
             </div>
