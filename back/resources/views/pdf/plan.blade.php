@@ -305,7 +305,7 @@
         </table>
 
         {{-- ===== Diagrama de Operaciones (3 por fila, color único + flecha " ---> ") ===== --}}
-        <h2 class="snake-heading">Diagrama de Operaciones</h2>
+        <h2>Diagrama de Operaciones</h2>
         @php
             $stagesArr = collect($stages ?? [])
                 ->values()
@@ -320,21 +320,12 @@
                 })
                 ->toArray();
 
-            // 3 por fila: 1-2-3 / 4-5-6 / ...
-            $rows = array_chunk($stagesArr, 3);
+            $rows = array_chunk($stagesArr, 3); // 3 por fila, 1-2-3 / 4-5-6 / ...
         @endphp
 
         @if (count($rows))
             <style>
-                /* ====== Estilos seguros para DOMPDF (sin flex, sin grid) ====== */
-
-                .snake-heading {
-                    text-align: center;
-                    font-weight: 700;
-                    margin: 8px 0 12px;
-                    color: #111827;
-                }
-
+                /* Seguro para DOMPDF */
                 .snake-wrap {
                     width: 100%;
                 }
@@ -343,10 +334,7 @@
                     width: 100%;
                     margin-bottom: 10px;
                     font-size: 0;
-                    /* evita espacios entre inline-blocks */
                     page-break-inside: avoid;
-                    text-align: center;
-                    /* centra el conjunto si hay menos de 3 celdas */
                 }
 
                 /* 31% + 3.5% + 31% + 3.5% + 31% = 100% */
@@ -359,8 +347,6 @@
 
                 .snake-cell {
                     width: 31%;
-                    text-align: center;
-                    /* centra el contenido dentro de la tarjeta */
                 }
 
                 .snake-conn {
@@ -368,19 +354,17 @@
                     text-align: center;
                 }
 
-                /* Tarjeta (mismo color para todos) */
+                /* Tarjeta interna (mismo color para todos) */
                 .snake-card {
                     border: 1px solid #e5e7eb;
                     border-left: 4px solid #3b82f6;
-                    /* azul único */
+                    /* color único */
                     border-radius: 8px;
                     padding: 8px;
                     background: #fff;
                     font-size: 12px;
                     line-height: 1.35;
                     min-height: 56px;
-                    display: inline-block;
-                    /* ayuda a centrar y a evitar estiramientos raros */
                 }
 
                 .snake-label {
@@ -388,8 +372,16 @@
                     color: #111827;
                     margin-bottom: 6px;
                     font-weight: 600;
-                    text-align: center;
-                    white-space: normal;
+                }
+
+                .snake-meta {
+                    font-size: 11px;
+                    color: #374151;
+                    margin-top: 4px;
+                }
+
+                .snake-meta small {
+                    color: #6b7280;
                 }
 
                 /* Badge numerado (mismo color) */
@@ -408,42 +400,32 @@
                     /* azul oscuro */
                     font-weight: 700;
                     font-size: 11px;
-                    vertical-align: middle;
                 }
 
-                /* Título/etiqueta al lado del badge, centrado y alineado */
-                .snake-title {
-                    display: inline-block;
-                    margin-left: 6px;
-                    vertical-align: middle;
-                    font-size: 11.5px;
-                }
-
-                .snake-meta {
-                    font-size: 11px;
-                    color: #374151;
-                    margin-top: 4px;
-                    text-align: center;
-                }
-
-                .snake-meta small {
-                    color: #6b7280;
-                }
-
-                /* Conector: línea + flecha ---> */
-                .conn-line {
+                /* Conector: línea y flecha " ---> " */
+                .snake-conn .conn-line {
                     border-top: 1px dashed #94a3b8;
                     margin-top: 18px;
                 }
 
-                .conn-arrow {
+                .snake-conn .conn-arrow {
                     font-size: 12px;
                     color: #1e3a8a;
-                    /* mismo azul */
                     line-height: 1;
                     margin-top: 4px;
                     white-space: nowrap;
                     font-family: ui-monospace, Menlo, Consolas, monospace;
+                }
+
+                /* Flecha hacia la siguiente fila */
+                .down-arrow {
+                    text-align: right;
+                    margin: -4px 0 8px;
+                }
+
+                .down-arrow span {
+                    font-size: 12px;
+                    color: #6b7280;
                 }
 
                 /* Utilidades */
@@ -461,11 +443,8 @@
                                 <div class="snake-card">
                                     <div class="snake-label">
                                         <span class="snake-badge">{{ $stage['seq'] }}</span>
-                                        <span class="snake-title">{{ $stage['label'] }}</span>
+                                        <span style="margin-left:6px;">{{ $stage['label'] }}</span>
                                     </div>
-
-                                    {{-- Si quieres meta extra, déjala centrada aquí --}}
-                                    {{-- <div class="snake-meta"><small>ID:</small> {{ $stage['id'] }}</div> --}}
                                 </div>
                             </div>
 
