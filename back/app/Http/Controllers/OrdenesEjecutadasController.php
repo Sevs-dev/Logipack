@@ -159,14 +159,14 @@ class OrdenesEjecutadasController extends Controller
             ->where('ada.adaptation_date_id', $id)
             ->where('ada.proceso', 'eject')
             ->whereIn('std.phase_type', ['Planificación', 'Conciliación', 'Actividades'])
-            // ->whereNotExists(function($query) use ($id) {
-            //     $query->select(DB::raw(1))
-            //         ->from('actividades_ejecutadas')
-            //         ->where('adaptation_date_id', $id)
-            //         ->where('estado_form', false)
-            //         ->where('repeat_line', 1)
-            //         ->whereIn('phase_type', ['Actividades', 'Procesos']);
-            // })
+            ->whereNotExists(function($query) use ($id) {
+                $query->select(DB::raw(1))
+                    ->from('actividades_ejecutadas')
+                    ->where('adaptation_date_id', $id)
+                    ->where('estado_form', false)
+                    ->where('repeat_line', 1)
+                    ->whereIn('phase_type', ['Actividades', 'Procesos']);
+            })
             ->select(
                 'std.id',
                 'std.description as descripcion',
