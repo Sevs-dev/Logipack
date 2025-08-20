@@ -307,22 +307,92 @@
         {{-- ===== Diagrama Snake (HTML+CSS) ===== --}}
         <h2>Diagrama de Operaciones</h2>
         @php
+            // Mapear etapas -> label limpio + secuencia global
             $stagesArr = collect($stages ?? [])
-                ->map(function ($s) {
+                ->values()
+                ->map(function ($s, $i) {
                     $label = $s->description ?? 'Etapa ' . $s->id;
                     $label = trim(strip_tags((string) $label));
-                    return ['id' => $s->id, 'label' => $label ?: 'Etapa ' . ($s->id ?? '?')];
+                    return [
+                        'id' => $s->id,
+                        'label' => $label ?: 'Etapa ' . ($s->id ?? '?'),
+                        'seq' => $i + 1, // número global para mostrar en el círculo
+                    ];
                 })
-                ->values()
                 ->toArray();
+
+            // Agrupar en filas de 4
+            $rows = array_chunk($stagesArr, 4);
+
+            // Modo serpentina: si true, las filas impares se invierten en pantalla
+            $serpentine = true;
         @endphp
 
-        @if (count($stagesArr))
-            <div class="timeline-horizontal">
-                @foreach ($stagesArr as $index => $stage)
-                    <div class="timeline-step">
-                        <div class="timeline-label">{{ $stage['label'] }}</div>
-                        <div class="timeline-circle">{{ $index + 1 }}</div>
+        @if (count($rows))
+            <style>
+                /* ===== Estilos seguros para DOMPDF ===== */
+                .snake-wrap {
+                    width: 100%;
+                }
+
+                .snake-row {
+                    width: 100%;
+                    margin-bottom: 8px;
+                }
+
+                .snake-cell {
+                    display: inline-block;
+                    vertical-align: top;
+                    width: 24%;
+                    /* 4 por fila */
+                    margin-right: 1.333%;
+                    border: 1px solid #e5e7eb;
+                    border-radius: 8px;
+                    padding: 8px;
+                    page-break-inside: avoid;
+                }
+
+                .snake-cell:last-child {
+                    margin-right: 0;
+                }
+
+                .snake-label {
+                    font-size: 11.5px;
+                    color: #1f2937;
+                    margin-bottom: 6px;
+                }
+
+                .snake-circle {
+                    display: inline-block;
+                    min-width: 24px;
+                    height: 24px;
+                    line-height: 24px;
+                    text-align: center;
+                    border-radius: 50%;
+                    border: 1px solid #d1d5db;
+                    background: #f9fafb;
+                    font-size: 11px;
+                    font-weight: 700;
+                    color: #111827;
+                }
+            </style>
+
+            <div class="snake-wrap">
+                @foreach ($rows as $rowIndex => $row)
+                    @php
+                        $rowItems = $row;
+                        if ($serpentine && $rowIndex % 2 === 1) {
+                            // Invertimos la visualización para efecto "snake", pero mantenemos seq global
+                            $rowItems = array_reverse($rowItems);
+                        }
+                    @endphp
+                    <div class="snake-row">
+                        @foreach ($rowItems as $stage)
+                            <div class="snake-cell">
+                                <div class="snake-label">{{ $stage['label'] }}</div>
+                                <div class="snake-circle">{{ $stage['seq'] }}</div>
+                            </div>
+                        @endforeach
                     </div>
                 @endforeach
             </div>
@@ -332,6 +402,8 @@
             </p>
         @endif
         {{-- ===== Fin Diagrama ===== --}}
+
+
         <table class="table">
             <tr>
                 <th style="width: 10%">Receta validada por</th>
@@ -646,11 +718,6 @@
                     </tr>
                 </tbody>
             </table>
-        @else
-            <h2>Resumen de Conciliación</h2>
-            <p style="text-align:center; color:#6b7280; font-size:11px; margin:12px 0;">
-                No hay conciliación registrada para esta orden.
-            </p>
         @endif
 
         <h2>Controles de Proceso</h2>
