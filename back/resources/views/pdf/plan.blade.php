@@ -304,7 +304,7 @@
             </tr>
         </table>
 
-        {{-- ===== Diagrama Snake (HTML+CSS) — 3 por fila ===== --}}
+        {{-- ===== Diagrama (3 por fila, orden normal 1-2-3 / 4-5-6) ===== --}}
         <h2>Diagrama de Operaciones</h2>
         @php
             $stagesArr = collect($stages ?? [])
@@ -320,16 +320,12 @@
                 })
                 ->toArray();
 
-            // Agrupar en filas de 3
-            $rows = array_chunk($stagesArr, 3);
-
-            // Serpentina: invierte visualmente filas impares
-            $serpentine = true;
+            $rows = array_chunk($stagesArr, 3); // 3 por fila
         @endphp
 
         @if (count($rows))
             <style>
-                /* ===== Estilos seguros para DOMPDF ===== */
+                /* Seguro para DOMPDF */
                 .snake-wrap {
                     width: 100%;
                 }
@@ -337,26 +333,33 @@
                 .snake-row {
                     width: 100%;
                     margin-bottom: 8px;
+                    font-size: 0;
                 }
 
+                /* elimina gap inline-block */
+
+                /* sin padding/border aquí para no romper el cálculo de ancho */
                 .snake-cell {
                     display: inline-block;
                     vertical-align: top;
-                    width: 32%;
-                    /* 3 por fila */
+                    width: 31.5%;
                     margin-right: 2%;
-                    /* 32 + 32 + 32 + 2 + 2 = 100 */
-                    border: 1px solid #e5e7eb;
-                    border-radius: 8px;
-                    padding: 8px;
-                    page-break-inside: avoid;
                 }
 
                 .snake-cell:nth-child(3) {
                     margin-right: 0;
                 }
 
-                /* última de la fila */
+                /* Estilos internos (no afectan el layout externo) */
+                .snake-card {
+                    border: 1px solid #e5e7eb;
+                    border-radius: 8px;
+                    padding: 8px;
+                    page-break-inside: avoid;
+                    font-size: 12px;
+                    /* restauramos font-size */
+                    background: #fff;
+                }
 
                 .snake-label {
                     font-size: 11.5px;
@@ -380,15 +383,14 @@
             </style>
 
             <div class="snake-wrap">
-                @foreach ($rows as $rowIndex => $row)
-                    @php
-                        $rowItems = $serpentine && $rowIndex % 2 === 1 ? array_reverse($row) : $row;
-                    @endphp
+                @foreach ($rows as $row)
                     <div class="snake-row">
-                        @foreach ($rowItems as $stage)
+                        @foreach ($row as $stage)
                             <div class="snake-cell">
-                                <div class="snake-label">{{ $stage['label'] }}</div>
-                                <div class="snake-circle">{{ $stage['seq'] }}</div>
+                                <div class="snake-card">
+                                    <div class="snake-label">{{ $stage['label'] }}</div>
+                                    <div class="snake-circle">{{ $stage['seq'] }}</div>
+                                </div>
                             </div>
                         @endforeach
                     </div>
