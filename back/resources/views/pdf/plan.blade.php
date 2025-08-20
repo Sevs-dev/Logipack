@@ -779,59 +779,60 @@
         @endif
 
         @if ($timers)
-            <h2>Controles de Proceso</h2>
-            <style>
-                .tabla-container {
-                    text-align: left;
-                    width: 100%;
-                }
 
-                .tabla-item {
-                    display: inline-block;
-                    vertical-align: top;
-                    width: 48%;
-                    margin: 0 2% 16px 0;
-                    page-break-inside: avoid;
-                }
-
-                .tabla-item:nth-child(2n) {
-                    margin-right: 0;
-                }
-
-                .table {
-                    width: 100%;
-                    border-collapse: collapse;
-                    font-size: 11px;
-                }
-
-                .table th,
-                .table td {
-                    border: 1px solid #e5e7eb;
-                    padding: 6px 8px;
-                    text-align: center;
-                    word-break: break-word;
-                }
-
-                .table th {
-                    background-color: #eff6ff;
-                    font-weight: bold;
-                    color: #1e3a8a;
-                }
-
-                .evidence-img {
-                    max-width: 100%;
-                    max-height: 100px;
-                    object-fit: contain;
-                }
-
-                .data-label {
-                    font-weight: 500;
-                    color: #4b5563;
-                }
-            </style>
 
             <div class="tabla-container">
                 @forelse ($timers as $timer)
+                    <h2>Controles de Proceso</h2>
+                    <style>
+                        .tabla-container {
+                            text-align: left;
+                            width: 100%;
+                        }
+
+                        .tabla-item {
+                            display: inline-block;
+                            vertical-align: top;
+                            width: 48%;
+                            margin: 0 2% 16px 0;
+                            page-break-inside: avoid;
+                        }
+
+                        .tabla-item:nth-child(2n) {
+                            margin-right: 0;
+                        }
+
+                        .table {
+                            width: 100%;
+                            border-collapse: collapse;
+                            font-size: 11px;
+                        }
+
+                        .table th,
+                        .table td {
+                            border: 1px solid #e5e7eb;
+                            padding: 6px 8px;
+                            text-align: center;
+                            word-break: break-word;
+                        }
+
+                        .table th {
+                            background-color: #eff6ff;
+                            font-weight: bold;
+                            color: #1e3a8a;
+                        }
+
+                        .evidence-img {
+                            max-width: 100%;
+                            max-height: 100px;
+                            object-fit: contain;
+                        }
+
+                        .data-label {
+                            font-weight: 500;
+                            color: #4b5563;
+                        }
+                    </style>
                     @forelse ($timer->timerControls as $control)
                         @php $rows = is_array($control->data) ? $control->data : []; @endphp
 
