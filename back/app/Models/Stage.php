@@ -66,14 +66,16 @@ class Stage extends Model
     //    y expón otra propiedad derivada:
     protected $appends = ['activities_models'];
 
-    public function getActivitiesModelsAttribute()
+    public function getActivitiesAttribute()
     {
-        $ids = $this->attributes['activities'] ?? '[]';
-        if (is_string($ids)) {
-            $ids = json_decode($ids, true) ?: [];
+        $activityIds = $this->attributes['activities'] ?? '[]';
+
+        // Si viene como string, decodificamos
+        if (is_string($activityIds)) {
+            $activityIds = json_decode($activityIds, true) ?: [];
         }
-        if (!is_array($ids) || empty($ids)) return [];
-        return Activitie::whereIn('id', $ids)->get();
+
+        return Activitie::whereIn('id', $activityIds)->get();
     }
 
     // ⚠️ Si mantienes ESTE accessor, ya no sobrescribas 'activities' original
