@@ -379,11 +379,12 @@ class AdaptationDateController extends Controller
             }
 
             $cliente = $plan->adaptation?->client_id;
-            $codart = $plan->codart;
+            $codart  = $plan->codart;
             $maestra = $plan->adaptation?->maestra;
+
             $clientes = Clients::where('id', $cliente)->first();
-            $coddiv = $clientes->code ?? null;
-            $desart = $coddiv ? ArticleService::getDesartByCodart($coddiv, $codart) : null;
+            $coddiv   = $clientes->code ?? null;
+            $desart   = $coddiv ? ArticleService::getDesartByCodart($coddiv, $codart) : null;
 
             // --- Conciliación: traer la más reciente para este plan ---
             $conciliacion = Conciliaciones::where('adaptation_date_id', $plan->id)
@@ -394,26 +395,29 @@ class AdaptationDateController extends Controller
                 )
                 ->first();
 
-            Log::info("ℹ️ Conciliación encontrada", $conciliacion->toArray());
-
-            if (!$conciliacion) {
+            if ($conciliacion) {
+                Log::info("ℹ️ Conciliación encontrada", ['conciliacion' => $conciliacion->toArray()]);
+            } else {
                 Log::info("ℹ️ No hay conciliación para adaptation_date_id: {$plan->id}");
             }
 
+            // ---- stagesIds seguro ----
             $stageIds = [];
             if ($maestra && isset($maestra->type_stage)) {
                 $stageRaw = $maestra->type_stage;
                 if (is_string($stageRaw)) {
-                    $decoded = json_decode($stageRaw, true);
+                    $decoded  = json_decode($stageRaw, true);
                     $stageIds = is_array($decoded) ? $decoded : [];
                 } elseif (is_array($stageRaw)) {
                     $stageIds = $stageRaw;
                 }
             }
 
-            $stages = Stage::whereIn('id', $stageIds)->get();
-            $stages = $stages->sortBy(fn($stage) => array_search($stage->id, $stageIds))->values();
+            $stages = Stage::whereIn('id', $stageIds)->get()
+                ->sortBy(fn($stage) => array_search($stage->id, $stageIds, true) ?: PHP_INT_MAX)
+                ->values();
 
+            // Normaliza a arrays para evitar “Trying to get property of non-object”
             $masterIds  = is_array($plan->master)  ? $plan->master  : (is_null($plan->master)  ? [] : [$plan->master]);
             $lineIds    = is_array($plan->line)    ? $plan->line    : (is_null($plan->line)    ? [] : [$plan->line]);
             $machineIds = is_array($plan->machine) ? $plan->machine : (is_null($plan->machine) ? [] : [$plan->machine]);
@@ -422,27 +426,29 @@ class AdaptationDateController extends Controller
             $lines   = Manufacturing::whereIn('id', $lineIds)->get();
             $lineMap = $lines->pluck('name', 'id');
 
-            $ordenasEje    = OrdenesEjecutadas::where('adaptation_date_id', $plan->id)->first();
-            $actividadesEje = ActividadesEjecutadas::where('adaptation_date_id', $plan->id)->get()->map(function ($actividad) use ($lineMap) {
-                $actividadArr = $actividad->toArray();
-                try {
-                    $forms = json_decode($actividadArr['forms'], true);
-                    if (!is_array($forms)) $forms = [];
-                    foreach ($forms as &$form) {
-                        if (isset($form['linea']) && isset($lineMap[$form['linea']])) {
-                            $form['linea'] = $lineMap[$form['linea']];
+            $ordenasEje = OrdenesEjecutadas::where('adaptation_date_id', $plan->id)->first();
+
+            $actividadesEje = ActividadesEjecutadas::where('adaptation_date_id', $plan->id)->get()
+                ->map(function ($actividad) use ($lineMap) {
+                    $actividadArr = $actividad->toArray();
+                    try {
+                        $forms = json_decode($actividadArr['forms'] ?? '[]', true);
+                        $forms = is_array($forms) ? $forms : [];
+                        foreach ($forms as &$form) {
+                            $idLinea = $form['linea'] ?? null;
+                            $nombre  = $idLinea !== null ? $lineMap->get($idLinea) : null;
+                            if ($nombre) $form['linea'] = $nombre;
                         }
+                        $actividadArr['forms'] = $forms;
+                    } catch (\Throwable $e) {
+                        Log::warning("⚠️ Error al decodificar forms", [
+                            'actividad_id' => $actividad->id,
+                            'error'        => $e->getMessage(),
+                        ]);
+                        $actividadArr['forms'] = [];
                     }
-                    $actividadArr['forms'] = $forms;
-                } catch (\Throwable $e) {
-                    Log::warning("⚠️ Error al decodificar forms", [
-                        'actividad_id' => $actividad->id,
-                        'error' => $e->getMessage(),
-                    ]);
-                    $actividadArr['forms'] = [];
-                }
-                return $actividadArr;
-            });
+                    return $actividadArr;
+                });
 
             $masterStages = Stage::whereIn('id', $masterIds)->get();
             $machines     = Machinery::whereIn('id', $machineIds)->get();
@@ -450,10 +456,9 @@ class AdaptationDateController extends Controller
 
             // Timers
             $actividad = ActividadesEjecutadas::where('adaptation_date_id', $plan->id)->first();
+            $timers    = collect();
             if (!$actividad) {
                 Log::warning("❌ No se encontró actividad ejecutada para adaptation_date_id: $plan->id");
-                // seguimos retornando el resto de info igualmente
-                $timers = collect();
             } else {
                 $timers = Timer::with(['timerControls', 'ejecutada'])
                     ->where('ejecutada_id', $actividad->id)
@@ -474,13 +479,7 @@ class AdaptationDateController extends Controller
                                 Log::warning("❌ Data inválida o no decodificable en Control ID: {$control->id}");
                                 continue;
                             }
-                            foreach ($data as $registro) {
-                                $tipo        = $registro['tipo'] ?? '—';
-                                $descripcion = $registro['descripcion'] ?? '—';
-                                $valor       = $registro['valor'] ?? '—';
-                                $unidad      = $registro['unidad'] ?? '';
-                                // si necesitas acumular algo, hazlo aquí
-                            }
+                            // Si necesitas acumular, hazlo aquí
                         }
                     }
                 }
@@ -498,11 +497,11 @@ class AdaptationDateController extends Controller
                 'users'                 => $users,
                 'desart'                => $desart,
                 'timers'                => $timers,
-                // 👉 Aquí va:
-                'conciliacion'          => $conciliacion,
+                // Devuelve array o null; evita acceder a propiedades de null aguas arriba
+                'conciliacion'          => $conciliacion?->toArray() ?? null,
             ];
-        } catch (\Exception $e) {
-            Log::error("💥 Error en getPlanDataForPDF: " . $e->getMessage());
+        } catch (\Throwable $e) {
+            Log::error("💥 Error en getPlanDataForPDF: " . $e->getMessage(), ['trace' => $e->getTraceAsString()]);
             return null;
         }
     }
