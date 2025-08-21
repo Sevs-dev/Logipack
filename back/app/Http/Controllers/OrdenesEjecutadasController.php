@@ -135,6 +135,8 @@ class OrdenesEjecutadasController extends Controller
             'estado' => '-11000',
         ]);
 
+        ActividadesEjecutadas::where('adaptation_date_id', $id)->delete();
+            
         return response()->json([
             'message' => 'Orden de acondicionamiento eliminada',
             'estado' => 200,
@@ -581,24 +583,16 @@ class OrdenesEjecutadasController extends Controller
         $orden = OrdenesEjecutadas::where('adaptation_date_id', $id)
             ->orderByDesc('id')
             ->first();
-    
-        if (! $orden) {
-            return response()->json([
-                'message' => 'No se encontró la orden',
-            ], 404);
-        }
-    
-        $nuevaOrden = null;
-    
-        DB::transaction(function () use ($orden, &$nuevaOrden) {
-            // Actualizar la orden actual
-            $orden->update(['estado' => '12000']);
-    
-            // Duplicar la última orden
-            $nuevaOrden = $orden->replicate(); // clona todos los campos excepto el id
-            $nuevaOrden->estado = '100';       // estado inicial al restablecer
-            $nuevaOrden->save();
-        });
+        
+        ActividadesEjecutadas::where('adaptation_date_id', $orden->adaptation_date_id)->update([
+            'estado_form' => false,
+        ]);
+
+        $actividades = ActividadesEjecutadas::where('adaptation_date_id', $orden->adaptation_date_id)
+        ->orderByDesc('id')
+        ->get();
+
+
     
         return response()->json([
             'message' => 'Orden restablecida correctamente',
