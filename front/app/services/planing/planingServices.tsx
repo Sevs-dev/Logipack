@@ -54,6 +54,12 @@ export const getPlanDash = async () => {
 export const getActivitiesByPlanning = async (id: number) => {
   try {
     const response = await Planning.get(`/getPlanId/${id}`);
+    if (response.data && response.data.plan) {
+      return response.data.plan;
+    } else {
+      console.error("Unexpected response structure:", response.data);
+      throw new Error("Unexpected response structure");
+    }
     return response.data;
   } catch (error: unknown) {
     console.error("Error en getPlanId:", error);

@@ -22,6 +22,7 @@ const phases = [
   "Control",
   "Actividades",
   "Procesos",
+  "Testigo",
 ];
 import { CreateClientProps } from "../../interfaces/CreateClientProps";
 import ModalSection from "../modal/ModalSection";
@@ -90,7 +91,9 @@ function NewStage({ canEdit = false, canView = false }: CreateClientProps) {
       }
     };
 
-    if (["Actividades", "Control", "Procesos"].includes(phaseType)) {
+    if (
+      ["Actividades", "Control", "Procesos", "Testigo"].includes(phaseType)
+    ) {
       fetchActivities();
     } else {
       setAvailableActivities([]);
@@ -114,7 +117,7 @@ function NewStage({ canEdit = false, canView = false }: CreateClientProps) {
     if (
       !isEditOpen || // evita que dispare en modo crear
       !editingStage ||
-      !["Actividades", "Control", "Procesos"].includes(phaseType) ||
+      !["Actividades", "Control", "Procesos", "Testigo"].includes(phaseType) ||
       availableActivities.length === 0
     )
       return;
@@ -159,7 +162,7 @@ function NewStage({ canEdit = false, canView = false }: CreateClientProps) {
       return false;
     }
     if (
-      ["Actividades", "Control", "Procesos"].includes(phaseType) &&
+      ["Actividades", "Control", "Procesos", "Testigo"].includes(phaseType) &&
       selectedActivities.length === 0
     ) {
       showError("Debes seleccionar al menos una actividad.");
@@ -188,7 +191,9 @@ function NewStage({ canEdit = false, canView = false }: CreateClientProps) {
       duration,
       activities: [],
     };
-    if (["Actividades", "Control", "Procesos"].includes(phaseType)) {
+    if (
+      ["Actividades", "Control", "Procesos", "Testigo"].includes(phaseType)
+    ) {
       newStage.activities = selectedActivities.map((activity) => activity.id);
     }
     try {
@@ -255,9 +260,12 @@ function NewStage({ canEdit = false, canView = false }: CreateClientProps) {
     if (isSaving) return;
     if (!editingStage) return;
     setIsSaving(true);
-    const activityIds = ["Actividades", "Control", "Procesos"].includes(
-      phaseType
-    )
+    const activityIds = [
+      "Actividades",
+      "Control",
+      "Procesos",
+      "Testigo",
+    ].includes(phaseType)
       ? selectedActivities.map((a) => a.id)
       : [];
 
@@ -447,6 +455,7 @@ function NewStage({ canEdit = false, canView = false }: CreateClientProps) {
                         | "Control"
                         | "Actividades"
                         | "Procesos"
+                        | "Testigo"
                     )
                   }
                   className="mt-1 w-full text-center p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 text-black"
@@ -482,7 +491,8 @@ function NewStage({ canEdit = false, canView = false }: CreateClientProps) {
             {/* Actividades (solo si Tipo de Fase es Actividades) */}
             {(phaseType === "Actividades" ||
               phaseType === "Control" ||
-              phaseType === "Procesos") && (
+              phaseType === "Procesos" ||
+              phaseType === "Testigo") && (
               <div className="space-y-4">
                 <Text type="subtitle" color="#000">
                   Actividades
@@ -656,7 +666,7 @@ function NewStage({ canEdit = false, canView = false }: CreateClientProps) {
                       <input
                         type="number"
                         placeholder="Cada (min)"
-                        value={repeatMinutes ?? ""}  
+                        value={repeatMinutes ?? ""}
                         onChange={(e) => setRepeatMinutes(e.target.value)}
                         className="min-w-[120px] p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 text-black text-sm"
                         disabled={!canEdit}
