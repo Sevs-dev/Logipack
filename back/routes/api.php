@@ -219,6 +219,7 @@ Route::controller(OrdenesEjecutadasController::class)->group(function () {
     Route::get('/eliminar_orden/{id}', 'eliminar_orden');
     Route::get('/getConciliacion/{id}', 'getConciliacion');
     Route::post('/guardar_conciliacion', 'guardar_conciliacion');
+    Route::get('/restablecer_orden/{id}', 'restablecerOrden');
 });
 
 //Rutas Historial de Audits
