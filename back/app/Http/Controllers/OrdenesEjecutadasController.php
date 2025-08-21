@@ -142,12 +142,31 @@ class OrdenesEjecutadasController extends Controller
     public function linea_procesos(
         $id
     ): JsonResponse {
+        
         // obtener orden
         $orden = OrdenesEjecutadas::where('adaptation_date_id', $id)
             ->where('proceso', 'eject')
             ->first();
 
         // Obtener solo las fases de planificación, conciliación y actividades
+        $linea_fases_1 = DB::table('ordenes_ejecutadas as ada')
+            ->join('stages as std', function ($join) {
+                $join->on(
+                    DB::raw("FIND_IN_SET(std.id, REPLACE(REPLACE(REPLACE(REPLACE(COALESCE(ada.maestra_fases_fk, ''), '[', ''), ']', ''), ' ', ''), '\"', ''))"),
+                    '>',
+                    DB::raw('0')
+                );
+            })
+            ->where('ada.adaptation_date_id', $id)
+            ->where('ada.proceso', 'eject')
+            ->whereIn('std.phase_type', ['Planificación', 'Conciliación'])
+            ->select(
+                'std.id',
+                'std.description as descripcion',
+                'std.phase_type',
+                DB::raw("FIND_IN_SET(std.id, REPLACE(REPLACE(REPLACE(REPLACE(COALESCE(ada.maestra_fases_fk, ''), '[', ''), ']', ''), ' ', ''), '\"', '')) as posicion")
+            );
+
         $linea_fases = DB::table('ordenes_ejecutadas as ada')
             ->join('stages as std', function ($join) {
                 $join->on(
@@ -158,21 +177,15 @@ class OrdenesEjecutadasController extends Controller
             })
             ->where('ada.adaptation_date_id', $id)
             ->where('ada.proceso', 'eject')
-            ->whereIn('std.phase_type', ['Planificación', 'Conciliación', 'Actividades'])
-            ->whereNotExists(function($query) use ($id) {
-                $query->select(DB::raw(1))
-                    ->from('actividades_ejecutadas')
-                    ->where('adaptation_date_id', $id)
-                    ->where('estado_form', false)
-                    ->where('repeat_line', 1)
-                    ->whereIn('phase_type', ['Actividades', 'Procesos']);
-            })
+            ->whereIn('std.phase_type', ['Actividades'])
+            ->where('repeat_line', 0)
             ->select(
                 'std.id',
                 'std.description as descripcion',
                 'std.phase_type',
                 DB::raw("FIND_IN_SET(std.id, REPLACE(REPLACE(REPLACE(REPLACE(COALESCE(ada.maestra_fases_fk, ''), '[', ''), ']', ''), ' ', ''), '\"', '')) as posicion")
             )
+            ->union($linea_fases_1)  // 👈 aquí unes la primera query
             ->orderBy('posicion', 'asc')
             ->get();
 
@@ -225,6 +238,7 @@ class OrdenesEjecutadasController extends Controller
             ->get();
 
         // Recorrer para validar estado de la lineas
+
         $lineas = [];
         foreach ($linea_procesos as $item) {
             // obtener tamaño de la linea
@@ -283,15 +297,16 @@ class OrdenesEjecutadasController extends Controller
                 ->where('fases_fk', $linea)
                 ->where('estado_form', false)
                 ->whereIn('phase_type', ['Planificación', 'Conciliación', 'Actividades'])
-                ->whereNotExists(function ($query) use ($id) {
-                    $query
-                        ->select(DB::raw(1))
-                        ->from('actividades_ejecutadas')
-                        ->where('adaptation_date_id', $id)
-                        ->where('repeat_line', true)
-                        ->where('estado_form', false)
-                        ->whereIn('phase_type', ['Actividades', 'Procesos']);
-                })
+                ->where('repeat_line', 0)
+                // ->whereNotExists(function ($query) use ($id) {
+                //     $query
+                //         ->select(DB::raw(1))
+                //         ->from('actividades_ejecutadas')
+                //         ->where('adaptation_date_id', $id)
+                //         ->where('repeat_line', true)
+                //         ->where('estado_form', false)
+                //         ->whereIn('phase_type', ['Actividades', 'Procesos']);
+                // })
                 ->orderBy('id', 'asc')
                 ->first();
         }
@@ -591,7 +606,7 @@ class OrdenesEjecutadasController extends Controller
             'adaptation_date_id' => $acondicionamiento->adaptation_date_id,
             'adaptation_id' => $acondicionamiento->adaptation_id,
             'maestra_id' => $acondicionamiento->maestra_id,
-            'requiere_bom' =>$acondicionamiento->requiere_bom,
+            'requiere_bom' => $acondicionamiento->requiere_bom,
             'number_order' => $acondicionamiento->number_order,
             'descripcion_maestra' => $acondicionamiento->descripcion_maestra,
             'maestra_fases_fk' => $acondicionamiento->maestra_fases_fk,
