@@ -56,10 +56,10 @@ class OrdenesEjecutadasController extends Controller
             }
 
             // Orden ejecutada
-            $this->confirmar_orden($id);  // confirmar orden si es ejecutada
+            $estado = $this->confirmar_orden($id);  // confirmar orden si es ejecutada
             return response()->json([
                 'message' => 'Estado de la orden ejecutada',
-                'estado' => 11500,
+                'estado' => $estado,
             ]);
         }
 
@@ -148,6 +148,24 @@ class OrdenesEjecutadasController extends Controller
             ->first();
 
         // Obtener solo las fases de planificación, conciliación y actividades
+        $linea_fases_1 = DB::table('ordenes_ejecutadas as ada')
+            ->join('stages as std', function ($join) {
+                $join->on(
+                    DB::raw("FIND_IN_SET(std.id, REPLACE(REPLACE(REPLACE(REPLACE(COALESCE(ada.maestra_fases_fk, ''), '[', ''), ']', ''), ' ', ''), '\"', ''))"),
+                    '>',
+                    DB::raw('0')
+                );
+            })
+            ->where('ada.adaptation_date_id', $id)
+            ->where('ada.proceso', 'eject')
+            ->whereIn('std.phase_type', ['Planificación', 'Conciliación'])
+            ->select(
+                'std.id',
+                'std.description as descripcion',
+                'std.phase_type',
+                DB::raw("FIND_IN_SET(std.id, REPLACE(REPLACE(REPLACE(REPLACE(COALESCE(ada.maestra_fases_fk, ''), '[', ''), ']', ''), ' ', ''), '\"', '')) as posicion")
+            );
+
         $linea_fases = DB::table('ordenes_ejecutadas as ada')
             ->join('stages as std', function ($join) {
                 $join->on(
@@ -158,21 +176,15 @@ class OrdenesEjecutadasController extends Controller
             })
             ->where('ada.adaptation_date_id', $id)
             ->where('ada.proceso', 'eject')
-            ->whereIn('std.phase_type', ['Planificación', 'Conciliación', 'Actividades'])
-            ->whereNotExists(function($query) use ($id) {
-                $query->select(DB::raw(1))
-                    ->from('actividades_ejecutadas')
-                    ->where('adaptation_date_id', $id)
-                    ->where('estado_form', false)
-                    ->where('repeat_line', 1)
-                    ->whereIn('phase_type', ['Actividades', 'Procesos']);
-            })
+            ->whereIn('std.phase_type', ['Actividades'])
+            ->where('repeat_line', 0)
             ->select(
                 'std.id',
                 'std.description as descripcion',
                 'std.phase_type',
                 DB::raw("FIND_IN_SET(std.id, REPLACE(REPLACE(REPLACE(REPLACE(COALESCE(ada.maestra_fases_fk, ''), '[', ''), ']', ''), ' ', ''), '\"', '')) as posicion")
             )
+            ->union($linea_fases_1)  // 👈 aquí unes la primera query
             ->orderBy('posicion', 'asc')
             ->get();
 
@@ -225,6 +237,7 @@ class OrdenesEjecutadasController extends Controller
             ->get();
 
         // Recorrer para validar estado de la lineas
+
         $lineas = [];
         foreach ($linea_procesos as $item) {
             // obtener tamaño de la linea
@@ -283,15 +296,16 @@ class OrdenesEjecutadasController extends Controller
                 ->where('fases_fk', $linea)
                 ->where('estado_form', false)
                 ->whereIn('phase_type', ['Planificación', 'Conciliación', 'Actividades'])
-                ->whereNotExists(function ($query) use ($id) {
-                    $query
-                        ->select(DB::raw(1))
-                        ->from('actividades_ejecutadas')
-                        ->where('adaptation_date_id', $id)
-                        ->where('repeat_line', true)
-                        ->where('estado_form', false)
-                        ->whereIn('phase_type', ['Actividades', 'Procesos']);
-                })
+                ->where('repeat_line', 0)
+                // ->whereNotExists(function ($query) use ($id) {
+                //     $query
+                //         ->select(DB::raw(1))
+                //         ->from('actividades_ejecutadas')
+                //         ->where('adaptation_date_id', $id)
+                //         ->where('repeat_line', true)
+                //         ->where('estado_form', false)
+                //         ->whereIn('phase_type', ['Actividades', 'Procesos']);
+                // })
                 ->orderBy('id', 'asc')
                 ->first();
         }
@@ -591,7 +605,7 @@ class OrdenesEjecutadasController extends Controller
             'adaptation_date_id' => $acondicionamiento->adaptation_date_id,
             'adaptation_id' => $acondicionamiento->adaptation_id,
             'maestra_id' => $acondicionamiento->maestra_id,
-            'requiere_bom' =>$acondicionamiento->requiere_bom,
+            'requiere_bom' => $acondicionamiento->requiere_bom,
             'number_order' => $acondicionamiento->number_order,
             'descripcion_maestra' => $acondicionamiento->descripcion_maestra,
             'maestra_fases_fk' => $acondicionamiento->maestra_fases_fk,
@@ -671,20 +685,25 @@ class OrdenesEjecutadasController extends Controller
      * Confirmar orden
      *
      * @param int $id
-     * @return void
+     * @return int
      */
     private function confirmar_orden(
         $id
-    ): void {
-        // Actualizar ActividadesEjecutadas
-        OrdenesEjecutadas::where('adaptation_date_id', $id)->update([
-            'estado' => '11500',
-        ]);
+    ): int {
+        $conciliacion = Conciliaciones::where('adaptation_date_id', $id)->first();
+        if ($conciliacion) {
+            // Actualizar ActividadesEjecutadas
+            OrdenesEjecutadas::where('adaptation_date_id', $id)->update([
+                'estado' => '11500',
+            ]);
 
-        // datos de la adaptacion
-        AdaptationDate::where('id', $id)->update([
-            'status_dates' => 'Ejecutado',
-        ]);
+            // datos de la adaptacion
+            AdaptationDate::where('id', $id)->update([
+                'status_dates' => 'Ejecutado',
+            ]);
+            return 11500;
+        }
+        return 100;
     }
 
     /**
