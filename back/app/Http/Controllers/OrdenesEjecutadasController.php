@@ -48,6 +48,14 @@ class OrdenesEjecutadasController extends Controller
             }
 
             // Orden eliminada
+            if ($orden->estado == '12000') {
+                return response()->json([
+                    'message' => 'Estado de la orden restablecida',
+                    'estado' => 12000,
+                ]);
+            }
+
+            // Orden eliminada
             if ($orden->estado == '-11000') {
                 return response()->json([
                     'message' => 'Estado de la orden eliminada',
@@ -560,6 +568,42 @@ class OrdenesEjecutadasController extends Controller
                 'estado' => 500,
             ]);
         }
+    }
+
+    /**
+     * Restablecer orden
+     *
+     * @param int $id
+     * @return JsonResponse
+     */
+    public function restablecerOrden($id): JsonResponse
+    {
+        $orden = OrdenesEjecutadas::where('adaptation_date_id', $id)
+            ->orderByDesc('id')
+            ->first();
+    
+        if (! $orden) {
+            return response()->json([
+                'message' => 'No se encontró la orden',
+            ], 404);
+        }
+    
+        $nuevaOrden = null;
+    
+        DB::transaction(function () use ($orden, &$nuevaOrden) {
+            // Actualizar la orden actual
+            $orden->update(['estado' => '12000']);
+    
+            // Duplicar la última orden
+            $nuevaOrden = $orden->replicate(); // clona todos los campos excepto el id
+            $nuevaOrden->estado = '100';       // estado inicial al restablecer
+            $nuevaOrden->save();
+        });
+    
+        return response()->json([
+            'message' => 'Orden restablecida correctamente',
+            'estado' => 100,
+        ]);
     }
 
     /**
