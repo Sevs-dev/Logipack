@@ -19,6 +19,7 @@ use Illuminate\Support\Facades\Log;
 use Dompdf\Dompdf;
 use Dompdf\Options;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Str;
 
 class AdaptationDateController extends Controller
 {
@@ -372,21 +373,31 @@ class AdaptationDateController extends Controller
     public function getPlanDataForPDF($id)
     {
         try {
+            Log::info("📄 getPlanDataForPDF() iniciado", ['adaptation_date_id' => $id]);
+
+            // --- Plan + relaciones base ---
             $plan = AdaptationDate::with('adaptation.maestra')->find($id);
             if (!$plan) {
-                Log::warning("❌ Plan no encontrado para ID: $id");
+                Log::warning("❌ Plan no encontrado", ['adaptation_date_id' => $id]);
                 return null;
             }
 
-            $cliente = $plan->adaptation?->client_id;
-            $codart  = $plan->codart;
-            $maestra = $plan->adaptation?->maestra;
+            Log::info("✅ Plan encontrado", [
+                'plan_id'        => $plan->id,
+                'adaptation_id'  => $plan->adaptation_id ?? null,
+                'client_id'      => $plan->adaptation?->client_id,
+            ]);
 
-            $clientes = Clients::where('id', $cliente)->first();
-            $coddiv   = $clientes->code ?? null;
-            $desart   = $coddiv ? ArticleService::getDesartByCodart($coddiv, $codart) : null;
+            // --- Cliente / artículo ---
+            $clienteId = $plan->adaptation?->client_id;
+            $codart    = $plan->codart;
+            $maestra   = $plan->adaptation?->maestra;
 
-            // --- Conciliación: traer la más reciente para este plan ---
+            $cliente   = $clienteId ? Clients::find($clienteId) : null;
+            $coddiv    = $cliente->code ?? null;
+            $desart    = $coddiv ? ArticleService::getDesartByCodart($coddiv, $codart) : null;
+
+            // --- Conciliación (la más reciente si existe updated_at, si no por id) ---
             $conciliacion = Conciliaciones::where('adaptation_date_id', $plan->id)
                 ->when(
                     Schema::hasColumn('conciliaciones', 'updated_at'),
@@ -396,12 +407,17 @@ class AdaptationDateController extends Controller
                 ->first();
 
             if ($conciliacion) {
-                Log::info("ℹ️ Conciliación encontrada", ['conciliacion' => $conciliacion->toArray()]);
+                Log::info("ℹ️ Conciliación encontrada", [
+                    'conciliacion_id'    => $conciliacion->id,
+                    'adaptation_date_id' => $plan->id,
+                    'created_at'         => $conciliacion->created_at,
+                    'updated_at'         => $conciliacion->updated_at,
+                ]);
             } else {
-                Log::info("ℹ️ No hay conciliación para adaptation_date_id: {$plan->id}");
+                Log::info("ℹ️ No hay conciliación para el plan", ['adaptation_date_id' => $plan->id]);
             }
 
-            // ---- stagesIds seguro ----
+            // --- Stages ordenados según type_stage de la maestra ---
             $stageIds = [];
             if ($maestra && isset($maestra->type_stage)) {
                 $stageRaw = $maestra->type_stage;
@@ -413,73 +429,161 @@ class AdaptationDateController extends Controller
                 }
             }
 
-            $stages = Stage::whereIn('id', $stageIds)->get()
-                ->sortBy(fn($stage) => array_search($stage->id, $stageIds, true) ?: PHP_INT_MAX)
-                ->values();
+            $stages = collect();
+            if (!empty($stageIds)) {
+                $stages = Stage::whereIn('id', $stageIds)->get()
+                    ->sortBy(fn($stage) => array_search($stage->id, $stageIds))
+                    ->values();
+            }
 
-            // Normaliza a arrays para evitar “Trying to get property of non-object”
+            // --- IDs del plan con casteo seguro a array ---
             $masterIds  = is_array($plan->master)  ? $plan->master  : (is_null($plan->master)  ? [] : [$plan->master]);
             $lineIds    = is_array($plan->line)    ? $plan->line    : (is_null($plan->line)    ? [] : [$plan->line]);
             $machineIds = is_array($plan->machine) ? $plan->machine : (is_null($plan->machine) ? [] : [$plan->machine]);
             $userIds    = is_array($plan->users)   ? $plan->users   : (is_null($plan->users)   ? [] : [$plan->users]);
 
-            $lines   = Manufacturing::whereIn('id', $lineIds)->get();
-            $lineMap = $lines->pluck('name', 'id');
+            $lines      = !empty($lineIds)    ? Manufacturing::whereIn('id', $lineIds)->get()    : collect();
+            $lineMap    = $lines->pluck('name', 'id');
+            $machines   = !empty($machineIds) ? Machinery::whereIn('id', $machineIds)->get()     : collect();
+            $users      = !empty($userIds)    ? User::whereIn('id', $userIds)->get()             : collect();
+            $masterStages = !empty($masterIds) ? Stage::whereIn('id', $masterIds)->get()         : collect();
 
+            // --- Orden ejecutada (si existe) ---
             $ordenasEje = OrdenesEjecutadas::where('adaptation_date_id', $plan->id)->first();
 
-            $actividadesEje = ActividadesEjecutadas::where('adaptation_date_id', $plan->id)->get()
-                ->map(function ($actividad) use ($lineMap) {
-                    $actividadArr = $actividad->toArray();
-                    try {
-                        $forms = json_decode($actividadArr['forms'] ?? '[]', true);
-                        $forms = is_array($forms) ? $forms : [];
-                        foreach ($forms as &$form) {
-                            $idLinea = $form['linea'] ?? null;
-                            $nombre  = $idLinea !== null ? $lineMap->get($idLinea) : null;
-                            if ($nombre) $form['linea'] = $nombre;
+            // --- TODAS las actividades ejecutadas del plan (ordenadas: más reciente primero si hay updated_at) ---
+            $actividades = ActividadesEjecutadas::where('adaptation_date_id', $plan->id)
+                ->when(
+                    Schema::hasColumn('actividades_ejecutadas', 'updated_at'),
+                    fn($q) => $q->orderByDesc('updated_at'),
+                    fn($q) => $q->orderByDesc('id')
+                )
+                ->get();
+
+            Log::info("📚 Actividades del plan", [
+                'adaptation_date_id' => $plan->id,
+                'total'              => $actividades->count(),
+                'ids'                => $actividades->pluck('id'),
+            ]);
+
+            // --- Actividades (mapeadas a array) con normalización de 'forms' y líneas por nombre ---
+            $actividadesEjecutadas = $actividades->map(function ($actividad) use ($lineMap) {
+                $actividadArr = $actividad->toArray();
+                try {
+                    $forms = json_decode($actividadArr['forms'] ?? '[]', true);
+                    if (!is_array($forms)) $forms = [];
+                    foreach ($forms as &$form) {
+                        if (isset($form['linea']) && isset($lineMap[$form['linea']])) {
+                            $form['linea'] = $lineMap[$form['linea']];
                         }
-                        $actividadArr['forms'] = $forms;
-                    } catch (\Throwable $e) {
-                        Log::warning("⚠️ Error al decodificar forms", [
-                            'actividad_id' => $actividad->id,
-                            'error'        => $e->getMessage(),
-                        ]);
-                        $actividadArr['forms'] = [];
                     }
-                    return $actividadArr;
-                });
+                    $actividadArr['forms'] = $forms;
+                } catch (\Throwable $e) {
+                    Log::warning("⚠️ Error al decodificar forms", [
+                        'actividad_id' => $actividad->id,
+                        'error'        => $e->getMessage(),
+                    ]);
+                    $actividadArr['forms'] = [];
+                }
+                return $actividadArr;
+            });
 
-            $masterStages = Stage::whereIn('id', $masterIds)->get();
-            $machines     = Machinery::whereIn('id', $machineIds)->get();
-            $users        = User::whereIn('id', $userIds)->get();
-
-            // Timers
-            $actividad = ActividadesEjecutadas::where('adaptation_date_id', $plan->id)->first();
-            $timers    = collect();
-            if (!$actividad) {
-                Log::warning("❌ No se encontró actividad ejecutada para adaptation_date_id: $plan->id");
+            // --- Timers para TODAS las actividades del plan ---
+            $timers = collect();
+            if ($actividades->isEmpty()) {
+                Log::warning("⚠️ No hay actividades ejecutadas para el plan; no se buscarán timers", [
+                    'adaptation_date_id' => $plan->id
+                ]);
             } else {
+                $actividadIds = $actividades->pluck('id');
+
+                Log::info("🔍 Buscando timers para actividades", [
+                    'adaptation_date_id' => $plan->id,
+                    'actividad_ids'      => $actividadIds,
+                ]);
+
                 $timers = Timer::with(['timerControls', 'ejecutada'])
-                    ->where('ejecutada_id', $actividad->id)
+                    ->whereIn('ejecutada_id', $actividadIds)
                     ->get();
 
+                Log::info("⏱️ Timers encontrados", [
+                    'total_timers' => $timers->count(),
+                ]);
+
                 if ($timers->isEmpty()) {
-                    Log::warning("⚠️ No se encontraron timers para la actividad ejecutada ID: {$actividad->id}");
+                    Log::warning("⚠️ No se encontraron timers para las actividades", [
+                        'adaptation_date_id' => $plan->id,
+                    ]);
                 } else {
+                    // Resumen por actividad
+                    $timersPorActividad = $timers->groupBy('ejecutada_id')->map->count();
+                    Log::info("📊 Timers por actividad", $timersPorActividad->toArray());
+
+                    // Log detallado (con protección para blobs/imágenes)
                     foreach ($timers as $timer) {
                         $fase = $timer->ejecutada->description_fase ?? 'Sin fase';
-                        if ($timer->timerControls->isEmpty()) {
-                            Log::info("🔍 Timer ID {$timer->id} no tiene controles asociados.");
+                        $controlsCount = $timer->timerControls->count();
+
+                        Log::info("🧩 Timer", [
+                            'timer_id'        => $timer->id,
+                            'ejecutada_id'    => $timer->ejecutada_id,
+                            'fase'            => $fase,
+                            'controles_total' => $controlsCount,
+                            'created_at'      => $timer->created_at,
+                            'updated_at'      => $timer->updated_at,
+                        ]);
+
+                        if ($controlsCount === 0) {
+                            Log::info("🔎 Timer sin controles", ['timer_id' => $timer->id]);
                             continue;
                         }
+
                         foreach ($timer->timerControls as $control) {
                             $data = is_string($control->data) ? json_decode($control->data, true) : $control->data;
                             if (!is_array($data)) {
-                                Log::warning("❌ Data inválida o no decodificable en Control ID: {$control->id}");
+                                Log::warning("❌ Data inválida en control", [
+                                    'timer_id'   => $timer->id,
+                                    'control_id' => $control->id,
+                                    'tipo_dato'  => gettype($control->data),
+                                ]);
                                 continue;
                             }
-                            // Si necesitas acumular, hazlo aquí
+
+                            Log::info("📋 Control", [
+                                'control_id' => $control->id,
+                                'timer_id'   => $timer->id,
+                                'registros'  => count($data),
+                                'created_at' => $control->created_at,
+                                'updated_at' => $control->updated_at,
+                            ]);
+
+                            foreach ($data as $i => $registro) {
+                                $tipo        = $registro['tipo'] ?? '—';
+                                $descripcion = $registro['descripcion'] ?? ($registro['description'] ?? '—');
+                                $valor       = $registro['valor'] ?? '—';
+                                $unidad      = $registro['unidad'] ?? '';
+
+                                // Evitar loguear blobs/imágenes gigantes
+                                if (is_string($valor) && Str::startsWith($valor, 'data:image')) {
+                                    $valor = '[imagen]';
+                                }
+                                // Si es un array (p.ej. temperatura), log resumido
+                                if (is_array($valor)) {
+                                    $valor = array_intersect_key($valor, array_flip(['min', 'max', 'valor', 'value']));
+                                }
+                                // Limitar descripciones muy largas
+                                if (is_string($descripcion)) {
+                                    $descripcion = Str::limit($descripcion, 120);
+                                }
+
+                                Log::info("   • Registro control", [
+                                    'idx'         => $i,
+                                    'tipo'        => $tipo,
+                                    'descripcion' => $descripcion,
+                                    'valor'       => $valor,
+                                    'unidad'      => $unidad,
+                                ]);
+                            }
                         }
                     }
                 }
@@ -487,9 +591,9 @@ class AdaptationDateController extends Controller
 
             return [
                 'plan'                  => $plan,
-                'cliente'               => $clientes,
+                'cliente'               => $cliente,
                 'ordenadas'             => $ordenasEje,
-                'actividadesEjecutadas' => $actividadesEje,
+                'actividadesEjecutadas' => $actividadesEjecutadas,
                 'stages'                => $stages,
                 'masterStages'          => $masterStages,
                 'lines'                 => $lines,
@@ -497,11 +601,14 @@ class AdaptationDateController extends Controller
                 'users'                 => $users,
                 'desart'                => $desart,
                 'timers'                => $timers,
-                // Devuelve array o null; evita acceder a propiedades de null aguas arriba
-                'conciliacion'          => $conciliacion?->toArray() ?? null,
+                'conciliacion'          => $conciliacion,
             ];
         } catch (\Throwable $e) {
-            Log::error("💥 Error en getPlanDataForPDF: " . $e->getMessage(), ['trace' => $e->getTraceAsString()]);
+            Log::error("💥 Error en getPlanDataForPDF", [
+                'adaptation_date_id' => $id,
+                'error' => $e->getMessage(),
+                'trace' => Str::limit($e->getTraceAsString(), 2000),
+            ]);
             return null;
         }
     }
