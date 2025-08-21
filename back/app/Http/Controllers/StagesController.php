@@ -89,17 +89,15 @@ class StagesController extends Controller
             return response()->json(['message' => 'Fase no encontrada'], 404);
         }
 
-        // Log::info('📥 Request recibido para actualizar fase', [
-        //     'fase_id' => $id,
-        //     'request' => $request->all()
-        // ]);
-
         // 🔁 Normalizamos repeatLine → repeat_line si viene con camelCase
         if ($request->has('repeatLine')) {
             $request->merge([
                 'repeat_line' => $request->input('repeatLine')
             ]);
         }
+
+        // Tipos que SÍ requieren activities (ajusta la lista si hace falta)
+        $tiposQueRequierenActivities = ['proceso', 'procesos', 'ejecucion', 'ejecución'];
 
         $validatedData = $request->validate([
             'description'     => 'required|string',
@@ -111,27 +109,37 @@ class StagesController extends Controller
             'can_pause'       => 'boolean',
             'status'          => 'boolean',
             'multi'           => 'boolean',
-            'activities'      => 'required|array',
+
+            // ⬇️ Requerido solo si el tipo lo exige; en otros casos permitido vacío
+            'activities'      => [
+                'nullable',
+                'array',
+                \Illuminate\Validation\Rule::requiredIf(function () use ($request, $tiposQueRequierenActivities) {
+                    $tipo = strtolower((string) $request->input('phase_type', ''));
+                    return in_array($tipo, $tiposQueRequierenActivities, true);
+                }),
+            ],
+
             'duration'        => 'nullable|string',
             'duration_user'   => 'nullable|string',
             'user'            => 'string|nullable',
             'role'            => 'string|nullable',
         ]);
 
-        // Log::info('✅ Datos validados correctamente', $validatedData);
-
         // Desactivar versión anterior
         $Fase->active = false;
         $Fase->save();
 
-        // Normalizar activities
-        if (isset($validatedData['activities']) && is_array($validatedData['activities'])) {
-            $validatedData['activities'] = array_values(
-                array_map(fn($item) => intval($item), $validatedData['activities'])
-            );
-        }
+        // Normalizar activities (IDs) | si no aplica, que quede []
+        $activities = collect($validatedData['activities'] ?? [])
+            ->map(fn($item) => is_array($item) ? ($item['id'] ?? null) : $item)
+            ->filter(fn($v) => $v !== null && $v !== '')
+            ->map(fn($v) => (int) $v)
+            ->values()
+            ->all();
 
-        // Log::info('🔧 Datos listos para nueva versión', $validatedData);
+        // Aseguramos que se guarde [] cuando no corresponde enviar activities
+        $validatedData['activities'] = $activities;
 
         // Crear nueva versión
         $newVersion = (int) $Fase->version + 1;
@@ -141,11 +149,7 @@ class StagesController extends Controller
         $newFase->reference_id = $Fase->reference_id ?? (string) Str::uuid();
         $newFase->active = true;
 
-        // Log::info('🆕 Nueva fase antes de guardar', $newFase->toArray());
-
         $newFase->save();
-
-        // Log::info('💾 Nueva fase guardada', $newFase->toArray());
 
         return response()->json([
             'message' => 'Fase actualizada como nueva versión correctamente',

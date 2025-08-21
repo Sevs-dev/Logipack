@@ -69,7 +69,7 @@ function NewStage({ canEdit = false, canView = false }: CreateClientProps) {
   const fetchStage = async () => {
     try {
       const data = await getStage();
-      console.log("Fetched stages:", data);
+      // console.log("Fetched stages:", data);
       setStage(data);
     } catch {
       console.error("Error fetching stages:");
