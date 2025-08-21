@@ -136,7 +136,7 @@ class OrdenesEjecutadasController extends Controller
         ]);
 
         ActividadesEjecutadas::where('adaptation_date_id', $id)->delete();
-            
+
         return response()->json([
             'message' => 'Orden de acondicionamiento eliminada',
             'estado' => 200,
@@ -580,23 +580,38 @@ class OrdenesEjecutadasController extends Controller
      */
     public function restablecerOrden($id): JsonResponse
     {
+        // 1. Busca la última orden ejecutada con ese adaptation_date_id y estado = 100
         $orden = OrdenesEjecutadas::where('adaptation_date_id', $id)
-            ->orderByDesc('id')
+            ->where('estado', '100')
             ->first();
         
-        ActividadesEjecutadas::where('adaptation_date_id', $orden->adaptation_date_id)->update([
-            'estado_form' => false,
-        ]);
+        // 2. Busca la actividad con estado_form = false y phase_type = Procesos
+        $actividad = ActividadesEjecutadas::where('adaptation_date_id', $id)
+            ->where('phase_type', 'Procesos')
+            ->where('estado_form', false)
+            ->first();
 
-        $actividades = ActividadesEjecutadas::where('adaptation_date_id', $orden->adaptation_date_id)
-        ->orderByDesc('id')
-        ->get();
+        // 2. Si existe una actividad con estado_form = false y phase_type = Procesos...
+        if ($orden && $actividad) {
+            // 3. Marca todas las actividades de la orden como no ejecutadas
+            ActividadesEjecutadas::where('adaptation_date_id', $id)->update([
+                'estado_form' => true,
+            ]);
 
+            // 4. clona/crea las actividades de esa orden
+            $fases = $this->crear_actividades_orden($id, $orden);
 
-    
+            // 5. Devuelve respuesta JSON
+            return response()->json([
+                'message' => 'Orden restablecida correctamente',
+                'estado' => 200,
+            ]);
+        }
+
+        // 5. Devuelve respuesta JSON
         return response()->json([
-            'message' => 'Orden restablecida correctamente',
-            'estado' => 100,
+            'message' => 'Error, no se puede restabler orden',
+            'estado' => -11500,
         ]);
     }
 
