@@ -298,7 +298,7 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
             showError("Planificación no encontrada localmente");
             return;
         }
-        // console.log(selectedPlan)
+        console.log(selectedPlan)
         setLoadingModal(true);
 
         try {
@@ -508,7 +508,7 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
     const handleTerciario = useCallback(async (id: number) => {
         const { plan } = await getPlanningById(id);
 
-        // console.log(plan);
+        console.log(plan);
         // Validar si la orden tiene linea asignada
         if (plan.line === null) {
             showError("No se asignó línea a la planificación");
