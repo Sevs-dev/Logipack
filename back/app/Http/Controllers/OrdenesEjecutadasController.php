@@ -489,7 +489,7 @@ class OrdenesEjecutadasController extends Controller
             }
 
             // maestra con bom
-            $ingredientes = json_decode($ada_date->ingredients)[0];
+            $ingredientes = json_decode(json_decode($ada_date->ingredients))[0];
             return response()->json([
                 'orden' => [
                     'orden_ejecutada' => $orden->id,
