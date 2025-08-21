@@ -56,10 +56,10 @@ class OrdenesEjecutadasController extends Controller
             }
 
             // Orden ejecutada
-            $this->confirmar_orden($id);  // confirmar orden si es ejecutada
+            $estado = $this->confirmar_orden($id);  // confirmar orden si es ejecutada
             return response()->json([
                 'message' => 'Estado de la orden ejecutada',
-                'estado' => 11500,
+                'estado' => $estado,
             ]);
         }
 
@@ -142,7 +142,6 @@ class OrdenesEjecutadasController extends Controller
     public function linea_procesos(
         $id
     ): JsonResponse {
-        
         // obtener orden
         $orden = OrdenesEjecutadas::where('adaptation_date_id', $id)
             ->where('proceso', 'eject')
@@ -686,20 +685,25 @@ class OrdenesEjecutadasController extends Controller
      * Confirmar orden
      *
      * @param int $id
-     * @return void
+     * @return int
      */
     private function confirmar_orden(
         $id
-    ): void {
-        // Actualizar ActividadesEjecutadas
-        OrdenesEjecutadas::where('adaptation_date_id', $id)->update([
-            'estado' => '11500',
-        ]);
+    ): int {
+        $conciliacion = Conciliaciones::where('adaptation_date_id', $id)->first();
+        if ($conciliacion) {
+            // Actualizar ActividadesEjecutadas
+            OrdenesEjecutadas::where('adaptation_date_id', $id)->update([
+                'estado' => '11500',
+            ]);
 
-        // datos de la adaptacion
-        AdaptationDate::where('id', $id)->update([
-            'status_dates' => 'Ejecutado',
-        ]);
+            // datos de la adaptacion
+            AdaptationDate::where('id', $id)->update([
+                'status_dates' => 'Ejecutado',
+            ]);
+            return 11500;
+        }
+        return 100;
     }
 
     /**
