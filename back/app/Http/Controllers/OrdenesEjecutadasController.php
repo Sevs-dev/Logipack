@@ -48,6 +48,14 @@ class OrdenesEjecutadasController extends Controller
             }
 
             // Orden eliminada
+            if ($orden->estado == '12000') {
+                return response()->json([
+                    'message' => 'Estado de la orden restablecida',
+                    'estado' => 12000,
+                ]);
+            }
+
+            // Orden eliminada
             if ($orden->estado == '-11000') {
                 return response()->json([
                     'message' => 'Estado de la orden eliminada',
