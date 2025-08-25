@@ -547,6 +547,32 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
         }
     }, [fetchAll, handleClose]);
 
+    const hableRestablecerOrden = useCallback(async (id: number) => {
+        const { plan } = await getPlanningById(id);
+
+        // Validar si la orden tiene linea asignada
+        if (plan.line === null) {
+            showError("No se asignó línea a la planificación");
+            return;
+        }
+
+        if (plan.status_dates === null || plan.status_dates === "En Creación") {
+            showError("Orden no planificada, debe completar la planificación");
+            return;
+        }
+
+        localStorage.removeItem("ejecutar");
+
+        const data = await validate_orden(plan.id);
+        if (data.estado === 100 || data.estado === null) {
+            alert("Orden restablecida correctamente");
+        } else {
+            showError("La orden ya fue finalizada. Estado: " + data.estado);
+            fetchAll();
+        }
+    }, [fetchAll, handleClose]);
+
+
     //Componente SelectorDual
     const agregarMaquina = (machine: MachinePlanning) => {
         if (!selectedMachines.find(m => m.id === machine.id)) {
@@ -1089,8 +1115,10 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
                 onDelete={handleDelete}
                 showDeleteButton={false}
                 showTerciarioButton={true}
+                showRestablecerButton={true}
                 showViewButton={true}
                 onEdit={handleEdit}
+                onRestablecer={hableRestablecerOrden}
                 onTerciario={handleTerciario}
                 onView={obtenerActividades}
                 onPDF={handlePDF}
