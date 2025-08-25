@@ -65,22 +65,8 @@ const NewLineas = () => {
                     showError("No se encontró usuario");
                     return;
                 }
-
-                // localStorage.setItem(
-                //     "ejecutar",
-                //     JSON.stringify({
-                //         id: plan.id,
-                //         user: user,
-                //     })
-                // );
-
-                // setTimeout(() => {
-                //     window.open("/pages/lineas", "_blank");
-                //     // handleClose();
-                // }, 3000);
             } else {
                 showError("La orden ya fue finalizada. Estado: " + data.estado);
-                // fetchAll();
             }
         },
         []
@@ -103,36 +89,9 @@ const NewLineas = () => {
 
             const data = await validate_orden(plan.id);
             if (data.estado === 100 || data.estado === null) {
-                // alert("Orden controlada correctamente");
                 setShowModalControl(true);
-                // const response = await getRestablecerOrden(plan.id);
-                // if (response.estado !== 200) {
-                //     showError("Error, orden no permitida para restablecer");
-                //     return;
-                // }
-                // showSuccess("Orden restablecida correctamente");
-                // const user = document.cookie
-                //     .split('; ')
-                //     .find(row => row.startsWith('name='))
-                //     ?.split('=')[1];
-
-                // if (!user) {
-                //     showError("No se encontró usuario");
-                //     return;
-                // }
-
-                // localStorage.setItem("ejecutar", JSON.stringify({
-                //     id: plan.id,
-                //     user: user
-                // }));
-
-                // setTimeout(() => {
-                //     window.open("/pages/lineas", "_blank");
-                //     handleClose();
-                // }, 3000);
             } else {
                 showError("La orden ya fue finalizada. Estado: " + data.estado);
-                // fetchAll();
             }
         },
         []

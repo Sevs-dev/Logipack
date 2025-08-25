@@ -30,6 +30,10 @@ return new class extends Migration
             $table->double('sobrante')->nullable(); // (g)
             $table->double('total')->nullable(); // =a + c + g - (b + d + e + f)
             $table->double('rendimiento')->nullable(); // =h - e / ( a - (d + b) ) * 100
+            $table->double('unidades_caja')->nullable();
+            $table->double('numero_caja')->nullable();
+            $table->double('unidades_saldo')->nullable();
+            $table->double('total_saldo')->nullable();
 
             // Obtener usuario
             $table->string('user')->nullable();

@@ -3,6 +3,7 @@ import { useEffect, useState, useRef } from "react";
 import { getActividadesControl } from "../../services/planing/planingServices";
 import Text from "../text/Text";
 import SignatureCanvas from "react-signature-canvas";
+import { showSuccess } from "../toastr/Toaster";
 
 type ModalControlProps = {
     id?: number | null;
@@ -17,6 +18,8 @@ type Actividad = {
     description: string;
     config: string | any;
     binding: boolean;
+    clave: string;
+    valor: string;
 };
 
 export default function ModalControl({
@@ -28,16 +31,20 @@ export default function ModalControl({
     const ref = useRef<HTMLFormElement>(null);
     const [controlData, setControlData] = useState<Actividad[]>([]);
     const [memoriaFase, setMemoriaFase] = useState<Record<string, any>>({});
+    const [memoriaActividades, setMemoriaActividades] = useState<Record<string, any>>({});
+    const [btnDisabled, setBtnDisabled] = useState(true);
 
     // 📝 Guardar valores dinámicos
     const handleChange = (name: string, value: any) => {
-        setMemoriaFase((prev) => {
+        setMemoriaActividades((prev) => {
             const updated = {
                 ...prev,
                 [name]: value,
             };
             return updated;
         });
+
+        setBtnDisabled(false);
     };
 
     // 🔄 Cargar datos fase + actividades
@@ -63,11 +70,32 @@ export default function ModalControl({
         });
     }, [id]);
 
+
     const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
 
-        
-        console.log("Formulario enviado:", memoriaFase);
+        const data: Actividad[] = controlData.map((item) => ({
+            id: item.id,
+            description: item.description,
+            config: item.config,
+            binding: item.binding,
+            clave: memoriaActividades[`field_${item.id}`],
+            valor: memoriaActividades[`field_${item.id}`],
+        }));
+
+        const resultado = {
+            ...memoriaFase,
+            actividades: data,
+        }
+
+        console.log("data", resultado); // 👈 aquí ves la data inmediata
+
+        ref.current?.reset();
+        showSuccess("Control guardado correctamente");
+        setBtnDisabled(true);
+        setTimeout(() => {
+            window.location.reload();
+        }, 2000);
     };
 
     return (
@@ -122,7 +150,7 @@ export default function ModalControl({
                                         type="text"
                                         id={`field_${item.id}`}
                                         name={`field_${item.id}`}
-                                        value={memoriaFase[`field_${item.id}`] ?? ""}
+                                        value={memoriaActividades[`field_${item.id}`] ?? ""}
                                         onChange={(e) => handleChange(`field_${item.id}`, e.target.value)}
                                         className="mt-4 block w-full rounded-md border-gray-300 
                                         bg-gray-50 py-2 px-3.5 text-gray-900 shadow-sm ring-1 
@@ -137,7 +165,7 @@ export default function ModalControl({
                                 {type === "radio" && Array.isArray(options) && (
                                     <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-4">
                                         {options.map((opt: string) => {
-                                            const isSelected = memoriaFase[`field_${item.id}`] === opt;
+                                            const isSelected = memoriaActividades[`field_${item.id}`] === opt;
                                             return (
                                                 <label key={opt}
                                                     className={`relative flex cursor-pointer rounded-lg 
@@ -192,7 +220,7 @@ export default function ModalControl({
                                         style={{ maxHeight: "15rem" }}
                                         id={`field_${item.id}`}
                                         name={`field_${item.id}`}
-                                        value={memoriaFase[`field_${item.id}`] ?? ""}
+                                        value={memoriaActividades[`field_${item.id}`] ?? ""}
                                         onChange={(e) => handleChange(`field_${item.id}`, e.target.value)}
                                         className="mt-4 block w-full rounded-md border-gray-300 
                                         bg-gray-50 py-2 px-3.5 text-gray-900 shadow-sm ring-1 
@@ -209,7 +237,7 @@ export default function ModalControl({
                                         type="number"
                                         id={`field_${item.id}`}
                                         name={`field_${item.id}`}
-                                        value={memoriaFase[`field_${item.id}`] ?? ""}
+                                        value={memoriaActividades[`field_${item.id}`] ?? ""}
                                         onChange={(e) => handleChange(`field_${item.id}`, e.target.value)}
                                         className="mt-4 block w-full rounded-md border-gray-300 
                                         bg-gray-50 py-2 px-3.5 text-gray-900 shadow-sm ring-1 
@@ -226,7 +254,7 @@ export default function ModalControl({
                                         type="date"
                                         id={`field_${item.id}`}
                                         name={`field_${item.id}`}
-                                        value={memoriaFase[`field_${item.id}`] ?? ""}
+                                        value={memoriaActividades[`field_${item.id}`] ?? ""}
                                         onChange={(e) => handleChange(`field_${item.id}`, e.target.value)}
                                         className="mt-4 block w-full rounded-md border-gray-300 
                                         bg-gray-50 py-2 px-3.5 text-gray-900 shadow-sm ring-1 
@@ -243,7 +271,7 @@ export default function ModalControl({
                                         type="time"
                                         id={`field_${item.id}`}
                                         name={`field_${item.id}`}
-                                        value={memoriaFase[`field_${item.id}`] ?? ""}
+                                        value={memoriaActividades[`field_${item.id}`] ?? ""}
                                         onChange={(e) => handleChange(`field_${item.id}`, e.target.value)}
                                         className="mt-4 block w-full rounded-md border-gray-300 
                                         bg-gray-50 py-2 px-3.5 text-gray-900 shadow-sm ring-1 
@@ -259,7 +287,7 @@ export default function ModalControl({
                                     <select
                                         id={`field_${item.id}`}
                                         name={`field_${item.id}`}
-                                        value={memoriaFase[`field_${item.id}`] ?? ""}
+                                        value={memoriaActividades[`field_${item.id}`] ?? ""}
                                         onChange={(e) => handleChange(`field_${item.id}`, e.target.value)}
                                         className="mt-4 block w-full rounded-md border-gray-300 
                                         bg-gray-50 py-2 px-3.5 text-gray-900 shadow-sm ring-1 
@@ -288,7 +316,7 @@ export default function ModalControl({
                                                         type="checkbox"
                                                         name={`field_${item.id}`}
                                                         value={opt}
-                                                        checked={memoriaFase[`field_${item.id}`]?.includes(opt) || false}
+                                                        checked={memoriaActividades[`field_${item.id}`]?.includes(opt) || false}
                                                         onChange={(e) => handleChange(`field_${item.id}`, e.target.value)}
                                                         className="h-4 w-4 rounded border-gray-300 
                                                         text-indigo-600 focus:ring-indigo-600 
@@ -349,7 +377,7 @@ export default function ModalControl({
                                         step="0.01"
                                         id={`field_${item.id}`}
                                         name={`field_${item.id}`}
-                                        value={memoriaFase[`field_${item.id}`] ?? ""}
+                                        value={memoriaActividades[`field_${item.id}`] ?? ""}
                                         required={item.binding}
                                         onChange={(e) => handleChange(`field_${item.id}`, e.target.value)}
                                     />
@@ -367,7 +395,8 @@ export default function ModalControl({
                             hover:bg-indigo-500 focus-visible:outline 
                             focus-visible:outline-2 focus-visible:outline-offset-2 
                             focus-visible:outline-indigo-600 transition-colors duration-200 
-                            disabled:opacity-50">
+                            disabled:opacity-50"
+                            disabled={btnDisabled}>
                             Enviar Respuestas
                         </button>
                     </div>
