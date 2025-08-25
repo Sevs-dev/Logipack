@@ -465,7 +465,7 @@
                     <th style="width: 10%">Receta validada por</th>
                     <td style="width: 35%">
                         {{ $plan->user ? urldecode(preg_replace('/[\r\n]+/', '', $plan->user)) : 'Sin usuario' }}</td>
-                    <th style="width: 15%">Cliente</th>
+                    <th style="width: 15%">Fecha</th>
                     <td style="width: 15%">{{ $cliente->updated_at ?? '—' }}</td>
                 </tr>
             </table>

@@ -42,6 +42,45 @@ import {
   PlanServ,
 } from "@/app/interfaces/EditPlanning";
 
+/* =========================
+ *       Type helpers
+ * ========================= */
+type Primitive = string | number | boolean | null;
+type JSONValue = Primitive | JSONObject | JSONArray;
+interface JSONObject {
+  [k: string]: JSONValue;
+}
+type JSONArray = JSONValue[];
+
+type RecordLike = Record<string, unknown>;
+type MutablePlanServ = PlanServ & Record<string, unknown>;
+
+const isRecord = (v: unknown): v is RecordLike =>
+  typeof v === "object" && v !== null && !Array.isArray(v);
+
+const isNumber = (v: unknown): v is number =>
+  typeof v === "number" && Number.isFinite(v);
+
+const toFiniteNumber = (v: unknown): number | null => {
+  if (isNumber(v)) return v;
+  if (typeof v === "string") {
+    const n = Number(v);
+    return Number.isFinite(n) ? n : null;
+  }
+  return null;
+};
+
+interface NormalizedLine extends RecordLike {
+  machine: number[];
+  users: number[];
+  resource: string[];
+  duration_breakdown: DurationItem[] | null;
+  _activityIds: number[]; // auxiliar para fetch
+}
+
+/* =========================
+ *      Componente
+ * ========================= */
 function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
   const [planning, setPlanning] = useState<Plan[]>([]);
   const [isOpen, setIsOpen] = useState(false);
@@ -94,7 +133,6 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
   const fetchAll = useCallback(async () => {
     try {
       const planningData = await getConsultPlanning();
-      // console.log(planningData)
       setPlanning(planningData);
     } catch (error) {
       showError("Error cargando datos iniciales");
@@ -166,14 +204,10 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
 
     setLineActivities((prev) => {
       const currentLines = getLinesArray(currentPlan.line);
-      // Nuevo objeto sólo con las líneas activas
       const newLineActivities: Record<number, number[]> = {};
-
-      // Mantén las actividades de las líneas existentes
       currentLines.forEach((lineId) => {
         newLineActivities[lineId] = prev[lineId] || [];
       });
-
       return newLineActivities;
     });
   }, [currentPlan]);
@@ -269,7 +303,7 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
           })),
         };
       });
-      const planToSave: PlanServ = {
+      const planToSave: MutablePlanServ = {
         ...cleanedPlan,
         adaptation_id: updatedPlan.adaptation_id,
         factory: updatedPlan.factory,
@@ -285,13 +319,10 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
         duration_breakdown: updatedPlan.duration_breakdown,
         status_dates: updatedPlan.status_dates,
         created_at: updatedPlan.created_at,
-        client_name: updatedPlan.client_name,
         start_date: updatedPlan.start_date,
         end_date: updatedPlan.end_date,
-        activitiesDetails: updatedPlan.activitiesDetails,
-        lineActivities: updatedPlan.lineActivities,
+        // ⛔️ NO incluimos activitiesDetails / lineActivities / client_name
       };
-      // ✅ justo aquí 👇
       const keysToStringify: (keyof Pick<
         PlanServ,
         "duration_breakdown" | "ingredients" | "bom" | "master"
@@ -321,9 +352,7 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
       delete planToSave.lineActivities;
       delete planToSave.client_name;
 
-      // 🚀 luego envías
-      // console.log("📤 Enviando plan:", planToSave);
-      await updatePlanning(updatedPlan.id, planToSave);
+      await updatePlanning(updatedPlan.id, planToSave as PlanServ);
       await fetchAll();
       setIsOpen(false);
       handleClose();
@@ -332,7 +361,7 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
       console.error("Error al guardar cambios:", error);
       showError("Error al guardar la planificación");
     } finally {
-      setIsSaving(false); // Desactiva loading
+      setIsSaving(false);
     }
   };
 
@@ -369,10 +398,12 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
 
         const matchedPlan =
           serverPlansWithDetails.find(
-            (p) => p.ID_ADAPTACION === selectedPlan.id
+            (p) =>
+              (p as unknown as RecordLike).ID_ADAPTACION === selectedPlan.id
           ) || serverPlansWithDetails[0];
-
-        const activitiesDetails = matchedPlan.activitiesDetails ?? [];
+        const activitiesDetails =
+          ((matchedPlan as unknown as RecordLike)
+            .activitiesDetails as ActivityDetail[]) ?? [];
 
         const newLineActivities: Record<number, number[]> = {};
 
@@ -406,7 +437,6 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
         setLineActivities(newLineActivities);
         setActivitiesDetails(activitiesDetails);
 
-        // ✅ Usa los datos recién obtenidos, no `machine` y `user` directamente
         setSelectedMachines(
           currentMachine.filter((m) =>
             (selectedPlan.machine || []).includes(m.id)
@@ -423,14 +453,13 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
           line: getLinesArray(selectedPlan.line),
         };
 
-        // console.log('Datos a editar:', fullPlan);
         setCurrentPlan(fullPlan);
         setIsOpen(true);
       } catch (error) {
         console.error("❌ Error fetching plan:", error);
         showError("Error al cargar la planificación para edición");
       } finally {
-        setLoadingModal(false); // 👈 apagar loader
+        setLoadingModal(false);
       }
     },
     [planning, machine, user]
@@ -458,7 +487,6 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
 
     if (isNaN(num) || num <= 0) return "0 seg";
 
-    // Si el número tiene decimales, los decimales son segundos (ej: 0.10 => 10 seg)
     const [minStr, secStr] = num.toString().split(".");
     const mins = parseInt(minStr, 10) || 0;
     const secs = secStr ? parseInt(secStr.padEnd(2, "0").slice(0, 2), 10) : 0;
@@ -517,7 +545,6 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
     setLineActivities((prev) => {
       const updated = { ...prev };
 
-      // ⛔ No agregar si ya existe en esta línea
       if (updated[lineId]?.includes(draggedActivityId)) return prev;
 
       updated[lineId] = [...(updated[lineId] || []), draggedActivityId];
@@ -555,9 +582,9 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
   );
 
   // helpers seguros
-  const safeParseJSON = <T = unknown,>(v: any, fallback: T): T => {
+  const safeParseJSON = <T = unknown,>(v: unknown, fallback: T): T => {
     if (v == null) return fallback;
-    if (Array.isArray(v) || typeof v === "object") return v as T;
+
     if (typeof v === "string") {
       const s = v.trim();
       if (!s) return fallback;
@@ -567,118 +594,149 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
         return fallback;
       }
     }
-    return fallback;
+
+    return v as T;
   };
 
-  const ensureArray = <T = any,>(v: any): T[] => {
+  const ensureArray = <T = unknown,>(v: unknown): T[] => {
     if (Array.isArray(v)) return v as T[];
     if (v == null || v === "") return [];
-    return safeParseJSON<T[]>(v, []);
+    const parsed = safeParseJSON<unknown>(v, []);
+    return Array.isArray(parsed) ? (parsed as T[]) : [];
   };
 
-  // Saca ids de actividad aunque vengan anidados o mezclados
-  const extractActivityIds = (v: any): number[] => {
-    const arr = ensureArray<any>(v);
+  // Saca ids de actividad aunque vengan anidados o mezclados (sin any)
+  const extractActivityIds = (input: unknown): number[] => {
     const out: number[] = [];
-    const visit = (item: any) => {
-      if (item == null) return;
-      if (typeof item === "number" && Number.isFinite(item)) {
-        out.push(item);
+
+    const visit = (val: unknown): void => {
+      if (val == null) return;
+
+      const asNum = toFiniteNumber(val);
+      if (asNum !== null) {
+        out.push(asNum);
         return;
       }
-      if (typeof item === "string") {
-        const n = Number(item);
-        if (Number.isFinite(n)) out.push(n);
-        else visit(safeParseJSON<any>(item, null)); // puede ser un objeto JSON en string
+
+      if (typeof val === "string") {
+        // si no fue número, intenta parsear JSON (podría ser objeto/array)
+        const parsed = safeParseJSON<unknown>(val, null);
+        if (parsed !== null) {
+          visit(parsed);
+        }
         return;
       }
-      if (Array.isArray(item)) {
-        item.forEach(visit);
+
+      if (Array.isArray(val)) {
+        val.forEach(visit);
         return;
       }
-      if (typeof item === "object") {
-        // patrones comunes: { id }, { activities: [...] }, estructuras anidadas
-        if ("id" in item && Number.isFinite(Number(item.id)))
-          out.push(Number(item.id));
-        if ("activities" in item) visit((item as any).activities);
-        // Algunos endpoints traen { lines:[{activities:[...] }]} o similar
-        if ("lines" in item) visit((item as any).lines);
+
+      if (isRecord(val)) {
+        if ("id" in val) {
+          const idVal = toFiniteNumber(val.id);
+          if (idVal !== null) out.push(idVal);
+        }
+        if ("activities" in val) visit(val.activities);
+        if ("lines" in val) visit(val.lines);
+        if ("ID_ACTIVITIES" in val) visit(val.ID_ACTIVITIES);
+        if ("stages" in val) visit(val.stages);
       }
     };
-    arr.forEach(visit);
-    return Array.from(new Set(out)); // sin duplicados
+
+    visit(input);
+    return Array.from(new Set(out));
   };
 
-  // Normaliza un "plan/line" cualquiera a estructura usable
-  const normalizeLine = (line: any) => {
-    // Campos que suelen llegar serializados como string
-    const machine = ensureArray(line?.machine);
-    const users = ensureArray(line?.users);
-    const resource = ensureArray(line?.resource);
-    const duration_breakdown = safeParseJSON(line?.duration_breakdown, null);
+  // Normaliza una línea del servidor (sin any)
+  const normalizeLine = (line: unknown): NormalizedLine => {
+    const obj = isRecord(line) ? line : {};
 
-    // Posibles fuentes de ids de actividades
-    const ids = extractActivityIds(line?.ID_ACTIVITIES) // preferido si existe
-      .concat(extractActivityIds(line?.activities)) // o viene aquí
-      .concat(extractActivityIds(line?.stages)); // por si llegó como stages con activities
-    // Limpieza final
-    const activityIds = Array.from(
-      new Set(ids.filter((n) => Number.isFinite(n)))
-    ) as number[];
+    const machineRaw = ensureArray<unknown>(obj["machine"]);
+    const usersRaw = ensureArray<unknown>(obj["users"]);
+    const resourceRaw = ensureArray<unknown>(obj["resource"]);
+    const durationBreakdown = safeParseJSON<DurationItem[] | null>(
+      obj["duration_breakdown"],
+      null
+    );
+
+    const machine = machineRaw
+      .map(toFiniteNumber)
+      .filter((n): n is number => n !== null);
+    const users = usersRaw
+      .map(toFiniteNumber)
+      .filter((n): n is number => n !== null);
+    const resource = resourceRaw.map((r) =>
+      typeof r === "string" ? r : JSON.stringify(r)
+    );
+
+    const ids = [
+      ...extractActivityIds(obj["ID_ACTIVITIES"]),
+      ...extractActivityIds(obj["activities"]),
+      ...extractActivityIds(obj["stages"]),
+    ];
 
     return {
-      ...line,
+      ...obj,
       machine,
       users,
       resource,
-      duration_breakdown,
-      _activityIds: activityIds, // campo interno para fetch
+      duration_breakdown: durationBreakdown,
+      _activityIds: Array.from(new Set(ids)),
     };
   };
 
-  // === Tu función robusta ===
-  async function fetchAndProcessPlans(id: number) {
-    const resp = await getActivitiesByPlanning(id);
+  // === Función robusta (sin any) ===
+  const fetchAndProcessPlans = useCallback(
+    async (id: number): Promise<ServerPlan[]> => {
+      const resp: unknown = await getActivitiesByPlanning(id);
 
-    // La API a veces devuelve { plan }, otras { plans }, otras el objeto directo ¯\_(ツ)_/¯
-    let serverPlansRaw: any = resp?.plan ?? resp?.plans ?? resp ?? [];
-    if (!Array.isArray(serverPlansRaw)) {
-      serverPlansRaw = serverPlansRaw ? [serverPlansRaw] : [];
-    }
+      let serverPlansRaw: unknown;
+      if (isRecord(resp)) {
+        serverPlansRaw =
+          (resp as RecordLike).plan ?? (resp as RecordLike).plans ?? resp;
+      } else {
+        serverPlansRaw = resp;
+      }
 
-    // Si sigue vacío, tiramos error más informativo
-    if (serverPlansRaw.length === 0) {
-      throw new Error(
-        `Planificación no encontrada desde servidor (id=${id}). Payload keys: ${Object.keys(
-          resp || {}
-        ).join(", ")}`
+      const rawArray: unknown[] = Array.isArray(serverPlansRaw)
+        ? serverPlansRaw
+        : serverPlansRaw != null
+        ? [serverPlansRaw]
+        : [];
+
+      if (rawArray.length === 0) {
+        const keys = isRecord(resp)
+          ? Object.keys(resp as RecordLike).join(", ")
+          : "—";
+        throw new Error(
+          `Planificación no encontrada desde servidor (id=${id}). Payload keys: ${keys}`
+        );
+      }
+
+      const normalized = rawArray.map(normalizeLine);
+
+      const serverPlansWithDetails = await Promise.all(
+        normalized.map(async (line) => {
+          const ids = line._activityIds ?? [];
+          const activitiesDetails: ActivityDetail[] = ids.length
+            ? await Promise.all(ids.map(async (n) => await getActivitieId(n)))
+            : [];
+
+          const { _activityIds: _omit, ...rest } = line;
+          void _omit;
+          return { ...(rest as unknown as ServerPlan), activitiesDetails };
+        })
       );
-    }
 
-    const normalized = serverPlansRaw.map(normalizeLine);
-
-    const serverPlansWithDetails = await Promise.all(
-      normalized.map(async (line) => {
-        const ids = line._activityIds ?? [];
-        const activitiesDetails = ids.length
-          ? await Promise.all(ids.map((n: number) => getActivitieId(n)))
-          : [];
-
-        // Limpia el campo auxiliar
-        const { _activityIds, ...rest } = line;
-        return { ...rest, activitiesDetails };
-      })
-    );
-
-    return serverPlansWithDetails;
-  }
-
+      return serverPlansWithDetails;
+    },
+    []
+  );
   const handleTerciario = useCallback(
     async (id: number) => {
       const { plan } = await getPlanningById(id);
 
-      console.log(plan);
-      // Validar si la orden tiene linea asignada
       if (plan.line === null) {
         showError("No se asignó línea a la planificación");
         return;
@@ -693,12 +751,12 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
 
       const data = await validate_orden(plan.id);
       if (data.estado === 100 || data.estado === null) {
-        const user = document.cookie
+        const userCookie = document.cookie
           .split("; ")
           .find((row) => row.startsWith("name="))
           ?.split("=")[1];
 
-        if (!user) {
+        if (!userCookie) {
           showError("No se encontró usuario");
           return;
         }
@@ -707,7 +765,7 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
           "ejecutar",
           JSON.stringify({
             id: plan.id,
-            user: user,
+            user: userCookie,
           })
         );
 
@@ -725,7 +783,6 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
     async (id: number) => {
       const { plan } = await getPlanningById(id);
 
-      // Validar si la orden tiene linea asignada
       if (plan.line === null) {
         showError("No se asignó línea a la planificación");
         return;
@@ -744,12 +801,12 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
           return;
         }
         showSuccess("Orden restablecida correctamente");
-        const user = document.cookie
+        const userCookie = document.cookie
           .split("; ")
           .find((row) => row.startsWith("name="))
           ?.split("=")[1];
 
-        if (!user) {
+        if (!userCookie) {
           showError("No se encontró usuario");
           return;
         }
@@ -758,7 +815,7 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
           "ejecutar",
           JSON.stringify({
             id: plan.id,
-            user: user,
+            user: userCookie,
           })
         );
 
@@ -774,62 +831,31 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
     [fetchAll, handleClose]
   );
 
-  const hableControlOrden = useCallback(
-    async (id: number) => {
-      const { plan } = await getPlanningById(id);
+  const hableControlOrden = useCallback(async (id: number) => {
+    const { plan } = await getPlanningById(id);
 
-      // Validar si la orden tiene linea asignada
-      if (plan.line === null) {
-        showError("No se asignó línea a la planificación");
-        return;
-      }
+    if (plan.line === null) {
+      showError("No se asignó línea a la planificación");
+      return;
+    }
 
-      if (plan.status_dates === null || plan.status_dates === "En Creación") {
-        showError("Orden no planificada, debe completar la planificación");
-        return;
-      }
+    if (plan.status_dates === null || plan.status_dates === "En Creación") {
+      showError("Orden no planificada, debe completar la planificación");
+      return;
+    }
 
-      const data = await validate_orden(plan.id);
-      if (data.estado === 100 || data.estado === null) {
-        // alert("Orden controlada correctamente");
-        setShowModalControl(true);
-        // const response = await getRestablecerOrden(plan.id);
-        // if (response.estado !== 200) {
-        //     showError("Error, orden no permitida para restablecer");
-        //     return;
-        // }
-        // showSuccess("Orden restablecida correctamente");
-        // const user = document.cookie
-        //     .split('; ')
-        //     .find(row => row.startsWith('name='))
-        //     ?.split('=')[1];
-
-        // if (!user) {
-        //     showError("No se encontró usuario");
-        //     return;
-        // }
-
-        // localStorage.setItem("ejecutar", JSON.stringify({
-        //     id: plan.id,
-        //     user: user
-        // }));
-
-        // setTimeout(() => {
-        //     window.open("/pages/lineas", "_blank");
-        //     handleClose();
-        // }, 3000);
-      } else {
-        showError("La orden ya fue finalizada. Estado: " + data.estado);
-        // fetchAll();
-      }
-    },
-    [fetchAll, handleClose]
-  );
+    const data = await validate_orden(plan.id);
+    if (data.estado === 100 || data.estado === null) {
+      setShowModalControl(true);
+    } else {
+      showError("La orden ya fue finalizada. Estado: " + data.estado);
+    }
+  }, []);
 
   //Componente SelectorDual
-  const agregarMaquina = (machine: MachinePlanning) => {
-    if (!selectedMachines.find((m) => m.id === machine.id)) {
-      setSelectedMachines([...selectedMachines, machine]);
+  const agregarMaquina = (m: MachinePlanning) => {
+    if (!selectedMachines.find((x) => x.id === m.id)) {
+      setSelectedMachines([...selectedMachines, m]);
     }
   };
 
@@ -837,9 +863,9 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
     setSelectedMachines(selectedMachines.filter((m) => m.id !== id));
   };
 
-  const agregarUser = (user: UserPlaning) => {
-    if (!selectedUsers.find((m) => m.id === user.id)) {
-      setSelectedUsers([...selectedUsers, user]);
+  const agregarUser = (u: UserPlaning) => {
+    if (!selectedUsers.find((x) => x.id === u.id)) {
+      setSelectedUsers([...selectedUsers, u]);
     }
   };
 
@@ -860,7 +886,7 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
     }
     try {
       const data = await actividades_ejecutadas(plan.id);
-      if (data?.actividades) {
+      if ((data as RecordLike)?.actividades) {
         window.open(`/pages/detalle/${plan.id}`);
       }
     } catch (error) {
@@ -1074,15 +1100,14 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
                       }
                     })()}
                     onChange={(e) => {
-                      // Primero parseamos line para estar seguros de que es array
                       const currentLine = (() => {
-                        if (!currentPlan.line) return [];
+                        if (!currentPlan.line) return [] as number[];
                         if (Array.isArray(currentPlan.line))
                           return currentPlan.line;
                         try {
-                          return JSON.parse(currentPlan.line);
+                          return JSON.parse(currentPlan.line) as number[];
                         } catch {
-                          return [];
+                          return [] as number[];
                         }
                       })();
 
@@ -1448,7 +1473,7 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
                 />
               )}
             <Button
-              onClick={() => handleSave(currentPlan)}
+              onClick={() => currentPlan && handleSave(currentPlan)}
               variant="save"
               label="Guardar"
             />
@@ -1487,7 +1512,7 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
         showTerciarioCondition={(row) =>
           row.status_dates === "Planificación" ||
           row.status_dates === "En ejecución"
-        } // 👈 Aquí va tu condición
+        }
         showViewCondition={(row) =>
           row.status_dates === "Ejecutado" ||
           row.status_dates === "En ejecución"

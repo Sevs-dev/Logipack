@@ -33,41 +33,50 @@ class StagesController extends Controller
     }
 
     // Crear una nueva Fase
+    // Crear una nueva Fase
     public function newFase(Request $request): JsonResponse
     {
         $validatedData = $request->validate([
-            'description' => 'required|string',
-            'phase_type' => 'required|string',
-            'repeat' => 'boolean',
-            'repeat_line' => 'boolean',
+            'description'    => 'required|string',
+            'phase_type'     => 'required|string',
+            'repeat'         => 'boolean',
+            'repeat_line'    => 'boolean',
             'repeat_minutes' => 'nullable|integer',
-            'alert' => 'boolean',
-            'can_pause' => 'boolean',
-            'status' => 'boolean',
-            'multi' => 'boolean',
-            'activities' => 'nullable|array',
-            'duration' => 'nullable|string',
-            'duration_user' => 'nullable|string',
-            'user' => 'string|nullable',
-            'role' => 'string|nullable',
+            'alert'          => 'boolean',
+            'can_pause'      => 'boolean',
+            'status'         => 'boolean',
+            'multi'          => 'boolean',
+            'activities'     => 'nullable|array',
+            'duration'       => 'nullable|string',
+            'duration_user'  => 'nullable|string',
+            'user'           => 'string|nullable',
+            'role'           => 'string|nullable',
         ]);
 
-        // Normalizar activities (por ejemplo, convertir a enteros)
-        if (isset($validatedData['activities']) && is_array($validatedData['activities'])) {
-            $validatedData['activities'] = array_values(
-                array_map(fn($item) => intval($item), $validatedData['activities'])
-            );
-        }
+        // ✅ Normaliza IDs preservando el ORDEN y evitando duplicados
+        $activities = collect($validatedData['activities'] ?? [])
+            ->map(function ($item) {
+                if (is_array($item)) {
+                    $id = $item['id'] ?? null;
+                } else {
+                    $id = $item;
+                }
+                return is_numeric($id) ? (int) $id : null;
+            })
+            ->filter(fn($v) => $v !== null)
+            ->unique()     // mantiene la primera ocurrencia (preserva orden)
+            ->values()
+            ->all();
 
-        $validatedData['version'] = '1';
+        $validatedData['activities']   = $activities;
+        $validatedData['version']      = '1';
         $validatedData['reference_id'] = (string) Str::uuid();
 
-        // Crear la nueva Fase
         $Fase = Stage::create($validatedData);
 
         return response()->json([
             'message' => 'Fase creada exitosamente',
-            'Fase' => $Fase
+            'Fase'    => $Fase
         ], 201);
     }
 
@@ -135,10 +144,10 @@ class StagesController extends Controller
             ->map(fn($item) => is_array($item) ? ($item['id'] ?? null) : $item)
             ->filter(fn($v) => $v !== null && $v !== '')
             ->map(fn($v) => (int) $v)
+            ->unique()    // ✅ evita duplicados, mantiene orden de entrada
             ->values()
             ->all();
 
-        // Aseguramos que se guarde [] cuando no corresponde enviar activities
         $validatedData['activities'] = $activities;
 
         // Crear nueva versión

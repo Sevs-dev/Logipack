@@ -110,28 +110,141 @@ function NewStage({ canEdit = false, canView = false }: CreateClientProps) {
     fetchActivities();
   }, []);
 
+  type ActivityApi = {
+    id: number;
+    description: string;
+    duration: number;
+    binding?: number;
+    // Campos de orden que pueden venir del backend (Laravel pivot, etc.)
+    order?: number;
+    position?: number;
+    sort_index?: number;
+    idx?: number;
+    pivot?: {
+      order?: number;
+      position?: number;
+      sort_index?: number;
+      idx?: number;
+    };
+  };
+
+  type SelectedActivity = {
+    id: number;
+    description: string;
+    duration: number;
+  };
+
+  function getOrderHint(a: ActivityApi): number | undefined {
+    // Busca un campo de orden común en objetos devueltos por el backend
+    return (
+      a.order ??
+      a.position ??
+      a.sort_index ??
+      a.idx ??
+      a.pivot?.order ??
+      a.pivot?.position ??
+      a.pivot?.sort_index ??
+      a.pivot?.idx
+    );
+  }
+
+  function uniqueById<T extends { id: number }>(arr: T[]): T[] {
+    const seen = new Set<number>();
+    const out: T[] = [];
+    for (const item of arr) {
+      if (!seen.has(item.id)) {
+        seen.add(item.id);
+        out.push(item);
+      }
+    }
+    return out;
+  }
+
+  /**
+   * Normaliza y ordena las actividades seleccionadas al editar.
+   * - Acepta `editingStage.activities` como number[] o ActivityApi[]
+   * - Si hay pista de orden (order/position/pivot.order...), se usa.
+   * - Si viene ID list, respeta el orden del array de IDs.
+   * - Si no hay pista, deja el orden tal cual venga.
+   */
+  function normalizeSelectedActivities(
+    raw: unknown,
+    available: ActivityApi[]
+  ): SelectedActivity[] {
+    const byId = new Map<number, ActivityApi>();
+    for (const a of available) byId.set(a.id, a);
+
+    if (Array.isArray(raw) && raw.every((x) => typeof x === "number")) {
+      const ids = raw as number[];
+      const mapped = ids
+        .map((id) => byId.get(id))
+        .filter((x): x is ActivityApi => !!x)
+        .map((a) => ({
+          id: a.id,
+          description: a.description,
+          duration: a.duration,
+        }));
+      return uniqueById(mapped);
+    }
+
+    if (
+      Array.isArray(raw) &&
+      raw.every(
+        (x) => typeof x === "object" && x !== null && "id" in (x as object)
+      )
+    ) {
+      const objs = raw as ActivityApi[];
+      const withOrder = objs.map((o, i) => ({
+        src: o,
+        orderHint: getOrderHint(o),
+        fallbackIndex: i, // orden de llegada
+      }));
+
+      const hasAnyOrder = withOrder.some(
+        (x) => typeof x.orderHint === "number"
+      );
+
+      const sorted = hasAnyOrder
+        ? withOrder
+            .slice()
+            .sort((a, b) => {
+              const ao = a.orderHint ?? Number.MAX_SAFE_INTEGER;
+              const bo = b.orderHint ?? Number.MAX_SAFE_INTEGER;
+              // primero por orderHint; si empatan o alguno no tiene, por orden de llegada
+              return ao - bo || a.fallbackIndex - b.fallbackIndex;
+            })
+            .map((x) => x.src)
+        : objs;
+
+      const mapped = sorted
+        .map((o) => byId.get(o.id) ?? o)
+        .map((a) => ({
+          id: a.id,
+          description: a.description,
+          duration: a.duration,
+        }));
+
+      return uniqueById(mapped);
+    }
+
+    return [];
+  }
+
   useEffect(() => {
     if (
-      !isEditOpen || // evita que dispare en modo crear
+      !isEditOpen ||
       !editingStage ||
       !["Actividades", "Control", "Procesos"].includes(phaseType) ||
       availableActivities.length === 0
-    )
-      return;
-
-    const selected = editingStage.activities;
-    if (
-      Array.isArray(selected) &&
-      selected.every((item) => typeof item === "object" && item.id)
     ) {
-      setSelectedActivities(selected);
-    } else {
-      console.warn(
-        "El campo 'activities' no es un array de objetos válidos:",
-        selected
-      );
-      setSelectedActivities([]);
+      return;
     }
+
+    const normalized = normalizeSelectedActivities(
+      editingStage.activities as unknown,
+      availableActivities as ActivityApi[]
+    );
+    setSelectedActivities(normalized);
   }, [isEditOpen, availableActivities, editingStage, phaseType]);
 
   useEffect(() => {
@@ -656,7 +769,7 @@ function NewStage({ canEdit = false, canView = false }: CreateClientProps) {
                       <input
                         type="number"
                         placeholder="Cada (min)"
-                        value={repeatMinutes ?? ""}  
+                        value={repeatMinutes ?? ""}
                         onChange={(e) => setRepeatMinutes(e.target.value)}
                         className="min-w-[120px] p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 text-black text-sm"
                         disabled={!canEdit}
