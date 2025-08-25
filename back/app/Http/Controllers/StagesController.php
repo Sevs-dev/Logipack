@@ -55,16 +55,10 @@ class StagesController extends Controller
 
         // ✅ Normaliza IDs preservando el ORDEN y evitando duplicados
         $activities = collect($validatedData['activities'] ?? [])
-            ->map(function ($item) {
-                if (is_array($item)) {
-                    $id = $item['id'] ?? null;
-                } else {
-                    $id = $item;
-                }
-                return is_numeric($id) ? (int) $id : null;
-            })
-            ->filter(fn($v) => $v !== null)
-            ->unique()     // mantiene la primera ocurrencia (preserva orden)
+            ->map(fn($item) => is_array($item) ? ($item['id'] ?? null) : $item)
+            ->filter(fn($v) => is_numeric($v))
+            ->map(fn($v) => (int) $v)
+            ->unique()   // mantiene primera aparición (no reordena)
             ->values()
             ->all();
 
@@ -94,19 +88,13 @@ class StagesController extends Controller
     public function updateFase(Request $request, $id): JsonResponse
     {
         $Fase = Stage::find($id);
-        if (!$Fase) {
-            return response()->json(['message' => 'Fase no encontrada'], 404);
-        }
+        if (!$Fase) return response()->json(['message' => 'Fase no encontrada'], 404);
 
-        // 🔁 Normalizamos repeatLine → repeat_line si viene con camelCase
         if ($request->has('repeatLine')) {
-            $request->merge([
-                'repeat_line' => $request->input('repeatLine')
-            ]);
+            $request->merge(['repeat_line' => $request->input('repeatLine')]);
         }
 
-        // Tipos que SÍ requieren activities (ajusta la lista si hace falta)
-        $tiposQueRequierenActivities = ['proceso', 'procesos', 'ejecucion', 'ejecución'];
+        $tiposQueRequierenActivities = ['proceso', 'procesos', 'ejecucion', 'ejecución', 'actividades', 'control'];
 
         $validatedData = $request->validate([
             'description'     => 'required|string',
@@ -118,8 +106,6 @@ class StagesController extends Controller
             'can_pause'       => 'boolean',
             'status'          => 'boolean',
             'multi'           => 'boolean',
-
-            // ⬇️ Requerido solo si el tipo lo exige; en otros casos permitido vacío
             'activities'      => [
                 'nullable',
                 'array',
@@ -128,41 +114,38 @@ class StagesController extends Controller
                     return in_array($tipo, $tiposQueRequierenActivities, true);
                 }),
             ],
-
             'duration'        => 'nullable|string',
             'duration_user'   => 'nullable|string',
             'user'            => 'string|nullable',
             'role'            => 'string|nullable',
         ]);
 
-        // Desactivar versión anterior
-        $Fase->active = false;
-        $Fase->save();
-
-        // Normalizar activities (IDs) | si no aplica, que quede []
+        // ✅ normaliza manteniendo orden
         $activities = collect($validatedData['activities'] ?? [])
             ->map(fn($item) => is_array($item) ? ($item['id'] ?? null) : $item)
-            ->filter(fn($v) => $v !== null && $v !== '')
+            ->filter(fn($v) => is_numeric($v))
             ->map(fn($v) => (int) $v)
-            ->unique()    // ✅ evita duplicados, mantiene orden de entrada
+            ->unique()
             ->values()
             ->all();
 
         $validatedData['activities'] = $activities;
 
-        // Crear nueva versión
+        // Desactiva anterior y crea nueva versión
+        $Fase->active = false;
+        $Fase->save();
+
         $newVersion = (int) $Fase->version + 1;
         $newFase = $Fase->replicate();
         $newFase->version = $newVersion;
         $newFase->fill($validatedData);
         $newFase->reference_id = $Fase->reference_id ?? (string) Str::uuid();
         $newFase->active = true;
-
         $newFase->save();
 
         return response()->json([
             'message' => 'Fase actualizada como nueva versión correctamente',
-            'Fase' => $newFase
+            'Fase'    => $newFase
         ]);
     }
 
