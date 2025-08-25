@@ -10,34 +10,59 @@ import { IconSelector } from "../dinamicSelect/IconSelector";
 import ModalSection from "../modal/ModalSection";
 import { InfoPopover } from "../buttons/InfoPopover";
 import { CreateClientProps } from "../../interfaces/CreateClientProps";
-import { MachinePlanning } from "../../interfaces/NewMachine"
-import { UserPlaning } from "../../interfaces/CreateUser"
-import SelectorDual from "../SelectorDual/SelectorDual"
-import DateLoader from '@/app/components/loader/DateLoader';
-import { API_URL } from '../../config/api'
-// 🔹 Servicios 
-import { updatePlanning, getActivitiesByPlanning, getPlanningById, validate_orden, getConsultPlanning, getRestablecerOrden } from "../../services/planing/planingServices";
-import { getActivitieId } from "../../services/maestras/activityServices"
+import { MachinePlanning } from "../../interfaces/NewMachine";
+import { UserPlaning } from "../../interfaces/CreateUser";
+import SelectorDual from "../SelectorDual/SelectorDual";
+import DateLoader from "@/app/components/loader/DateLoader";
+import { API_URL } from "../../config/api";
+// 🔹 Servicios
+import {
+    updatePlanning,
+    getActivitiesByPlanning,
+    getPlanningById,
+    validate_orden,
+    getConsultPlanning,
+} from "../../services/planing/planingServices";
+import { getActivitieId } from "../../services/maestras/activityServices";
 import { getManu } from "@/app/services/userDash/manufacturingServices";
 import { getMachin } from "@/app/services/userDash/machineryServices";
 import { getManuId } from "@/app/services/userDash/manufacturingServices";
-import { getUsers } from "@/app/services/userDash/authservices"
+import { getUsers } from "@/app/services/userDash/authservices";
 import { actividades_ejecutadas } from "@/app/services/planing/planingServices";
+import { getRestablecerOrden } from "@/app/services/planing/planingServices";
+
 // 🔹 Interfaces
-import { Plan, ActivityDetail, sanitizePlan, ServerPlan, DurationItem, PlanServ } from "@/app/interfaces/EditPlanning";
+import {
+    Plan,
+    ActivityDetail,
+    sanitizePlan,
+    ServerPlan,
+    DurationItem,
+    PlanServ,
+} from "@/app/interfaces/EditPlanning";
 
 function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
     const [planning, setPlanning] = useState<Plan[]>([]);
     const [isOpen, setIsOpen] = useState(false);
     const [currentPlan, setCurrentPlan] = useState<Plan | null>(null);
-    const [manu, setManu] = useState<{ id: number, name: string }[]>([]);
-    const [machine, setMachine] = useState<{ id: number, name: string }[]>([]);
-    const [user, setUser] = useState<{ id: number, name: string }[]>([]);
-    const [activitiesDetails, setActivitiesDetails] = useState<ActivityDetail[]>([]);
-    const [lineActivities, setLineActivities] = useState<Record<number, number[]>>({});
-    const [draggedActivityId, setDraggedActivityId] = useState<number | null>(null);
-    const [lineDetails, setLineDetails] = useState<Record<number, { name: string }>>({});
-    const [selectedMachines, setSelectedMachines] = useState<MachinePlanning[]>([]);
+    const [manu, setManu] = useState<{ id: number; name: string }[]>([]);
+    const [machine, setMachine] = useState<{ id: number; name: string }[]>([]);
+    const [user, setUser] = useState<{ id: number; name: string }[]>([]);
+    const [activitiesDetails, setActivitiesDetails] = useState<ActivityDetail[]>(
+        []
+    );
+    const [lineActivities, setLineActivities] = useState<
+        Record<number, number[]>
+    >({});
+    const [draggedActivityId, setDraggedActivityId] = useState<number | null>(
+        null
+    );
+    const [lineDetails, setLineDetails] = useState<
+        Record<number, { name: string }>
+    >({});
+    const [selectedMachines, setSelectedMachines] = useState<MachinePlanning[]>(
+        []
+    );
     const [selectedUsers, setSelectedUsers] = useState<UserPlaning[]>([]);
     const [isSaving, setIsSaving] = useState(false);
     const [loadingModal, setLoadingModal] = useState(false);
@@ -85,13 +110,16 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
         if (!currentPlan) return;
         setLineActivities((prev) => {
             if (Object.keys(prev).length > 0) return prev;
-            if (currentPlan.lineActivities && Object.keys(currentPlan.lineActivities).length > 0) {
+            if (
+                currentPlan.lineActivities &&
+                Object.keys(currentPlan.lineActivities).length > 0
+            ) {
                 return currentPlan.lineActivities;
             }
             let keys: number[] = [];
             if (Array.isArray(currentPlan.line)) {
                 keys = currentPlan.line;
-            } else if (typeof currentPlan.line === 'string') {
+            } else if (typeof currentPlan.line === "string") {
                 try {
                     keys = JSON.parse(currentPlan.line);
                 } catch {
@@ -140,7 +168,7 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
             const newLineActivities: Record<number, number[]> = {};
 
             // Mantén las actividades de las líneas existentes
-            currentLines.forEach(lineId => {
+            currentLines.forEach((lineId) => {
                 newLineActivities[lineId] = prev[lineId] || [];
             });
 
@@ -148,8 +176,10 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
         });
     }, [currentPlan]);
 
-
-    function calculateEndDateRespectingWorkHours(start: string, durationMinutes: number): string {
+    function calculateEndDateRespectingWorkHours(
+        start: string,
+        durationMinutes: number
+    ): string {
         const WORK_START_HOUR = 6;
         const WORK_END_HOUR = 18;
 
@@ -185,7 +215,9 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
         }
 
         const pad = (n: number) => n.toString().padStart(2, "0");
-        return `${current.getFullYear()}-${pad(current.getMonth() + 1)}-${pad(current.getDate())}T${pad(current.getHours())}:${pad(current.getMinutes())}`;
+        return `${current.getFullYear()}-${pad(current.getMonth() + 1)}-${pad(
+            current.getDate()
+        )}T${pad(current.getHours())}:${pad(current.getMinutes())}`;
     }
 
     const handleSave = async (updatedPlan: Plan) => {
@@ -196,34 +228,43 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
             setIsSaving(false);
             return;
         }
-        const diffInMinutes = dayjs(updatedPlan.end_date).diff(dayjs(updatedPlan.start_date), "minute");
+        const diffInMinutes = dayjs(updatedPlan.end_date).diff(
+            dayjs(updatedPlan.start_date),
+            "minute"
+        );
 
         if (diffInMinutes < 5) {
-            showError("La duración entre la fecha de inicio y fin debe ser de al menos 5 minutos.");
+            showError(
+                "La duración entre la fecha de inicio y fin debe ser de al menos 5 minutos."
+            );
             setIsSaving(false);
             return;
         }
         try {
             const cleanedPlan = sanitizePlan(updatedPlan);
             const lines: number[] = getLinesArray(updatedPlan.line);
-            const hasEmptyLines = lines.some(lineId => {
+            const hasEmptyLines = lines.some((lineId) => {
                 const activityIds = lineActivities[lineId] || [];
                 return activityIds.length === 0;
             });
 
             if (hasEmptyLines) {
-                showError("Hay líneas sin actividades asignadas. Por favor, completa todas antes de guardar.");
+                showError(
+                    "Hay líneas sin actividades asignadas. Por favor, completa todas antes de guardar."
+                );
                 setIsSaving(false);
                 return;
             }
-            const formattedLines = lines.map(lineId => {
+            const formattedLines = lines.map((lineId) => {
                 const activityIdsInLine = lineActivities[lineId] || [];
-                const filteredActivities = (activitiesDetails || []).filter(activity =>
-                    activityIdsInLine.includes(activity.id)
+                const filteredActivities = (activitiesDetails || []).filter(
+                    (activity) => activityIdsInLine.includes(activity.id)
                 );
                 return {
                     id: lineId,
-                    activities: filteredActivities.map(activity => ({ id: activity.id })),
+                    activities: filteredActivities.map((activity) => ({
+                        id: activity.id,
+                    })),
                 };
             });
             const planToSave: PlanServ = {
@@ -236,8 +277,8 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
                 icon: currentPlan?.icon ?? undefined,
                 line: lines,
                 activities: formattedLines,
-                users: selectedUsers.map(u => u.id),
-                machine: selectedMachines.map(m => m.id),
+                users: selectedUsers.map((u) => u.id),
+                machine: selectedMachines.map((m) => m.id),
                 duration: updatedPlan.duration?.toString() ?? undefined,
                 duration_breakdown: updatedPlan.duration_breakdown,
                 status_dates: updatedPlan.status_dates,
@@ -249,25 +290,26 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
                 lineActivities: updatedPlan.lineActivities,
             };
             // ✅ justo aquí 👇
-            const keysToStringify: (keyof Pick<PlanServ, 'duration_breakdown' | 'ingredients' | 'bom' | 'master'>)[] = [
-                'duration_breakdown',
-                'ingredients',
-                'bom',
-                'master',
-            ];
+            const keysToStringify: (keyof Pick<
+                PlanServ,
+                "duration_breakdown" | "ingredients" | "bom" | "master"
+            >)[] = ["duration_breakdown", "ingredients", "bom", "master"];
 
             keysToStringify.forEach((key) => {
                 const value = planToSave[key];
-                if (typeof value === 'object' && value !== null) {
+                if (typeof value === "object" && value !== null) {
                     planToSave[key] = JSON.stringify(value);
                 }
             });
 
-            const keysToNullify: (keyof Pick<PlanServ, 'bom' | 'master'>)[] = ['bom', 'master'];
+            const keysToNullify: (keyof Pick<PlanServ, "bom" | "master">)[] = [
+                "bom",
+                "master",
+            ];
 
             keysToNullify.forEach((key) => {
                 const value = planToSave[key];
-                if (value === 'null' || value === '') {
+                if (value === "null" || value === "") {
                     planToSave[key] = null;
                 }
             });
@@ -292,93 +334,105 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
         }
     };
 
-    const handleEdit = useCallback(async (id: number) => {
-        const selectedPlan = planning.find((plan: Plan) => plan.id === id);
-        if (!selectedPlan) {
-            showError("Planificación no encontrada localmente");
-            return;
-        }
-        console.log(selectedPlan)
-        setLoadingModal(true);
-
-        try {
-            // ⚠️ Forzar carga previa si aún no está
-            let currentMachine = machine;
-            if (!machine.length) {
-                currentMachine = await getMachin();
-                setMachine(currentMachine);
-            }
-
-            let currentUsers = user;
-            if (!user.length) {
-                currentUsers = await getUsers();
-                setUser(currentUsers);
-            }
-
-            const serverPlansWithDetails: ServerPlan[] = await fetchAndProcessPlans(id);
-            if (!serverPlansWithDetails || serverPlansWithDetails.length === 0) {
-                showError("No se encontró información detallada en el servidor.");
+    const handleEdit = useCallback(
+        async (id: number) => {
+            const selectedPlan = planning.find((plan: Plan) => plan.id === id);
+            if (!selectedPlan) {
+                showError("Planificación no encontrada localmente");
                 return;
             }
+            setLoadingModal(true);
 
-            const matchedPlan = serverPlansWithDetails.find(
-                p => p.ID_ADAPTACION === selectedPlan.id
-            ) || serverPlansWithDetails[0];
+            try {
+                // ⚠️ Forzar carga previa si aún no está
+                let currentMachine = machine;
+                if (!machine.length) {
+                    currentMachine = await getMachin();
+                    setMachine(currentMachine);
+                }
 
-            const activitiesDetails = matchedPlan.activitiesDetails ?? [];
+                let currentUsers = user;
+                if (!user.length) {
+                    currentUsers = await getUsers();
+                    setUser(currentUsers);
+                }
 
-            const newLineActivities: Record<number, number[]> = {};
+                const serverPlansWithDetails: ServerPlan[] = await fetchAndProcessPlans(
+                    id
+                );
+                if (!serverPlansWithDetails || serverPlansWithDetails.length === 0) {
+                    showError("No se encontró información detallada en el servidor.");
+                    return;
+                }
 
-            if (Array.isArray(selectedPlan.activities)) {
-                selectedPlan.activities.forEach(lineObj => {
-                    if (lineObj?.id && Array.isArray(lineObj.activities)) {
-                        newLineActivities[lineObj.id] = lineObj.activities.map(a => a.id);
-                    }
-                });
-            }
+                const matchedPlan =
+                    serverPlansWithDetails.find(
+                        (p) => p.ID_ADAPTACION === selectedPlan.id
+                    ) || serverPlansWithDetails[0];
 
-            if (Object.keys(newLineActivities).length === 0 && activitiesDetails.length > 0) {
-                activitiesDetails.forEach((activity: ActivityDetail) => {
-                    const binding = activity.binding;
-                    const ids = Array.isArray(binding) ? binding : [binding];
-                    ids.forEach(lineId => {
-                        const lineKey = Number(lineId);
-                        if (!newLineActivities[lineKey]) newLineActivities[lineKey] = [];
-                        if (!newLineActivities[lineKey].includes(activity.id)) {
-                            newLineActivities[lineKey].push(activity.id);
+                const activitiesDetails = matchedPlan.activitiesDetails ?? [];
+
+                const newLineActivities: Record<number, number[]> = {};
+
+                if (Array.isArray(selectedPlan.activities)) {
+                    selectedPlan.activities.forEach((lineObj) => {
+                        if (lineObj?.id && Array.isArray(lineObj.activities)) {
+                            newLineActivities[lineObj.id] = lineObj.activities.map(
+                                (a) => a.id
+                            );
                         }
                     });
-                });
+                }
+
+                if (
+                    Object.keys(newLineActivities).length === 0 &&
+                    activitiesDetails.length > 0
+                ) {
+                    activitiesDetails.forEach((activity: ActivityDetail) => {
+                        const binding = activity.binding;
+                        const ids = Array.isArray(binding) ? binding : [binding];
+                        ids.forEach((lineId) => {
+                            const lineKey = Number(lineId);
+                            if (!newLineActivities[lineKey]) newLineActivities[lineKey] = [];
+                            if (!newLineActivities[lineKey].includes(activity.id)) {
+                                newLineActivities[lineKey].push(activity.id);
+                            }
+                        });
+                    });
+                }
+
+                setLineActivities(newLineActivities);
+                setActivitiesDetails(activitiesDetails);
+
+                // ✅ Usa los datos recién obtenidos, no `machine` y `user` directamente
+                setSelectedMachines(
+                    currentMachine.filter((m) =>
+                        (selectedPlan.machine || []).includes(m.id)
+                    )
+                );
+                setSelectedUsers(
+                    currentUsers.filter((u) => (selectedPlan.users || []).includes(u.id))
+                );
+
+                const fullPlan: Plan = {
+                    ...selectedPlan,
+                    activitiesDetails,
+                    lineActivities: newLineActivities,
+                    line: getLinesArray(selectedPlan.line),
+                };
+
+                // console.log('Datos a editar:', fullPlan);
+                setCurrentPlan(fullPlan);
+                setIsOpen(true);
+            } catch (error) {
+                console.error("❌ Error fetching plan:", error);
+                showError("Error al cargar la planificación para edición");
+            } finally {
+                setLoadingModal(false); // 👈 apagar loader
             }
-
-            setLineActivities(newLineActivities);
-            setActivitiesDetails(activitiesDetails);
-
-            // ✅ Usa los datos recién obtenidos, no `machine` y `user` directamente
-            setSelectedMachines(
-                currentMachine.filter(m => (selectedPlan.machine || []).includes(m.id))
-            );
-            setSelectedUsers(
-                currentUsers.filter(u => (selectedPlan.users || []).includes(u.id))
-            );
-
-            const fullPlan: Plan = {
-                ...selectedPlan,
-                activitiesDetails,
-                lineActivities: newLineActivities,
-                line: getLinesArray(selectedPlan.line),
-            };
-
-            // console.log('Datos a editar:', fullPlan);
-            setCurrentPlan(fullPlan);
-            setIsOpen(true);
-        } catch (error) {
-            console.error("❌ Error fetching plan:", error);
-            showError("Error al cargar la planificación para edición");
-        } finally {
-            setLoadingModal(false); // 👈 apagar loader
-        }
-    }, [planning, machine, user]);
+        },
+        [planning, machine, user]
+    );
 
     const handleClose = useCallback(() => {
         setIsOpen(false);
@@ -414,24 +468,30 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
         const seconds = totalSeconds % 60;
 
         const parts: string[] = [];
-        const pushPart = (value: number, singular: string, plural: string = singular + 's') => {
+        const pushPart = (
+            value: number,
+            singular: string,
+            plural: string = singular + "s"
+        ) => {
             if (value > 0) parts.push(`${value} ${value === 1 ? singular : plural}`);
         };
 
-        pushPart(days, 'día');
-        pushPart(hours, 'hora');
-        pushPart(minutes, 'min', 'min');
+        pushPart(days, "día");
+        pushPart(hours, "hora");
+        pushPart(minutes, "min", "min");
 
-        const shouldShowSeconds = totalSeconds < 3600 && seconds > 0 && days === 0 && hours === 0;
+        const shouldShowSeconds =
+            totalSeconds < 3600 && seconds > 0 && days === 0 && hours === 0;
         if (shouldShowSeconds) {
-            pushPart(seconds, 'seg', 'seg');
+            pushPart(seconds, "seg", "seg");
         }
 
-        return parts.join(' ');
+        return parts.join(" ");
     };
 
     function formatDurationBreakdown(breakdown: string | DurationItem[]): string {
-        const parsed: DurationItem[] = typeof breakdown === "string" ? JSON.parse(breakdown) : breakdown;
+        const parsed: DurationItem[] =
+            typeof breakdown === "string" ? JSON.parse(breakdown) : breakdown;
         return parsed
             .map((item: DurationItem) => {
                 if (item.fase === "TOTAL") {
@@ -469,7 +529,7 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
         setLineActivities((prev) => {
             const updated = { ...prev };
             if (updated[lineId]) {
-                updated[lineId] = updated[lineId].filter(id => id !== actId);
+                updated[lineId] = updated[lineId].filter((id) => id !== actId);
             }
             return updated;
         });
@@ -477,7 +537,7 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
 
     function getLinesArray(line: string | number[] | null): number[] {
         if (Array.isArray(line)) return line;
-        if (typeof line === 'string') {
+        if (typeof line === "string") {
             try {
                 return JSON.parse(line);
             } catch {
@@ -487,65 +547,177 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
         return [];
     }
 
-    const availableActivities = useMemo(() => activitiesDetails, [activitiesDetails]);
+    const availableActivities = useMemo(
+        () => activitiesDetails,
+        [activitiesDetails]
+    );
 
-    async function fetchAndProcessPlans(id: number) {
-        const { plan: serverPlans = [] } = await getActivitiesByPlanning(id);
-        if (!Array.isArray(serverPlans) || serverPlans.length === 0) {
-            throw new Error("Planificación no encontrada desde servidor");
+    // helpers seguros
+    const safeParseJSON = <T = unknown,>(v: any, fallback: T): T => {
+        if (v == null) return fallback;
+        if (Array.isArray(v) || typeof v === "object") return v as T;
+        if (typeof v === "string") {
+            const s = v.trim();
+            if (!s) return fallback;
+            try {
+                return JSON.parse(s) as T;
+            } catch {
+                return fallback;
+            }
         }
+        return fallback;
+    };
+
+    const ensureArray = <T = any,>(v: any): T[] => {
+        if (Array.isArray(v)) return v as T[];
+        if (v == null || v === "") return [];
+        return safeParseJSON<T[]>(v, []);
+    };
+
+    // Saca ids de actividad aunque vengan anidados o mezclados
+    const extractActivityIds = (v: any): number[] => {
+        const arr = ensureArray<any>(v);
+        const out: number[] = [];
+        const visit = (item: any) => {
+            if (item == null) return;
+            if (typeof item === "number" && Number.isFinite(item)) {
+                out.push(item);
+                return;
+            }
+            if (typeof item === "string") {
+                const n = Number(item);
+                if (Number.isFinite(n)) out.push(n);
+                else visit(safeParseJSON<any>(item, null)); // puede ser un objeto JSON en string
+                return;
+            }
+            if (Array.isArray(item)) {
+                item.forEach(visit);
+                return;
+            }
+            if (typeof item === "object") {
+                // patrones comunes: { id }, { activities: [...] }, estructuras anidadas
+                if ("id" in item && Number.isFinite(Number(item.id)))
+                    out.push(Number(item.id));
+                if ("activities" in item) visit((item as any).activities);
+                // Algunos endpoints traen { lines:[{activities:[...] }]} o similar
+                if ("lines" in item) visit((item as any).lines);
+            }
+        };
+        arr.forEach(visit);
+        return Array.from(new Set(out)); // sin duplicados
+    };
+
+    // Normaliza un "plan/line" cualquiera a estructura usable
+    const normalizeLine = (line: any) => {
+        // Campos que suelen llegar serializados como string
+        const machine = ensureArray(line?.machine);
+        const users = ensureArray(line?.users);
+        const resource = ensureArray(line?.resource);
+        const duration_breakdown = safeParseJSON(line?.duration_breakdown, null);
+
+        // Posibles fuentes de ids de actividades
+        const ids = extractActivityIds(line?.ID_ACTIVITIES) // preferido si existe
+            .concat(extractActivityIds(line?.activities)) // o viene aquí
+            .concat(extractActivityIds(line?.stages)); // por si llegó como stages con activities
+        // Limpieza final
+        const activityIds = Array.from(
+            new Set(ids.filter((n) => Number.isFinite(n)))
+        ) as number[];
+
+        return {
+            ...line,
+            machine,
+            users,
+            resource,
+            duration_breakdown,
+            _activityIds: activityIds, // campo interno para fetch
+        };
+    };
+
+    // === Tu función robusta ===
+    async function fetchAndProcessPlans(id: number) {
+        const resp = await getActivitiesByPlanning(id);
+
+        // La API a veces devuelve { plan }, otras { plans }, otras el objeto directo ¯\_(ツ)_/¯
+        let serverPlansRaw: any = resp?.plan ?? resp?.plans ?? resp ?? [];
+        if (!Array.isArray(serverPlansRaw)) {
+            serverPlansRaw = serverPlansRaw ? [serverPlansRaw] : [];
+        }
+
+        // Si sigue vacío, tiramos error más informativo
+        if (serverPlansRaw.length === 0) {
+            throw new Error(
+                `Planificación no encontrada desde servidor (id=${id}). Payload keys: ${Object.keys(
+                    resp || {}
+                ).join(", ")}`
+            );
+        }
+
+        const normalized = serverPlansRaw.map(normalizeLine);
+
         const serverPlansWithDetails = await Promise.all(
-            serverPlans.map(async (line) => {
-                const activitiesDetails = Array.isArray(line.ID_ACTIVITIES)
-                    ? await Promise.all(line.ID_ACTIVITIES.map(getActivitieId))
+            normalized.map(async (line) => {
+                const ids = line._activityIds ?? [];
+                const activitiesDetails = ids.length
+                    ? await Promise.all(ids.map((n: number) => getActivitieId(n)))
                     : [];
-                return { ...line, activitiesDetails };
+
+                // Limpia el campo auxiliar
+                const { _activityIds, ...rest } = line;
+                return { ...rest, activitiesDetails };
             })
         );
+
         return serverPlansWithDetails;
     }
 
-    const handleTerciario = useCallback(async (id: number) => {
-        const { plan } = await getPlanningById(id);
+    const handleTerciario = useCallback(
+        async (id: number) => {
+            const { plan } = await getPlanningById(id);
 
-        console.log(plan);
-        // Validar si la orden tiene linea asignada
-        if (plan.line === null) {
-            showError("No se asignó línea a la planificación");
-            return;
-        }
-
-        if (plan.status_dates === null || plan.status_dates === "En Creación") {
-            showError("Orden no planificada, debe completar la planificación");
-            return;
-        }
-
-        localStorage.removeItem("ejecutar");
-
-        const data = await validate_orden(plan.id);
-        if (data.estado === 100 || data.estado === null) {
-            const user = document.cookie
-                .split('; ')
-                .find(row => row.startsWith('name='))
-                ?.split('=')[1];
-
-            if (!user) {
-                showError("No se encontró usuario");
+            console.log(plan);
+            // Validar si la orden tiene linea asignada
+            if (plan.line === null) {
+                showError("No se asignó línea a la planificación");
                 return;
             }
 
-            localStorage.setItem("ejecutar", JSON.stringify({
-                id: plan.id,
-                user: user
-            }));
+            if (plan.status_dates === null || plan.status_dates === "En Creación") {
+                showError("Orden no planificada, debe completar la planificación");
+                return;
+            }
 
-            window.open("/pages/lineas", "_blank");
-            handleClose();
-        } else {
-            showError("La orden ya fue finalizada. Estado: " + data.estado);
-            fetchAll();
-        }
-    }, [fetchAll, handleClose]);
+            localStorage.removeItem("ejecutar");
+
+            const data = await validate_orden(plan.id);
+            if (data.estado === 100 || data.estado === null) {
+                const user = document.cookie
+                    .split("; ")
+                    .find((row) => row.startsWith("name="))
+                    ?.split("=")[1];
+
+                if (!user) {
+                    showError("No se encontró usuario");
+                    return;
+                }
+
+                localStorage.setItem(
+                    "ejecutar",
+                    JSON.stringify({
+                        id: plan.id,
+                        user: user,
+                    })
+                );
+
+                window.open("/pages/lineas", "_blank");
+                handleClose();
+            } else {
+                showError("La orden ya fue finalizada. Estado: " + data.estado);
+                fetchAll();
+            }
+        },
+        [fetchAll, handleClose]
+    );
 
     const hableRestablecerOrden = useCallback(async (id: number) => {
         const { plan } = await getPlanningById(id);
@@ -588,7 +760,7 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
             setTimeout(() => {
                 window.open("/pages/lineas", "_blank");
                 handleClose();
-            }, 5000);
+            }, 3000);
         } else {
             showError("La orden ya fue finalizada. Estado: " + data.estado);
             fetchAll();
@@ -598,32 +770,28 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
 
     //Componente SelectorDual
     const agregarMaquina = (machine: MachinePlanning) => {
-        if (!selectedMachines.find(m => m.id === machine.id)) {
+        if (!selectedMachines.find((m) => m.id === machine.id)) {
             setSelectedMachines([...selectedMachines, machine]);
         }
     };
 
     const removerMaquina = (id: number) => {
-        setSelectedMachines(selectedMachines.filter(m => m.id !== id));
+        setSelectedMachines(selectedMachines.filter((m) => m.id !== id));
     };
 
     const agregarUser = (user: UserPlaning) => {
-        if (!selectedUsers.find(m => m.id === user.id)) {
+        if (!selectedUsers.find((m) => m.id === user.id)) {
             setSelectedUsers([...selectedUsers, user]);
         }
     };
 
     const removerUser = (id: number) => {
-        setSelectedUsers(selectedUsers.filter(m => m.id !== id));
+        setSelectedUsers(selectedUsers.filter((m) => m.id !== id));
     };
-
-    // const handlePDF = useCallback((id: number) => {
-    //     window.open(`/pages/pdfGeneral/${id}`,);
-    // }, []);
 
     const handlePDF = (id: number) => {
         const url = `${API_URL}/pdf/plan/${id}`;
-        window.open(url, '_blank');
+        window.open(url, "_blank");
     };
 
     const obtenerActividades = useCallback(async (id: number) => {
@@ -638,15 +806,18 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
                 window.open(`/pages/detalle/${plan.id}`);
             }
         } catch (error) {
-            console.error('Error al obtener fases:', error);
+            console.error("Error al obtener fases:", error);
         }
     }, []);
-
 
     return (
         <div className="break-inside-avoid mb-4">
             {isSaving && (
-                <DateLoader message="Cargando..." backgroundColor="rgba(0, 0, 0, 0.69)" color="rgba(255, 255, 0, 1)" />
+                <DateLoader
+                    message="Cargando..."
+                    backgroundColor="rgba(0, 0, 0, 0.69)"
+                    color="rgba(255, 255, 0, 1)"
+                />
             )}
 
             {loadingModal && (
@@ -658,26 +829,40 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
             )}
 
             {isOpen && currentPlan && (
-                <ModalSection isVisible={isOpen} onClose={() => { setIsOpen(false) }}>
-                    <Text type="title" color="text-[#000]">Editar Acondicionamiento</Text>
+                <ModalSection
+                    isVisible={isOpen}
+                    onClose={() => {
+                        setIsOpen(false);
+                    }}
+                >
+                    <Text type="title" color="text-[#000]">
+                        Editar Acondicionamiento
+                    </Text>
                     <h2 className="text-xl font-bold mb-6">Editar planificación</h2>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div className="break-inside-avoid mb-4">
-                            <Text type="subtitle" color="#000">Consecutivo</Text>
+                            <Text type="subtitle" color="#000">
+                                Consecutivo
+                            </Text>
                             <input
                                 className="w-full border p-3 rounded-lg text-gray-800 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500 text-center"
                                 readOnly
                                 value={currentPlan.number_order}
                                 onChange={(e) =>
-                                    setCurrentPlan({ ...currentPlan, number_order: e.target.value })
+                                    setCurrentPlan({
+                                        ...currentPlan,
+                                        number_order: e.target.value,
+                                    })
                                 }
                                 disabled={!canEdit}
                             />
                         </div>
                         {/* 🔹 Artículo */}
                         <div className="break-inside-avoid mb-4">
-                            <Text type="subtitle" color="#000">Artículo</Text>
+                            <Text type="subtitle" color="#000">
+                                Artículo
+                            </Text>
                             <input
                                 className="w-full border p-3 rounded-lg text-gray-800 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500 text-center"
                                 readOnly
@@ -690,21 +875,28 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
                         </div>
                         {/* 🔹 Fecha de entrega */}
                         <div className="break-inside-avoid mb-4">
-                            <Text type="subtitle" color="#000">Fecha de entrega</Text>
+                            <Text type="subtitle" color="#000">
+                                Fecha de entrega
+                            </Text>
                             <input
                                 className="w-full border p-3 rounded-lg text-gray-800 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500 text-center"
                                 type="date"
                                 readOnly
                                 value={currentPlan.deliveryDate}
                                 onChange={(e) =>
-                                    setCurrentPlan({ ...currentPlan, deliveryDate: e.target.value })
+                                    setCurrentPlan({
+                                        ...currentPlan,
+                                        deliveryDate: e.target.value,
+                                    })
                                 }
                                 disabled={!canEdit}
                             />
                         </div>
                         {/* 🔹 Registro Sanitario */}
                         <div className="break-inside-avoid mb-4">
-                            <Text type="subtitle" color="#000">Registro Sanitario</Text>
+                            <Text type="subtitle" color="#000">
+                                Registro Sanitario
+                            </Text>
                             <input
                                 className="w-full border p-3 rounded-lg text-gray-800 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500 text-center"
                                 value={currentPlan.healthRegistration}
@@ -720,7 +912,9 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
                         </div>
                         {/* 🔹 Lote */}
                         <div className="break-inside-avoid mb-4">
-                            <Text type="subtitle" color="#000">Lote</Text>
+                            <Text type="subtitle" color="#000">
+                                Lote
+                            </Text>
                             <input
                                 className="w-full border p-3 rounded-lg text-gray-800 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500 text-center"
                                 value={currentPlan.lot}
@@ -733,13 +927,18 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
                         </div>
                         {/* 🔹 N° de orden */}
                         <div className="break-inside-avoid mb-4">
-                            <Text type="subtitle" color="#000">N° de orden</Text>
+                            <Text type="subtitle" color="#000">
+                                N° de orden
+                            </Text>
                             <input
                                 className="w-full border p-3 rounded-lg text-gray-800 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500 text-center"
                                 value={currentPlan.orderNumber}
                                 readOnly
                                 onChange={(e) =>
-                                    setCurrentPlan({ ...currentPlan, orderNumber: e.target.value })
+                                    setCurrentPlan({
+                                        ...currentPlan,
+                                        orderNumber: e.target.value,
+                                    })
                                 }
                                 disabled={!canEdit}
                             />
@@ -747,7 +946,9 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
                         {/* 🔹 Cantidad a producir */}
                         {currentPlan && (
                             <div className="break-inside-avoid mb-4">
-                                <Text type="subtitle" color="#000">Cantidad a producir</Text>
+                                <Text type="subtitle" color="#000">
+                                    Cantidad a producir
+                                </Text>
                                 <input
                                     className="w-full border p-3 rounded-lg text-gray-800 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500 text-center"
                                     type="number"
@@ -765,20 +966,27 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
                         )}
                         {/* 🔹 Cliente */}
                         <div className="break-inside-avoid mb-4">
-                            <Text type="subtitle" color="#000">Cliente</Text>
+                            <Text type="subtitle" color="#000">
+                                Cliente
+                            </Text>
                             <input
                                 className="w-full border p-3 rounded-lg text-gray-800 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500 text-center"
                                 value={currentPlan.client_name || ""}
                                 readOnly
                                 onChange={(e) =>
-                                    setCurrentPlan({ ...currentPlan, client_name: e.target.value })
+                                    setCurrentPlan({
+                                        ...currentPlan,
+                                        client_name: e.target.value,
+                                    })
                                 }
                                 disabled={!canEdit}
                             />
                         </div>
                         {/* 🔹 Planta */}
                         <div className="break-inside-avoid mb-4">
-                            <Text type="subtitle" color="#000">Planta</Text>
+                            <Text type="subtitle" color="#000">
+                                Planta
+                            </Text>
                             <input
                                 className="w-full border p-3 rounded-lg text-gray-800 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500 text-center"
                                 value={currentPlan.factory || ""}
@@ -788,7 +996,9 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
                         </div>
                         {/* 🔹 Lineas */}
                         <div className="break-inside-avoid mb-4">
-                            <Text type="subtitle" color="#000">Líneas</Text>
+                            <Text type="subtitle" color="#000">
+                                Líneas
+                            </Text>
                             <div className="flex flex-col sm:flex-row gap-4 mt-2">
                                 {/* Lista de líneas disponibles */}
                                 <div className="sm:w-1/2 w-full">
@@ -797,7 +1007,8 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
                                         className="w-full h-48 border p-3 rounded-lg text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
                                         value={(() => {
                                             if (!currentPlan.line) return [];
-                                            if (Array.isArray(currentPlan.line)) return currentPlan.line.map(String);
+                                            if (Array.isArray(currentPlan.line))
+                                                return currentPlan.line.map(String);
                                             try {
                                                 return JSON.parse(currentPlan.line).map(String);
                                             } catch {
@@ -808,7 +1019,8 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
                                             // Primero parseamos line para estar seguros de que es array
                                             const currentLine = (() => {
                                                 if (!currentPlan.line) return [];
-                                                if (Array.isArray(currentPlan.line)) return currentPlan.line;
+                                                if (Array.isArray(currentPlan.line))
+                                                    return currentPlan.line;
                                                 try {
                                                     return JSON.parse(currentPlan.line);
                                                 } catch {
@@ -816,22 +1028,31 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
                                                 }
                                             })();
 
-                                            const selected = Array.from(e.target.selectedOptions, option => Number(option.value));
-                                            const merged = Array.from(new Set([...currentLine, ...selected]));
+                                            const selected = Array.from(
+                                                e.target.selectedOptions,
+                                                (option) => Number(option.value)
+                                            );
+                                            const merged = Array.from(
+                                                new Set([...currentLine, ...selected])
+                                            );
                                             setCurrentPlan({ ...currentPlan, line: merged });
                                         }}
                                         disabled={!canEdit}
                                     >
                                         {manu.length > 0 ? (
                                             manu
-                                                .filter(line => !(currentPlan.line ?? []).includes(line.id))
+                                                .filter(
+                                                    (line) => !(currentPlan.line ?? []).includes(line.id)
+                                                )
                                                 .map((line) => (
                                                     <option key={line.id} value={line.id.toString()}>
                                                         {line.name}
                                                     </option>
                                                 ))
                                         ) : (
-                                            <option value="" disabled>No hay líneas disponibles</option>
+                                            <option value="" disabled>
+                                                No hay líneas disponibles
+                                            </option>
                                         )}
                                     </select>
                                 </div>
@@ -840,7 +1061,7 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
                                 <div className="sm:w-1/2 w-full border rounded-lg p-3 h-48 overflow-auto bg-gray-50">
                                     {getLinesArray(currentPlan.line).length > 0 ? (
                                         getLinesArray(currentPlan.line).map((lineId) => {
-                                            const line = manu.find(l => l.id === lineId);
+                                            const line = manu.find((l) => l.id === lineId);
                                             if (!line) return null;
                                             return (
                                                 <div
@@ -852,7 +1073,9 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
                                                         onClick={() =>
                                                             setCurrentPlan({
                                                                 ...currentPlan,
-                                                                line: getLinesArray(currentPlan.line).filter(id => id !== line.id),
+                                                                line: getLinesArray(currentPlan.line).filter(
+                                                                    (id) => id !== line.id
+                                                                ),
                                                             })
                                                         }
                                                         className="text-red-500 hover:text-red-700 font-bold"
@@ -864,16 +1087,19 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
                                             );
                                         })
                                     ) : (
-                                        <p className="text-gray-400 text-sm">No hay líneas seleccionadas</p>
+                                        <p className="text-gray-400 text-sm">
+                                            No hay líneas seleccionadas
+                                        </p>
                                     )}
                                 </div>
-
                             </div>
                         </div>
                         {/* Actividades disponibles para arrastrar */}
                         <div className="break-inside-avoid mb-4">
                             <div className="flex-1 border border-gray-200 rounded-lg p-4 bg-gray-50 shadow-sm transition-all max-h-64 overflow-y-auto scrollbar-thin">
-                                <Text type="subtitle" color="#000">Actividades disponibles</Text>
+                                <Text type="subtitle" color="#000">
+                                    Actividades disponibles
+                                </Text>
                                 {availableActivities.map((act) => {
                                     const isDisabled = !canEdit;
                                     return (
@@ -884,12 +1110,18 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
                                                 if (!isDisabled) setDraggedActivityId(act.id);
                                             }}
                                             className={`border border-gray-300 p-3 mb-3 rounded-md ${isDisabled
-                                                ? "cursor-not-allowed bg-gray-100 text-gray-900"
-                                                : "cursor-grab bg-white hover:shadow"
+                                                    ? "cursor-not-allowed bg-gray-100 text-gray-900"
+                                                    : "cursor-grab bg-white hover:shadow"
                                                 } shadow-sm transition-shadow flex justify-between items-center`}
-                                            title={isDisabled ? "No tienes permiso para arrastrar actividades" : ""}
+                                            title={
+                                                isDisabled
+                                                    ? "No tienes permiso para arrastrar actividades"
+                                                    : ""
+                                            }
                                         >
-                                            <span className="text-gray-700 text-center">{act.description}</span>
+                                            <span className="text-gray-700 text-center">
+                                                {act.description}
+                                            </span>
                                         </div>
                                     );
                                 })}
@@ -914,9 +1146,12 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
                                                     {lineDetails[lineId]?.name || `Línea ${lineId}`}
                                                 </Text>
 
-                                                {Array.isArray(activitiesForLine) && activitiesForLine.length > 0 ? (
+                                                {Array.isArray(activitiesForLine) &&
+                                                    activitiesForLine.length > 0 ? (
                                                     activitiesForLine.map((actId) => {
-                                                        const act = activitiesDetails.find((a) => a.id === actId);
+                                                        const act = activitiesDetails.find(
+                                                            (a) => a.id === actId
+                                                        );
                                                         if (!act) {
                                                             return (
                                                                 <p key={actId} className="text-red-400 italic">
@@ -932,7 +1167,9 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
                                                                 onDragStart={() => setDraggedActivityId(act.id)}
                                                                 className="border border-blue-300 p-3 mb-3 rounded-md cursor-grab bg-teal-50 shadow-sm hover:shadow-md transition-shadow flex justify-between items-center"
                                                             >
-                                                                <span className="text-gray-800 text-center">{act.description}</span>
+                                                                <span className="text-gray-800 text-center">
+                                                                    {act.description}
+                                                                </span>
                                                                 <button
                                                                     onClick={(e) => {
                                                                         e.stopPropagation();
@@ -947,7 +1184,9 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
                                                         );
                                                     })
                                                 ) : (
-                                                    <p className="text-gray-400 italic">Sin actividades</p>
+                                                    <p className="text-gray-400 italic">
+                                                        Sin actividades
+                                                    </p>
                                                 )}
                                             </div>
                                         );
@@ -976,7 +1215,9 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
                         </div>
                         {/* 🔹 Recursos */}
                         <div className="break-inside-avoid mb-4">
-                            <Text type="subtitle" color="#000">Recursos</Text>
+                            <Text type="subtitle" color="#000">
+                                Recursos
+                            </Text>
                             <textarea
                                 name="resource"
                                 value={currentPlan.resource || ""}
@@ -992,7 +1233,9 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
                         </div>
                         {/* Color */}
                         <div className="break-inside-avoid mb-4">
-                            <Text type="subtitle" color="#000">Color</Text>
+                            <Text type="subtitle" color="#000">
+                                Color
+                            </Text>
                             <div className="flex flex-wrap gap-2 mt-2">
                                 {COLORS.map((color, index) => {
                                     const isSelected = currentPlan.color === color;
@@ -1024,7 +1267,9 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
                         </div>
                         {/* Icono */}
                         <div className="break-inside-avoid mb-4">
-                            <Text type="subtitle" color="#000">Icono</Text>
+                            <Text type="subtitle" color="#000">
+                                Icono
+                            </Text>
                             <IconSelector
                                 selectedIcon={currentPlan?.icon || ""}
                                 onChange={(iconName) =>
@@ -1036,19 +1281,24 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
                         </div>
                         {/* 🔹 Duración */}
                         <div className="break-inside-avoid mb-4">
-                            <Text type="subtitle" color="#000">Duración
+                            <Text type="subtitle" color="#000">
+                                Duración
                                 <InfoPopover content="Esta duracion es calculada segun la cantidad de fases que requiera multiple" />
                             </Text>
                             <input
                                 type="text"
                                 readOnly
                                 className="w-full pl-10 pr-4 py-2 rounded-md border border-gray-300 bg-gray-100 text-sm text-gray-700 text-center"
-                                value={`${currentPlan.duration} min ---> ${getFormattedDuration(Number(currentPlan.duration))}`}
+                                value={`${currentPlan.duration} min ---> ${getFormattedDuration(
+                                    Number(currentPlan.duration)
+                                )}`}
                             />
                         </div>
                         {/* 🔹 Fecha de Inicio */}
                         <div className="break-inside-avoid mb-4">
-                            <Text type="subtitle" color="#000">Fecha y Hora de Inicio</Text>
+                            <Text type="subtitle" color="#000">
+                                Fecha y Hora de Inicio
+                            </Text>
                             <input
                                 className="w-full border p-3 rounded-lg text-gray-800 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500 text-center"
                                 value={currentPlan.start_date || ""}
@@ -1058,12 +1308,19 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
                                     let end = "";
 
                                     if (currentPlan?.duration) {
-                                        end = calculateEndDateRespectingWorkHours(start, Number(currentPlan.duration));
+                                        end = calculateEndDateRespectingWorkHours(
+                                            start,
+                                            Number(currentPlan.duration)
+                                        );
                                     } else {
                                         const fallback = new Date(start);
                                         fallback.setHours(18, 0, 0, 0);
                                         const pad = (n: number) => n.toString().padStart(2, "0");
-                                        end = `${fallback.getFullYear()}-${pad(fallback.getMonth() + 1)}-${pad(fallback.getDate())}T${pad(fallback.getHours())}:${pad(fallback.getMinutes())}`;
+                                        end = `${fallback.getFullYear()}-${pad(
+                                            fallback.getMonth() + 1
+                                        )}-${pad(fallback.getDate())}T${pad(
+                                            fallback.getHours()
+                                        )}:${pad(fallback.getMinutes())}`;
                                     }
 
                                     setCurrentPlan({
@@ -1075,7 +1332,9 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
                             />
                         </div>
                         <div className="break-inside-avoid mb-4">
-                            <Text type="subtitle" color="#000">Duración por fase</Text>
+                            <Text type="subtitle" color="#000">
+                                Duración por fase
+                            </Text>
                             <div className="w-full p-3 mt-2 text-sm text-gray-800 bg-gray-100 border rounded whitespace-pre-line">
                                 {currentPlan.duration_breakdown
                                     ? formatDurationBreakdown(currentPlan.duration_breakdown)
@@ -1084,7 +1343,9 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
                         </div>
 
                         <div className="break-inside-avoid mb-4">
-                            <Text type="subtitle" color="#000">Fecha y Hora de Final</Text>
+                            <Text type="subtitle" color="#000">
+                                Fecha y Hora de Final
+                            </Text>
                             <input
                                 className="w-full border p-3 rounded-lg text-gray-800 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500 text-center"
                                 value={currentPlan.end_date || ""}
@@ -1097,30 +1358,40 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
                     </div>
 
                     <div className="flex justify-center gap-2 mt-6">
-                        <Button onClick={() => setIsOpen(false)} variant="cancel" label="Cancelar" />
-                        {currentPlan?.status_dates !== "Planificación" && currentPlan?.status_dates !== "En ejecución" && currentPlan?.status_dates !== "Ejecutado" && (
-                            <Button
-                                onClick={async () => {
-                                    if (isSaving) return;
-                                    setIsSaving(true);
-                                    try {
-                                        const updatedPlanWithStatus = {
-                                            ...currentPlan,
-                                            status_dates: "Planificación",
-                                        };
-                                        await handleSave(updatedPlanWithStatus);
-                                    } catch (err) {
-                                        console.error("Error al finalizar edición:", err);
-                                    } finally {
-                                        setIsSaving(false);
-                                    }
-                                }}
-                                variant="terciario"
-                                disabled={isSaving}
-                                label={isSaving ? "Guardando..." : "Planificar y Guardar"}
-                            />
-                        )}
-                        <Button onClick={() => handleSave(currentPlan)} variant="save" label="Guardar" />
+                        <Button
+                            onClick={() => setIsOpen(false)}
+                            variant="cancel"
+                            label="Cancelar"
+                        />
+                        {currentPlan?.status_dates !== "Planificación" &&
+                            currentPlan?.status_dates !== "En ejecución" &&
+                            currentPlan?.status_dates !== "Ejecutado" && (
+                                <Button
+                                    onClick={async () => {
+                                        if (isSaving) return;
+                                        setIsSaving(true);
+                                        try {
+                                            const updatedPlanWithStatus = {
+                                                ...currentPlan,
+                                                status_dates: "Planificación",
+                                            };
+                                            await handleSave(updatedPlanWithStatus);
+                                        } catch (err) {
+                                            console.error("Error al finalizar edición:", err);
+                                        } finally {
+                                            setIsSaving(false);
+                                        }
+                                    }}
+                                    variant="terciario"
+                                    disabled={isSaving}
+                                    label={isSaving ? "Guardando..." : "Planificar y Guardar"}
+                                />
+                            )}
+                        <Button
+                            onClick={() => handleSave(currentPlan)}
+                            variant="save"
+                            label="Guardar"
+                        />
                     </div>
                 </ModalSection>
             )}
@@ -1149,7 +1420,6 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
                 showViewCondition={(row) => row.status_dates === "Ejecutado" || row.status_dates === "En ejecución"}
                 showPDFCondition={(row) => row.status_dates === "Ejecutado"}
             />
-
         </div>
     );
 }
