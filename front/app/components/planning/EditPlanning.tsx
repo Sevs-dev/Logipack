@@ -550,6 +550,7 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
     const hableRestablecerOrden = useCallback(async (id: number) => {
         const { plan } = await getPlanningById(id);
 
+
         // Validar si la orden tiene linea asignada
         if (plan.line === null) {
             showError("No se asignó línea a la planificación");
@@ -561,11 +562,32 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
             return;
         }
 
-        localStorage.removeItem("ejecutar");
-
         const data = await validate_orden(plan.id);
         if (data.estado === 100 || data.estado === null) {
+            // const response = await fetch(`http://129.146.161.23:9003/api/restablecer_orden/${plan.id}`);
+            // if (response.status !== 200) {
+            //     showError("Error al restablecer la orden");
+            //     return;
+            // }
+            // const data = await response.json();
             alert("Orden restablecida correctamente");
+            // const user = document.cookie
+            // .split('; ')
+            // .find(row => row.startsWith('name='))
+            // ?.split('=')[1];
+
+            // if (!user) {
+            //     showError("No se encontró usuario");
+            //     return;
+            // }
+
+            // localStorage.setItem("ejecutar", JSON.stringify({
+            //     id: plan.id,
+            //     user: user
+            // }));
+
+            // window.open("/pages/lineas", "_blank");
+            // handleClose();
         } else {
             showError("La orden ya fue finalizada. Estado: " + data.estado);
             fetchAll();
@@ -1127,6 +1149,7 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
                 showPDFCondition={(row) => row.status_dates === "Ejecutado"}
             />
 
+           
         </div>
     );
 }
