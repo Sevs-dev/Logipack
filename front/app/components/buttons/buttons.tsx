@@ -12,6 +12,7 @@ import {
   FaRegPlusSquare,
   FaVoteYea,
   FaListUl,
+  FaCreativeCommonsNd,
 } from "react-icons/fa";
 import { motion } from "framer-motion";
 
@@ -61,7 +62,7 @@ const variantStyles: Record<Variant, string> = {
   add: "bg-orange-500 hover:bg-orange-600 text-white",
   view: "bg-[#CD4CD9] hover:bg-[#D94CB8] text-white",
   restablecer: "bg-[#ff8000] hover:bg-[#ffa200] text-white",
-  control: "bg-[#ff8000] hover:bg-[#ffa200] text-white",
+  control: "bg-[#ea0263] hover:bg-[#ff00b7] text-white",
 };
 
 const icons: Record<Variant, React.ReactNode> = {
@@ -79,7 +80,7 @@ const icons: Record<Variant, React.ReactNode> = {
   add: <FaRegPlusSquare />,
   view: <FaVoteYea />,
   restablecer: <FaListUl />,
-  control: <FaListUl />,
+  control: <FaCreativeCommonsNd  />,
 };
 
 const labels: Record<Variant, string> = {
@@ -181,6 +182,8 @@ const Button: React.FC<ButtonProps> = ({
                 : variant === "create"
                 ? "#22d3ee"
                 : variant === "restablecer"
+                ? "#22d3ee"
+                : variant === "control"
                 ? "#22d3ee"
                 : "#fff",
           }}
