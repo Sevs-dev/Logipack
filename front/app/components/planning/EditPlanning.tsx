@@ -738,7 +738,7 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
         if (data.estado === 100 || data.estado === null) {
             const response = await getRestablecerOrden(plan.id);
             if (response.estado !== 200) {
-                showError("Error al restablecer la orden");
+                showError("Error, orden no permitida para restablecer");
                 return;
             }
             showSuccess("Orden restablecida correctamente");
