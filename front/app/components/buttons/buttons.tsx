@@ -1,7 +1,17 @@
 import React, { useState } from "react";
 import {
-  FaEdit, FaTrash, FaCheck, FaTimes, FaPlus, FaHistory, FaAngleLeft, FaAngleRight,
-  FaRegFilePdf, FaRegPlusSquare, FaVoteYea
+  FaEdit,
+  FaTrash,
+  FaCheck,
+  FaTimes,
+  FaPlus,
+  FaHistory,
+  FaAngleLeft,
+  FaAngleRight,
+  FaRegFilePdf,
+  FaRegPlusSquare,
+  FaVoteYea,
+  FaListUl,
 } from "react-icons/fa";
 import { motion } from "framer-motion";
 
@@ -35,18 +45,21 @@ interface ButtonProps {
 const variantStyles: Record<Variant, string> = {
   save: "bg-green-600 hover:bg-green-700 text-white",
   cancel: "bg-red-600 hover:bg-red-700 text-white",
-  create2: "bg-yellow-500 hover:bg-yellow-600 focus:ring-yellow-400 shadow-lg shadow-yellow-500/40 text-gray-900 font-semibold px-3 py-1.5 rounded transition duration-300 ease-in-out",
+  create2:
+    "bg-yellow-500 hover:bg-yellow-600 focus:ring-yellow-400 shadow-lg shadow-yellow-500/40 text-gray-900 font-semibold px-3 py-1.5 rounded transition duration-300 ease-in-out",
   edit: "bg-blue-600 hover:bg-blue-700 text-white",
   delete: "bg-red-700 hover:bg-red-800 text-white",
   create: "bg-green-500 hover:bg-green-600 text-white",
   terciario: "bg-yellow-400 hover:bg-yellow-500 text-gray-900",
   history: "bg-purple-600 hover:bg-purple-700 text-white",
   pdf: "bg-cyan-500 hover:bg-cyan-600 text-white",
-  after: "bg-white text-black border border-purple-500 hover:bg-purple-600 hover:text-white",
-  before: "bg-white text-black border border-purple-500 hover:bg-purple-600 hover:text-white",
+  after:
+    "bg-white text-black border border-purple-500 hover:bg-purple-600 hover:text-white",
+  before:
+    "bg-white text-black border border-purple-500 hover:bg-purple-600 hover:text-white",
   add: "bg-orange-500 hover:bg-orange-600 text-white",
   view: "bg-[#CD4CD9] hover:bg-[#D94CB8] text-white",
-  restablecer: "bg-[#CD4CD9] hover:bg-[#D94CB8] text-white",
+  restablecer: "bg-[#ff8000] hover:bg-[#ffa200] text-white",
 };
 
 const icons: Record<Variant, React.ReactNode> = {
@@ -63,7 +76,7 @@ const icons: Record<Variant, React.ReactNode> = {
   before: <FaAngleLeft />,
   add: <FaRegPlusSquare />,
   view: <FaVoteYea />,
-  restablecer: <FaVoteYea />,
+  restablecer: <FaListUl />,
 };
 
 const labels: Record<Variant, string> = {
@@ -111,7 +124,17 @@ const Button: React.FC<ButtonProps> = ({
     }
   };
 
-  const showLabel = !["edit", "delete", "pdf", "history", "after", "before", "create2", "view"].includes(variant);
+  const showLabel = ![
+    "edit",
+    "delete",
+    "pdf",
+    "history",
+    "after",
+    "before",
+    "create2",
+    "view",
+    "restablecer",
+  ].includes(variant);
 
   return (
     <motion.button
@@ -129,10 +152,10 @@ const Button: React.FC<ButtonProps> = ({
         ${className}
       `}
       aria-label={label ?? labels[variant]}
-      title={!showLabel ? (label ?? labels[variant]) : undefined} // <-- TOOLTIP AQUÍ
+      title={!showLabel ? label ?? labels[variant] : undefined} // <-- TOOLTIP AQUÍ
     >
       {icon ?? icons[variant]}
-      {showLabel ? (label ?? labels[variant] ?? "") : null}
+      {showLabel ? label ?? labels[variant] ?? "" : null}
 
       {particles.map((_, i) => (
         <motion.span
@@ -143,18 +166,18 @@ const Button: React.FC<ButtonProps> = ({
               variant === "add"
                 ? "#10b981"
                 : variant === "terciario"
-                  ? "#facc15"
-                  : variant === "save"
-                    ? "#22c55e"
-                    : variant === "create2"
-                      ? "#f59e0b"
-                      : variant === "view"
-                        ? "#9ca3af"
-                        : variant === "create"
-                          ? "#22d3ee"
-                          : variant === "restablecer"
-                            ? "#22d3ee"
-                            : "#fff",
+                ? "#facc15"
+                : variant === "save"
+                ? "#22c55e"
+                : variant === "create2"
+                ? "#f59e0b"
+                : variant === "view"
+                ? "#9ca3af"
+                : variant === "create"
+                ? "#22d3ee"
+                : variant === "restablecer"
+                ? "#22d3ee"
+                : "#fff",
           }}
           initial={{ opacity: 1, x: 0, y: 0 }}
           animate={{
