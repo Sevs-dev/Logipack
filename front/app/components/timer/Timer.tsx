@@ -394,8 +394,8 @@ const Timer: React.FC<TimerProps> = ({ ejecutadaId, stageId, initialMinutes, ref
                                 setShowPopup(false);
                                 setShowModal(true);
                             }}
-                            className="w-full py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg text-lg font-medium transition duration-200 shadow-md"
-                        >
+                            className="w-full py-3 bg-green-600 hover:bg-green-700 text-white 
+                            rounded-lg text-lg font-medium transition duration-200 shadow-md">
                             🚀 Iniciar control
                         </button>
                     </div>

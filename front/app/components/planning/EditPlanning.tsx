@@ -5,6 +5,7 @@ import dayjs from "dayjs";
 import Button from "../buttons/buttons";
 import { showSuccess, showError } from "../toastr/Toaster";
 import Table from "../table/Table";
+import ModalControl from "./ModalControl";
 import Text from "../text/Text";
 import { IconSelector } from "../dinamicSelect/IconSelector";
 import ModalSection from "../modal/ModalSection";
@@ -66,6 +67,7 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
     const [selectedUsers, setSelectedUsers] = useState<UserPlaning[]>([]);
     const [isSaving, setIsSaving] = useState(false);
     const [loadingModal, setLoadingModal] = useState(false);
+    const [showModalControl, setShowModalControl] = useState(false);
 
     useEffect(() => {
         if (!isOpen) return;
@@ -785,7 +787,8 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
         const data = await validate_orden(plan.id);
         if (data.estado === 100 || data.estado === null) {
 
-            alert("Orden controlada correctamente");
+            // alert("Orden controlada correctamente");
+            setShowModalControl(true);
             // const response = await getRestablecerOrden(plan.id);
             // if (response.estado !== 200) {
             //     showError("Error, orden no permitida para restablecer");
@@ -813,7 +816,7 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
             // }, 3000);
         } else {
             showError("La orden ya fue finalizada. Estado: " + data.estado);
-            fetchAll();
+            // fetchAll();
         }
     }, [fetchAll, handleClose]);
 
@@ -1159,8 +1162,8 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
                                                 if (!isDisabled) setDraggedActivityId(act.id);
                                             }}
                                             className={`border border-gray-300 p-3 mb-3 rounded-md ${isDisabled
-                                                    ? "cursor-not-allowed bg-gray-100 text-gray-900"
-                                                    : "cursor-grab bg-white hover:shadow"
+                                                ? "cursor-not-allowed bg-gray-100 text-gray-900"
+                                                : "cursor-grab bg-white hover:shadow"
                                                 } shadow-sm transition-shadow flex justify-between items-center`}
                                             title={
                                                 isDisabled
@@ -1471,6 +1474,15 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
                 showViewCondition={(row) => row.status_dates === "Ejecutado" || row.status_dates === "En ejecución"}
                 showPDFCondition={(row) => row.status_dates === "Ejecutado"}
             />
+
+            {/* Modal de control */}
+            {showModalControl && (
+                <ModalControl 
+                    id={25} 
+                    showModal={showModalControl} 
+                    setShowModal={setShowModalControl} 
+                />
+            )}
         </div>
     );
 }
