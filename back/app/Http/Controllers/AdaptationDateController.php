@@ -694,7 +694,15 @@ class AdaptationDateController extends Controller
                     : collect();
 
                 // Actividades complejas
-                $activities = is_array($plan->activities) ? $plan->activities : [];
+                $rawActivities = $plan->activities;
+                if (is_string($rawActivities)) {
+                    $decoded = json_decode($rawActivities, true);
+                    $activities = is_array($decoded) ? $decoded : [];
+                } elseif (is_array($rawActivities)) {
+                    $activities = $rawActivities;
+                } else {
+                    $activities = [];
+                }
 
                 // Desglose de duración
                 $durationBreakdown = is_array($plan->duration_breakdown) ? $plan->duration_breakdown : [];
