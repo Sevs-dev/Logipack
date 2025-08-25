@@ -1459,10 +1459,12 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
                 showDeleteButton={false}
                 showTerciarioButton={true}
                 showRestablecerButton={true}
+                showControlButton={true}
                 showViewButton={true}
                 onEdit={handleEdit}
                 onRestablecer={hableRestablecerOrden}
                 onTerciario={handleTerciario}
+                onControl={hableControlOrden}
                 onView={obtenerActividades}
                 onPDF={handlePDF}
                 showTerciarioCondition={(row) => row.status_dates === "Planificación" || row.status_dates === "En ejecución"} // 👈 Aquí va tu condición
