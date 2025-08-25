@@ -263,19 +263,25 @@ function NewAdaptation({
     if (quantityToProduce === "") return;
 
     const qty = Number(quantityToProduce);
-    if (!ingredients.length || isNaN(qty)) return;
+    if (!Number.isFinite(qty) || !ingredients.length) return;
 
-    setIngredients((prevIngredients) =>
-      prevIngredients.map((ing) => {
-        const merma = parseFloat(ing.merma || "0"); // 🛡️ por si viene vacío
-        const teorica = qty + qty * merma;
-        return {
-          ...ing,
-          teorica: isNaN(teorica) ? "" : teorica.toFixed(4),
-        };
+    setIngredients((prev) =>
+      prev.map((ing) => {
+        const raw = (ing?.merma ?? "0").toString().trim();
+        let m = parseFloat(raw.replace(",", "."));
+        if (!Number.isFinite(m)) m = 0;
+
+        // Si viene como "5%" o como 5, pásalo a 0.05
+        if (raw.includes("%") || m > 1) m = m / 100;
+
+        // (Opcional) Limita 0..1 por seguridad
+        m = Math.min(1, Math.max(0, m));
+
+        const teorica = qty * (1 + m);
+        return { ...ing, teorica: teorica.toFixed(4) };
       })
     );
-  }, [quantityToProduce, ingredients.length]);
+  }, [quantityToProduce, ingredients.length]); // si la merma cambia sin cambiar la longitud, añade esa dependencia
 
   // ======================= 🔁 Funciones de cambio y copia =======================
 
@@ -1214,9 +1220,7 @@ function NewAdaptation({
                             {ing.desart}
                           </td>
                           <td className="border border-black p-2 text-center">
-                            {ing.merma && !isNaN(Number(ing.merma))
-                              ? `${(Number(ing.merma) * 100).toFixed(0)}%`
-                              : "0%"}
+                            {ing.merma}%
                           </td>
                           <td className="border border-black p-2 text-center">
                             <input
