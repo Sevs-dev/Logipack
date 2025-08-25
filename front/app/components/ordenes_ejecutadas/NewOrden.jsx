@@ -137,6 +137,7 @@ const App = () => {
       try {
         // console.log(local);
         const resp = await siguiente_fase(local.id, local.linea, local.tipo);
+        console.log(resp);
         // console.log(resp);
         setFase(resp.fases);
       } catch (error) {

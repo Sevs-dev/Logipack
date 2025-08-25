@@ -227,3 +227,13 @@ export const getRestablecerOrden = async (id: number) => {
     throw error;
   }
 };
+
+export const getActividadesControl = async (id: number) => {
+  try {
+    const response = await Planning.get(`/getActividadesControl/${id}`);
+    return response.data;
+  } catch (error: unknown) {
+    console.error("Error en getActividadesControl:", error);
+    throw error;
+  }
+};

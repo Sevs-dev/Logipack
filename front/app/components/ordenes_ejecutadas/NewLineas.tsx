@@ -1,11 +1,21 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
 import { linea_procesos, generar_orden } from "@/app/services/planing/planingServices";
 import Text from "@/app/components/text/Text";
 import { showError } from "@/app/components/toastr/Toaster";
 import DateLoader from "@/app/components/loader/DateLoader";
 import { LineasResponse, LocalType } from "@/app/interfaces/NewLineas";
+import ModalControl from "@/app/components/planning/modalControl";
+import { getPlanningById } from "@/app/services/planing/planingServices";
+import { validate_orden } from "@/app/services/planing/planingServices";
+import { getRestablecerOrden } from "@/app/services/planing/planingServices";
+import { showSuccess } from "@/app/components/toastr/Toaster";
+import ModalSection from "@/app/components/modal/ModalSection";
+import { FaCreativeCommonsNd, FaListUl } from "react-icons/fa";
+
+
+
 
 const validar_estado = (): LocalType | null => {
     const ejecutar = localStorage.getItem("ejecutar");
@@ -21,6 +31,113 @@ const validar_estado = (): LocalType | null => {
 const NewLineas = () => {
     const [local, setLocal] = useState<LocalType | null>(null);
     const [lista, setLista] = useState<LineasResponse | null>(null);
+    const [showModalControl, setShowModalControl] = useState(false);
+
+    const hableRestablecerOrden = useCallback(
+        async (id: number) => {
+            const { plan } = await getPlanningById(id);
+
+            // Validar si la orden tiene linea asignada
+            if (plan.line === null) {
+                showError("No se asignó línea a la planificación");
+                return;
+            }
+
+            if (plan.status_dates === null || plan.status_dates === "En Creación") {
+                showError("Orden no planificada, debe completar la planificación");
+                return;
+            }
+
+            const data = await validate_orden(plan.id);
+            if (data.estado === 100 || data.estado === null) {
+                const response = await getRestablecerOrden(plan.id);
+                if (response.estado !== 200) {
+                    showError("Error, orden no permitida para restablecer");
+                    return;
+                }
+                showSuccess("Orden restablecida correctamente");
+                const user = document.cookie
+                    .split("; ")
+                    .find((row) => row.startsWith("name="))
+                    ?.split("=")[1];
+
+                if (!user) {
+                    showError("No se encontró usuario");
+                    return;
+                }
+
+                // localStorage.setItem(
+                //     "ejecutar",
+                //     JSON.stringify({
+                //         id: plan.id,
+                //         user: user,
+                //     })
+                // );
+
+                // setTimeout(() => {
+                //     window.open("/pages/lineas", "_blank");
+                //     // handleClose();
+                // }, 3000);
+            } else {
+                showError("La orden ya fue finalizada. Estado: " + data.estado);
+                // fetchAll();
+            }
+        },
+        []
+    );
+
+    const hableControlOrden = useCallback(
+        async (id: number) => {
+            const { plan } = await getPlanningById(id);
+
+            // Validar si la orden tiene linea asignada
+            if (plan.line === null) {
+                showError("No se asignó línea a la planificación");
+                return;
+            }
+
+            if (plan.status_dates === null || plan.status_dates === "En Creación") {
+                showError("Orden no planificada, debe completar la planificación");
+                return;
+            }
+
+            const data = await validate_orden(plan.id);
+            if (data.estado === 100 || data.estado === null) {
+                // alert("Orden controlada correctamente");
+                setShowModalControl(true);
+                // const response = await getRestablecerOrden(plan.id);
+                // if (response.estado !== 200) {
+                //     showError("Error, orden no permitida para restablecer");
+                //     return;
+                // }
+                // showSuccess("Orden restablecida correctamente");
+                // const user = document.cookie
+                //     .split('; ')
+                //     .find(row => row.startsWith('name='))
+                //     ?.split('=')[1];
+
+                // if (!user) {
+                //     showError("No se encontró usuario");
+                //     return;
+                // }
+
+                // localStorage.setItem("ejecutar", JSON.stringify({
+                //     id: plan.id,
+                //     user: user
+                // }));
+
+                // setTimeout(() => {
+                //     window.open("/pages/lineas", "_blank");
+                //     handleClose();
+                // }, 3000);
+            } else {
+                showError("La orden ya fue finalizada. Estado: " + data.estado);
+                // fetchAll();
+            }
+        },
+        []
+    );
+
 
     useEffect(() => {
         const data = validar_estado();
@@ -56,11 +173,11 @@ const NewLineas = () => {
     if (orden?.estado === 11500) {
         window.close();
     }
-    console.log("orden", orden?.estado);
+    // console.log("orden", orden?.estado);
     // if (lista_procesos.length === 0 && lista_fases.length === 0 && orden === null) {
     //     window.close();
     // }
-    
+
     const verificarYGenerar = async () => {
         if (orden === null && local) {
             const { message } = await generar_orden(local.id);
@@ -142,17 +259,28 @@ const NewLineas = () => {
                             <p className="text-white/60 text-center">Cantidad a producir</p>
                             <p className="font-semibold text-white text-center">{orden?.cantidad_producir}</p>
                         </div>
-                        <div className="flex flex-col items-center">
-                            <p className="text-white/60">Estado</p>
-                            <p
-                                className={`font-semibold rounded-full px-2 py-1 w-24 text-center ${orden?.estado === 11500
-                                    ? "bg-green-300/20 text-green-300"
-                                    : "bg-yellow-300/20 text-yellow-300"
-                                    }`}
-                            >
-                                {estadoMap[orden?.estado] ?? "Desconocido"}
-                            </p>
+                        <div className="flex flex-col items-center gap-y-2">
+                            <p className="text-sm font-medium text-white/60">Acciones</p>
+
+                            {/* Contenedor para alinear los botones en horizontal */}
+                            <div className="flex items-center gap-x-2">
+                                <button
+                                    onClick={() => hableRestablecerOrden(local?.id)}
+                                    className="bg-[#ff8000] hover:bg-[#ffa200] text-white p-2.5 rounded-md transition shadow-md hover:shadow-lg"
+                                    aria-label="Restablecer Orden"
+                                    title="Restablecer">
+                                    <FaListUl />
+                                </button>
+                                <button
+                                    onClick={() => hableControlOrden(local?.id)}
+                                    className="bg-[#ea0263] hover:bg-[#ff00b7] text-white p-2.5 rounded-md transition shadow-md hover:shadow-lg"
+                                    aria-label="Controlar Orden"
+                                    title="Control">
+                                    <FaCreativeCommonsNd />
+                                </button>
+                            </div>
                         </div>
+
                     </div>
 
                     {/* Líneas */}
@@ -189,7 +317,7 @@ const NewLineas = () => {
 
                     {/* Fases */}
                     <section className="px-[10px] pb-[10px] pt-[10px]">
-                        <Text type="title" color="text-white">Fases</Text> 
+                        <Text type="title" color="text-white">Fases</Text>
                         <div className="mt-3 flex flex-wrap justify-center gap-3">
                             {lista_fases.map((linea, index) => (
                                 <motion.div
@@ -220,6 +348,19 @@ const NewLineas = () => {
                     </section>
                 </div>
             </motion.section>
+
+            {/* Modal de control */}
+            {showModalControl && (
+                <ModalSection
+                    isVisible={showModalControl}
+                    onClose={() => setShowModalControl(false)}>
+                    <ModalControl
+                        id={25}
+                        showModal={showModalControl}
+                        setShowModal={setShowModalControl}
+                    />
+                </ModalSection>
+            )}
         </div>
     );
 };
