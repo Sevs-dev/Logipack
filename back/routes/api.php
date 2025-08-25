@@ -213,6 +213,7 @@ Route::controller(OrdenesEjecutadasController::class)->group(function () {
     Route::get('/siguiente_fase/{id}/{linea}/{tipo}', 'siguiente_fase'); // Listar linea procesos
     Route::post('/guardar_actividades', 'guardar_formulario');
     Route::get('/getFaseControl/{id}', 'getFaseControl');
+    Route::get('/getActividadesControl/{id}', 'getActividadesControl');
     Route::get('/validate_rol/{fase}', 'validateRol');
     Route::get('/condiciones_fase/{id}/{fase}', 'condicionesFase');
     Route::get('/getActividadesEjecutadas/{id}', 'getActividadesEjecutadas');

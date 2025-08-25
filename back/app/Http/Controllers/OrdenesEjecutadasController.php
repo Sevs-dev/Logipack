@@ -175,7 +175,7 @@ class OrdenesEjecutadasController extends Controller
                 'std.phase_type',
                 DB::raw("FIND_IN_SET(std.id, REPLACE(REPLACE(REPLACE(REPLACE(COALESCE(ada.maestra_fases_fk, ''), '[', ''), ']', ''), ' ', ''), '\"', '')) as posicion")
             );
-        
+
         $linea_fases = DB::table('ordenes_ejecutadas as ada')
             ->join('stages as std', function ($join) {
                 $join->on(
@@ -359,6 +359,73 @@ class OrdenesEjecutadasController extends Controller
 
         return response()->json([
             'fase_control' => $fases,
+            'estado' => 200,
+        ]);
+    }
+
+    /**
+     * Actividades de control
+     *
+     * @param int $id
+     * @return JsonResponse
+     */
+    public function getActividadesControl($id): JsonResponse
+    {
+        // 1️⃣ Traer la fase de control
+        $fase = DB::table('ordenes_ejecutadas as ada')
+            ->where('ada.adaptation_date_id', $id)
+            ->where('ada.proceso', 'eject')
+            ->join('stages as std', function ($join) {
+                $join->on(
+                    DB::raw("FIND_IN_SET(std.id, REPLACE(REPLACE(REPLACE(REPLACE(
+                    COALESCE(ada.maestra_fases_fk, ''), '[', ''), ']', ''), ' ', ''), '\"', ''))"),
+                    '>',
+                    DB::raw('0')
+                );
+            })
+            ->where('std.phase_type', 'Control')
+            ->select(
+                'ada.adaptation_date_id',
+                'std.id as fase_id',
+                'std.description as descripcion',
+                'std.phase_type',
+                'std.activities',
+                DB::raw("FIND_IN_SET(std.id, REPLACE(REPLACE(REPLACE(REPLACE(
+                COALESCE(ada.maestra_fases_fk, ''), '[', ''), ']', ''), ' ', ''), '\"', '')) as posicion")
+            )
+            ->orderByRaw('posicion ASC')
+            ->first();
+
+        if (!$fase) {
+            return response()->json([
+                'fase_control' => null,
+                'actividades' => [],
+                'estado' => 404,
+                'msg' => 'No se encontró fase de control'
+            ]);
+        }
+
+        // 2️⃣ Traer actividades de esa fase
+        $actividades = [];
+        if (!empty($fase->activities)) {
+            $actividadesIds = json_decode($fase->activities, true);
+
+            if (is_array($actividadesIds) && count($actividadesIds) > 0) {
+                $actividades = DB::table('activities as act')
+                    ->whereIn('act.id', $actividadesIds)
+                    ->select(
+                        'act.id',
+                        'act.description',
+                        'act.config',
+                        'act.binding'
+                    )
+                    ->get();
+            }
+        }
+
+        return response()->json([
+            'fase_control' => $fase,
+            'actividades' => $actividades,
             'estado' => 200,
         ]);
     }
@@ -584,7 +651,7 @@ class OrdenesEjecutadasController extends Controller
         $orden = OrdenesEjecutadas::where('adaptation_date_id', $id)
             ->where('estado', '100')
             ->first();
-        
+
         // 2. Busca la actividad con estado_form = false y phase_type = Procesos
         $actividad = ActividadesEjecutadas::where('adaptation_date_id', $id)
             ->where('phase_type', 'Procesos')
