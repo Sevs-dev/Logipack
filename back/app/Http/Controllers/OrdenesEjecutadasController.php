@@ -168,14 +168,14 @@ class OrdenesEjecutadasController extends Controller
             })
             ->where('ada.adaptation_date_id', $id)
             ->where('ada.proceso', 'eject')
-            ->whereIn('std.phase_type', ['Planificación', 'Conciliación'])
+            ->whereIn('std.phase_type', ['Planificación', 'Conciliación', 'Testigo'])
             ->select(
                 'std.id',
                 'std.description as descripcion',
                 'std.phase_type',
                 DB::raw("FIND_IN_SET(std.id, REPLACE(REPLACE(REPLACE(REPLACE(COALESCE(ada.maestra_fases_fk, ''), '[', ''), ']', ''), ' ', ''), '\"', '')) as posicion")
             );
-
+        
         $linea_fases = DB::table('ordenes_ejecutadas as ada')
             ->join('stages as std', function ($join) {
                 $join->on(
@@ -489,7 +489,7 @@ class OrdenesEjecutadasController extends Controller
             }
 
             // maestra con bom
-            $ingredientes = json_decode($ada_date->ingredients)[0];
+            $ingredientes = json_decode(json_decode($ada_date->ingredients))[0];
             return response()->json([
                 'orden' => [
                     'orden_ejecutada' => $orden->id,

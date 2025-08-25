@@ -760,7 +760,9 @@ const App = () => {
                         )}
 
                         <input
-                          className="block w-full px-3 py-2 bg-[#1a1d23] border border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-white placeholder-gray-400 text-center"
+                          className="block w-full px-3 py-2 bg-[#1a1d23] border border-gray-600 rounded-md 
+                          shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 
+                          focus:border-blue-500 text-white placeholder-gray-400 text-center"
                           type="file"
                           accept="image/*"
                           required={
@@ -809,8 +811,7 @@ const App = () => {
                               [`tipo_entrada_${clave}`]: e.target.value,
                             };
                             setMemoriaFase(updated);
-                          }}
-                        >
+                          }}>
                           <option value="">-- Selecciona --</option>
                           <option value="texto">Texto</option>
                           <option value="firma">Firma</option>
