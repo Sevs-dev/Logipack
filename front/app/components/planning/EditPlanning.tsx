@@ -767,6 +767,55 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
         }
     }, [fetchAll, handleClose]);
 
+    const hableControlOrden = useCallback(async (id: number) => {
+        const { plan } = await getPlanningById(id);
+
+
+        // Validar si la orden tiene linea asignada
+        if (plan.line === null) {
+            showError("No se asignó línea a la planificación");
+            return;
+        }
+
+        if (plan.status_dates === null || plan.status_dates === "En Creación") {
+            showError("Orden no planificada, debe completar la planificación");
+            return;
+        }
+
+        const data = await validate_orden(plan.id);
+        if (data.estado === 100 || data.estado === null) {
+
+            alert("Orden controlada correctamente");
+            // const response = await getRestablecerOrden(plan.id);
+            // if (response.estado !== 200) {
+            //     showError("Error, orden no permitida para restablecer");
+            //     return;
+            // }
+            // showSuccess("Orden restablecida correctamente");
+            // const user = document.cookie
+            //     .split('; ')
+            //     .find(row => row.startsWith('name='))
+            //     ?.split('=')[1];
+
+            // if (!user) {
+            //     showError("No se encontró usuario");
+            //     return;
+            // }
+
+            // localStorage.setItem("ejecutar", JSON.stringify({
+            //     id: plan.id,
+            //     user: user
+            // }));
+
+            // setTimeout(() => {
+            //     window.open("/pages/lineas", "_blank");
+            //     handleClose();
+            // }, 3000);
+        } else {
+            showError("La orden ya fue finalizada. Estado: " + data.estado);
+            fetchAll();
+        }
+    }, [fetchAll, handleClose]);
 
     //Componente SelectorDual
     const agregarMaquina = (machine: MachinePlanning) => {
@@ -1410,10 +1459,12 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
                 showDeleteButton={false}
                 showTerciarioButton={true}
                 showRestablecerButton={true}
+                showControlButton={true}
                 showViewButton={true}
                 onEdit={handleEdit}
                 onRestablecer={hableRestablecerOrden}
                 onTerciario={handleTerciario}
+                onControl={hableControlOrden}
                 onView={obtenerActividades}
                 onPDF={handlePDF}
                 showTerciarioCondition={(row) => row.status_dates === "Planificación" || row.status_dates === "En ejecución"} // 👈 Aquí va tu condición

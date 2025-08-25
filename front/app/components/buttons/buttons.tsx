@@ -29,7 +29,8 @@ type Variant =
   | "pdf"
   | "add"
   | "view"
-  | "restablecer";
+  | "restablecer"
+  | "control";
 
 interface ButtonProps {
   type?: "button" | "submit" | "reset";
@@ -60,6 +61,7 @@ const variantStyles: Record<Variant, string> = {
   add: "bg-orange-500 hover:bg-orange-600 text-white",
   view: "bg-[#CD4CD9] hover:bg-[#D94CB8] text-white",
   restablecer: "bg-[#ff8000] hover:bg-[#ffa200] text-white",
+  control: "bg-[#ff8000] hover:bg-[#ffa200] text-white",
 };
 
 const icons: Record<Variant, React.ReactNode> = {
@@ -77,6 +79,7 @@ const icons: Record<Variant, React.ReactNode> = {
   add: <FaRegPlusSquare />,
   view: <FaVoteYea />,
   restablecer: <FaListUl />,
+  control: <FaListUl />,
 };
 
 const labels: Record<Variant, string> = {
@@ -94,6 +97,7 @@ const labels: Record<Variant, string> = {
   add: "Agregar",
   view: "Ver",
   restablecer: "Restablecer",
+  control: "Control",
 };
 
 const sizeStyles = {
@@ -134,6 +138,7 @@ const Button: React.FC<ButtonProps> = ({
     "create2",
     "view",
     "restablecer",
+    "control",
   ].includes(variant);
 
   return (

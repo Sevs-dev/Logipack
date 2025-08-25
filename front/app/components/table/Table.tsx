@@ -15,6 +15,7 @@ type TableProps<T extends { id: number }> = {
   onDelete?: (id: number) => void;
   onTerciario?: (id: number) => void;
   onRestablecer?: (id: number) => void;
+  onControl?: (id: number) => void;
   onHistory?: (id: number) => void;
   onPDF?: (id: number) => void;
   onView?: (id: number) => void;
@@ -22,6 +23,7 @@ type TableProps<T extends { id: number }> = {
   showEditButton?: boolean;
   showTerciarioButton?: boolean;
   showRestablecerButton?: boolean;
+  showControlButton?: boolean;
   showViewButton?: boolean;
   showHistory?: boolean;
   showPDF?: boolean;
@@ -76,6 +78,7 @@ function Table<T extends { id: number }>({
   onDelete,
   onTerciario,
   onRestablecer,
+  onControl,
   onHistory,
   onPDF,
   onView,
@@ -86,6 +89,7 @@ function Table<T extends { id: number }>({
   showEditButton = true,
   showTerciarioButton = true,
   showRestablecerButton = true,
+  showControlButton = true,
   showHistory = true,
   showPDF = true,
   showViewButton = false,
@@ -331,6 +335,12 @@ function Table<T extends { id: number }>({
                           variant="restablecer"
                         />
                       )}
+                      {showControlButton && onControl && (
+                        <Button
+                          onClick={() => onControl(row.id)}
+                          variant="control"
+                        />
+                      )}
                       {showViewButton &&
                         onView &&
                         (!showViewCondition || showViewCondition(row)) && (
@@ -399,6 +409,9 @@ function Table<T extends { id: number }>({
                     variant="create2"
                   />
                 )}
+              {showControlButton && onControl && (
+                <Button onClick={() => onControl(row.id)} variant="control" />
+              )}
               {showViewButton &&
                 onView &&
                 (!showViewCondition || showViewCondition(row)) && (
