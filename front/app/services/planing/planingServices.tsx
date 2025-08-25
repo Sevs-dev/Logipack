@@ -216,3 +216,14 @@ export const guardar_conciliacion = async (
     throw error;
   }
 };
+
+
+export const getRestablecerOrden = async (id: number) => {
+  try {
+    const response = await Planning.get(`/restablecer_orden/${id}`);
+    return response.data;
+  } catch (error: unknown) {
+    console.error("Error en getRestablecerOrden:", error);
+    throw error;
+  }
+};
