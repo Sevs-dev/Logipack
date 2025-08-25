@@ -32,6 +32,7 @@ const phases = [
   "Control",
   "Actividades",
   "Procesos",
+  "Testigo"
 ] as const;
 
 type PhaseType = (typeof phases)[number];
@@ -199,7 +200,8 @@ function NewStage({ canEdit = false, canView = false }: CreateClientProps) {
     if (
       phaseType === "Actividades" ||
       phaseType === "Control" ||
-      phaseType === "Procesos"
+      phaseType === "Procesos" ||
+      phaseType === "Testigo"
     ) {
       void fetchActivities();
     } else {
@@ -228,7 +230,8 @@ function NewStage({ canEdit = false, canView = false }: CreateClientProps) {
       !(
         phaseType === "Actividades" ||
         phaseType === "Control" ||
-        phaseType === "Procesos"
+        phaseType === "Procesos" ||
+        phaseType === "Testigo"
       ) ||
       availableActivities.length === 0
     ) {
@@ -274,7 +277,7 @@ function NewStage({ canEdit = false, canView = false }: CreateClientProps) {
     if (
       (phaseType === "Actividades" ||
         phaseType === "Control" ||
-        phaseType === "Procesos") &&
+        phaseType === "Procesos" || phaseType === "Testigo") &&
       selectedActivities.length === 0
     ) {
       showError("Debes seleccionar al menos una actividad.");
@@ -308,7 +311,7 @@ function NewStage({ canEdit = false, canView = false }: CreateClientProps) {
     const payload: Data =
       phaseType === "Actividades" ||
       phaseType === "Control" ||
-      phaseType === "Procesos"
+      phaseType === "Procesos" || phaseType === "Testigo"
         ? { ...base, activities: selectedActivities.map((a) => a.id) }
         : base;
 
@@ -380,7 +383,7 @@ function NewStage({ canEdit = false, canView = false }: CreateClientProps) {
     const activityIds =
       phaseType === "Actividades" ||
       phaseType === "Control" ||
-      phaseType === "Procesos"
+      phaseType === "Procesos" || phaseType === "Testigo"
         ? selectedActivities.map((a) => a.id)
         : [];
 
@@ -601,7 +604,7 @@ function NewStage({ canEdit = false, canView = false }: CreateClientProps) {
             {/* Actividades (solo si Tipo de Fase es Actividades / Control / Procesos) */}
             {(phaseType === "Actividades" ||
               phaseType === "Control" ||
-              phaseType === "Procesos") && (
+              phaseType === "Procesos" || phaseType === "Testigo") && (
               <div className="space-y-4">
                 <Text type="subtitle" color="#000">
                   Actividades
@@ -906,7 +909,7 @@ function NewStage({ canEdit = false, canView = false }: CreateClientProps) {
                   !description.trim() ||
                   ((phaseType === "Actividades" ||
                     phaseType === "Control" ||
-                    phaseType === "Procesos") &&
+                    phaseType === "Procesos" || phaseType === "Testigo") &&
                     selectedActivities.length === 0)
                 }
                 label={

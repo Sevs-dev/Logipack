@@ -180,11 +180,6 @@ const NewLineas = () => {
         }, 1000);
     };
 
-    const estadoMap: Record<number, string> = {
-        100: "Pendiente",
-        11500: "Ejecutado",
-    };
-
     return (
         <div className="min-h-screen w-full bg-[#0a0d12] text-white p-[10px] sm:p-[10px] flex flex-col rounded-2xl">
             <motion.section

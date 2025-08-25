@@ -82,7 +82,6 @@ const NewConsolida = () => {
       const unidades_caja = parseFloat(data.unidades_caja) || 0;
       const numero_caja = parseFloat(data.numero_caja) || 0;
       const unidades_saldo = parseFloat(data.unidades_saldo) || 0;
-      const total_saldo = parseFloat(data.total_saldo) || 0;
 
       /*
                 Calculo de la conciliación donde:

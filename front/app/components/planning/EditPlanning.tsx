@@ -23,14 +23,16 @@ import {
   getPlanningById,
   validate_orden,
   getConsultPlanning,
+  actividades_ejecutadas,
+  getRestablecerOrden,
 } from "../../services/planing/planingServices";
 import { getActivitieId } from "../../services/maestras/activityServices";
-import { getManu } from "@/app/services/userDash/manufacturingServices";
+import {
+  getManu,
+  getManuId,
+} from "@/app/services/userDash/manufacturingServices";
 import { getMachin } from "@/app/services/userDash/machineryServices";
-import { getManuId } from "@/app/services/userDash/manufacturingServices";
 import { getUsers } from "@/app/services/userDash/authservices";
-import { actividades_ejecutadas } from "@/app/services/planing/planingServices";
-import { getRestablecerOrden } from "@/app/services/planing/planingServices";
 
 // 🔹 Interfaces
 import {
@@ -43,17 +45,9 @@ import {
 } from "@/app/interfaces/EditPlanning";
 
 /* =========================
- *       Type helpers
+ *  Helpers puros (módulo)
  * ========================= */
-type Primitive = string | number | boolean | null;
-type JSONValue = Primitive | JSONObject | JSONArray;
-interface JSONObject {
-  [k: string]: JSONValue;
-}
-type JSONArray = JSONValue[];
-
 type RecordLike = Record<string, unknown>;
-type MutablePlanServ = PlanServ & Record<string, unknown>;
 
 const isRecord = (v: unknown): v is RecordLike =>
   typeof v === "object" && v !== null && !Array.isArray(v);
@@ -70,12 +64,149 @@ const toFiniteNumber = (v: unknown): number | null => {
   return null;
 };
 
+const safeParseJSON = <T = unknown,>(v: unknown, fallback: T): T => {
+  if (v == null) return fallback;
+  if (typeof v === "string") {
+    const s = v.trim();
+    if (!s) return fallback;
+    try {
+      return JSON.parse(s) as T;
+    } catch {
+      return fallback;
+    }
+  }
+  return v as T;
+};
+
+const ensureArray = <T = unknown,>(v: unknown): T[] => {
+  if (Array.isArray(v)) return v as T[];
+  if (v == null || v === "") return [];
+  const parsed = safeParseJSON<unknown>(v, []);
+  return Array.isArray(parsed) ? (parsed as T[]) : [];
+};
+
+// Saca ids de actividad aunque vengan anidados o mezclados (sin any)
+const extractActivityIds = (input: unknown): number[] => {
+  const out: number[] = [];
+
+  const visit = (val: unknown): void => {
+    if (val == null) return;
+
+    const asNum = toFiniteNumber(val);
+    if (asNum !== null) {
+      out.push(asNum);
+      return;
+    }
+
+    if (typeof val === "string") {
+      const parsed = safeParseJSON<unknown>(val, null);
+      if (parsed !== null) visit(parsed);
+      return;
+    }
+
+    if (Array.isArray(val)) {
+      val.forEach(visit);
+      return;
+    }
+
+    if (isRecord(val)) {
+      if ("id" in val) {
+        const idVal = toFiniteNumber((val as RecordLike).id);
+        if (idVal !== null) out.push(idVal);
+      }
+      if ("activities" in val) visit((val as RecordLike).activities);
+      if ("lines" in val) visit((val as RecordLike).lines);
+      if ("ID_ACTIVITIES" in val) visit((val as RecordLike).ID_ACTIVITIES);
+      if ("stages" in val) visit((val as RecordLike).stages);
+    }
+  };
+
+  visit(input);
+  return Array.from(new Set(out));
+};
+
 interface NormalizedLine extends RecordLike {
   machine: number[];
   users: number[];
   resource: string[];
   duration_breakdown: DurationItem[] | null;
-  _activityIds: number[]; // auxiliar para fetch
+  _activityIds: number[];
+}
+
+const normalizeLine = (line: unknown): NormalizedLine => {
+  const obj = isRecord(line) ? line : {};
+
+  const machineRaw = ensureArray<unknown>(obj["machine"]);
+  const usersRaw = ensureArray<unknown>(obj["users"]);
+  const resourceRaw = ensureArray<unknown>(obj["resource"]);
+  const durationBreakdown = safeParseJSON<DurationItem[] | null>(
+    obj["duration_breakdown"],
+    null
+  );
+
+  const machine = machineRaw
+    .map(toFiniteNumber)
+    .filter((n): n is number => n !== null);
+  const users = usersRaw
+    .map(toFiniteNumber)
+    .filter((n): n is number => n !== null);
+  const resource = resourceRaw.map((r) =>
+    typeof r === "string" ? r : JSON.stringify(r)
+  );
+
+  const ids = [
+    ...extractActivityIds(obj["ID_ACTIVITIES"]),
+    ...extractActivityIds(obj["activities"]),
+    ...extractActivityIds(obj["stages"]),
+  ];
+
+  return {
+    ...obj,
+    machine,
+    users,
+    resource,
+    duration_breakdown: durationBreakdown,
+    _activityIds: Array.from(new Set(ids)),
+  };
+};
+
+// 🔹 función async externa y estable para evitar deps en hooks
+export async function fetchAndProcessPlans(id: number): Promise<ServerPlan[]> {
+  const resp: unknown = await getActivitiesByPlanning(id);
+
+  const serverPlansRaw: unknown = isRecord(resp)
+    ? resp.plan ?? (resp as RecordLike).plans ?? resp
+    : resp;
+
+  const rawArray: unknown[] = Array.isArray(serverPlansRaw)
+    ? serverPlansRaw
+    : serverPlansRaw != null
+    ? [serverPlansRaw]
+    : [];
+
+  if (rawArray.length === 0) {
+    const keys = isRecord(resp) ? Object.keys(resp).join(", ") : "—";
+    throw new Error(
+      `Planificación no encontrada desde servidor (id=${id}). Payload keys: ${keys}`
+    );
+  }
+
+  const normalized = rawArray.map(normalizeLine);
+
+  const serverPlansWithDetails = await Promise.all(
+    normalized.map(async (line) => {
+      const ids = line._activityIds ?? [];
+      const activitiesDetails: ActivityDetail[] = ids.length
+        ? await Promise.all(ids.map(async (n) => await getActivitieId(n)))
+        : [];
+
+      const { _activityIds: _omit, ...rest } = line;
+      void _omit;
+      return { ...(rest as unknown as ServerPlan), activitiesDetails };
+    })
+  );
+
+  return serverPlansWithDetails;
 }
 
 /* =========================
@@ -110,7 +241,6 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
 
   useEffect(() => {
     if (!isOpen) return;
-
     const fetchModalData = async () => {
       try {
         const [manuData, machineData, userData] = await Promise.all([
@@ -126,7 +256,6 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
         console.error("❌ Error en fetchModalData:", error);
       }
     };
-
     fetchModalData();
   }, [isOpen]);
 
@@ -170,7 +299,6 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
         acc[lineId] = [];
         return acc;
       }, {} as Record<number, number[]>);
-
       return initial;
     });
   }, [currentPlan]);
@@ -201,7 +329,6 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
 
   useEffect(() => {
     if (!currentPlan) return;
-
     setLineActivities((prev) => {
       const currentLines = getLinesArray(currentPlan.line);
       const newLineActivities: Record<number, number[]> = {};
@@ -268,7 +395,6 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
       dayjs(updatedPlan.start_date),
       "minute"
     );
-
     if (diffInMinutes < 5) {
       showError(
         "La duración entre la fecha de inicio y fin debe ser de al menos 5 minutos."
@@ -291,6 +417,7 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
         setIsSaving(false);
         return;
       }
+
       const formattedLines = lines.map((lineId) => {
         const activityIdsInLine = lineActivities[lineId] || [];
         const filteredActivities = (activitiesDetails || []).filter(
@@ -303,6 +430,9 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
           })),
         };
       });
+
+      type MutablePlanServ = PlanServ & Record<string, unknown>;
+
       const planToSave: MutablePlanServ = {
         ...cleanedPlan,
         adaptation_id: updatedPlan.adaptation_id,
@@ -321,13 +451,12 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
         created_at: updatedPlan.created_at,
         start_date: updatedPlan.start_date,
         end_date: updatedPlan.end_date,
-        // ⛔️ NO incluimos activitiesDetails / lineActivities / client_name
       };
+
       const keysToStringify: (keyof Pick<
         PlanServ,
         "duration_breakdown" | "ingredients" | "bom" | "master"
       >)[] = ["duration_breakdown", "ingredients", "bom", "master"];
-
       keysToStringify.forEach((key) => {
         const value = planToSave[key];
         if (typeof value === "object" && value !== null) {
@@ -339,7 +468,6 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
         "bom",
         "master",
       ];
-
       keysToNullify.forEach((key) => {
         const value = planToSave[key];
         if (value === "null" || value === "") {
@@ -388,6 +516,7 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
           setUser(currentUsers);
         }
 
+        // ✅ función externa estable → no entra en deps
         const serverPlansWithDetails: ServerPlan[] = await fetchAndProcessPlans(
           id
         );
@@ -401,6 +530,7 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
             (p) =>
               (p as unknown as RecordLike).ID_ADAPTACION === selectedPlan.id
           ) || serverPlansWithDetails[0];
+
         const activitiesDetails =
           ((matchedPlan as unknown as RecordLike)
             .activitiesDetails as ActivityDetail[]) ?? [];
@@ -462,7 +592,7 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
         setLoadingModal(false);
       }
     },
-    [planning, machine, user]
+    [planning, machine, user] // ✅ nada de fetchAndProcessPlans aquí
   );
 
   const handleClose = useCallback(() => {
@@ -476,7 +606,7 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
   }, []);
 
   const handleDelete = useCallback(() => {
-    // console.log("Eliminar", id);
+    // noop
   }, []);
 
   const getFormattedDuration = (input: number | string): string => {
@@ -527,13 +657,10 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
         if (item.fase === "TOTAL") {
           return `🧮 TOTAL → ${getFormattedDuration(item.resultado)}`;
         }
-
         const { teorica_total, multiplicacion, resultado } = item;
-
         if (multiplicacion && teorica_total) {
           return `${item.fase} → ${multiplicacion} = ${resultado} min`;
         }
-
         return `${item.fase} → ${resultado} min`;
       })
       .join("\n");
@@ -541,16 +668,12 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
 
   const handleDrop = (lineId: number) => {
     if (draggedActivityId === null) return;
-
     setLineActivities((prev) => {
       const updated = { ...prev };
-
       if (updated[lineId]?.includes(draggedActivityId)) return prev;
-
       updated[lineId] = [...(updated[lineId] || []), draggedActivityId];
       return updated;
     });
-
     setDraggedActivityId(null);
   };
 
@@ -581,158 +704,6 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
     [activitiesDetails]
   );
 
-  // helpers seguros
-  const safeParseJSON = <T = unknown,>(v: unknown, fallback: T): T => {
-    if (v == null) return fallback;
-
-    if (typeof v === "string") {
-      const s = v.trim();
-      if (!s) return fallback;
-      try {
-        return JSON.parse(s) as T;
-      } catch {
-        return fallback;
-      }
-    }
-
-    return v as T;
-  };
-
-  const ensureArray = <T = unknown,>(v: unknown): T[] => {
-    if (Array.isArray(v)) return v as T[];
-    if (v == null || v === "") return [];
-    const parsed = safeParseJSON<unknown>(v, []);
-    return Array.isArray(parsed) ? (parsed as T[]) : [];
-  };
-
-  // Saca ids de actividad aunque vengan anidados o mezclados (sin any)
-  const extractActivityIds = (input: unknown): number[] => {
-    const out: number[] = [];
-
-    const visit = (val: unknown): void => {
-      if (val == null) return;
-
-      const asNum = toFiniteNumber(val);
-      if (asNum !== null) {
-        out.push(asNum);
-        return;
-      }
-
-      if (typeof val === "string") {
-        // si no fue número, intenta parsear JSON (podría ser objeto/array)
-        const parsed = safeParseJSON<unknown>(val, null);
-        if (parsed !== null) {
-          visit(parsed);
-        }
-        return;
-      }
-
-      if (Array.isArray(val)) {
-        val.forEach(visit);
-        return;
-      }
-
-      if (isRecord(val)) {
-        if ("id" in val) {
-          const idVal = toFiniteNumber(val.id);
-          if (idVal !== null) out.push(idVal);
-        }
-        if ("activities" in val) visit(val.activities);
-        if ("lines" in val) visit(val.lines);
-        if ("ID_ACTIVITIES" in val) visit(val.ID_ACTIVITIES);
-        if ("stages" in val) visit(val.stages);
-      }
-    };
-
-    visit(input);
-    return Array.from(new Set(out));
-  };
-
-  // Normaliza una línea del servidor (sin any)
-  const normalizeLine = (line: unknown): NormalizedLine => {
-    const obj = isRecord(line) ? line : {};
-
-    const machineRaw = ensureArray<unknown>(obj["machine"]);
-    const usersRaw = ensureArray<unknown>(obj["users"]);
-    const resourceRaw = ensureArray<unknown>(obj["resource"]);
-    const durationBreakdown = safeParseJSON<DurationItem[] | null>(
-      obj["duration_breakdown"],
-      null
-    );
-
-    const machine = machineRaw
-      .map(toFiniteNumber)
-      .filter((n): n is number => n !== null);
-    const users = usersRaw
-      .map(toFiniteNumber)
-      .filter((n): n is number => n !== null);
-    const resource = resourceRaw.map((r) =>
-      typeof r === "string" ? r : JSON.stringify(r)
-    );
-
-    const ids = [
-      ...extractActivityIds(obj["ID_ACTIVITIES"]),
-      ...extractActivityIds(obj["activities"]),
-      ...extractActivityIds(obj["stages"]),
-    ];
-
-    return {
-      ...obj,
-      machine,
-      users,
-      resource,
-      duration_breakdown: durationBreakdown,
-      _activityIds: Array.from(new Set(ids)),
-    };
-  };
-
-  // === Función robusta (sin any) ===
-  const fetchAndProcessPlans = useCallback(
-    async (id: number): Promise<ServerPlan[]> => {
-      const resp: unknown = await getActivitiesByPlanning(id);
-
-      let serverPlansRaw: unknown;
-      if (isRecord(resp)) {
-        serverPlansRaw =
-          (resp as RecordLike).plan ?? (resp as RecordLike).plans ?? resp;
-      } else {
-        serverPlansRaw = resp;
-      }
-
-      const rawArray: unknown[] = Array.isArray(serverPlansRaw)
-        ? serverPlansRaw
-        : serverPlansRaw != null
-        ? [serverPlansRaw]
-        : [];
-
-      if (rawArray.length === 0) {
-        const keys = isRecord(resp)
-          ? Object.keys(resp as RecordLike).join(", ")
-          : "—";
-        throw new Error(
-          `Planificación no encontrada desde servidor (id=${id}). Payload keys: ${keys}`
-        );
-      }
-
-      const normalized = rawArray.map(normalizeLine);
-
-      const serverPlansWithDetails = await Promise.all(
-        normalized.map(async (line) => {
-          const ids = line._activityIds ?? [];
-          const activitiesDetails: ActivityDetail[] = ids.length
-            ? await Promise.all(ids.map(async (n) => await getActivitieId(n)))
-            : [];
-
-          const { _activityIds: _omit, ...rest } = line;
-          void _omit;
-          return { ...(rest as unknown as ServerPlan), activitiesDetails };
-        })
-      );
-
-      return serverPlansWithDetails;
-    },
-    []
-  );
   const handleTerciario = useCallback(
     async (id: number) => {
       const { plan } = await getPlanningById(id);
