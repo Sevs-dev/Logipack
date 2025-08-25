@@ -1039,7 +1039,7 @@ function BOMManager({ canEdit = false, canView = false }: CreateClientProps) {
                     onClick={handleSaveBOM}
                     variant="create"
                     label={currentBomId ? "Actualizar BOM" : "Guardar BOM"}
-                    disabled={loadingArticles || isSaving}
+                    disabled={loadingArticles && isSaving}
                   />
                 )}
               </div>
