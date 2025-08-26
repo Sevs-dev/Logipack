@@ -822,6 +822,7 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
       showError("La orden ya fue finalizada. Estado: " + data.estado);
     }
   }, []);
+  
 
   //Componente SelectorDual
   const agregarMaquina = (m: MachinePlanning) => {
