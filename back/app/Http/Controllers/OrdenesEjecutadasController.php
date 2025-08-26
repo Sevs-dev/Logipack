@@ -2,11 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\ActividadesControls;
 use App\Models\ActividadesEjecutadas;
 use App\Models\AdaptationDate;
 use App\Models\Conciliaciones;
 use App\Models\OrdenesEjecutadas;
-use App\Models\ActividadesControls;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -162,7 +162,8 @@ class OrdenesEjecutadasController extends Controller
         $linea_fases_1 = DB::table('ordenes_ejecutadas as ada')
             ->join('stages as std', function ($join) {
                 $join->on(
-                    DB::raw("FIND_IN_SET(std.id, REPLACE(REPLACE(REPLACE(REPLACE(COALESCE(ada.maestra_fases_fk, ''), '[', ''), ']', ''), ' ', ''), '\"', ''))"),
+                    DB::raw("FIND_IN_SET(std.id, REPLACE(REPLACE(REPLACE(REPLACE(
+                    COALESCE(ada.maestra_fases_fk, ''), '[', ''), ']', ''), ' ', ''), '\"', ''))"),
                     '>',
                     DB::raw('0')
                 );
@@ -174,13 +175,15 @@ class OrdenesEjecutadasController extends Controller
                 'std.id',
                 'std.description as descripcion',
                 'std.phase_type',
-                DB::raw("FIND_IN_SET(std.id, REPLACE(REPLACE(REPLACE(REPLACE(COALESCE(ada.maestra_fases_fk, ''), '[', ''), ']', ''), ' ', ''), '\"', '')) as posicion")
+                DB::raw("FIND_IN_SET(std.id, REPLACE(REPLACE(REPLACE(REPLACE(
+                COALESCE(ada.maestra_fases_fk, ''), '[', ''), ']', ''), ' ', ''), '\"', '')) as posicion")
             );
 
         $linea_fases = DB::table('ordenes_ejecutadas as ada')
             ->join('stages as std', function ($join) {
                 $join->on(
-                    DB::raw("FIND_IN_SET(std.id, REPLACE(REPLACE(REPLACE(REPLACE(COALESCE(ada.maestra_fases_fk, ''), '[', ''), ']', ''), ' ', ''), '\"', ''))"),
+                    DB::raw("FIND_IN_SET(std.id, REPLACE(REPLACE(REPLACE(REPLACE(
+                    COALESCE(ada.maestra_fases_fk, ''), '[', ''), ']', ''), ' ', ''), '\"', ''))"),
                     '>',
                     DB::raw('0')
                 );
@@ -193,7 +196,8 @@ class OrdenesEjecutadasController extends Controller
                 'std.id',
                 'std.description as descripcion',
                 'std.phase_type',
-                DB::raw("FIND_IN_SET(std.id, REPLACE(REPLACE(REPLACE(REPLACE(COALESCE(ada.maestra_fases_fk, ''), '[', ''), ']', ''), ' ', ''), '\"', '')) as posicion")
+                DB::raw("FIND_IN_SET(std.id, REPLACE(REPLACE(REPLACE(REPLACE(
+                COALESCE(ada.maestra_fases_fk, ''), '[', ''), ']', ''), ' ', ''), '\"', '')) as posicion")
             )
             ->union($linea_fases_1)  // 👈 aquí unes la primera query
             ->orderBy('posicion', 'asc')
@@ -203,7 +207,7 @@ class OrdenesEjecutadasController extends Controller
         $fases = [];
         foreach ($linea_fases as $item) {
             // Validar si la fase es conciliación
-            if ($item->phase_type == 'Conciliación') {
+            if ($item->phase_type == 'Conciliación' || $item->phase_type == 'Testigo') {
                 $fases[] = $item;
             }
 
