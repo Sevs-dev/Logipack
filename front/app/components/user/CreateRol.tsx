@@ -343,7 +343,7 @@ function Roles({ canEdit = false, canView = false }: RolesProps) {
       )}
 
       <Table<Role>
-        columns={["name", "canEdit", "canView"]}
+        columns={["name", "canEdit", "canView"]} 
         rows={roles}
         columnLabels={{ name: "Nombre", canEdit: "Puede Editar", canView: "Puede Ver" }}
         onDelete={canEdit ? handleDelete : undefined}
