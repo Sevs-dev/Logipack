@@ -1471,8 +1471,8 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
         onDelete={handleDelete}
         showDeleteButton={false}
         showTerciarioButton={true}
-        showRestablecerButton={true}
-        showControlButton={true}
+        showRestablecerButton={false}
+        showControlButton={false}
         showViewButton={true}
         onEdit={handleEdit}
         onRestablecer={hableRestablecerOrden}
