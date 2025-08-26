@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\ActividadesControls;
 use App\Models\ActividadesEjecutadas;
+use App\Models\ActividadesTestigos;
 use App\Models\AdaptationDate;
 use App\Models\Conciliaciones;
 use App\Models\OrdenesEjecutadas;
@@ -179,7 +180,6 @@ class OrdenesEjecutadasController extends Controller
                 COALESCE(ada.maestra_fases_fk, ''), '[', ''), ']', ''), ' ', ''), '\"', '')) as posicion")
             );
 
-        
         // Obtener solo las fases de conciliación
         $linea_fases_2 = DB::table('ordenes_ejecutadas as ada')
             ->join('stages as std', function ($join) {
@@ -194,7 +194,8 @@ class OrdenesEjecutadasController extends Controller
             ->where('ada.proceso', 'eject')
             ->whereIn('std.phase_type', ['Conciliación'])
             ->whereNotExists(function ($query) use ($id) {
-                $query->select(DB::raw(1))
+                $query
+                    ->select(DB::raw(1))
                     ->from('conciliaciones as co')
                     ->where('co.adaptation_date_id', $id);
             })
@@ -466,6 +467,73 @@ class OrdenesEjecutadasController extends Controller
     }
 
     /**
+     * Actividades de testigo
+     *
+     * @param int $id
+     * @return JsonResponse
+     */
+    public function getActividadesTestigo($id): JsonResponse
+    {
+        // 1️⃣ Traer la fase de control
+        $fase = DB::table('ordenes_ejecutadas as ada')
+            ->where('ada.adaptation_date_id', $id)
+            ->where('ada.proceso', 'eject')
+            ->join('stages as std', function ($join) {
+                $join->on(
+                    DB::raw("FIND_IN_SET(std.id, REPLACE(REPLACE(REPLACE(REPLACE(
+                    COALESCE(ada.maestra_fases_fk, ''), '[', ''), ']', ''), ' ', ''), '\"', ''))"),
+                    '>',
+                    DB::raw('0')
+                );
+            })
+            ->where('std.phase_type', 'Testigo')
+            ->select(
+                'ada.adaptation_date_id',
+                'std.id as fase_id',
+                'std.description as descripcion',
+                'std.phase_type',
+                'std.activities',
+                DB::raw("FIND_IN_SET(std.id, REPLACE(REPLACE(REPLACE(REPLACE(
+                COALESCE(ada.maestra_fases_fk, ''), '[', ''), ']', ''), ' ', ''), '\"', '')) as posicion")
+            )
+            ->orderByRaw('posicion ASC')
+            ->first();
+
+        if (!$fase) {
+            return response()->json([
+                'fase_testigo' => null,
+                'actividades' => [],
+                'estado' => 404,
+                'msg' => 'No se encontró fase de testigo'
+            ]);
+        }
+
+        // 2️⃣ Traer actividades de esa fase
+        $actividades = [];
+        if (!empty($fase->activities)) {
+            $actividadesIds = json_decode($fase->activities, true);
+
+            if (is_array($actividadesIds) && count($actividadesIds) > 0) {
+                $actividades = DB::table('activities as act')
+                    ->whereIn('act.id', $actividadesIds)
+                    ->select(
+                        'act.id',
+                        'act.description',
+                        'act.config',
+                        'act.binding'
+                    )
+                    ->get();
+            }
+        }
+
+        return response()->json([
+            'fase_testigo' => $fase,
+            'actividades' => $actividades,
+            'estado' => 200,
+        ]);
+    }
+
+    /**
      * Fase de control
      *
      * @param int $id
@@ -686,6 +754,30 @@ class OrdenesEjecutadasController extends Controller
         try {
             $data = $request->all();
             ActividadesControls::create($data);
+            return response()->json([
+                'message' => 'Formulario guardado correctamente',
+                'estado' => 200,
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Error al guardar el formulario | ' . $e->getMessage(),
+                'estado' => 500,
+            ]);
+        }
+    }
+
+    /**
+     * Guardar actividades testigos
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function guardar_actividades_testigos(
+        Request $request
+    ): JsonResponse {
+        try {
+            $data = $request->all();
+            ActividadesTestigos::create($data);
             return response()->json([
                 'message' => 'Formulario guardado correctamente',
                 'estado' => 200,
