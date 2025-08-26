@@ -77,8 +77,7 @@ function safeJSONParse(raw: unknown): unknown {
 function parseConfig(raw: ControlActividad["config"]): ParsedConfig | null {
   const parsed = safeJSONParse(raw);
   if (parsed && typeof parsed === "object" && "type" in (parsed as object)) {
-    const cfg = parsed as ParsedConfig;
-    return cfg;
+    return parsed as ParsedConfig;
   }
   return null;
 }
@@ -108,10 +107,9 @@ const Timer: React.FC<TimerProps> = ({
   initialMinutes,
   refetchTimer,
 }) => {
-  // 🕒 Config inicial
   const initialSeconds = initialMinutes * 60;
 
-  // 📦 State
+  // State
   const [timerId, setTimerId] = useState<number | null>(null);
   const [seconds, setSeconds] = useState<number>(initialSeconds);
   const [isRunning, setIsRunning] = useState<boolean>(false);
@@ -121,18 +119,28 @@ const Timer: React.FC<TimerProps> = ({
   const [controlData, setControlData] = useState<ControlActividad[]>([]);
   const [timerStatus, setTimerStatus] = useState<TimerStatus>("paused");
 
-  // 🔁 Refs (en navegador setInterval devuelve number)
+  // Overlay: SIEMPRE aparece al cargar (hasta tocar Play)
+  const [showIntro, setShowIntro] = useState<boolean>(true);
+
+  // Overlay activo si hay intro, no hay alarma y no está terminado
+  const showInitialBlur =
+    showIntro && !alarmActive && timerStatus !== "finished";
+
+  // z-index del timer depende del overlay (timer por encima del overlay)
+  const timerZ = showInitialBlur ? "z-[2147483647]" : "z-[1000]";
+
+  // Refs
   const intervalRef = useRef<number | null>(null);
   const alertAudio = useRef<HTMLAudioElement | null>(null);
 
-  // 📀 Carga de audio
+  // Audio
   useEffect(() => {
     const audio = new Audio("/sounds/beep.mp3");
     audio.loop = true;
     alertAudio.current = audio;
   }, []);
 
-  // 🔓 Desbloqueo de audio (user gesture)
+  // Desbloqueo de audio
   const unlockAudio = useCallback(() => {
     const a = alertAudio.current;
     if (!a) return;
@@ -146,7 +154,7 @@ const Timer: React.FC<TimerProps> = ({
       });
   }, []);
 
-  // 🔄 Fetch de timer inicial
+  // Timer existente
   useEffect(() => {
     (async () => {
       try {
@@ -165,7 +173,7 @@ const Timer: React.FC<TimerProps> = ({
     })();
   }, [ejecutadaId]);
 
-  // 🔄 Fetch de actividades dinámicas (controlData)
+  // Control del timer
   useEffect(() => {
     if (!timerId) return;
     (async () => {
@@ -178,7 +186,7 @@ const Timer: React.FC<TimerProps> = ({
     })();
   }, [timerId]);
 
-  // 🧠 Guardar respuestas del formulario dinámico
+  // Guardar datos
   const handleSaveTimerData = async () => {
     if (!timerId || typeof timerId !== "number") {
       console.error("❌ timerId inválido o null:", timerId);
@@ -224,7 +232,7 @@ const Timer: React.FC<TimerProps> = ({
     }
   };
 
-  // 🧠 Formateo del cronómetro
+  // Formato tiempo
   const formatTime = (secs: number) => {
     const m = Math.floor(secs / 60)
       .toString()
@@ -233,7 +241,7 @@ const Timer: React.FC<TimerProps> = ({
     return `${m}:${s}`;
   };
 
-  // ▶️ Iniciar
+  // Start
   const handleStart = async () => {
     if (!timerId) {
       const timer = await createTimer({
@@ -246,10 +254,11 @@ const Timer: React.FC<TimerProps> = ({
       }
     }
     unlockAudio();
+    setShowIntro(false); // ocultamos overlay hasta el próximo reload
     setIsRunning(true);
   };
 
-  // ⏹ Finalizar (cuando llega a 0)
+  // Finish
   const handleFinish = useCallback(() => {
     setIsRunning(false);
     setAlarmActive(true);
@@ -260,7 +269,7 @@ const Timer: React.FC<TimerProps> = ({
     setShowPopup(true);
   }, []);
 
-  // 🔄 Reiniciar
+  // Reset
   const handleReset = () => {
     setSeconds(initialSeconds);
     setIsRunning(true);
@@ -273,7 +282,7 @@ const Timer: React.FC<TimerProps> = ({
     unlockAudio();
   };
 
-  // ⏸ Detener manual
+  // Stop manual
   const handleStop = () => {
     showConfirm("¿Seguro que quieres detener la Fase de control?", async () => {
       if (timerId) {
@@ -295,7 +304,7 @@ const Timer: React.FC<TimerProps> = ({
     });
   };
 
-  // 🔔 Reproducir alarma si se activa
+  // Alarma si activa
   useEffect(() => {
     if (alarmActive) {
       alertAudio.current
@@ -306,7 +315,7 @@ const Timer: React.FC<TimerProps> = ({
     }
   }, [alarmActive]);
 
-  // 🔔 Notificación nativa
+  // Notificación
   const triggerNotification = () => {
     const options: NotificationOptions = {
       body: "Puedes iniciar el control cuando estés listo.",
@@ -325,14 +334,14 @@ const Timer: React.FC<TimerProps> = ({
     }
   };
 
-  // 📳 Vibración
+  // Vibración
   const triggerVibration = () => {
     if (typeof navigator !== "undefined" && "vibrate" in navigator) {
       navigator.vibrate?.([300, 200, 300]);
     }
   };
 
-  // 🕰️ Ticking
+  // Ticking
   useEffect(() => {
     if (isRunning) {
       const id = window.setInterval(() => {
@@ -358,7 +367,33 @@ const Timer: React.FC<TimerProps> = ({
     };
   }, [isRunning, handleFinish]);
 
-  // 🧾 Actualizar valores del formulario dinámico
+  // % restante
+  const percentageRemaining = (seconds / initialSeconds) * 100;
+
+  const getColorClassByPercentage = () => {
+    if (seconds === 0) {
+      return "bg-gradient-to-br from-red-600/80 to-red-800/80 animate-pulse";
+    } else if (percentageRemaining <= 25) {
+      return "bg-gradient-to-br from-red-500/60 to-red-700/80";
+    } else if (percentageRemaining <= 50) {
+      return "bg-gradient-to-br from-yellow-500/60 to-yellow-700/80";
+    } else if (percentageRemaining <= 75) {
+      return "bg-gradient-to-br from-blue-600/60 to-blue-800/80";
+    }
+    return "bg-gradient-to-br from-purple-700/60 to-purple-900/80";
+  };
+
+  // Scroll-lock mientras el overlay está activo
+  useEffect(() => {
+    if (!showInitialBlur) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [showInitialBlur]);
+
+  // Actualizar valores del formulario dinámico
   const handleChange = (actividadId: number, newValue: ControlValue) => {
     setControlData((prev) =>
       prev.map((act) =>
@@ -379,52 +414,32 @@ const Timer: React.FC<TimerProps> = ({
     setControlData(reseteado);
   };
 
-  const percentageRemaining = (seconds / initialSeconds) * 100;
-
-  const getColorClassByPercentage = () => {
-    if (seconds === 0) {
-      return "bg-gradient-to-br from-red-600/80 to-red-800/80 animate-pulse";
-    } else if (percentageRemaining <= 25) {
-      return "bg-gradient-to-br from-red-500/60 to-red-700/80";
-    } else if (percentageRemaining <= 50) {
-      return "bg-gradient-to-br from-yellow-500/60 to-yellow-700/80";
-    } else if (percentageRemaining <= 75) {
-      return "bg-gradient-to-br from-blue-600/60 to-blue-800/80";
-    }
-    return "bg-gradient-to-br from-purple-700/60 to-purple-900/80";
-  };
-
-  // 🔒 Blur global hasta que se presione Play por primera vez
-  const showInitialBlur =
-    !isRunning &&
-    !alarmActive &&
-    timerStatus !== "finished" &&
-    timerId === null;
+  const commonInputClass =
+    "w-full border border-gray-300 p-2 pl-9 rounded-md text-sm text-black focus:outline-none focus:ring-2 focus:ring-blue-500 text-center";
 
   return (
     <>
-      {/* Overlay borroso inicial (bloquea toda la UI excepto el widget) */}
+      {/* Overlay inicial: tapa todo; el timer va por encima */}
       {showInitialBlur && (
         <div
-          className="fixed inset-0 z-[100000] backdrop-blur-md bg-black/40
+          role="dialog"
+          aria-modal="true"
+          className="fixed inset-0 z-[2147483646] backdrop-blur-md bg-black/40
                flex items-center justify-center pointer-events-auto select-none"
         >
-          <div className="bg-white/90 backdrop-blur rounded-xl shadow-2xl p-6 max-w-sm text-center">
+          <div className="bg-white/90 backdrop-blur rounded-xl shadow-2xl p-6 max-w-sm text-center animate-pulse">
             <h2 className="text-xl font-semibold text-gray-800 mb-2">
-              Todo listo para empezar
+              ¡Fase de Proceso!
             </h2>
             <p className="text-gray-600 mb-4">
-              Presiona <span className="font-semibold">Play</span> para iniciar
-              el cronómetro.
-            </p>
-            <p className="text-xs text-gray-500">
-              (Bloqueo temporal para evitar spoilers del control 😉)
+              Presiona <span className="font-semibold text-green-500">Play</span> para iniciar
+              el cronómetro y poder ver los controles de procesos.
             </p>
           </div>
         </div>
       )}
 
-      {/* Timer Widget */}
+      {/* Timer Widget (SE renderiza aunque haya overlay; va por encima) */}
       {timerStatus !== "finished" && (
         <motion.div
           drag
@@ -432,13 +447,13 @@ const Timer: React.FC<TimerProps> = ({
           dragElastic={0.2}
           whileDrag={{ scale: 1.1 }}
           className={`
-    fixed right-6 bottom-6 z-[100001] backdrop-blur-md
-    ${getColorClassByPercentage()}
-    border border-white/20 rounded-full shadow-xl p-3 w-24 h-24
-    flex flex-col items-center justify-center gap-1
-    transition-all duration-300 hover:scale-105 cursor-grab
-    ${!isRunning && !alarmActive ? "opacity-50 hover:opacity-100" : ""}
-  `}
+          fixed right-6 bottom-6 ${timerZ} backdrop-blur-md
+          ${getColorClassByPercentage()}
+          border border-white/20 rounded-full shadow-xl p-3 w-24 h-24
+          flex flex-col items-center justify-center gap-1
+          transition-all duration-300 hover:scale-105 cursor-grab
+          ${!isRunning && !alarmActive ? "opacity-50 hover:opacity-100" : ""}
+        `}
         >
           <div
             className={`
@@ -477,9 +492,9 @@ const Timer: React.FC<TimerProps> = ({
         </motion.div>
       )}
 
-      {/* Popup: Iniciar control */}
+      {/* Popup: Iniciar control (por encima del timer, por debajo del overlay inicial) */}
       {showPopup && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[99999] backdrop-blur-sm">
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[2147483646] backdrop-blur-sm">
           <div className="bg-white p-8 rounded-xl shadow-2xl text-center max-w-sm">
             <h2 className="text-2xl font-semibold text-gray-800 mb-4">
               ⏱️ ¡Es momento de hacer el Control!
@@ -533,9 +548,6 @@ const Timer: React.FC<TimerProps> = ({
                         hasOptions(cfg) && Array.isArray(cfg.options)
                           ? cfg.options
                           : [];
-
-                      const commonInputClass =
-                        "w-full border border-gray-300 p-2 pl-9 rounded-md text-sm text-black focus:outline-none focus:ring-2 focus:ring-blue-500 text-center";
 
                       return (
                         <div
@@ -631,28 +643,59 @@ const Timer: React.FC<TimerProps> = ({
                                   />
                                 );
                               case "radio":
+                                // Variante estilo "card"
                                 return (
-                                  <div className="flex flex-wrap gap-4">
-                                    {options.map((opt) => (
-                                      <label
-                                        key={opt}
-                                        className="inline-flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300"
-                                      >
-                                        <input
-                                          type="radio"
-                                          name={`radio-${actividad.id_activitie}`}
-                                          value={opt}
-                                          checked={value === opt}
-                                          onChange={() =>
-                                            handleChange(
-                                              actividad.id_activitie,
-                                              opt
-                                            )
-                                          }
-                                        />
-                                        <span>{opt}</span>
-                                      </label>
-                                    ))}
+                                  <div className="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-2">
+                                    {options.map((opt) => {
+                                      const isSelected = value === opt;
+                                      return (
+                                        <label
+                                          key={opt}
+                                          className={`relative flex cursor-pointer items-center justify-between rounded-lg border p-4 shadow-sm transition-all duration-200 ${
+                                            isSelected
+                                              ? "border-indigo-500 bg-indigo-50 ring-2 ring-indigo-500"
+                                              : "border-gray-300 bg-white/10 hover:bg-gray-50"
+                                          }`}
+                                        >
+                                          <input
+                                            className="sr-only"
+                                            type="radio"
+                                            name={`radio-${actividad.id_activitie}`}
+                                            value={opt}
+                                            checked={isSelected}
+                                            onChange={() =>
+                                              handleChange(
+                                                actividad.id_activitie,
+                                                opt
+                                              )
+                                            }
+                                          />
+                                          <span
+                                            className={`flex-1 text-sm font-medium text-center ${
+                                              isSelected
+                                                ? "text-indigo-900"
+                                                : "text-gray-800"
+                                            }`}
+                                          >
+                                            {opt}
+                                          </span>
+                                          {isSelected && (
+                                            <svg
+                                              className="h-5 w-5 text-indigo-600"
+                                              viewBox="0 0 20 20"
+                                              fill="currentColor"
+                                              aria-hidden="true"
+                                            >
+                                              <path
+                                                fillRule="evenodd"
+                                                d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                                                clipRule="evenodd"
+                                              />
+                                            </svg>
+                                          )}
+                                        </label>
+                                      );
+                                    })}
                                   </div>
                                 );
                               case "date":
@@ -672,18 +715,12 @@ const Timer: React.FC<TimerProps> = ({
                                   />
                                 );
                               case "temperature": {
-                                const rangoMin = (
-                                  cfg as Extract<
-                                    ParsedConfig,
-                                    { type: "temperature" }
-                                  >
-                                ).min;
-                                const rangoMax = (
-                                  cfg as Extract<
-                                    ParsedConfig,
-                                    { type: "temperature" }
-                                  >
-                                ).max;
+                                const tcfg = cfg as Extract<
+                                  ParsedConfig,
+                                  { type: "temperature" }
+                                >;
+                                const rangoMin = tcfg.min;
+                                const rangoMax = tcfg.max;
 
                                 const numeric =
                                   typeof value === "number"
