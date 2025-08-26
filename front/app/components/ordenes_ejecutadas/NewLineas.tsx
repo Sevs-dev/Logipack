@@ -48,7 +48,7 @@ const NewLineas = () => {
 
             const data = await validate_orden(plan.id);
             if (data.estado === 100 || data.estado === null) {
-                
+
                 // confirmar para restablecer
                 handleConfirmar(plan.id);
 
@@ -182,10 +182,16 @@ const NewLineas = () => {
         localStorage.setItem("ejecutar", JSON.stringify(local));
 
         if (phase_type === "Conciliación") {
+
             window.open("/pages/consolidacion/" + local.id, "_blank");
+        } else if (phase_type === "Testigo") {
+
+            window.open("/pages/testigo/" + local.id, "_blank");
         } else {
+
             window.open("/pages/ordenes_ejecutadas", "_blank");
         }
+        
         setTimeout(() => {
             requestIdleCallback(() => window.close());
         }, 1000);
@@ -196,8 +202,7 @@ const NewLineas = () => {
             <motion.section
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.4 }}
-            >
+                transition={{ duration: 0.4 }}>
                 <div className="w-full rounded-2xl bg-white/5 backdrop-blur-sm border border-white/10 shadow-md overflow-hidden">
                     <div className="bg-white/2.5 px-[10px] py-[10px] border-b border-white/5 backdrop-blur-sm">
                         <Text type="title" color="text-white">Información de la Orden</Text>
@@ -268,8 +273,10 @@ const NewLineas = () => {
                                     }}
                                     whileHover={{ scale: 1.03 }}
                                     whileTap={{ scale: 0.95 }}
-                                    className="w-[200px] group relative cursor-pointer rounded-lg bg-[#841ae0]/60 border border-white/10 backdrop-blur-sm text-white transition-all shadow-sm hover:shadow-md hover:bg-[#b941ff]/60 active:scale-95"
-                                >
+                                    className="w-[200px] group relative cursor-pointer rounded-lg 
+                                    bg-[#841ae0]/60 border border-white/10 backdrop-blur-sm 
+                                    text-white transition-all shadow-sm hover:shadow-md 
+                                    hover:bg-[#b941ff]/60 active:scale-95">
                                     <div className="flex items-center justify-center h-14 px-2 rounded-lg">
                                         <span className="text-sm font-medium text-center truncate max-w-[200px]">
                                             {linea.descripcion}
@@ -300,8 +307,10 @@ const NewLineas = () => {
                                     }}
                                     whileHover={{ scale: 1.03 }}
                                     whileTap={{ scale: 0.95 }}
-                                    className="w-[200px] group relative cursor-pointer rounded-lg bg-[#841ae0]/60 border border-white/10 backdrop-blur-sm text-white transition-all shadow-sm hover:shadow-md hover:bg-[#b941ff]/60 active:scale-95"
-                                >
+                                    className="w-[200px] group relative cursor-pointer 
+                                    rounded-lg bg-[#841ae0]/60 border border-white/10 
+                                    backdrop-blur-sm text-white transition-all shadow-sm 
+                                    hover:shadow-md hover:bg-[#b941ff]/60 active:scale-95">
                                     <div className="flex items-center justify-center h-14 px-2 rounded-lg">
                                         <span className="text-sm font-medium text-center truncate max-w-[300px]">
                                             {linea.descripcion}
