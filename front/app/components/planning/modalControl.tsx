@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
-import { getActividadesControl } from "../../services/planing/planingServices";
+import { getActividadesControl, guardar_actividades_control } from "../../services/planing/planingServices";
 import { showSuccess } from "../toastr/Toaster";
 import { showError } from "../toastr/Toaster";
 
@@ -168,7 +168,7 @@ export default function ModalControl({
     });
   }, [id]);
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
     const actividadesPreparadas: Actividad[] = controlData.map((item) => {
@@ -184,22 +184,32 @@ export default function ModalControl({
       };
     });
 
+    const fase = memoriaFase?.fase_control;
     const resultado = {
-      ...memoriaFase,
-      forms: actividadesPreparadas,
-      user: localStorage.getItem("user") || "",
+      adaptation_date_id: fase?.adaptation_date_id,
+      descripcion: fase?.descripcion,
+      fase_id: fase?.fase_id,
+      activities: fase?.activities,
+      phase_type: fase?.phase_type,
+      // posicion: fase?.posicion,
+      forms: JSON.stringify(actividadesPreparadas),
+      user: local?.user || "",
     };
 
-    console.log("data", resultado);
+    await guardar_actividades_control(resultado).then((data) => {
 
-    ref.current?.reset();
-    showSuccess("Control guardado correctamente");
-    setBtnDisabled(true);
+      if (data.estado !== 200) {
+        showError("Error al guardar el control");
+        return;
+      }
 
-    // Si no quieres recargar, aquí podrías limpiar memoriaActividades en su lugar
-    // setTimeout(() => {
-    //   window.location.reload();
-    // }, 2000);
+      ref.current?.reset();
+      showSuccess("Control guardado correctamente");
+      setBtnDisabled(true);
+      setTimeout(() => {
+        window.location.reload();
+      }, 2000);
+    });
   };
 
   return (
@@ -340,8 +350,8 @@ export default function ModalControl({
                         <label
                           key={opt}
                           className={`relative flex cursor-pointer rounded-lg border p-4 shadow-sm transition-all duration-200 ${isSelected
-                              ? "border-indigo-500 bg-indigo-50 ring-2 ring-indigo-500"
-                              : "border-gray-300 bg-white hover:bg-gray-50"
+                            ? "border-indigo-500 bg-indigo-50 ring-2 ring-indigo-500"
+                            : "border-gray-300 bg-white hover:bg-gray-50"
                             }`}
                         >
                           <input

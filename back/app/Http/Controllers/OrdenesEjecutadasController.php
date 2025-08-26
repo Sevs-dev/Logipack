@@ -6,6 +6,7 @@ use App\Models\ActividadesEjecutadas;
 use App\Models\AdaptationDate;
 use App\Models\Conciliaciones;
 use App\Models\OrdenesEjecutadas;
+use App\Models\ActividadesControls;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -627,6 +628,30 @@ class OrdenesEjecutadasController extends Controller
                 'created_at' => Carbon::now('America/Bogota'),
                 'updated_at' => Carbon::now('America/Bogota'),
             ]);
+            return response()->json([
+                'message' => 'Formulario guardado correctamente',
+                'estado' => 200,
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Error al guardar el formulario | ' . $e->getMessage(),
+                'estado' => 500,
+            ]);
+        }
+    }
+
+    /**
+     * Guardar actividades control
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function guardar_actividades_control(
+        Request $request
+    ): JsonResponse {
+        try {
+            $data = $request->all();
+            ActividadesControls::create($data);
             return response()->json([
                 'message' => 'Formulario guardado correctamente',
                 'estado' => 200,

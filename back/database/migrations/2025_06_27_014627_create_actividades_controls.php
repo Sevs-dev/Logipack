@@ -17,7 +17,7 @@ return new class extends Migration {
             $table->string('descripcion')->nullable();
             $table->string('activities')->nullable();
             $table->string('phase_type')->nullable();
-            $table->string('forms')->nullable();
+            $table->json('forms')->nullable();
             $table->string('user')->nullable();
             $table->timestamps();
         });

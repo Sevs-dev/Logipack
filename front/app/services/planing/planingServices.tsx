@@ -20,6 +20,7 @@ type JsonArray = JsonValue[];
 // Payloads genéricos (JSON)
 export type GuardarFormularioPayload = JsonObject;
 export type GuardarConciliacionPayload = JsonObject;
+export type GuardarActividadesControlPayload = JsonObject;
 
 export const getPlanning = async () => {
   try {
@@ -234,6 +235,20 @@ export const getActividadesControl = async (id: number) => {
     return response.data;
   } catch (error: unknown) {
     console.error("Error en getActividadesControl:", error);
+    throw error;
+  }
+};
+
+
+export const guardar_actividades_control = async (
+  data: GuardarActividadesControlPayload
+) => {
+  try {
+    const response = await Planning.post(`/guardar_actividades_control`, data);
+    console.log(response.data);
+    return response.data;
+  } catch (error: unknown) {
+    console.error("Error en guardar_actividades_control:", error);
     throw error;
   }
 };
