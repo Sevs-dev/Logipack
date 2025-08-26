@@ -1,8 +1,12 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
-import { getActividadesControl, guardar_actividades_control } from "../../services/planing/planingServices";
-import { showSuccess } from "../toastr/Toaster";
-import { showError } from "../toastr/Toaster";
+import { useEffect, useRef, useState, FormEvent } from "react";
+import {
+  getActividadesControl,
+  guardar_actividades_control,
+} from "../../services/planing/planingServices";
+import { showSuccess, showError } from "../toastr/Toaster";
+import Text from "../text/Text";
+import Button from "../buttons/buttons";
 
 /* =========================
  *        Tipos
@@ -10,7 +14,7 @@ import { showError } from "../toastr/Toaster";
 
 type ModalControlProps = {
   id?: number | null;
-  showModal?: boolean; // lo dejas para compatibilidad, aunque no se use aquí
+  showModal?: boolean; // compatibilidad
   setShowModal?: (v: boolean) => void;
   title?: string;
   className?: string;
@@ -19,6 +23,11 @@ type ModalControlProps = {
 type FaseControl = {
   descripcion: string;
   phase_type: string;
+  // Estos campos se usan al enviar; pueden no venir siempre
+  adaptation_date_id?: number | string;
+  fase_id?: number | string;
+  activities?: unknown; // no asumimos estructura aquí
+  // posicion?: number | string; // si lo necesitas, descomenta
 };
 
 type BaseConfig =
@@ -35,10 +44,10 @@ type ActividadConfig = BaseConfig;
 type Actividad = {
   id: number;
   description: string;
-  // En la API puede venir como string (JSON) o ya como objeto
+  // Puede llegar string JSON o ya objeto
   config: string | ActividadConfig;
   binding: boolean;
-  // Estos dos los completas al enviar
+  // se completan al enviar
   clave?: string;
   valor?: string;
 };
@@ -61,11 +70,29 @@ type MemValue =
 type MemoriaActividades = Record<string, MemValue>;
 type MemoriaFase = { fase_control?: FaseControl };
 
+type LocalSession = { user?: string | number } | null;
+
+type GuardarActividadesPayload = {
+  adaptation_date_id?: number | string;
+  descripcion?: string;
+  fase_id?: number | string;
+  activities?: unknown;
+  phase_type?: string;
+  forms: string;
+  user: string | number | "";
+};
+
+type GuardarActividadesResponse = {
+  estado: number;
+  // la API puede devolver más cosas
+  [k: string]: unknown;
+};
+
 /* =========================
  *      Utilidades
  * ========================= */
 
-// Intenta parsear hasta dos veces por si viene "doblemente" encadenado
+// Intenta parsear hasta dos veces por si viene doblemente encadenado
 function parseConfig(raw: Actividad["config"]): ActividadConfig | null {
   let val: unknown = raw;
   for (let i = 0; i < 2; i++) {
@@ -77,7 +104,6 @@ function parseConfig(raw: Actividad["config"]): ActividadConfig | null {
       }
     }
   }
-  // Validación mínima: asegurar que existe "type"
   if (typeof val === "object" && val !== null && "type" in (val as object)) {
     return val as ActividadConfig;
   }
@@ -87,14 +113,17 @@ function parseConfig(raw: Actividad["config"]): ActividadConfig | null {
 function isOptionsConfig(
   cfg: ActividadConfig | null
 ): cfg is Extract<ActividadConfig, { options: string[] }> {
-  return !!cfg && "options" in cfg && Array.isArray(cfg.options);
+  return (
+    !!cfg &&
+    "options" in cfg &&
+    Array.isArray((cfg as { options: unknown }).options)
+  );
 }
 
 function serializeMemValue(v: MemValue): string {
   if (v == null) return "";
   if (Array.isArray(v)) {
     if (v.length > 0 && v[0] instanceof File) {
-      // Archivos: solo nombres a modo de ejemplo
       return (v as File[]).map((f) => f.name).join(", ");
     }
     return (v as string[]).join(", ");
@@ -114,31 +143,35 @@ export default function ModalControl({
 }: ModalControlProps) {
   const heading = title;
   const ref = useRef<HTMLFormElement>(null);
-  const [local, setLocal] = useState(null);
+
+  const [local, setLocal] = useState<LocalSession>(null);
   const [controlData, setControlData] = useState<Actividad[]>([]);
   const [memoriaFase, setMemoriaFase] = useState<MemoriaFase>({});
   const [memoriaActividades, setMemoriaActividades] =
     useState<MemoriaActividades>({});
   const [btnDisabled, setBtnDisabled] = useState<boolean>(true);
 
-  // Cargar datos iniciales
+  // Cargar datos iniciales (localStorage)
   useEffect(() => {
     try {
       const data = localStorage.getItem("ejecutar");
-      if (data) setLocal(JSON.parse(data));
-    } catch (error) {
+      if (data) {
+        const parsed = JSON.parse(data) as { user?: string | number };
+        setLocal(parsed);
+      }
+    } catch {
       showError("Datos inválidos en el almacenamiento local.");
     }
   }, []);
 
   // Guardar valores dinámicos (texto, número, select, radio, date, time, temp, file)
-  const setValue = (name: string, value: MemValue) => {
+  const setValue = (name: string, value: MemValue): void => {
     setMemoriaActividades((prev) => ({ ...prev, [name]: value }));
     setBtnDisabled(false);
   };
 
   // Toggle de checkboxes (arreglo de strings)
-  const toggleCheckbox = (name: string, option: string) => {
+  const toggleCheckbox = (name: string, option: string): void => {
     setMemoriaActividades((prev) => {
       const current = Array.isArray(prev[name]) ? (prev[name] as string[]) : [];
       const exists = current.includes(option);
@@ -154,8 +187,9 @@ export default function ModalControl({
   useEffect(() => {
     if (!id) return;
 
-    getActividadesControl(id).then((raw) => {
-      const data = raw as ApiActividadesResponse;
+    (getActividadesControl as (id: number) => Promise<ApiActividadesResponse>)(
+      id
+    ).then((data) => {
       if (data && Array.isArray(data.actividades)) {
         setMemoriaFase((prev) => ({
           ...prev,
@@ -168,7 +202,7 @@ export default function ModalControl({
     });
   }, [id]);
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>): Promise<void> => {
     e.preventDefault();
 
     const actividadesPreparadas: Actividad[] = controlData.map((item) => {
@@ -184,44 +218,48 @@ export default function ModalControl({
       };
     });
 
-    const fase = memoriaFase?.fase_control;
-    const resultado = {
+    const fase = memoriaFase.fase_control;
+    const resultado: GuardarActividadesPayload = {
       adaptation_date_id: fase?.adaptation_date_id,
       descripcion: fase?.descripcion,
       fase_id: fase?.fase_id,
       activities: fase?.activities,
       phase_type: fase?.phase_type,
-      // posicion: fase?.posicion,
       forms: JSON.stringify(actividadesPreparadas),
-      user: local?.user || "",
+      user: local?.user ?? "",
     };
 
-    await guardar_actividades_control(resultado).then((data) => {
+    const guardar = guardar_actividades_control as (
+      payload: GuardarActividadesPayload
+    ) => Promise<GuardarActividadesResponse>;
 
-      if (data.estado !== 200) {
-        showError("Error al guardar el control");
-        return;
-      }
+    const data = await guardar(resultado);
 
-      ref.current?.reset();
-      showSuccess("Control guardado correctamente");
-      setBtnDisabled(true);
-      setTimeout(() => {
-        window.location.reload();
-      }, 2000);
-    });
+    if (data.estado !== 200) {
+      showError("Error al guardar el control");
+      return;
+    }
+
+    ref.current?.reset();
+    showSuccess("Control guardado correctamente");
+    setBtnDisabled(true);
+    setTimeout(() => {
+      window.location.reload();
+    }, 2000);
   };
 
   return (
     <div className={className ?? "w-full max-w-5xl"}>
-      <h3 className="text-xl font-bold text-gray-900">{heading}</h3>
+      <Text type="title" color="text-[#000]">
+        {heading}
+      </Text>
 
       {memoriaFase.fase_control && (
-        <div className="mt-2 rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
-          <p className="font-semibold text-gray-800">
-            {memoriaFase.fase_control.descripcion}
+        <div className="mt-2 rounded-lg border border-gray-200 bg-white p-4 shadow-sm justify-center flex">
+          <p className="font-medium text-gray-800 mr-2">
+            {memoriaFase.fase_control.descripcion} |
           </p>
-          <p className="text-sm text-gray-500">
+          <p className="font-medium text-gray-800">
             Tipo: {memoriaFase.fase_control.phase_type}
           </p>
         </div>
@@ -238,13 +276,10 @@ export default function ModalControl({
                 key={item.id}
                 className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm transition-all duration-300 hover:border-gray-300 hover:shadow-md"
               >
-                <label
-                  htmlFor={fieldName}
-                  className="block text-base font-semibold text-gray-900"
-                >
+                <Text type="subtitle" color="text-[#000]">
                   {item.description}
-                </label>
-                <p className="mt-1 text-sm text-gray-500">
+                </Text>
+                <p className="mt-1 text-sm text-gray-500 text-center">
                   Selecciona una de las siguientes opciones.
                 </p>
 
@@ -349,10 +384,11 @@ export default function ModalControl({
                       return (
                         <label
                           key={opt}
-                          className={`relative flex cursor-pointer rounded-lg border p-4 shadow-sm transition-all duration-200 ${isSelected
-                            ? "border-indigo-500 bg-indigo-50 ring-2 ring-indigo-500"
-                            : "border-gray-300 bg-white hover:bg-gray-50"
-                            }`}
+                          className={`relative flex cursor-pointer rounded-lg border p-4 shadow-sm transition-all duration-200 text-center ${
+                            isSelected
+                              ? "border-indigo-500 bg-indigo-50 ring-2 ring-indigo-500"
+                              : "border-gray-300 bg-white/10 hover:bg-gray-50"
+                          }`}
                         >
                           <input
                             className="sr-only"
@@ -366,8 +402,9 @@ export default function ModalControl({
                             }
                           />
                           <span
-                            className={`flex-1 text-sm font-medium ${isSelected ? "text-indigo-900" : "text-gray-800"
-                              }`}
+                            className={`flex-1 text-sm font-medium ${
+                              isSelected ? "text-indigo-900" : "text-gray-800"
+                            }`}
                           >
                             {opt}
                           </span>
@@ -398,8 +435,8 @@ export default function ModalControl({
                         memoriaActividades[fieldName]
                       )
                         ? (memoriaActividades[fieldName] as string[]).includes(
-                          opt
-                        )
+                            opt
+                          )
                         : false;
                       return (
                         <label key={opt} className="flex items-center gap-2">
@@ -488,14 +525,14 @@ export default function ModalControl({
             );
           })}
 
-          <div className="pt-2">
-            <button
+          <hr className="my-4 border-t border-gray-600 w-full max-w-lg mx-auto opacity-60" />
+          <div className="flex justify-center gap-4 mt-6">
+            <Button
               type="submit"
-              className="w-full rounded-md bg-indigo-600 px-4 py-3 text-sm font-semibold text-white shadow-lg hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 transition-colors duration-200 disabled:opacity-50"
+              variant="create"
               disabled={btnDisabled}
-            >
-              Enviar Respuestas
-            </button>
+              label="Enviar Respuestas"
+            />
           </div>
         </form>
       </div>

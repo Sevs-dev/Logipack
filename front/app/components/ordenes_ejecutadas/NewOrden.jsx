@@ -611,24 +611,58 @@ const App = () => {
 
                     {/* RADIO */}
                     {type === "radio" && (
-                      <div className="flex justify-center flex-wrap gap-4 mt-2">
-                        {options.map((opt, idx) => (
-                          <label
-                            key={idx}
-                            className="flex items-center gap-2 text-white"
-                          >
-                            <input
-                              type="radio"
-                              name={clave}
-                              value={opt}
-                              required={item.binding}
-                              checked={memoriaFase[linea]?.[clave] === opt}
-                              onChange={inputChange}
-                              className="appearance-none w-4 h-4 border border-gray-600 rounded-full checked:bg-blue-500 checked:border-transparent focus:outline-none"
-                            />
-                            <span className="text-sm">{opt}</span>
-                          </label>
-                        ))}
+                      <div className="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-2">
+                        {options.map((opt) => {
+                          const isSelected =
+                            memoriaFase[linea]?.[clave] === opt;
+
+                          return (
+                            <label
+                              key={opt}
+                              className={`relative flex cursor-pointer items-center justify-between rounded-lg border p-4 shadow-sm transition-all duration-200 ${
+                                isSelected
+                                  ? "border-indigo-500 bg-indigo-50 ring-2 ring-indigo-500"
+                                  : "border-gray-300 bg-white/10 hover:bg-gray-50"
+                              }`}
+                            >
+                              {/* Input accesible pero oculto visualmente */}
+                              <input
+                                className="sr-only"
+                                type="radio"
+                                name={clave}
+                                value={opt}
+                                required={item.binding}
+                                checked={isSelected}
+                                onChange={inputChange}
+                              />
+
+                              <span
+                                className={`flex-1 text-sm font-medium text-center ${
+                                  isSelected
+                                    ? "text-indigo-900"
+                                    : "text-gray-400"
+                                }`}
+                              >
+                                {opt}
+                              </span>
+
+                              {isSelected && (
+                                <svg
+                                  className="h-5 w-5 text-indigo-600"
+                                  viewBox="0 0 20 20"
+                                  fill="currentColor"
+                                  aria-hidden="true"
+                                >
+                                  <path
+                                    fillRule="evenodd"
+                                    d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                                    clipRule="evenodd"
+                                  />
+                                </svg>
+                              )}
+                            </label>
+                          );
+                        })}
                       </div>
                     )}
 
@@ -812,7 +846,8 @@ const App = () => {
                               [`tipo_entrada_${clave}`]: e.target.value,
                             };
                             setMemoriaFase(updated);
-                          }}>
+                          }}
+                        >
                           <option value="">-- Selecciona --</option>
                           <option value="texto">Texto</option>
                           <option value="firma">Firma</option>

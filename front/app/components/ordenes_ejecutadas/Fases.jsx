@@ -128,7 +128,6 @@ const Fases = ({ proms, setFaseSave, fase_save, fase_list, l_produccions }) => {
   );
   const faseEnControl = listas.find((lista) => lista?.phase_type === "Control");
 
-
   // Lógica principal: crear y cargar el timer
   useEffect(() => {
     const guardarTimer = async () => {
@@ -404,22 +403,31 @@ const Fases = ({ proms, setFaseSave, fase_save, fase_list, l_produccions }) => {
               <span className="text-white font-medium">
                 {saveStatus === "guardado"
                   ? "Orden ejecutada"
-                  : "Ejecutar orden (" + fase.id + " - " + fase.description_fase + ")"
-                }
+                  : "Ejecutar orden (" +
+                    fase.id +
+                    " - " +
+                    fase.description_fase +
+                    ")"}
               </span>
 
               <select
                 className={`px-4 py-2 rounded text-sm font-medium shadow-sm 
-                  ${saveStatus === "guardado"
-                    ? "bg-gray-300 text-gray-600 cursor-not-allowed"
-                    : "bg-blue-600 text-white hover:bg-blue-700"
+                  ${
+                    saveStatus === "guardado"
+                      ? "bg-gray-300 text-gray-600 cursor-not-allowed"
+                      : "bg-blue-600 text-white hover:bg-blue-700"
                   }`}
-                onChange={(e) => {setFaseSave(true); localStorage.setItem("linea_produccion", e.target.value);}}
-                disabled={saveStatus === "guardado"}>
+                onChange={(e) => {
+                  setFaseSave(true);
+                  localStorage.setItem("linea_produccion", e.target.value);
+                }}
+                disabled={saveStatus === "guardado"}
+              >
                 <option value="">Seleccionar linea de proceso</option>
                 {l_produccions.map((item) => (
                   <option key={item.id} value={item.id}>
-                    {item.name} - {saveStatus === "guardado" ? "✅ Completado" : "▶ Iniciar"}
+                    {item.name} -{" "}
+                    {saveStatus === "guardado" ? "✅ Completado" : "▶ Iniciar"}
                   </option>
                 ))}
               </select>
@@ -436,7 +444,6 @@ const Fases = ({ proms, setFaseSave, fase_save, fase_list, l_produccions }) => {
                 }}>
                 {saveStatus === "guardado" ? "Completado" : "Iniciar"}
               </button> */}
-
             </div>
           </div>
         </div>
@@ -634,36 +641,68 @@ const Fases = ({ proms, setFaseSave, fase_save, fase_list, l_produccions }) => {
                     onChange={inputChange}
                   />
                 )}
-                {type === "radio" &&
-                  options.map((option, idx) => (
-                    <label key={idx} className="inline-flex items-center gap-2">
-                      <input
-                        type="radio"
-                        name={item.clave}
-                        value={option}
-                        required={item.binding}
-                        checked={info[item.clave] === option}
-                        onChange={(e) => {
-                          const { value } = e.target;
-                          setMemoriaFase((prev) => {
-                            const actualizado = {
-                              ...prev,
-                              [lineaIndex]: {
-                                ...prev[lineaIndex],
-                                [item.clave]: value,
-                              },
-                            };
-                            saveToDB("memoria_fase", actualizado);
-                            return actualizado;
-                          });
-                        }}
-                        className="h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500"
-                      />
-                      <span className="block text-sm font-medium text-gray-700">
-                        {option}
-                      </span>
-                    </label>
-                  ))}
+                {type === "radio" && options && (
+                  <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    {options.map((option) => {
+                      const isSelected = info[item.clave] === option;
+
+                      return (
+                        <label
+                          key={option}
+                          className={`relative flex cursor-pointer rounded-lg border p-4 shadow-sm transition-all duration-200 text-center ${
+                            isSelected
+                              ? "border-indigo-500 bg-indigo-50 ring-2 ring-indigo-500"
+                              : "border-gray-300 bg-white/10 hover:bg-gray-50"
+                          }`}
+                        >
+                          <input
+                            className="sr-only"
+                            type="radio"
+                            name={item.clave}
+                            value={option}
+                            required={item.binding}
+                            checked={isSelected}
+                            onChange={(e) => {
+                              const { value } = e.target;
+                              setMemoriaFase((prev) => {
+                                const actualizado = {
+                                  ...prev,
+                                  [lineaIndex]: {
+                                    ...prev[lineaIndex],
+                                    [item.clave]: value,
+                                  },
+                                };
+                                saveToDB("memoria_fase", actualizado);
+                                return actualizado;
+                              });
+                            }}
+                          />
+                          <span
+                            className={`flex-1 text-sm font-medium ${
+                              isSelected ? "text-indigo-900" : "text-gray-800"
+                            }`}
+                          >
+                            {option}
+                          </span>
+                          {isSelected && (
+                            <svg
+                              className="h-5 w-5 text-indigo-600"
+                              viewBox="0 0 20 20"
+                              fill="currentColor"
+                            >
+                              <path
+                                fillRule="evenodd"
+                                d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                                clipRule="evenodd"
+                              />
+                            </svg>
+                          )}
+                        </label>
+                      );
+                    })}
+                  </div>
+                )}
+
                 {type === "checkbox" &&
                   options.map((option, idx) => (
                     <label key={idx} className="inline-flex items-center gap-2">
