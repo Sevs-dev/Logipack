@@ -343,7 +343,7 @@ function CreateMachinery({ canEdit = false, canView = false }: CreateClientProps
             />
             {canEdit && (
               <Button onClick={handleSubmit} variant="save" disabled={
-                isSaving} label={isSaving ? "Guardando..." : "Guardar"} />
+                isSaving} label={isSaving ? "Guardando..." : (isEditMode ? "Actualizar" : "Crear")} />
             )}
           </div>
         </ModalSection >

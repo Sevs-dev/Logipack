@@ -65,8 +65,7 @@ export const updateAdaptation = async (id: number, data: FormData) => {
             headers: {
                 'Content-Type': 'multipart/form-data',
             },
-        })
-        console.log('Editando adaptación:', response.data)
+        }) 
         return response.data
     } catch (error: unknown) {
         console.error('Error en updateAdaptation:', error)

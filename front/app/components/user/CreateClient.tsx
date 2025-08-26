@@ -341,7 +341,7 @@ function CreateClient({ canEdit = false, canView = false }: CreateClientProps) {
           <div className="flex justify-center gap-4 mt-6">
             <Button onClick={closeModal} variant="cancel" />
             {canEdit && <Button onClick={handleSave} disabled={
-              isSaving} label={isSaving ? "Guardando..." : "Crear"} variant="save" />}
+              isSaving} label={isSaving ? "Guardando..." : (editingClients ? "Actualizar" : "Crear")} variant="save" />}
           </div>
         </ModalSection>
       )

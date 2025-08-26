@@ -224,7 +224,7 @@ function Products({ canEdit = false, canView = false }: CreateClientProps) {
             <div className="flex justify-center gap-4 mt-6">
               <Button onClick={() => setShowModal(false)} variant="cancel" />
               {canEdit && (
-                <Button type="submit" variant="save" label={isSaving ? "Guardando..." : "Guardando"} disabled={isSaving} />
+                <Button type="submit" variant="save" label={isSaving ? "Guardando..." : (editingProduct ? "Actualizar" : "Crear")} disabled={isSaving} />
               )}
             </div>
           </form>

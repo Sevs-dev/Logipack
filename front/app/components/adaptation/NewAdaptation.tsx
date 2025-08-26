@@ -485,7 +485,7 @@ function NewAdaptation({
       if (attachment) formData.append("attachment", attachment);
     } else {
       selectedArticles.forEach(({ codart }) => {
-        const file = articleFields[codart]?.attachment;
+        const file = articleFields[codart]?.attachment as File | undefined;
         if (file) formData.append(`attachment_${codart}`, file);
       });
     }
@@ -493,10 +493,9 @@ function NewAdaptation({
     try {
       setIsLoading(true);
       if (isEditMode) {
-        console.log("📝 Actualizando adaptación con ID:", editAdaptationId);
-        for (const [key, value] of formData.entries()) {
-          console.log(`📦 ${key}:`, value);
-        }
+        // for (const [key, value] of formData.entries()) {
+        //   console.log(`📦 ${key}:`, value);
+        // }
         await updateAdaptation(editAdaptationId!, formData);
         showSuccess("Acondicionamiento actualizado.");
       } else {
@@ -532,7 +531,9 @@ function NewAdaptation({
       setEditAdaptationId(id);
       setSelectedClient(adaptation.client_id?.toString() ?? "");
       setPlanta(adaptation.factory_id?.toString() ?? "");
-      setSelectedMaestras(adaptation.master?.toString() ?? "");
+      setSelectedMaestras(
+        adaptation.master != null ? [String(adaptation.master)] : []
+      );
       setSelectedBom(adaptation.bom?.toString() ?? "");
       const parsedArticles = adaptation.article_code
         ? JSON.parse(adaptation.article_code)
@@ -813,6 +814,7 @@ function NewAdaptation({
                 ))}
               </select>
             </div>
+
             <div className="flex flex-col justify-end">
               <Text type="subtitle" color="text-gray-700">
                 Adjuntar:
@@ -830,12 +832,12 @@ function NewAdaptation({
                 />
               )}
             </div>
+
             <div
               className={`col-span-full grid grid-cols-1 ${
                 maestraRequiereBOM ? "sm:grid-cols-2" : "lg:grid-cols-1"
               } gap-4`}
             >
-              {/* Select de Maestras */}
               {/* Select de BOM solo si se requiere */}
               {maestraRequiereBOM && (
                 <div>
@@ -1281,7 +1283,17 @@ function NewAdaptation({
               label="Cancelar"
             />
             {canEdit && (
-              <Button onClick={handleSubmit} variant="save" label="Guardar" />
+              <Button
+                onClick={handleSubmit}
+                variant="save"
+                label={
+                  isSaving
+                    ? "Guardando..."
+                    : isEditMode
+                    ? "Actualizar"
+                    : "Crear"
+                }
+              />
             )}
           </div>
         </ModalSection>

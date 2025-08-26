@@ -2,12 +2,8 @@
 import React, { ChangeEvent, DragEvent, useRef, useState, useEffect } from 'react';
 import {
   FaFileAlt,
-  FaTimesCircle,
-  FaFileImage,
-  FaFilePdf,
-  FaFileWord,
-  FaFileExcel,
-  FaFileArchive,
+  FaTimesCircle, 
+  FaFilePdf, 
 } from 'react-icons/fa';
 
 interface UploadedFile {
@@ -39,20 +35,7 @@ const AdvancedFileUploader: React.FC<AdvancedFileUploaderProps> = ({
     switch (ext) {
       case 'pdf':
         return <FaFilePdf className="text-red-500" size={16} />;
-      case 'doc':
-      case 'docx':
-        return <FaFileWord className="text-blue-600" size={16} />;
-      case 'xls':
-      case 'xlsx':
-        return <FaFileExcel className="text-green-600" size={16} />;
-      case 'jpg':
-      case 'jpeg':
-      case 'png':
-      case 'gif':
-        return <FaFileImage className="text-purple-500" size={16} />;
-      case 'zip':
-      case 'rar':
-        return <FaFileArchive className="text-yellow-600" size={16} />;
+      
       default:
         return <FaFileAlt className="text-gray-400" size={16} />;
     }

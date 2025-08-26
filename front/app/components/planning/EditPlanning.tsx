@@ -822,7 +822,6 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
       showError("La orden ya fue finalizada. Estado: " + data.estado);
     }
   }, []);
-  
 
   //Componente SelectorDual
   const agregarMaquina = (m: MachinePlanning) => {
@@ -1447,7 +1446,7 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
             <Button
               onClick={() => currentPlan && handleSave(currentPlan)}
               variant="save"
-              label="Guardar"
+              label={isSaving ? "Guardando..." : "Actualizar"}
             />
           </div>
         </ModalSection>
