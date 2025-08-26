@@ -3,17 +3,15 @@ import React, { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
 import { linea_procesos, generar_orden } from "@/app/services/planing/planingServices";
 import Text from "@/app/components/text/Text";
-import { showError } from "@/app/components/toastr/Toaster";
 import DateLoader from "@/app/components/loader/DateLoader";
 import { LineasResponse, LocalType } from "@/app/interfaces/NewLineas";
 import ModalControl from "@/app/components/planning/modalControl";
 import { getPlanningById } from "@/app/services/planing/planingServices";
 import { validate_orden } from "@/app/services/planing/planingServices";
 import { getRestablecerOrden } from "@/app/services/planing/planingServices";
-import { showSuccess } from "@/app/components/toastr/Toaster";
+import { showSuccess, showError, showConfirm } from "@/app/components/toastr/Toaster";
 import ModalSection from "@/app/components/modal/ModalSection";
 import { FaCreativeCommonsNd, FaListUl } from "react-icons/fa";
-
 
 
 
@@ -50,21 +48,10 @@ const NewLineas = () => {
 
             const data = await validate_orden(plan.id);
             if (data.estado === 100 || data.estado === null) {
-                const response = await getRestablecerOrden(plan.id);
-                if (response.estado !== 200) {
-                    showError("Error, orden no permitida para restablecer");
-                    return;
-                }
-                showSuccess("Orden restablecida correctamente");
-                const user = document.cookie
-                    .split("; ")
-                    .find((row) => row.startsWith("name="))
-                    ?.split("=")[1];
+                
+                // confirmar para restablecer
+                handleConfirmar(plan.id);
 
-                if (!user) {
-                    showError("No se encontró usuario");
-                    return;
-                }
             } else {
                 showError("La orden ya fue finalizada. Estado: " + data.estado);
             }
@@ -96,6 +83,30 @@ const NewLineas = () => {
         },
         []
     );
+
+    const handleConfirmar = async (id: number) => {
+        showConfirm("¿Estás seguro desea restablecer la orden?", async () => {
+            const response = await getRestablecerOrden(id);
+            if (response.estado !== 200) {
+                showError("Error, orden no permitida para restablecer");
+                return;
+            }
+            showSuccess("Orden restablecida correctamente");
+
+            setTimeout(() => {
+                window.location.reload();
+            }, 1000);
+            // const user = document.cookie
+            //     .split("; ")
+            //     .find((row) => row.startsWith("name="))
+            //     ?.split("=")[1];
+
+            // if (!user) {
+            //     showError("No se encontró usuario");
+            //     return;
+            // }
+        });
+    };
 
 
     useEffect(() => {
