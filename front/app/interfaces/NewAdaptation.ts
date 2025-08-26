@@ -45,6 +45,7 @@ export interface ArticleFormData {
   lot: string;
   healthRegistration: string;
   attachment?: File | null;
+  attachments?: File[] | null;
   duration?: string;
   start_date?: string;
   end_date?: string;

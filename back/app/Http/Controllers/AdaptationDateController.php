@@ -20,9 +20,17 @@ use Dompdf\Dompdf;
 use Dompdf\Options;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
+use App\Services\PdfAttachmentService;
 
 class AdaptationDateController extends Controller
 {
+    protected PdfAttachmentService $pdfService;
+
+    public function __construct(PdfAttachmentService $pdfService)
+    {
+        $this->pdfService = $pdfService;
+    }
+
     public function index()
     {
         return AdaptationDate::with(['client', 'adaptation'])->get();
@@ -623,36 +631,46 @@ class AdaptationDateController extends Controller
         $options = new Options();
         $options->set('defaultFont', 'Georgia');
         $options->set('isHtml5ParserEnabled', true);
-        $options->set('isPhpEnabled', true); // No usar si vamos sin <script>
+        $options->set('isPhpEnabled', true); // si no usas <script> en la vista, puedes dejarlo en false
 
         $dompdf = new Dompdf($options);
-
         $html = view('pdf.plan', $data)->render();
 
         $dompdf->loadHtml($html);
         $dompdf->setPaper('A4', 'portrait');
         $dompdf->render();
 
-        // ✅ Inserta la paginación después de renderizar
+        // Paginación (si quieres mantenerla)
         $canvas = $dompdf->getCanvas();
         $font = $dompdf->getFontMetrics()->getFont('Georgia', 'normal');
-
         $canvas->page_script(function ($pageNumber, $pageCount, $canvas, $fontMetrics) use ($font) {
             $text = "Página $pageNumber de $pageCount";
             $fontSize = 10;
             $color = "#6e737c";
             $width = $fontMetrics->getTextWidth($text, $font, $fontSize);
-            $x = 520 - $width; // izquierda si querés mover
+            $x = 520 - $width;
             $y = 25;
             $canvas->text($x, $y, $text, $font, $fontSize, $color);
         });
 
+        $mainPdfBytes = $dompdf->output();
+
+        // (opcional) micro-validación
+        if (strpos($mainPdfBytes, '%PDF') !== 0) {
+            Log::warning('El PDF principal no empieza con %PDF — posible fallo de Dompdf');
+        }
+
+        // 🔗 FUSIONA principal + anexos de la orden usando el Service
+        $numberOrder = $data['plan']->number_order;
+        $mergedBytes = $this->pdfService->mergeMainWithAttachments($mainPdfBytes, $numberOrder);
+
         $clienteName = preg_replace('/[^a-zA-Z0-9_-]/', '_', $data['cliente']->name ?? 'cliente');
 
-        return response($dompdf->output(), 200)
+        return response($mergedBytes, 200)
             ->header('Content-Type', 'application/pdf')
-            ->header('Content-Disposition', 'inline; filename="Orden_' . $data['plan']->number_order . '_' . $clienteName . '.pdf"');
+            ->header('Content-Disposition', 'inline; filename="Orden_' . $numberOrder . '_' . $clienteName . '.pdf"');
     }
+
 
     public function testImage()
     {

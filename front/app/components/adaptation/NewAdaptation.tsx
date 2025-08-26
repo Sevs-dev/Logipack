@@ -22,7 +22,7 @@ import { getMaestra } from "../../services/maestras/maestraServices";
 import { getAuditsByModelAdaptation } from "../../services/history/historyAuditServices";
 // 🔹 Componentes
 import Button from "../buttons/buttons";
-import File from "../buttons/FileButton";
+import FileButton from "../buttons/FileButton";
 import MultiSelect from "../dinamicSelect/MultiSelect";
 import Table from "../table/Table";
 import Text from "../text/Text";
@@ -88,7 +88,7 @@ function NewAdaptation({
   const [editAdaptationId, setEditAdaptationId] = useState<number | null>(null);
 
   // Adjuntos
-  const [attachment, setAttachment] = useState<File | null>(null);
+  const [attachments, setAttachments] = useState<File[]>([]);
   const [, setAttachmentUrl] = useState<string | null>(null);
 
   // Consecutivo
@@ -100,6 +100,29 @@ function NewAdaptation({
   const [isSaving, setIsSaving] = useState(false);
 
   // Cargar Adaptaciones al montar si se puede ver
+
+  // ======================= 📥 Carga de datos =======================
+
+  const fetchAdaptations = async () => {
+    try {
+      const adaptations = await getAdaptations();
+      const fullData = await Promise.all(
+        adaptations.map(async (a: Adaptation) => {
+          const client = await getClientsId(a.client_id);
+          return {
+            ...a,
+            client_name: client.name,
+            numberOrder: client.number_order,
+          };
+        })
+      );
+      setAdaptation(fullData);
+    } catch (error) {
+      showError("Error al cargar adaptaciones.");
+      console.error(error);
+    }
+  };
+
   useEffect(() => {
     if (canView) fetchAdaptations();
   }, [canView]);
@@ -368,54 +391,45 @@ function NewAdaptation({
     }));
   };
 
-  // ======================= 📥 Carga de datos =======================
-
-  const fetchAdaptations = async () => {
-    try {
-      const adaptations = await getAdaptations();
-      const fullData = await Promise.all(
-        adaptations.map(async (a: Adaptation) => {
-          const client = await getClientsId(a.client_id);
-          return {
-            ...a,
-            client_name: client.name,
-            numberOrder: client.number_order,
-          };
-        })
-      );
-      setAdaptation(fullData);
-    } catch (error) {
-      showError("Error al cargar adaptaciones.");
-      console.error(error);
-    }
-  };
-
   // ======================= 📤 Envío del formulario =======================
-
+  const isBrowserFile = (v: unknown): v is File => {
+    return (
+      typeof window !== "undefined" &&
+      typeof (window as Window & typeof globalThis).File !== "undefined" &&
+      v instanceof (window as Window & typeof globalThis).File
+    );
+  };
   const handleSubmit = async () => {
     if (isSaving) return;
+
+    // ✅ Validaciones básicas
     if (!selectedClient) {
       showError("Selecciona un Cliente.");
-      setIsSaving(false);
       return;
     }
     if (!planta) {
       showError("Selecciona una Planta.");
-      setIsSaving(false);
       return;
     }
     if (!selectedArticles.length) {
       showError("Selecciona al menos un artículo.");
-      setIsSaving(false);
       return;
     }
     if (!selectedMaestras.length) {
       showError("Selecciona una Maestra.");
-      setIsSaving(false);
       return;
     }
 
-    let articlesData;
+    // 🧩 Armar articlesData con/ sin BOM
+    let articlesData: Array<{
+      codart: string;
+      number_order: string;
+      orderNumber: string;
+      deliveryDate: string;
+      quantityToProduce: number | string;
+      lot: string;
+      healthRegistration: string;
+    }>;
 
     if (maestraRequiereBOM) {
       if (
@@ -425,9 +439,9 @@ function NewAdaptation({
         !lot ||
         !healthRegistration
       ) {
-        return showError("Completa todos los campos del artículo.");
+        showError("Completa todos los campos del artículo.");
+        return;
       }
-
       articlesData = [
         {
           codart: selectedArticles[0]?.codart || "",
@@ -471,6 +485,7 @@ function NewAdaptation({
       });
     }
 
+    // 📦 FormData
     const formData = new FormData();
     formData.append("client_id", String(selectedClient));
     formData.append("factory_id", planta);
@@ -481,32 +496,48 @@ function NewAdaptation({
     formData.append("bom", selectedBom !== "" ? String(selectedBom) : "");
     formData.append("ingredients", JSON.stringify(ingredients));
 
-    if (maestraRequiereBOM) {
-      if (attachment) formData.append("attachment", attachment);
-    } else {
-      selectedArticles.forEach(({ codart }) => {
-        const file = articleFields[codart]?.attachment as File | undefined;
-        if (file) formData.append(`attachment_${codart}`, file);
+    // ✅ Adjuntar SIEMPRE igual (con o sin BOM)
+    // General único (solo si realmente es File)
+    if (attachments.length === 1 && isBrowserFile(attachments[0])) {
+      formData.append("attachment", attachments[0]);
+    } else if (attachments.length > 1) {
+      attachments.forEach((f) => {
+        if (isBrowserFile(f)) formData.append("attachments[]", f);
       });
     }
 
+    // Por artículo (si el usuario seleccionó archivo real)
+    selectedArticles.forEach(({ codart }) => {
+      const maybeFile: unknown = articleFields[codart]?.attachment;
+      if (isBrowserFile(maybeFile)) {
+        formData.append(`attachment_${codart}`, maybeFile);
+      }
+    });
+
+    // 🧪 Debug rápido del FormData (comenta en prod)
+    // for (const [k, v] of formData.entries()) {
+    //   if (v instanceof File)
+    //      console.log("🗂️", k, v.name, v.size);
+    //   else console.log("🔹", k, v);
+    // }
+
     try {
+      setIsSaving(true);
       setIsLoading(true);
+
       if (isEditMode) {
-        // for (const [key, value] of formData.entries()) {
-        //   console.log(`📦 ${key}:`, value);
-        // }
+        // ⚠️ El servicio updateAdaptation debe hacer POST + _method=PUT y NO forzar Content-Type
         await updateAdaptation(editAdaptationId!, formData);
-        showSuccess("Acondicionamiento actualizado.");
+        showSuccess("Acondicionamiento actualizado."); 
       } else {
-        await newAdaptation(formData);
+        await newAdaptation(formData); // POST normal
         showSuccess("Acondicionamiento creado.");
       }
 
-      resetForm();
       setIsOpen(false);
       fetchAdaptations();
-    } catch (error: unknown) {
+      resetForm();
+    } catch (error) {
       showError("Error al guardar.");
       console.error(error);
     } finally {
@@ -518,7 +549,7 @@ function NewAdaptation({
   // ======================= ✏️ Edición =======================
 
   const handleEdit = async (id: number) => {
-    setIsSaving(false);
+    setIsSaving(false); 
     try {
       const { adaptation } = await getAdaptationsId(id);
       if (!adaptation) {
@@ -551,7 +582,7 @@ function NewAdaptation({
         setQuantityToProduce(String(general.quantityToProduce ?? ""));
         setLot(general.lot ?? "");
         setHealthRegistration(general.healthRegistration ?? "");
-        setAttachment(null);
+        setAttachments([]);
         setAttachmentUrl(
           general.attachment ? `/storage/${general.attachment}` : null
         );
@@ -576,7 +607,7 @@ function NewAdaptation({
               quantityToProduce: Number(a.quantityToProduce) ?? "",
               lot: a.lot ?? "",
               healthRegistration: a.healthRegistration ?? "",
-              attachment: a.attachment,
+              attachment: undefined,
             };
           }
         );
@@ -657,7 +688,6 @@ function NewAdaptation({
     setQuantityToProduce("");
     setLot("");
     setHealthRegistration("");
-    setAttachment(null);
     setIngredients([]);
   };
 
@@ -820,12 +850,12 @@ function NewAdaptation({
                 Adjuntar:
               </Text>
               {canEdit && (
-                <File
+                <FileButton
                   onChange={(fileList) => {
-                    const file = Array.isArray(fileList)
-                      ? fileList[0]
-                      : fileList;
-                    setAttachment(file ?? null);
+                    const files = Array.isArray(fileList)
+                      ? fileList
+                      : [fileList];
+                    setAttachments(files.filter(Boolean) as File[]);
                   }}
                   maxSizeMB={5}
                   allowMultiple={true}

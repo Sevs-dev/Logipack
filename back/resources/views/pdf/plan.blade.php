@@ -370,6 +370,7 @@
             </table>
         </div>
 
+        {{-- ===== Receta ===== --}}
         {{-- ===== Producto a Obtener ===== --}}
         <h2 class="section-title">Producto a Obtener</h2>
         <div class="section-keep">
@@ -383,14 +384,14 @@
                 <tr>
                     <th>Lote</th>
                     <td>{{ $plan->lot ?? '—' }}</td>
-                    <th>Vence</th>
+                    <th>F. Vencimiento</th>
                     <td>{{ \Carbon\Carbon::parse($plan->end_date)->format('Y-m-d') ?? '—' }}</td>
                 </tr>
                 <tr>
                     <th>Cantidad</th>
                     <td>{{ $plan->quantityToProduce }} unidades</td>
-                    <th></th>
-                    <td></td>
+                    <th>N° de Orden Cliente</th>
+                    <td>{{ $plan->orderNumber }}</td>
                 </tr>
             </table>
         </div>
@@ -459,10 +460,19 @@
         @endif
         {{-- ===== Fin Diagrama ===== --}}
 
+        {{-- ===== Elaborado y Aprobado ===== --}}
         <div class="section-keep">
             <table class="table">
                 <tr>
-                    <th style="width: 10%">Receta validada por</th>
+                    <th style="width: 10%">Elavorado:</th>
+                    <td style="width: 35%">
+                        {{ $masterStages[0]['user'] ? urldecode(preg_replace('/[\r\n]+/', '', $masterStages[0]['user'])) : 'Sin usuario' }}
+                    </td>
+                    <th style="width: 15%">Fecha</th>
+                    <td style="width: 15%">{{ $cliente->updated_at ?? '—' }}</td>
+                </tr>
+                <tr>
+                    <th style="width: 10%">Aprovado:</th>
                     <td style="width: 35%">
                         {{ $plan->user ? urldecode(preg_replace('/[\r\n]+/', '', $plan->user)) : 'Sin usuario' }}</td>
                     <th style="width: 15%">Fecha</th>
@@ -625,92 +635,92 @@
                     font-size: 10.5px;
                 }
             </style>
-
             {{-- H2 + fila superior pegados --}}
+            {{-- <table class="table">
+                <tr>
+                    <th style="width: 10%">Ordenes de Acondicionamiento:</th>
+                    <td style="width: 20%">{{ $plan->orderNumber }}</td>
+                </tr>
+            </table>
+            <table class="table">
+                <tr>
+                    <th style="width: 10%">Producto:</th>
+                    <td style="width: 20%">{{ $c->codart ?? $plan->codart }}</td>
+                </tr>
+            </table>
+            <table class="table">
+                <tr>
+                    <th style="width: 10%">Cliente:</th>
+                    <td style="width: 20%">{{ $cliente->name ?? '—' }}</td>
+                    <th style="width: 10%">LOTE:</th>
+                    <td style="width: 20%">{{ $plan->lot }}</td>
+                </tr>
+            </table> --}}
+
             <div class="section-keep" style="margin-bottom:8px;">
                 <div class="conc-row">
-                    <div class="conc-col">
-                        <div class="conc-card">
-                            <div class="conc-title">Identificación</div>
-                            <ul class="conc-list">
-                                <li><small>Orden:</small> <span
-                                        class="conc-mono">{{ $c->number_order ?? $plan->number_order }}</span></li>
-                                <li><small>Cod. Artículo:</small> <span
-                                        class="conc-mono">{{ $c->codart ?? $plan->codart }}</span></li>
-                                <li><small>Producto:</small> {{ $c->desart ?? ($desart ?? '—') }}</li>
-                                <li><small>Usuario:</small> {{ $c->user ?? '—' }}</li>
-                                <li><small>Fecha:</small>
-                                    {{ \Carbon\Carbon::parse($c->updated_at)->format('Y-m-d H:i') }}</li>
-                            </ul>
-                        </div>
-                    </div>
-                    <div class="conc-col">
-                        <div class="conc-card">
-                            <div class="conc-title">Totales</div>
-                            <div class="conc-kpi"><small>Cant. a producir:</small> <span
-                                    class="conc-strong">{{ $nf($c->quantityToProduce ?? $plan->quantityToProduce) }}</span>
-                            </div>
-                            <div class="conc-kpi conc-rowflex">
-                                <small>Total resultante:</small> <span class="conc-strong">{{ $nf($c->total) }}</span>
-                                <span class="{{ $rendClass }}" style="margin-left:6px;">Rendimiento:
-                                    {{ $pf($rend) }}</span>
-                            </div>
-                            @if (!is_null($c->total) && !is_null($c->quantityToProduce ?? $plan->quantityToProduce))
-                                @php $delta = (float)$c->total - (float)($c->quantityToProduce ?? $plan->quantityToProduce); @endphp
-                                <div class="conc-kpi"><small>Diferencia:</small> <span
-                                        class="{{ $delta >= 0 ? 'conc-strong' : '' }}">{{ $nf($delta) }}</span>
-                                </div>
-                            @endif
-                        </div>
-                    </div>
+                    <table class="table">
+                        <tr>
+                            <th style="width: 10%">Cod. Artículo:</th>
+                            <td style="width: 20%">{{ $c->codart ?? $plan->codart }}</td>
+                            <th style="width: 10%">LOTE:</th>
+                            <td style="width: 20%">{{ $plan->lot }}</td>
+                            <th style="width: 10%">Descripción:</th>
+                            <td style="width: 65%">{{ $desart }}</td>
+
+                        </tr>
+                    </table>
+                    <table class="table">
+                        <tr>
+                            <th style="width: 10%">Cant. Teorica</th>
+                            <td style="width: 20%">
+                                {{ isset($c->quantityToProduce) ? number_format($c->quantityToProduce, 0, ',', '.') : '' }}
+                            </td>
+                            <th style="width: 10%">Faltantes</th>
+                            <td style="width: 20%">
+                                {{ isset($c->faltante) ? number_format($c->faltante, 0, ',', '.') : '' }}</td>
+                            <th style="width: 10%">Adicionales</th>
+                            <td style="width: 20%">
+                                {{ isset($c->adicionales) ? number_format($c->adicionales, 0, ',', '.') : '' }}</td>
+                        </tr>
+                    </table>
+                    <table class="table">
+                        <tr>
+                            <th style="width: 10%">Rechazo:</th>
+                            <td style="width: 20%">{{ isset($c->rechazo) ? number_format($c->rechazo, 0, ',', '.') : '' }}</td>
+                            <th style="width: 10%">Daño en Proceso</th>
+                            <td style="width: 20%">{{ isset($c->danno_proceso) ? number_format($c->danno_proceso, 0, ',', '.') : '' }}</td>
+                            <th style="width: 10%">Devoluciones</th>
+                            <td style="width: 20%">{{ isset($c->devolucion) ? number_format($c->devolucion, 0, ',', '.') : '' }}</td>
+                        </tr>
+                    </table>
+                    <table class="table">
+                        <tr>
+                            <th style="width: 15%">Total Entregado</th>
+                            <td style="width: 15%">{{ isset($c->total) ? number_format($c->total, 0, ',', '.') : '' }}</td>
+                            <th style="width: 15%">Rendimiento</th>
+                            <td style="width: 15%"> <span class="{{ $rendClass }}"
+                                    style="margin-left:6px;">Rendimiento:
+                                    {{ $pf($rend) }}</span></td>
+                        </tr>
+                    </table>
+                    <table class="table">
+                        <tr>
+                            <th style="width: 15%">N° de unidades por caja</th>
+                            <td>{{ isset($c->unidades_caja) ? number_format($c->unidades_caja, 0, ',', '.') : '' }}
+                            </td>
+                            <th style="width: 15%">N° de cajas</th>
+                            <td>{{ isset($c->numero_caja) ? number_format($c->numero_caja, 0, ',', '.') : '' }}</td>
+                            <th style="width: 15%">N° de unidades saldo</th>
+                            <td>{{ isset($c->unidades_saldo) ? number_format($c->unidades_saldo, 0, ',', '.') : '' }}
+                            </td>
+                            <th style="width: 15%">Total Unidades</th>
+                            <td style="width: 15%">
+                                {{ isset($c->total_saldo) ? number_format($c->total_saldo, 0, ',', '.') : '' }}</td>
+                        </tr>
+                    </table>
                 </div>
             </div>
-
-            {{-- Resto --}}
-            <div class="conc-row">
-                <div class="conc-card">
-                    <div class="conc-title">Desvíos</div>
-                    @if (count($desvPresentes))
-                        <table class="conc-table">
-                            <thead>
-                                <tr>
-                                    @foreach ($desvPresentes as $label)
-                                        <th>{{ $label }}</th>
-                                    @endforeach
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr>
-                                    @foreach ($desvPresentes as $key => $label)
-                                        <td>{{ $nf($c->{$key}) }}</td>
-                                    @endforeach
-                                </tr>
-                            </tbody>
-                        </table>
-                    @else
-                        <div class="conc-kpi"><span class="conc-badge-ok">Sin desvíos registrados</span></div>
-                    @endif
-                </div>
-            </div>
-
-            <table class="table" style="margin-top:8px;">
-                <thead>
-                    <tr>
-                        <th>Número de Orden</th>
-                        <th>Total</th>
-                        <th>Rendimiento</th>
-                        <th>Actualizado</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td>{{ $plan->orderNumber ?? '—' }}</td>
-                        <td>{{ $nf($c->total) }}</td>
-                        <td>{{ is_null($c->rendimiento) ? '—' : $pf($c->rendimiento) }}</td>
-                        <td>{{ \Carbon\Carbon::parse($c->updated_at)->format('Y-m-d H:i') }}</td>
-                    </tr>
-                </tbody>
-            </table>
         @endif
         {{-- ===== Fin Resumen de Conciliación ===== --}}
 
