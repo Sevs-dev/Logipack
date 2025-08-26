@@ -161,7 +161,7 @@ const NewTestigos = () => {
         if (!params.id) return;
 
         (getActividadesTestigos as (id: number) => Promise<ApiActividadesResponse>)(
-            params.id
+            Number(params.id)
         ).then((data) => {
             if (data && Array.isArray(data.actividades)) {
                 setMemoriaFase((prev) => ({
@@ -278,7 +278,6 @@ const NewTestigos = () => {
                                             bg-[#1a1d23] border border-gray-600 rounded-md shadow-sm 
                                             focus:outline-none focus:ring-2 focus:ring-blue-500 
                                             focus:border-blue-500 text-white placeholder-gray-400 mb-2"
-                                            value={memoriaActividades[`${fieldName}_mode`] || ""}
                                             onChange={(e) =>
                                                 setMemoriaActividades((prev) => ({
                                                     ...prev,
