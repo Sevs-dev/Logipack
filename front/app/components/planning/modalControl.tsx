@@ -272,10 +272,8 @@ export default function ModalControl({
             const fieldName = `field_${item.id}`;
 
             return (
-              <div
-                key={item.id}
-                className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm transition-all duration-300 hover:border-gray-300 hover:shadow-md"
-              >
+              <div key={item.id} className="rounded-xl border border-gray-200 bg-white p-6
+               shadow-sm transition-all duration-300 hover:border-gray-300 hover:shadow-md">
                 <Text type="subtitle" color="text-[#000]">
                   {item.description}
                 </Text>
@@ -384,11 +382,10 @@ export default function ModalControl({
                       return (
                         <label
                           key={opt}
-                          className={`relative flex cursor-pointer rounded-lg border p-4 shadow-sm transition-all duration-200 text-center ${
-                            isSelected
+                          className={`relative flex cursor-pointer rounded-lg border p-4 shadow-sm transition-all duration-200 text-center ${isSelected
                               ? "border-indigo-500 bg-indigo-50 ring-2 ring-indigo-500"
                               : "border-gray-300 bg-white/10 hover:bg-gray-50"
-                          }`}
+                            }`}
                         >
                           <input
                             className="sr-only"
@@ -402,9 +399,8 @@ export default function ModalControl({
                             }
                           />
                           <span
-                            className={`flex-1 text-sm font-medium ${
-                              isSelected ? "text-indigo-900" : "text-gray-800"
-                            }`}
+                            className={`flex-1 text-sm font-medium ${isSelected ? "text-indigo-900" : "text-gray-800"
+                              }`}
                           >
                             {opt}
                           </span>
@@ -435,8 +431,8 @@ export default function ModalControl({
                         memoriaActividades[fieldName]
                       )
                         ? (memoriaActividades[fieldName] as string[]).includes(
-                            opt
-                          )
+                          opt
+                        )
                         : false;
                       return (
                         <label key={opt} className="flex items-center gap-2">

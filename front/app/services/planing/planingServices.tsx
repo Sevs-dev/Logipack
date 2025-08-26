@@ -252,3 +252,14 @@ export const guardar_actividades_control = async (
     throw error;
   }
 };
+
+
+export const getActividadesTestigos = async (id: number) => {
+  try {
+    const response = await Planning.get(`/getActividadesTestigo/${id}`);
+    return response.data;
+  } catch (error: unknown) {
+    console.error("Error en getActividadesTestigo:", error);
+    throw error;
+  }
+};

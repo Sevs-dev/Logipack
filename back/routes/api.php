@@ -222,6 +222,9 @@ Route::controller(OrdenesEjecutadasController::class)->group(function () {
     Route::post('/guardar_conciliacion', 'guardar_conciliacion');
     Route::get('/restablecer_orden/{id}', 'restablecerOrden');
     Route::post('/guardar_actividades_control', 'guardar_actividades_control');
+    Route::get('/getActividadesTestigo/{id}', 'getActividadesTestigo');
+    Route::post('/guardar_actividades_testigos', 'guardar_actividades_testigos');
+    
 });
 
 //Rutas Historial de Audits
