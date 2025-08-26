@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 import { getActividadesControl } from "../../services/planing/planingServices";
 import { showSuccess } from "../toastr/Toaster";
+import { showError } from "../toastr/Toaster";
 
 /* =========================
  *        Tipos
@@ -113,12 +114,22 @@ export default function ModalControl({
 }: ModalControlProps) {
   const heading = title;
   const ref = useRef<HTMLFormElement>(null);
-
+  const [local, setLocal] = useState(null);
   const [controlData, setControlData] = useState<Actividad[]>([]);
   const [memoriaFase, setMemoriaFase] = useState<MemoriaFase>({});
   const [memoriaActividades, setMemoriaActividades] =
     useState<MemoriaActividades>({});
   const [btnDisabled, setBtnDisabled] = useState<boolean>(true);
+
+  // Cargar datos iniciales
+  useEffect(() => {
+    try {
+      const data = localStorage.getItem("ejecutar");
+      if (data) setLocal(JSON.parse(data));
+    } catch (error) {
+      showError("Datos inválidos en el almacenamiento local.");
+    }
+  }, []);
 
   // Guardar valores dinámicos (texto, número, select, radio, date, time, temp, file)
   const setValue = (name: string, value: MemValue) => {
@@ -175,7 +186,8 @@ export default function ModalControl({
 
     const resultado = {
       ...memoriaFase,
-      actividades: actividadesPreparadas,
+      forms: actividadesPreparadas,
+      user: localStorage.getItem("user") || "",
     };
 
     console.log("data", resultado);
@@ -185,9 +197,9 @@ export default function ModalControl({
     setBtnDisabled(true);
 
     // Si no quieres recargar, aquí podrías limpiar memoriaActividades en su lugar
-    setTimeout(() => {
-      window.location.reload();
-    }, 2000);
+    // setTimeout(() => {
+    //   window.location.reload();
+    // }, 2000);
   };
 
   return (
@@ -327,11 +339,10 @@ export default function ModalControl({
                       return (
                         <label
                           key={opt}
-                          className={`relative flex cursor-pointer rounded-lg border p-4 shadow-sm transition-all duration-200 ${
-                            isSelected
+                          className={`relative flex cursor-pointer rounded-lg border p-4 shadow-sm transition-all duration-200 ${isSelected
                               ? "border-indigo-500 bg-indigo-50 ring-2 ring-indigo-500"
                               : "border-gray-300 bg-white hover:bg-gray-50"
-                          }`}
+                            }`}
                         >
                           <input
                             className="sr-only"
@@ -345,9 +356,8 @@ export default function ModalControl({
                             }
                           />
                           <span
-                            className={`flex-1 text-sm font-medium ${
-                              isSelected ? "text-indigo-900" : "text-gray-800"
-                            }`}
+                            className={`flex-1 text-sm font-medium ${isSelected ? "text-indigo-900" : "text-gray-800"
+                              }`}
                           >
                             {opt}
                           </span>
@@ -378,8 +388,8 @@ export default function ModalControl({
                         memoriaActividades[fieldName]
                       )
                         ? (memoriaActividades[fieldName] as string[]).includes(
-                            opt
-                          )
+                          opt
+                        )
                         : false;
                       return (
                         <label key={opt} className="flex items-center gap-2">

@@ -84,23 +84,23 @@ const NewConsolida = () => {
       const unidades_saldo = parseFloat(data.unidades_saldo) || 0;
 
       /*
-                Calculo de la conciliación donde:
-                (a) Cantidad a Producir
-                (b) Faltante
-                (c) Adicionales
-                (d) Rechazo
-                (e) Daño en Proceso
-                (f) Devolución
-                (g) Sobrante
-                (h) Total
-                (i) unidades_caja
-                (j) numero_caja
-                (k) unidades_saldo
-                (l) total_saldo
+          Calculo de la conciliación donde:
+          (a) Cantidad a Producir
+          (b) Faltante
+          (c) Adicionales
+          (d) Rechazo
+          (e) Daño en Proceso
+          (f) Devolución
+          (g) Sobrante
+          (h) Total
+          (i) unidades_caja
+          (j) numero_caja
+          (k) unidades_saldo
+          (l) total_saldo
 
-                total = a + c + g - (b + d + e + f)
-                rendimiento = (h - e) / (a - (d + b)) * 100
-            */
+          total = a + c + g - (b + d + e + f)
+          rendimiento = (h - e) / (a - (d + b)) * 100
+      */
 
       // Calcular total
       const total =
