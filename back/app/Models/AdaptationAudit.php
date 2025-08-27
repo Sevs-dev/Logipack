@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class AdaptationAudit extends Model
 {
+    protected $table = 'audits';
     protected $guarded = [];
 
     protected $casts = [

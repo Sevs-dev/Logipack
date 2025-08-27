@@ -33,7 +33,6 @@ class StagesController extends Controller
     }
 
     // Crear una nueva Fase
-    // Crear una nueva Fase
     public function newFase(Request $request): JsonResponse
     {
         $validatedData = $request->validate([
