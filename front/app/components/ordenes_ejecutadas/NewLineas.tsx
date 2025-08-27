@@ -191,7 +191,7 @@ const NewLineas = () => {
 
             window.open("/pages/ordenes_ejecutadas", "_blank");
         }
-        
+
         setTimeout(() => {
             requestIdleCallback(() => window.close());
         }, 1000);
@@ -234,13 +234,26 @@ const NewLineas = () => {
 
                             {/* Contenedor para alinear los botones en horizontal */}
                             <div className="flex items-center gap-x-2">
-                                <button
-                                    onClick={() => hableRestablecerOrden(local?.id)}
-                                    className="bg-[#ff8000] hover:bg-[#ffa200] text-white p-2.5 rounded-md transition shadow-md hover:shadow-lg"
-                                    aria-label="Restablecer Orden"
-                                    title="Restablecer">
-                                    <FaListUl />
-                                </button>
+                                {document.cookie
+                                    .split("; ")
+                                    .find((row) => row.startsWith("role="))
+                                    ?.split("=")[1] === "Jefe de Calidad"
+                                    || document.cookie
+                                        .split("; ")
+                                        .find((row) => row.startsWith("role="))
+                                        ?.split("=")[1] === "Calidad"
+                                    || document.cookie
+                                        .split("; ")
+                                        .find((row) => row.startsWith("role="))
+                                        ?.split("=")[1] === "Master" && (
+                                        <button
+                                            onClick={() => hableRestablecerOrden(local?.id)}
+                                            className="bg-[#ff8000] hover:bg-[#ffa200] text-white p-2.5 rounded-md transition shadow-md hover:shadow-lg"
+                                            aria-label="Restablecer Orden"
+                                            title="Restablecer">
+                                            <FaListUl />
+                                        </button>
+                                    )}
                                 <button
                                     onClick={() => hableControlOrden(local?.id)}
                                     className="bg-[#ea0263] hover:bg-[#ff00b7] text-white p-2.5 rounded-md transition shadow-md hover:shadow-lg"
