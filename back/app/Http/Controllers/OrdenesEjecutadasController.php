@@ -15,6 +15,7 @@ use Illuminate\Support\Facades\DB;
 
 class OrdenesEjecutadasController extends Controller
 {
+
     /**
      * Validar estado de la orden
      *
@@ -854,7 +855,6 @@ class OrdenesEjecutadasController extends Controller
 
         // 2. Si existe una actividad con estado_form = false y phase_type = Procesos...
         if ($orden && $actividad) {
-            
             // 3. clona/crea las actividades de esa orden tipo hijo
             DB::table('adaptation_dates')->insertUsing([
                 'client_id', 'factory_id', 'master', 'bom', 'number_order',

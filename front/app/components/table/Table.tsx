@@ -288,8 +288,8 @@ function Table<T extends { id: number }>({
                           >
                             <span
                               className={`inline-flex items-center px-3 py-1 rounded-full text-white ${value === true || value === 1
-                                  ? "bg-green-600"
-                                  : "bg-red-600"
+                                ? "bg-green-600"
+                                : "bg-red-600"
                                 }`}
                             >
                               {(value === true || value === 1) && (
@@ -315,9 +315,12 @@ function Table<T extends { id: number }>({
                       }
                     })}
                     <td className="px-6 py-3 flex justify-center gap-3 border-r border-gray-700 last:border-r-0">
-                      {showEditButton && onEdit && row?.status_dates !== "Ejecutado" && (
-                        <Button onClick={() => onEdit(row.id)} variant="edit" />
-                      )}
+                      {showEditButton && onEdit
+                        && (row?.status_dates !== "Ejecutado"
+                          && row?.status_dates !== "Planificación"
+                          && row?.status_dates !== "En ejecución") && (
+                          <Button onClick={() => onEdit(row.id)} variant="edit" />
+                        )}
                       {showDeleteButton && onDelete && (
                         <Button
                           onClick={() => onDelete(row.id)}
@@ -365,7 +368,9 @@ function Table<T extends { id: number }>({
                         />
                       )}
                       {showOrdenHijaButton && onOrdenHija
-                        && row?.orderType === "P" && row?.status_dates === "En Ejecución" && (
+                        && row?.orderType === "P"
+                        && (row?.status_dates === "En Ejecución"
+                          || row?.status_dates === "Planificación") && (
                           <Button
                             onClick={() => onOrdenHija(row.id)}
                             variant="control"
@@ -379,6 +384,8 @@ function Table<T extends { id: number }>({
           </table>
         </motion.div>
       </AnimatePresence>
+      {/* En Creación */}
+      {/* En ejecución */}
 
       {/* Vista en formato tarjetas para pantallas pequeñas */}
       <div className="md:hidden space-y-4 mt-4">
@@ -474,8 +481,8 @@ function Table<T extends { id: number }>({
                 key={page}
                 onClick={() => setCurrentPage(page)}
                 className={`px-2 py-1 text-sm rounded-md transition-all duration-200 ease-out hover:scale-105 ${page === currentPage
-                    ? "bg-blue-600 text-white scale-105"
-                    : "bg-gray-700 text-gray-300 hover:bg-gray-600"
+                  ? "bg-blue-600 text-white scale-105"
+                  : "bg-gray-700 text-gray-300 hover:bg-gray-600"
                   }`}
               >
                 {page}
