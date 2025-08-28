@@ -57,7 +57,7 @@ const NewLineas = () => {
                         return;
                     }
                     showSuccess("Orden restablecida correctamente");
-        
+
                     setTimeout(() => {
                         window.location.reload();
                     }, 1000);
@@ -94,7 +94,7 @@ const NewLineas = () => {
         },
         []
     );
-    
+
     useEffect(() => {
         const data = validar_estado();
         if (data) setLocal(data);
@@ -136,18 +136,16 @@ const NewLineas = () => {
 
     const verificarYGenerar = async () => {
         if (orden === null && local) {
-            const { message } = await generar_orden(local.id);
-            console.log(message);
+            const { estado, message } = await generar_orden(local.id);
             if (local) {
                 await cargarLineasProceso(local);
             }
-        }
-
-        // ⚠️ Revalida después de intentar generar
-        const procesosActualizados = Array.isArray(lista.linea_procesos) ? lista.linea_procesos : [];
-        if (procesosActualizados.length === 0) {
-            // window.close();
-            console.log("No hay procesos disponibles para la orden.");
+            if (estado === 200) {
+                showSuccess(message);
+                return;
+            } else {
+                showError(message);
+            }
         }
     };
     verificarYGenerar();
@@ -328,7 +326,7 @@ const NewLineas = () => {
                     isVisible={showModalControl}
                     onClose={() => setShowModalControl(false)}>
                     <ModalControl
-                        id={25}
+                        id={local?.id}
                         showModal={showModalControl}
                         setShowModal={setShowModalControl}
                     />
