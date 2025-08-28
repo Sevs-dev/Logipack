@@ -641,17 +641,17 @@ class AdaptationDateController extends Controller
         $dompdf->render();
 
         // Paginación (si quieres mantenerla)
-        $canvas = $dompdf->getCanvas();
-        $font = $dompdf->getFontMetrics()->getFont('Georgia', 'normal');
-        $canvas->page_script(function ($pageNumber, $pageCount, $canvas, $fontMetrics) use ($font) {
-            $text = "Página $pageNumber de $pageCount";
-            $fontSize = 10;
-            $color = "#6e737c";
-            $width = $fontMetrics->getTextWidth($text, $font, $fontSize);
-            $x = 520 - $width;
-            $y = 25;
-            $canvas->text($x, $y, $text, $font, $fontSize, $color);
-        });
+        // $canvas = $dompdf->getCanvas();
+        // $font = $dompdf->getFontMetrics()->getFont('Georgia', 'normal');
+        // $canvas->page_script(function ($pageNumber, $pageCount, $canvas, $fontMetrics) use ($font) {
+        //     $text = "Página $pageNumber de $pageCount";
+        //     $fontSize = 10;
+        //     $color = "#6e737c";
+        //     $width = $fontMetrics->getTextWidth($text, $font, $fontSize);
+        //     $x = 520 - $width;
+        //     $y = 25;
+        //     $canvas->text($x, $y, $text, $font, $fontSize, $color);
+        // });
 
         $mainPdfBytes = $dompdf->output();
 

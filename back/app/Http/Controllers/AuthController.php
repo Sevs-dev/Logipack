@@ -98,7 +98,7 @@ class AuthController extends Controller
      *  ======================= */
     public function create(Request $request)
     {
-       // Log::info('Datos recibidos para crear usuario:', $request->all());
+        // Log::info('Datos recibidos para crear usuario:', $request->all());
 
         $request->validate([
             'name'          => 'required|string|max:255',
@@ -106,7 +106,7 @@ class AuthController extends Controller
             'password'      => 'required|string|min:6',
             'role'          => 'required|string',
             'signature_bpm' => 'required|string|max:255|unique:users',
-            'security_pass' => 'nullable|string|max:255|',
+            'security_pass' => 'nullable|string|max:255|min:6',
             'factory'       => 'nullable|array',
         ]);
 
@@ -171,7 +171,7 @@ class AuthController extends Controller
         }
 
         // Log de los datos a actualizar antes del update (sin la contraseña)
-       // Log::info('Actualizando usuario', [
+        // Log::info('Actualizando usuario', [
         //     'id' => $id,
         //     'old_data' => $user->toArray(),
         //     'new_data' => array_diff_key($newData, ['password' => '']), // Oculta la pass en logs
@@ -180,7 +180,7 @@ class AuthController extends Controller
 
         $user->update($newData);
 
-       // Log::info("Usuario actualizado exitosamente", [
+        // Log::info("Usuario actualizado exitosamente", [
         //     'id' => $id,
         //     'hora' => Carbon::now('America/Bogota')->toDateTimeString()
         // ]);
@@ -282,5 +282,63 @@ class AuthController extends Controller
             'mensaje' => 'Imagen actualizada correctamente',
             'image' => asset('storage/' . $imagePath),
         ]);
+    }
+
+    public function validateSecurityPassByRole(Request $request)
+    {
+        $data = $request->validate([
+            // Usa UNO de los dos según tu modelo de datos
+            'role'          => 'sometimes|required_without:role_id|string',
+            'role_id'       => 'sometimes|required_without:role|integer',
+            'security_pass' => 'required|string|min:1',
+        ]);
+
+        $inputPass = $data['security_pass'];
+
+        $query = User::query()->whereNotNull('security_pass');
+
+        if (isset($data['role'])) {
+            $query->where('role', $data['role']); // si guardas el rol como string en users.role
+        }
+
+        if (isset($data['role_id'])) {
+            $query->where('role_id', $data['role_id']); // si tienes FK a roles.id
+            // o ->whereHas('role', fn($q) => $q->where('id', $data['role_id']));
+        }
+
+        // Nota: no usamos where() por el hash; hay que verificar en PHP
+        $candidatos = $query->get(['id', 'name', 'role', 'role_id', 'security_pass']);
+
+        foreach ($candidatos as $u) {
+            // 1) Caso correcto: hashed
+            if (Hash::check($inputPass, $u->security_pass)) {
+                return response()->json([
+                    'valid' => true,
+                    'user'  => [
+                        'id'   => $u->id,
+                        'name' => $u->name,
+                        'role' => $u->role ?? $u->role_id,
+                    ],
+                ]);
+            }
+
+            // 2) Compatibilidad temporal si tienes registros viejos en texto plano
+            if (hash_equals((string)$u->security_pass, (string)$inputPass)) {
+                // Migra en caliente a hash para endurecer seguridad
+                $u->forceFill(['security_pass' => Hash::make($inputPass)])->save();
+
+                return response()->json([
+                    'valid' => true,
+                    'user'  => [
+                        'id'   => $u->id,
+                        'name' => $u->name,
+                        'role' => $u->role ?? $u->role_id,
+                    ],
+                    'migrated' => true, // para saber que rehasheó
+                ]);
+            }
+        }
+
+        return response()->json(['valid' => false], 200);
     }
 }

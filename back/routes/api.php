@@ -40,6 +40,7 @@ Route::controller(AuthController::class)->group(function () {
     Route::delete('/delete/{id}', 'getUserDelete');
     Route::put('/update/{id}', 'getUserUpdate');
     Route::get('/date/{id}', 'getuserById');
+    Route::post('/users/validate-security-pass', 'validateSecurityPassByRole');
 });
 
 //Rutas Permissions
