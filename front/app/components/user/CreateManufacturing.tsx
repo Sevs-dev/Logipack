@@ -95,10 +95,10 @@ function CreateManufacturing({
     try {
       if (formData.id) {
         await updateManu(formData.id, formData);
-        showSuccess("Manufactura actualizada correctamente");
+        showSuccess("Línea actualizada correctamente");
       } else {
         await createManu(formData);
-        showSuccess("Manufactura creada correctamente");
+        showSuccess("Línea creada correctamente");
       }
       await fetchData();
       closeModal();
@@ -115,7 +115,7 @@ function CreateManufacturing({
       try {
         await deleteManu(id);
         setManu((prev) => prev.filter((m) => m.id !== id));
-        showSuccess("Manufactura eliminada correctamente");
+        showSuccess("Línea eliminada correctamente");
       } catch (error) {
         console.error("Error al eliminar manufactura", error);
         showError("No se pudo eliminar la manufactura");

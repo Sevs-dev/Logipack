@@ -905,15 +905,10 @@ function BOMManager({ canEdit = false, canView = false }: CreateClientProps) {
 
                                     return (
                                       <div className="text-sm text-gray-700">
-                                        Neta:{" "}
+                                        Resultado Calculado:{" "}
                                         <span className="font-semibold">
                                           {net.toFixed(3)}
                                         </span>{" "}
-                                        <span className="opacity-70">
-                                          ({qty.toFixed(3)} × (1 −{" "}
-                                          {waste.toFixed(2)}
-                                          %))
-                                        </span>
                                       </div>
                                     );
                                   })()}

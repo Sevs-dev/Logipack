@@ -11,8 +11,7 @@ import { showSuccess, showError, showConfirm } from "../toastr/Toaster";
 import Button from "../buttons/buttons";
 import { CreateClientProps } from "../../interfaces/CreateClientProps";
 import ModalSection from "../modal/ModalSection";
-import Text from "../text/Text";
-import { getAuditsByModelAdmin } from "../../services/history/historyAuditServices";
+import Text from "../text/Text"; 
 import AuditModal from "../history/AuditModal";
 import { Audit } from "../../interfaces/Audit";
 import { Product } from "../../interfaces/Products";
@@ -35,8 +34,7 @@ function Products({ canEdit = false, canView = false }: CreateClientProps) {
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   // Estado para la lista de auditorías
   const [auditList, setAuditList] = useState<Audit[]>([]);
-  // Estado para la auditoría seleccionada (no se usa, pero se deja para posible ampliación)
-  const [, setSelectedAudit] = useState<Audit | null>(null);
+  // Estado para la auditoría seleccionada (no se usa, pero se deja para posible ampliación) 
   const [isSaving, setIsSaving] = useState(false);
 
 
@@ -174,20 +172,6 @@ function Products({ canEdit = false, canView = false }: CreateClientProps) {
     }
   };
 
-  /**
-   * Maneja la visualización del historial de auditoría de un producto.
-   * @param id ID del producto
-   */
-  const handleHistory = async (id: number) => {
-    const model = "Products";
-    try {
-      const data = await getAuditsByModelAdmin(model, id);
-      setAuditList(data);
-      if (data.length > 0) setSelectedAudit(data[0]);
-    } catch (error) {
-      console.error("Error al obtener la auditoría:", error);
-    }
-  };
 
   // Renderizado del componente
   return (
@@ -237,8 +221,7 @@ function Products({ canEdit = false, canView = false }: CreateClientProps) {
         rows={products}
         columnLabels={{ name: "Nombre" }}
         onDelete={canEdit ? handleDelete : undefined}
-        onEdit={openEditModal}
-        onHistory={handleHistory}
+        onEdit={openEditModal} 
       />
 
       {/* Modal de auditoría */}
