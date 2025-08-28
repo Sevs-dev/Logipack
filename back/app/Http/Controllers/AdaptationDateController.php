@@ -736,6 +736,7 @@ class AdaptationDateController extends Controller
                     'number_order' => $plan->number_order,
                     'codart' => $plan->codart,
                     'orderNumber' => $plan->orderNumber,
+                    'orderType' => $plan->orderType,
                     'deliveryDate' => $plan->deliveryDate,
                     'quantityToProduce' => $plan->quantityToProduce,
                     'lot' => $plan->lot,

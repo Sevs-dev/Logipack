@@ -263,3 +263,13 @@ export const getActividadesTestigos = async (id: number) => {
     throw error;
   }
 };
+
+export const getRelacionarOrden = async (id: number) => {
+  try {
+    const response = await Planning.get(`/relacionarOrden/${id}`);
+    return response.data;
+  } catch (error: unknown) {
+    console.error("Error en getRelacionarOrden:", error);
+    throw error;
+  }
+};

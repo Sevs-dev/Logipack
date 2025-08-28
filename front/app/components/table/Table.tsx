@@ -16,6 +16,7 @@ type TableProps<T extends { id: number }> = {
   onTerciario?: (id: number) => void;
   onRestablecer?: (id: number) => void;
   onControl?: (id: number) => void;
+  onOrdenHija?: (id: number) => void;
   onHistory?: (id: number) => void;
   onPDF?: (id: number) => void;
   onView?: (id: number) => void;
@@ -30,6 +31,7 @@ type TableProps<T extends { id: number }> = {
   showTerciarioCondition?: (row: T) => boolean;
   showPDFCondition?: (row: T) => boolean;
   showViewCondition?: (row: T) => boolean;
+  showOrdenHijaButton?: boolean;
 };
 
 const Header = ({
@@ -78,11 +80,13 @@ function Table<T extends { id: number }>({
   onDelete,
   onTerciario,
   onRestablecer,
+  onOrdenHija,
   onControl,
   onHistory,
   onPDF,
   onView,
   showTerciarioCondition,
+  showOrdenHijaButton,
   showPDFCondition,
   showViewCondition,
   showDeleteButton = true,
@@ -269,8 +273,7 @@ function Table<T extends { id: number }>({
                 paginatedRows.map((row, index) => (
                   <tr
                     key={index}
-                    className="border-b border-gray-700 text-sm odd:bg-gray-800 even:bg-gray-850 hover:bg-gray-700 transition-all duration-300"
-                  >
+                    className="border-b border-gray-700 text-sm odd:bg-gray-800 even:bg-gray-850 hover:bg-gray-700 transition-all duration-300">
                     {columns.map((column) => {
                       const value = row[column];
                       if (
@@ -337,7 +340,7 @@ function Table<T extends { id: number }>({
                           variant="restablecer"
                         />
                       )}
-                      {showControlButton && onControl && (
+                      {showControlButton && onControl &&  (
                         <Button
                           onClick={() => onControl(row.id)}
                           variant="control"
@@ -360,6 +363,12 @@ function Table<T extends { id: number }>({
                         <Button
                           onClick={() => onHistory(row.id)}
                           variant="history"
+                        />
+                      )}
+                      {showOrdenHijaButton && onOrdenHija && row?.orderType === "P" && (
+                        <Button
+                          onClick={() => onOrdenHija(row.id)}
+                          variant="control"
                         />
                       )}
                     </td>

@@ -3,7 +3,7 @@ import { COLORS } from "@/app/constants/colors";
 import dayjs from "dayjs";
 // 🔹 Componentes
 import Button from "../buttons/buttons";
-import { showSuccess, showError } from "../toastr/Toaster";
+import { showSuccess, showError, showConfirm } from "../toastr/Toaster";
 import Table from "../table/Table";
 import ModalControl from "./modalControl";
 import Text from "../text/Text";
@@ -25,6 +25,7 @@ import {
   getConsultPlanning,
   actividades_ejecutadas,
   getRestablecerOrden,
+  getRelacionarOrden,
 } from "../../services/planing/planingServices";
 import { getActivitieId } from "../../services/maestras/activityServices";
 import {
@@ -181,8 +182,8 @@ export async function fetchAndProcessPlans(id: number): Promise<ServerPlan[]> {
   const rawArray: unknown[] = Array.isArray(serverPlansRaw)
     ? serverPlansRaw
     : serverPlansRaw != null
-    ? [serverPlansRaw]
-    : [];
+      ? [serverPlansRaw]
+      : [];
 
   if (rawArray.length === 0) {
     const keys = isRecord(resp) ? Object.keys(resp).join(", ") : "—";
@@ -439,6 +440,7 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
         factory: updatedPlan.factory,
         orderNumber: updatedPlan.orderNumber,
         number_order: updatedPlan.number_order,
+        orderType: updatedPlan.orderType,
         color: currentPlan?.color ?? undefined,
         icon: currentPlan?.icon ?? undefined,
         line: lines,
@@ -823,6 +825,39 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
     }
   }, []);
 
+  const handleOrdenHija = useCallback(async (id: number) => {
+    const { plan } = await getPlanningById(id);
+
+    if (plan.line === null) {
+      showError("No se asignó línea a la planificación");
+      return;
+    }
+
+    if (plan.status_dates === null || plan.status_dates === "En Creación") {
+      showError("Orden no planificada, debe completar la planificación");
+      return;
+    }
+
+    const data = await validate_orden(plan.id);
+    if (data.estado === 100 || data.estado === null) {
+
+      showConfirm("¿Estás seguro desea crear una orden relacionada ?", async () => {
+        const response = await getRelacionarOrden(plan.id);
+        if (response.estado !== 200) {
+          showError("Error, orden no permitida para ser relaodada");
+          return;
+        }
+        showSuccess("Orden relaodada correctamente");
+        setTimeout(() => {
+          window.location.reload();
+        }, 1000);
+      });
+
+    } else {
+      showError("La orden ya fue finalizada. Estado: " + data.estado);
+    }
+  }, []);
+
   //Componente SelectorDual
   const agregarMaquina = (m: MachinePlanning) => {
     if (!selectedMachines.find((x) => x.id === m.id)) {
@@ -1163,11 +1198,10 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
                       onDragStart={() => {
                         if (!isDisabled) setDraggedActivityId(act.id);
                       }}
-                      className={`border border-gray-300 p-3 mb-3 rounded-md ${
-                        isDisabled
+                      className={`border border-gray-300 p-3 mb-3 rounded-md ${isDisabled
                           ? "cursor-not-allowed bg-gray-100 text-gray-900"
                           : "cursor-grab bg-white hover:shadow"
-                      } shadow-sm transition-shadow flex justify-between items-center`}
+                        } shadow-sm transition-shadow flex justify-between items-center`}
                       title={
                         isDisabled
                           ? "No tienes permiso para arrastrar actividades"
@@ -1202,7 +1236,7 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
                         </Text>
 
                         {Array.isArray(activitiesForLine) &&
-                        activitiesForLine.length > 0 ? (
+                          activitiesForLine.length > 0 ? (
                           activitiesForLine.map((actId) => {
                             const act = activitiesDetails.find(
                               (a) => a.id === actId
@@ -1298,9 +1332,8 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
                     <button
                       key={`${color}-${index}`}
                       type="button"
-                      className={`w-6 h-6 rounded-full relative flex items-center justify-center transition-shadow duration-200 ${
-                        isSelected ? "ring-2 ring-white ring-offset-2" : ""
-                      }`}
+                      className={`w-6 h-6 rounded-full relative flex items-center justify-center transition-shadow duration-200 ${isSelected ? "ring-2 ring-white ring-offset-2" : ""
+                        }`}
                       style={{ backgroundColor: color }}
                       onClick={() => setCurrentPlan({ ...currentPlan, color })}
                       aria-label={`Seleccionar color ${color}`}
@@ -1456,6 +1489,7 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
         columns={[
           "client_name",
           "number_order",
+          "orderType",
           "codart",
           "factory",
           "status_dates",
@@ -1464,6 +1498,7 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
         columnLabels={{
           client_name: "Cliente",
           number_order: "N° de orden",
+          orderType: "Tipo de orden",
           codart: "Artículo",
           factory: "Planta",
           status_dates: "Estado",
@@ -1473,11 +1508,13 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
         showTerciarioButton={true}
         showRestablecerButton={false}
         showControlButton={false}
+        showOrdenHijaButton={true}
         showViewButton={true}
         onEdit={handleEdit}
         onRestablecer={hableRestablecerOrden}
         onTerciario={handleTerciario}
         onControl={hableControlOrden}
+        onOrdenHija={handleOrdenHija}
         onView={obtenerActividades}
         onPDF={handlePDF}
         showTerciarioCondition={(row) =>

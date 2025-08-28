@@ -17,6 +17,7 @@ return new class extends Migration
             $table->string('adaptation_id')->nullable(); // Concatena los datos de los id
             $table->string('maestra_id')->nullable();
             $table->string('number_order')->nullable();
+            $table->string('orderType');
             $table->string('descripcion_maestra')->nullable();
             $table->boolean('requiere_bom');
             $table->string('maestra_fases_fk')->nullable();
