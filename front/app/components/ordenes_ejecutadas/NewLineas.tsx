@@ -129,11 +129,7 @@ const NewLineas = () => {
     if (orden?.estado === 11500) {
         window.close();
     }
-    // console.log("orden", orden?.estado);
-    // if (lista_procesos.length === 0 && lista_fases.length === 0 && orden === null) {
-    //     window.close();
-    // }
-
+    
     const verificarYGenerar = async () => {
         if (orden === null && local) {
             const { estado, message } = await generar_orden(local.id);

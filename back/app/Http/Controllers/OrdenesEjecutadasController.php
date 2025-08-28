@@ -194,12 +194,12 @@ class OrdenesEjecutadasController extends Controller
             ->where('ada.adaptation_date_id', $id)
             ->where('ada.proceso', 'eject')
             ->whereIn('std.phase_type', ['Conciliación'])
-            ->whereNotExists(function ($query) use ($id) {
-                $query
-                    ->select(DB::raw(1))
-                    ->from('conciliaciones as co')
-                    ->where('co.adaptation_date_id', $id);
-            })
+            // ->whereNotExists(function ($query) use ($id) {
+            //     $query
+            //         ->select(DB::raw(1))
+            //         ->from('conciliaciones as co')
+            //         ->where('co.adaptation_date_id', $id);
+            // })
             ->where('repeat_line', 0)
             ->select(
                 'std.id',
@@ -648,6 +648,7 @@ class OrdenesEjecutadasController extends Controller
                         'orden_ejecutada' => $orden->id,
                         'adaptation_date_id' => $orden->adaptation_date_id,
                         'number_order' => $orden->number_order,
+                        'orderType' => $ada_date->orderType,
                         'descripcion_maestra' => $orden->descripcion_maestra,
                     ],
                     'conciliacion' => [
@@ -666,6 +667,7 @@ class OrdenesEjecutadasController extends Controller
                     'orden_ejecutada' => $orden->id,
                     'adaptation_date_id' => $orden->adaptation_date_id,
                     'number_order' => $orden->number_order,
+                    'orderType' => $ada_date->orderType,
                     'descripcion_maestra' => $orden->descripcion_maestra,
                 ],
                 'conciliacion' => [
