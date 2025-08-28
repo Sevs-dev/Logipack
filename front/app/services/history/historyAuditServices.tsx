@@ -33,6 +33,7 @@ export const getAuditsByModel = async (model: string, id: number) => {
 };
 
 export const getAuditsByModelAdmin = async (model: string, id: number) => {
+    console.log("Llamando a getAuditsByModelAdmin con model:", model, "y id:", id);
     try {
         const response = await Audit.get(`/audit/admin/${model}/${id}`); 
         return response.data;

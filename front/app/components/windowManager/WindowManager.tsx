@@ -243,7 +243,8 @@ const WindowManager: React.FC<WindowManagerProps> = ({
 
       {/* Tabs escritorio */}
       <div
-        className="hidden sm:flex flex-wrap items-center gap-1 px-3 py-2 bg-gray-850 rounded-t-xl shadow-md border-b border-gray-700"
+        className="hidden sm:flex ml-8 items-center flex-nowrap gap-0 px-3 py-2
+             bg-gray-850 rounded-t-xl shadow-md border-b border-gray-700"
         role="tablist"
         aria-orientation="horizontal"
         id={tabsListId}
@@ -252,8 +253,10 @@ const WindowManager: React.FC<WindowManagerProps> = ({
           const selected = activeWindow === win.id;
           const panelId = `panel-${win.id}`;
           const tabId = `tab-${win.id}`;
+
           return (
-            <div key={win.id} className="relative">
+            // solapa 1px para evitar “doble borde” entre botones
+            <div key={win.id} className="relative -ml-px first:ml-0">
               <button
                 id={tabId}
                 role="tab"
@@ -261,7 +264,9 @@ const WindowManager: React.FC<WindowManagerProps> = ({
                 aria-controls={panelId}
                 tabIndex={selected ? 0 : -1}
                 className={[
-                  "px-4 py-2 text-xs sm:text-sm font-semibold rounded-t-md transition-all flex items-center gap-2 border border-gray-700 shadow-sm ml-8",
+                  // sin gap, todos pegados; mantenemos borde en cada uno
+                  "px-4 py-2 text-xs sm:text-sm font-semibold rounded-t-md transition-all flex items-center",
+                  "border border-gray-700 shadow-sm ml-1",
                   selected
                     ? "bg-gray-950 text-white border-blue-500"
                     : "bg-gray-800 text-gray-300 hover:bg-gray-700",
@@ -276,6 +281,7 @@ const WindowManager: React.FC<WindowManagerProps> = ({
                   {win.title}
                 </span>
               </button>
+
               {!win.isProtected && (
                 <button
                   className="absolute -top-1 -right-1 text-red-400 hover:text-red-300 cursor-pointer text-xs hover:scale-110"

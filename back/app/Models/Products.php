@@ -3,12 +3,12 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
-use App\Traits\AdminAuditable;
+use Illuminate\Database\Eloquent\Model; 
+use App\Traits\Auditable;
 
 class Products extends Model
 {
-    use AdminAuditable;
+    use Auditable;
     use HasFactory;
 
     protected $guarded = [];

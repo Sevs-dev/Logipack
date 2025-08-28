@@ -528,7 +528,7 @@ function NewAdaptation({
       if (isEditMode) {
         // ⚠️ El servicio updateAdaptation debe hacer POST + _method=PUT y NO forzar Content-Type
         await updateAdaptation(editAdaptationId!, formData);
-        showSuccess("Acondicionamiento actualizado."); 
+        showSuccess("Acondicionamiento actualizado.");
       } else {
         await newAdaptation(formData); // POST normal
         showSuccess("Acondicionamiento creado.");
@@ -549,7 +549,7 @@ function NewAdaptation({
   // ======================= ✏️ Edición =======================
 
   const handleEdit = async (id: number) => {
-    setIsSaving(false); 
+    setIsSaving(false);
     try {
       const { adaptation } = await getAdaptationsId(id);
       if (!adaptation) {
@@ -795,7 +795,9 @@ function NewAdaptation({
                   <div className="relative bg-gray-50 border border-gray-300 rounded-lg px-4 py-3 mt-2 shadow-sm">
                     {/* VisualOrder visible */}
                     <p className="text-center font-mono text-sm text-gray-800 tracking-wide select-none">
-                      {visualOrder || "Cargando orden..."}
+                      {isEditMode
+                        ? client_order || "No disponible"
+                        : visualOrder || "Cargando orden..."}
                     </p>
 
                     {/* Botón copiar */}

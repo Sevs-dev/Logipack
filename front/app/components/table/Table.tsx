@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import Button from "../buttons/buttons";
 import Mini from "../loader/MiniLoader";
 
-type BooleanColumns = "binding" | "status" | "aprobado" | "paralelo";
+type BooleanColumns = "binding" | "status" | "aprobado" | "paralelo" | "canEdit" | "canView";
 
 type TableProps<T extends { id: number }> = {
   rows: T[];
@@ -107,6 +107,8 @@ function Table<T extends { id: number }>({
     "status",
     "aprobado",
     "paralelo",
+    "canEdit",
+    "canView",
   ];
   const itemsPerPage = 10;
   const maxButtons = 4;
