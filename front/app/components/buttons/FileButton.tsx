@@ -29,13 +29,16 @@ interface AdvancedFileUploaderProps {
   allowMultiple?: boolean;
   /** Solo para depurar o submit nativo; con FormData manual no es necesario. */
   fieldName?: string;
-  /** Restringe tipos. Ej: ".pdf,image/*" */
+  /** Restringe tipos. Por defecto: solo PDF */
   accept?: string;
-  /** Máximo de archivos (opcional) */
+  /** Máximo de archivos válidos (opcional) */
   maxFiles?: number;
   /** Evita duplicados por nombre+tamaño (true por defecto) */
   dedupe?: boolean;
 }
+
+const isPdf = (f: File) =>
+  f.type === "application/pdf" || /\.pdf$/i.test(f.name);
 
 const AdvancedFileUploader = forwardRef<
   AdvancedFileUploaderHandle,
@@ -47,7 +50,7 @@ const AdvancedFileUploader = forwardRef<
       onChange,
       allowMultiple = true,
       fieldName = "attachment",
-      accept = ".pdf,image/*",
+      accept = "application/pdf,.pdf",
       maxFiles,
       dedupe = true,
     },
@@ -81,9 +84,8 @@ const AdvancedFileUploader = forwardRef<
     };
 
     const pushFiles = (picked: File[]) => {
+      // Dedupe por nombre+tamaño respecto a lo ya cargado
       let candidate = picked;
-
-      // Dedupe por nombre+tamaño
       if (dedupe) {
         const seen = new Set(
           files.map((f) => `${f.file.name}::${f.file.size}`)
@@ -91,33 +93,53 @@ const AdvancedFileUploader = forwardRef<
         candidate = picked.filter((f) => !seen.has(`${f.name}::${f.size}`));
       }
 
-      // Enforce maxFiles
-      if (typeof maxFiles === "number") {
-        const remaining = Math.max(0, maxFiles - files.length);
-        if (remaining === 0) return; // ya al límite
-        candidate = candidate.slice(0, remaining);
-      }
+      // Separar válidos (PDF) de inválidos (no-PDF)
+      const invalidType = candidate.filter((f) => !isPdf(f));
+      const candidatePdf = candidate.filter(isPdf);
 
-      const newFiles: UploadedFile[] = candidate.map((file) => {
-        if (file.size > maxSizeMB * 1024 * 1024) {
-          return {
+      // Enforce maxFiles contando SOLO válidos actuales
+      const currentValidCount = files.filter((f) => !f.error).length;
+      const remaining =
+        typeof maxFiles === "number"
+          ? Math.max(0, maxFiles - currentValidCount)
+          : Number.MAX_SAFE_INTEGER;
+
+      const toAddValid = candidatePdf.slice(0, remaining);
+
+      const errorItems: UploadedFile[] = [
+        ...invalidType.map((file) => ({
+          file,
+          error: "Solo se permiten archivos PDF.",
+          progress: 0,
+          uploading: false,
+        })),
+        ...toAddValid
+          .filter((file) => file.size > maxSizeMB * 1024 * 1024)
+          .map((file) => ({
             file,
             error: `Excede los ${maxSizeMB}MB`,
             progress: 0,
             uploading: false,
-          };
-        }
-        return {
-          file,
-          preview: file.type.startsWith("image/")
-            ? URL.createObjectURL(file)
-            : undefined,
-          progress: 0,
-          uploading: true,
-        };
-      });
+          })),
+      ];
 
-      setFiles((prev) => (allowMultiple ? [...prev, ...newFiles] : newFiles));
+      // Filtrar los válidos que SÍ pasan tamaño
+      const validSized = toAddValid.filter(
+        (file) => file.size <= maxSizeMB * 1024 * 1024
+      );
+
+      const okItems: UploadedFile[] = validSized.map((file) => ({
+        file,
+        preview: undefined, // No preview para PDF
+        progress: 0,
+        uploading: true,
+      }));
+
+      setFiles((prev) =>
+        allowMultiple
+          ? [...prev, ...errorItems, ...okItems]
+          : [...errorItems, ...okItems]
+      );
     };
 
     const handleFiles = (selected: FileList | null) => {
@@ -173,19 +195,16 @@ const AdvancedFileUploader = forwardRef<
     }, [files]);
 
     // ==== 🔑 Notificación al padre SIN bucles ====
-    // 1) Guardamos onChange en una ref para no depender de su identidad
     const onChangeRef = useRef(onChange);
     useEffect(() => {
       onChangeRef.current = onChange;
     }, [onChange]);
 
-    // 2) Payload solo con Files válidos (memo)
     const filesPayload = useMemo(
       () => files.filter((f) => !f.error).map((f) => f.file),
       [files]
     );
 
-    // 3) Evita re-disparar si el payload (referencias) no cambió
     const lastPayloadRef = useRef<File[] | null>(null);
     useEffect(() => {
       const prev = lastPayloadRef.current;
@@ -207,6 +226,9 @@ const AdvancedFileUploader = forwardRef<
       // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
+    // Conteo de válidos para mostrar contra maxFiles
+    const validCount = files.filter((f) => !f.error).length;
+
     return (
       <div className="w-full max-w-5xl mx-auto flex flex-col gap-2 p-1.5">
         {/* Dropzone */}
@@ -222,8 +244,10 @@ const AdvancedFileUploader = forwardRef<
                 : "border-dashed border-gray-300 bg-white hover:bg-gray-50"
             }`}
           >
-            <FaFileAlt className="text-blue-500 mb-1" size={20} />
-            <p className="text-[11px] text-gray-700 mb-0.5">Subir archivo</p>
+            <FaFilePdf className="text-red-500 mb-1" size={20} />
+            <p className="text-[11px] text-gray-700 mb-0.5">
+              Subir archivo (solo PDF)
+            </p>
             <input
               ref={inputRef}
               id="file-uploader"
@@ -242,7 +266,7 @@ const AdvancedFileUploader = forwardRef<
           <div className="flex items-center justify-between">
             {typeof maxFiles === "number" && (
               <span className="text-[10px] text-gray-500">
-                {files.length}/{maxFiles}
+                {validCount}/{maxFiles}
               </span>
             )}
             <button
@@ -288,7 +312,9 @@ const AdvancedFileUploader = forwardRef<
                       {(f.file.size / 1024 / 1024).toFixed(2)} MB
                     </p>
 
-                    {f.error && <p className="text-red-500">{f.error}</p>}
+                    {f.error && (
+                      <p className="text-red-600 font-medium">{f.error}</p>
+                    )}
 
                     {!f.error && f.progress < 100 && (
                       <div className="w-full bg-gray-200 rounded-full mt-0.5 h-1">

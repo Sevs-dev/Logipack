@@ -897,7 +897,7 @@ const Maestra = ({ canEdit = false, canView = false }: CreateClientProps) => {
                                     <InfoPopover
                                         content={
                                             <>
-                                                Este es el tiempo calculado automáticamente por el <strong>usuario</strong> según la duración proporcionada a las actividades seleccionadas.
+                                                Este es el tiempo calculado automáticamente por el <strong>usuario</strong> según la duración proporcionada a las fases seleccionadas.
                                             </>
                                         }
                                     />
