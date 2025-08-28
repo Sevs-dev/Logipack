@@ -26,6 +26,7 @@ type Variant =
   | "terciario"
   | "history"
   | "after"
+  | "after2"
   | "before"
   | "pdf"
   | "add"
@@ -57,6 +58,8 @@ const variantStyles: Record<Variant, string> = {
   pdf: "bg-cyan-500 hover:bg-cyan-600 text-white",
   after:
     "bg-white text-black border border-purple-500 hover:bg-purple-600 hover:text-white",
+  after2:
+    "bg-[#0077ff] text-white border border-white hover:bg-purple-600 hover:text-white",
   before:
     "bg-white text-black border border-purple-500 hover:bg-purple-600 hover:text-white",
   add: "bg-orange-500 hover:bg-orange-600 text-white",
@@ -76,6 +79,7 @@ const icons: Record<Variant, React.ReactNode> = {
   history: <FaHistory />,
   pdf: <FaRegFilePdf />,
   after: <FaAngleRight />,
+  after2: <FaAngleRight />,
   before: <FaAngleLeft />,
   add: <FaRegPlusSquare />,
   view: <FaVoteYea />,
@@ -94,6 +98,7 @@ const labels: Record<Variant, string> = {
   history: "Historial",
   pdf: "PDF",
   after: "Siguiente",
+  after2: "Siguiente",
   before: "Anterior",
   add: "Agregar",
   view: "Ver",

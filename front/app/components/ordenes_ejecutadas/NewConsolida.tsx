@@ -4,6 +4,8 @@ import {
   guardar_conciliacion,
 } from "@/app/services/planing/planingServices";
 import { useParams } from "next/navigation";
+import Text from "../text/Text";
+import Button from "../buttons/buttons";
 
 const NewConsolida = () => {
   const params = useParams();
@@ -117,7 +119,7 @@ const NewConsolida = () => {
       }
 
       // Calcula unidades_caja
-      const saldo = (unidades_caja * numero_caja) + unidades_saldo;
+      const saldo = unidades_caja * numero_caja + unidades_saldo;
 
       // Actualizar estado, redondeando a 2 decimales
       setData((prev) => ({
@@ -173,59 +175,43 @@ const NewConsolida = () => {
   // --- COPIA Y PEGA ESTE CÓDIGO ---
 
   return (
-    // Contenedor principal con un fondo sutil para que el formulario resalte
-    <div className="bg-silver-50 min-h-screen py-12">
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-        <form
-          id="formConciliacion"
-          onSubmit={handleSubmit}
-          className="bg-white rounded-2xl shadow-xl p-8 space-y-10"
-        >
+    <div className="w-full rounded-2xl bg-white/5 backdrop-blur-sm border border-white/10 shadow-md overflow-hidden mt-4">
+      <div className="bg-white/2.5 px-[10px] py-[10px] border-b border-white/5 backdrop-blur-sm">
+        <form id="formConciliacion" onSubmit={handleSubmit}>
           {/* --- Encabezado del Formulario --- */}
           <div className="text-center">
-            <h1 className="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
+            <Text type="title" color="text-white">
               Formulario de Conciliación
-            </h1>
-            <p className="mt-3 text-lg leading-8 text-slate-600">
+            </Text>
+            <Text type="subtitle" color="text-white">
               Complete los campos para calcular la producción y el rendimiento.
-            </p>
+            </Text>
           </div>
 
           {/* --- Sección de Información de la Orden (Solo lectura) --- */}
           <div className="border-b border-slate-200 pb-8">
-            <h2 className="text-base font-semibold leading-7 text-slate-900">
-              Información de la Orden
-            </h2>
             <div className="mt-4 grid grid-cols-1 gap-x-6 gap-y-6 sm:grid-cols-4">
               <div>
-                <label className="block text-sm font-medium leading-6 text-slate-600">
-                  Orden Ejecutada
-                </label>
-                <p className="mt-1 text-base font-semibold text-slate-800 bg-slate-100 rounded-md px-3 py-2">
-                  {data.orden_ejecutada}
-                </p>
-              </div>
-              <div>
-                <label className="block text-sm font-medium leading-6 text-slate-600">
+                <Text type="subtitle" color="text-white">
                   Número de Orden
-                </label>
-                <p className="mt-1 text-base font-semibold text-slate-800 bg-slate-100 rounded-md px-3 py-2 font-mono">
+                </Text>
+                <p className="mt-1 text-base font-semibold text-slate-800 bg-slate-100 rounded-md px-3 py-2 font-mono text-center">
                   {data.number_order}
                 </p>
               </div>
               <div className="sm:col-span-2">
-                <label className="block text-sm font-medium leading-6 text-slate-600">
+                <Text type="subtitle" color="text-white">
                   Descripción Maestra
-                </label>
-                <p className="mt-1 text-base font-semibold text-slate-800 bg-slate-100 rounded-md px-3 py-2">
+                </Text>
+                <p className="mt-1 text-base font-semibold text-slate-800 bg-slate-100 rounded-md px-3 py-2 text-center">
                   {data.descripcion_maestra}
                 </p>
               </div>
               <div>
-                <label className="block text-sm font-medium leading-6 text-slate-600">
+                <Text type="subtitle" color="text-white">
                   Código Artículo
-                </label>
-                <p className="mt-1 text-base font-semibold text-slate-800 bg-slate-100 rounded-md px-3 py-2 font-mono">
+                </Text>
+                <p className="mt-1 text-base font-semibold text-slate-800 bg-slate-100 rounded-md px-3 py-2 font-mono text-center">
                   {data.codart}
                 </p>
               </div>
@@ -233,327 +219,278 @@ const NewConsolida = () => {
           </div>
 
           {/* --- Sección de Producción y Desperdicio --- */}
-          <fieldset className="border border-slate-200 p-6 rounded-xl">
-            <legend className="-ml-1 px-2 text-lg font-semibold text-indigo-700">
-              Producción y Desperdicio
-            </legend>
-            <div className="grid grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-4 mt-4">
-              {/* Cantidad Teórica */}
-              <div className="sm:col-span-2">
-                <label className="flex items-center text-sm font-medium leading-6 text-slate-900">
-                  Cantidad Teórica
-                  <span className="ml-2 font-mono text-xs bg-slate-200 text-slate-600 px-1.5 py-0.5 rounded-full">
-                    a
-                  </span>
-                </label>
-                <p className="mt-2 w-full rounded-md border-0 bg-slate-100 px-3.5 py-2 text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300">
-                  {data.quantityToProduce}
-                </p>
+          <div className="w-full rounded-2xl bg-white/5 backdrop-blur-sm border border-white/10 shadow-md overflow-hidden mt-4">
+            <div className="min-h-screen w-full bg-[#1b2535] text-white p-[10px] sm:p-[10px] flex flex-col rounded-2xl">
+              <Text type="title" color="text-white">
+                Producción y Desperdicio
+              </Text>
+              <div className="grid grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-4 mt-4">
+                {/* Cantidad Teórica */}
+                <div className="sm:col-span-2">
+                  <Text type="subtitle" color="text-white">
+                    Cantidad Teórica
+                    <span className="ml-2 font-mono text-xs bg-slate-200 text-slate-600 px-1.5 py-0.5 rounded-full">
+                      a
+                    </span>
+                  </Text>
+                  <p className="mt-2 w-full rounded-md border-0 bg-slate-100 px-3.5 py-2 text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 text-center">
+                    {data.quantityToProduce}
+                  </p>
+                </div>
+
+                {/* Faltante */}
+                <div>
+                  <Text type="subtitle" color="text-white">
+                    Faltante
+                    <span className="ml-2 font-mono text-xs bg-slate-200 text-slate-600 px-1.5 py-0.5 rounded-full">
+                      b
+                    </span>
+                  </Text>
+                  <input
+                    type="number"
+                    step="any"
+                    id="faltante"
+                    name="faltante"
+                    required
+                    value={data.faltante}
+                    onChange={inputChange}
+                    className="mt-2 block w-full rounded-md border-0 py-2 px-3.5 text-center text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
+                  />
+                </div>
+
+                {/* Adicionales */}
+                <div>
+                  <Text type="subtitle" color="text-white">
+                    Adicionales
+                    <span className="ml-2 font-mono text-xs bg-slate-200 text-slate-600 px-1.5 py-0.5 rounded-full">
+                      c
+                    </span>
+                  </Text>
+                  <input
+                    type="number"
+                    step="any"
+                    id="adicionales"
+                    name="adicionales"
+                    required
+                    value={data.adicionales}
+                    onChange={inputChange}
+                    className="mt-2 block w-full rounded-md border-0 py-2 px-3.5 text-center text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
+                  />
+                </div>
+
+                {/* Rechazo */}
+                <div>
+                  <Text type="subtitle" color="text-white">
+                    Rechazo
+                    <span className="ml-2 font-mono text-xs bg-slate-200 text-slate-600 px-1.5 py-0.5 rounded-full">
+                      d
+                    </span>
+                  </Text>
+                  <input
+                    type="number"
+                    step="any"
+                    id="rechazo"
+                    name="rechazo"
+                    required
+                    value={data.rechazo}
+                    onChange={inputChange}
+                    className="mt-2 block w-full text-center rounded-md border-0 py-2 px-3.5 text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
+                  />
+                </div>
+
+                {/* Daño en Proceso */}
+                <div>
+                  <Text type="subtitle" color="text-white">
+                    Daño en Proceso
+                    <span className="ml-2 font-mono text-xs bg-slate-200 text-slate-600 px-1.5 py-0.5 rounded-full">
+                      e
+                    </span>
+                  </Text>
+                  <input
+                    type="number"
+                    step="any"
+                    id="danno_proceso"
+                    name="danno_proceso"
+                    required
+                    value={data.danno_proceso}
+                    onChange={inputChange}
+                    className="mt-2 block w-full text-center rounded-md border-0 py-2 px-3.5 text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
+                  />
+                </div>
+
+                {/* Devolución */}
+                <div>
+                  <Text type="subtitle" color="text-white">
+                    Devolución
+                    <span className="ml-2 font-mono text-xs  bg-slate-200 text-slate-600 px-1.5 py-0.5 rounded-full">
+                      f
+                    </span>
+                  </Text>
+                  <input
+                    type="number"
+                    step="any"
+                    id="devolucion"
+                    name="devolucion"
+                    required
+                    value={data.devolucion}
+                    onChange={inputChange}
+                    className="mt-2 block w-full text-center rounded-md border-0 py-2 px-3.5 text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
+                  />
+                </div>
+
+                {/* Sobrante */}
+                <div>
+                  <Text type="subtitle" color="text-white">
+                    Sobrante
+                    <span className="ml-2 font-mono text-xs bg-slate-200 text-slate-600 px-1.5 py-0.5 rounded-full">
+                      g
+                    </span>
+                  </Text>
+                  <input
+                    type="number"
+                    step="any"
+                    id="sobrante"
+                    name="sobrante"
+                    required
+                    value={data.sobrante}
+                    onChange={inputChange}
+                    className="mt-2 block w-full text-center rounded-md border-0 py-2 px-3.5 text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
+                  />
+                </div>
               </div>
 
-              {/* Faltante */}
-              <div>
-                <label
-                  htmlFor="faltante"
-                  className="flex items-center text-sm font-medium leading-6 text-slate-900"
-                >
-                  Faltante
-                  <span className="ml-2 font-mono text-xs bg-slate-200 text-slate-600 px-1.5 py-0.5 rounded-full">
-                    b
-                  </span>
-                </label>
-                <input
-                  type="number"
-                  step="any"
-                  id="faltante"
-                  name="faltante"
-                  required
-                  value={data.faltante}
-                  onChange={inputChange}
-                  className="mt-2 block w-full rounded-md border-0 py-2 px-3.5 text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
-                />
+              {/* --- Sección de Totales y Cajas --- */}
+              <Text type="title" color="text-white">
+                Totales y Empacado
+              </Text>
+              <div className="grid grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-2 mt-4">
+                {/* Total */}
+                <div>
+                  <Text type="subtitle" color="text-white">
+                    Total Producido
+                    <span className="ml-2 font-mono text-xs bg-slate-200 text-slate-600 px-1.5 py-0.5 rounded-full">
+                      h
+                    </span>
+                  </Text>
+                  <input
+                    type="number"
+                    readOnly
+                    value={data.total}
+                    className="mt-2 block w-full text-center rounded-md border-0 py-2 px-3.5 text-slate-500 bg-slate-100 shadow-sm ring-1 ring-inset ring-slate-300 cursor-not-allowed"
+                  />
+                  <p className="mt-1 text-xs text-slate-200 text-center">
+                    Cálculo: a + c + g - (b + d + e + f)
+                  </p>
+                </div>
+
+                {/* Rendimiento */}
+                <div>
+                  <Text type="subtitle" color="text-white">
+                    Rendimiento (%)
+                    <span className="ml-2 font-mono text-xs bg-slate-200 text-slate-600 px-1.5 py-0.5 rounded-full">
+                      i
+                    </span>
+                  </Text>
+                  <input
+                    type="number"
+                    readOnly
+                    value={data.rendimiento}
+                    className="mt-2 block text-center w-full rounded-md border-0 py-2 px-3.5 text-slate-500 bg-slate-100 shadow-sm ring-1 ring-inset ring-slate-300 cursor-not-allowed"
+                  />
+                  <p className="mt-1 text-xs text-slate-200 text-center">
+                    Cálculo: (h - e) / (a - (d + b)) × 100
+                  </p>
+                </div>
               </div>
 
-              {/* Adicionales */}
-              <div>
-                <label
-                  htmlFor="adicionales"
-                  className="flex items-center text-sm font-medium leading-6 text-slate-900"
-                >
-                  Adicionales
-                  <span className="ml-2 font-mono text-xs bg-slate-200 text-slate-600 px-1.5 py-0.5 rounded-full">
-                    c
-                  </span>
-                </label>
-                <input
-                  type="number"
-                  step="any"
-                  id="adicionales"
-                  name="adicionales"
-                  required
-                  value={data.adicionales}
-                  onChange={inputChange}
-                  className="mt-2 block w-full rounded-md border-0 py-2 px-3.5 text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
-                />
-              </div>
+              <div className="grid grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-3 mt-8 pt-8 border-t border-slate-200">
+                {/* Unidades por Caja */}
+                <div>
+                  <Text type="subtitle" color="text-white">
+                    Unidades por Caja
+                    <span className="ml-2 font-mono text-xs bg-slate-200 text-slate-600 px-1.5 py-0.5 rounded-full">
+                      i
+                    </span>
+                  </Text>
+                  <input
+                    type="number"
+                    id="unidades_caja"
+                    name="unidades_caja"
+                    required
+                    value={data.unidades_caja}
+                    onChange={inputChange}
+                    className="mt-2 block w-full text-center rounded-md border-0 py-2 px-3.5 text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
+                  />
+                </div>
 
-              {/* Rechazo */}
-              <div>
-                <label
-                  htmlFor="rechazo"
-                  className="flex items-center text-sm font-medium leading-6 text-slate-900"
-                >
-                  Rechazo
-                  <span className="ml-2 font-mono text-xs bg-slate-200 text-slate-600 px-1.5 py-0.5 rounded-full">
-                    d
-                  </span>
-                </label>
-                <input
-                  type="number"
-                  step="any"
-                  id="rechazo"
-                  name="rechazo"
-                  required
-                  value={data.rechazo}
-                  onChange={inputChange}
-                  className="mt-2 block w-full rounded-md border-0 py-2 px-3.5 text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
-                />
-              </div>
+                {/* Número de Cajas */}
+                <div>
+                  <Text type="subtitle" color="text-white">
+                    Número de Cajas
+                    <span className="ml-2 font-mono text-xs bg-slate-200 text-slate-600 px-1.5 py-0.5 rounded-full">
+                      j
+                    </span>
+                  </Text>
+                  <input
+                    type="number"
+                    id="numero_caja"
+                    name="numero_caja"
+                    required
+                    value={data.numero_caja}
+                    onChange={inputChange}
+                    className="mt-2 block w-full text-center rounded-md border-0 py-2 px-3.5 text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
+                  />
+                </div>
 
-              {/* Daño en Proceso */}
-              <div>
-                <label
-                  htmlFor="danno_proceso"
-                  className="flex items-center text-sm font-medium leading-6 text-slate-900"
-                >
-                  Daño en Proceso
-                  <span className="ml-2 font-mono text-xs bg-slate-200 text-slate-600 px-1.5 py-0.5 rounded-full">
-                    e
-                  </span>
-                </label>
-                <input
-                  type="number"
-                  step="any"
-                  id="danno_proceso"
-                  name="danno_proceso"
-                  required
-                  value={data.danno_proceso}
-                  onChange={inputChange}
-                  className="mt-2 block w-full rounded-md border-0 py-2 px-3.5 text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
-                />
-              </div>
+                {/* Unidades de Saldo */}
+                <div>
+                  <Text type="subtitle" color="text-white">
+                    Unidades de Saldo
+                    <span className="ml-2 font-mono text-xs bg-slate-200 text-slate-600 px-1.5 py-0.5 rounded-full">
+                      k
+                    </span>
+                  </Text>
+                  <input
+                    type="number"
+                    id="unidades_saldo"
+                    name="unidades_saldo"
+                    required
+                    value={data.unidades_saldo}
+                    onChange={inputChange}
+                    className="mt-2 block w-full text-center rounded-md border-0 py-2 px-3.5 text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
+                  />
+                </div>
 
-              {/* Devolución */}
-              <div>
-                <label
-                  htmlFor="devolucion"
-                  className="flex items-center text-sm font-medium leading-6 text-slate-900"
-                >
-                  Devolución
-                  <span className="ml-2 font-mono text-xs bg-slate-200 text-slate-600 px-1.5 py-0.5 rounded-full">
-                    f
-                  </span>
-                </label>
-                <input
-                  type="number"
-                  step="any"
-                  id="devolucion"
-                  name="devolucion"
-                  required
-                  value={data.devolucion}
-                  onChange={inputChange}
-                  className="mt-2 block w-full rounded-md border-0 py-2 px-3.5 text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
-                />
-              </div>
-
-              {/* Sobrante */}
-              <div>
-                <label
-                  htmlFor="sobrante"
-                  className="flex items-center text-sm font-medium leading-6 text-slate-900"
-                >
-                  Sobrante
-                  <span className="ml-2 font-mono text-xs bg-slate-200 text-slate-600 px-1.5 py-0.5 rounded-full">
-                    g
-                  </span>
-                </label>
-                <input
-                  type="number"
-                  step="any"
-                  id="sobrante"
-                  name="sobrante"
-                  required
-                  value={data.sobrante}
-                  onChange={inputChange}
-                  className="mt-2 block w-full rounded-md border-0 py-2 px-3.5 text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
-                />
+                {/* Total Saldo */}
+                <div className="sm:col-span-3">
+                  <Text type="subtitle" color="text-white">
+                    Total Saldo
+                    <span className="ml-2 font-mono text-xs bg-slate-200 text-slate-600 px-1.5 py-0.5 rounded-full">
+                      L
+                    </span>
+                  </Text>
+                  <input
+                    type="number"
+                    readOnly
+                    value={data.total_saldo}
+                    className="mt-2 block w-full text-center rounded-md border-0 py-2 px-3.5 text-slate-500 bg-slate-100 shadow-sm ring-1 ring-inset ring-slate-300 cursor-not-allowed"
+                  />
+                  <p className="mt-1 text-xs text-slate-200 text-center">
+                    Cálculo: (i * j) + k
+                  </p>
+                </div>
               </div>
             </div>
-          </fieldset>
-
-          {/* --- Sección de Totales y Cajas --- */}
-          <fieldset className="border border-slate-200 p-6 rounded-xl">
-            <legend className="-ml-1 px-2 text-lg font-semibold text-indigo-700">
-              Totales y Empacado
-            </legend>
-            <div className="grid grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-2 mt-4">
-              {/* Total */}
-              <div>
-                <label
-                  htmlFor="total"
-                  className="flex items-center text-sm font-medium leading-6 text-slate-900"
-                >
-                  Total Producido
-                  <span className="ml-2 font-mono text-xs bg-slate-200 text-slate-600 px-1.5 py-0.5 rounded-full">
-                    h
-                  </span>
-                </label>
-                <input
-                  type="number"
-                  readOnly
-                  value={data.total}
-                  className="mt-2 block w-full rounded-md border-0 py-2 px-3.5 text-slate-500 bg-slate-100 shadow-sm ring-1 ring-inset ring-slate-300 cursor-not-allowed"
-                />
-                <p className="mt-1 text-xs text-slate-500">
-                  Cálculo: a + c + g - (b + d + e + f)
-                </p>
-              </div>
-
-              {/* Rendimiento */}
-              <div>
-                <label
-                  htmlFor="rendimiento"
-                  className="flex items-center text-sm font-medium leading-6 text-slate-900"
-                >
-                  Rendimiento (%)
-                  <span className="ml-2 font-mono text-xs bg-slate-200 text-slate-600 px-1.5 py-0.5 rounded-full">
-                    i
-                  </span>
-                </label>
-                <input
-                  type="number"
-                  readOnly
-                  value={data.rendimiento}
-                  className="mt-2 block w-full rounded-md border-0 py-2 px-3.5 text-slate-500 bg-slate-100 shadow-sm ring-1 ring-inset ring-slate-300 cursor-not-allowed"
-                />
-                <p className="mt-1 text-xs text-slate-500">
-                  Cálculo: (h - e) / (a - (d + b)) × 100
-                </p>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-3 mt-8 pt-8 border-t border-slate-200">
-              {/* Unidades por Caja */}
-              <div>
-                <label
-                  htmlFor="unidades_caja"
-                  className="flex items-center text-sm font-medium leading-6 text-slate-900"
-                >
-                  Unidades por Caja
-                  <span className="ml-2 font-mono text-xs bg-slate-200 text-slate-600 px-1.5 py-0.5 rounded-full">
-                    i
-                  </span>
-                </label>
-                <input
-                  type="number"
-                  id="unidades_caja"
-                  name="unidades_caja"
-                  required
-                  value={data.unidades_caja}
-                  onChange={inputChange}
-                  className="mt-2 block w-full rounded-md border-0 py-2 px-3.5 text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
-                />
-              </div>
-
-              {/* Número de Cajas */}
-              <div>
-                <label
-                  htmlFor="numero_caja"
-                  className="flex items-center text-sm font-medium leading-6 text-slate-900"
-                >
-                  Número de Cajas
-                  <span className="ml-2 font-mono text-xs bg-slate-200 text-slate-600 px-1.5 py-0.5 rounded-full">
-                    j
-                  </span>
-                </label>
-                <input
-                  type="number"
-                  id="numero_caja"
-                  name="numero_caja"
-                  required
-                  value={data.numero_caja}
-                  onChange={inputChange}
-                  className="mt-2 block w-full rounded-md border-0 py-2 px-3.5 text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
-                />
-              </div>
-
-              {/* Unidades de Saldo */}
-              <div>
-                <label
-                  htmlFor="unidades_saldo"
-                  className="flex items-center text-sm font-medium leading-6 text-slate-900"
-                >
-                  Unidades de Saldo
-                  <span className="ml-2 font-mono text-xs bg-slate-200 text-slate-600 px-1.5 py-0.5 rounded-full">
-                    k
-                  </span>
-                </label>
-                <input
-                  type="number"
-                  id="unidades_saldo"
-                  name="unidades_saldo"
-                  required
-                  value={data.unidades_saldo}
-                  onChange={inputChange}
-                  className="mt-2 block w-full rounded-md border-0 py-2 px-3.5 text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
-                />
-              </div>
-
-              {/* Total Saldo */}
-              <div className="sm:col-span-3">
-                <label
-                  htmlFor="total_saldo"
-                  className="flex items-center text-sm font-medium leading-6 text-slate-900"
-                >
-                  Total Saldo
-                  <span className="ml-2 font-mono text-xs bg-slate-200 text-slate-600 px-1.5 py-0.5 rounded-full">
-                    L
-                  </span>
-                </label>
-                <input
-                  type="number"
-                  readOnly
-                  value={data.total_saldo}
-                  className="mt-2 block w-full rounded-md border-0 py-2 px-3.5 text-slate-500 bg-slate-100 shadow-sm ring-1 ring-inset ring-slate-300 cursor-not-allowed"
-                />
-                <p className="mt-1 text-xs text-slate-500">
-                  Cálculo: (i * j) + k
-                </p>
-              </div>
-
-            </div>
-          </fieldset>
+          </div>
 
           {/* --- Botón de Envío --- */}
-          <div className="flex justify-end pt-6">
-            <button
+          <hr className="border-t border-white/20 my-6" />
+          <div className="flex justify-center">
+            <Button
               type="submit"
-              className="inline-flex items-center justify-center gap-2 rounded-lg bg-indigo-600 px-8 py-3 text-lg font-semibold text-white shadow-lg transition-all hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-5 w-5"
-                viewBox="0 0 20 20"
-                fill="currentColor"
-              >
-                <path
-                  fillRule="evenodd"
-                  d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                  clipRule="evenodd"
-                />
-              </svg>
-              Guardar Conciliación
-            </button>
+              variant="after2"
+              label="Guardar Conciliación"
+            />
           </div>
         </form>
       </div>
