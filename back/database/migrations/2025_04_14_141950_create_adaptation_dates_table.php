@@ -21,6 +21,7 @@ return new class extends Migration
             $table->string('number_order')->nullable();
             $table->string('codart');
             $table->string('orderNumber');
+            $table->string('orderType')->default("P");
             $table->date('deliveryDate');
             $table->integer('quantityToProduce');
             $table->string('lot');
