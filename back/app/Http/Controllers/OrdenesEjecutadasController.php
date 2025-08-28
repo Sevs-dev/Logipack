@@ -180,11 +180,10 @@ class OrdenesEjecutadasController extends Controller
                 COALESCE(ada.maestra_fases_fk, ''), '[', ''), ']', ''), ' ', ''), '\"', '')) as posicion")
             );
 
-        
         // validar conciliacion
         $response = $this->validateConciliacion($id);
         $validateConciliacion = json_decode($response->getContent(), true);
-        
+
         // Obtener solo las fases de conciliación
         $linea_fases_2 = DB::table('ordenes_ejecutadas as ada')
             ->join('stages as std', function ($join) {
@@ -206,7 +205,7 @@ class OrdenesEjecutadasController extends Controller
             // })
             ->where('repeat_line', 0)
             ->when(!$validateConciliacion['validate'], function ($q) {
-                $q->whereRaw('1 = 0'); // fuerza a que no devuelva nada
+                $q->whereRaw('1 = 0');  // fuerza a que no devuelva nada
             })
             ->select(
                 'std.id',
