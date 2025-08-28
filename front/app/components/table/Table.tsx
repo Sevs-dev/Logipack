@@ -269,8 +269,7 @@ function Table<T extends { id: number }>({
                 paginatedRows.map((row, index) => (
                   <tr
                     key={index}
-                    className="border-b border-gray-700 text-sm odd:bg-gray-800 even:bg-gray-850 hover:bg-gray-700 transition-all duration-300"
-                  >
+                    className="border-b border-gray-700 text-sm odd:bg-gray-800 even:bg-gray-850 hover:bg-gray-700 transition-all duration-300">
                     {columns.map((column) => {
                       const value = row[column];
                       if (

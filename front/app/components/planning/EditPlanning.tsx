@@ -439,6 +439,7 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
         factory: updatedPlan.factory,
         orderNumber: updatedPlan.orderNumber,
         number_order: updatedPlan.number_order,
+        orderType: updatedPlan.orderType,
         color: currentPlan?.color ?? undefined,
         icon: currentPlan?.icon ?? undefined,
         line: lines,
@@ -1456,6 +1457,7 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
         columns={[
           "client_name",
           "number_order",
+          "orderType",
           "codart",
           "factory",
           "status_dates",
@@ -1464,6 +1466,7 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
         columnLabels={{
           client_name: "Cliente",
           number_order: "N° de orden",
+          orderType: "Tipo de orden",
           codart: "Artículo",
           factory: "Planta",
           status_dates: "Estado",

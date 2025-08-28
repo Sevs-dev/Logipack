@@ -31,6 +31,7 @@ export interface Plan {
   users: number[];
   master: string;
   orderNumber: string;
+  orderType: string;
   number_order: string;
   quantityToProduce: number;
   resource: string | null;
@@ -72,6 +73,7 @@ export interface PlanServ {
   machine: number[];
   users: number[];
   orderNumber: string;
+  orderType: string;
   number_order: string;
   quantityToProduce: number;
   resource: string | null;
