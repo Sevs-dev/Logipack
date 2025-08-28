@@ -3,12 +3,9 @@ import {
   siguiente_fase,
   guardar_formulario,
   validate_orden,
-  fase_control,
   condiciones_fase,
   validate_rol,
 } from "@/app/services/planing/planingServices";
-import { getAdaptationsId } from "@/app/services/adaptation/adaptationServices";
-import { getMaestraId } from "../../services/maestras/maestraServices";
 import {
   createTimer,
   getTimerEjecutadaById,
@@ -17,36 +14,36 @@ import {
   getStageId,
   controlStage,
 } from "../../services/maestras/stageServices";
+import { validateSecurityPassWithRole } from "../../services/userDash/securityPass";
 import Firma from "../ordenes_ejecutadas/Firma";
 import ModalBlock from "../modal/ModalBlock";
 
 import Text from "../text/Text";
+import Button from "../buttons/buttons";
 import { showError } from "../toastr/Toaster";
 import Timer from "../timer/Timer";
 import DateLoader from "@/app/components/loader/DateLoader";
-// Configuración de la base de datos IndexedDB
+
+// ─────────────────────────────────────────────────────────────────────────────
+// IndexedDB Config
 const DB_NAME = "FasesDB";
 const DB_VERSION = 1;
 const STORE_NAME = "fasesStore";
 
-// Inicializar la base de datos
 const initDB = () => {
   return new Promise((resolve, reject) => {
     const request = indexedDB.open(DB_NAME, DB_VERSION);
-
     request.onupgradeneeded = (event) => {
       const db = event.target.result;
       if (!db.objectStoreNames.contains(STORE_NAME)) {
         db.createObjectStore(STORE_NAME, { keyPath: "id" });
       }
     };
-
     request.onsuccess = (event) => resolve(event.target.result);
     request.onerror = () => reject("Error al abrir IndexedDB");
   });
 };
 
-// Guardar en IndexedDB
 const saveToDB = async (key, data) => {
   try {
     const db = await initDB();
@@ -61,7 +58,6 @@ const saveToDB = async (key, data) => {
   }
 };
 
-// Leer desde IndexedDB
 const readFromDB = async (key) => {
   try {
     const db = await initDB();
@@ -78,18 +74,15 @@ const readFromDB = async (key) => {
   }
 };
 
-// Función para limpiar todo el contenido del Object Store
 const clearDB = async () => {
   try {
     const db = await initDB();
     const tx = db.transaction(STORE_NAME, "readwrite");
     const store = tx.objectStore(STORE_NAME);
     const request = store.clear();
-
     return new Promise((resolve, reject) => {
       request.onsuccess = () => resolve();
       request.onerror = () => reject("Error al limpiar IndexedDB");
-      // tx.oncomplete = () => console.log("Limpieza completada");
     });
   } catch (error) {
     console.error("Error al limpiar IndexedDB:", error);
@@ -97,8 +90,33 @@ const clearDB = async () => {
   }
 };
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Utils
+const parseConfigRobusto = (raw) => {
+  try {
+    let cfg = raw;
+    if (typeof cfg === "string") {
+      let s = cfg.trim();
+      // "\"{\\\"type\\\":...}\""
+      if ((s.startsWith('"') && s.endsWith('"')) || s.includes('\\"')) {
+        s = JSON.parse(s);
+      }
+      cfg = typeof s === "string" ? JSON.parse(s) : s;
+    }
+    return cfg && typeof cfg === "object" ? cfg : {};
+  } catch {
+    return {};
+  }
+};
+
+const sigKey = (linea, clave) => `${linea}::${clave}`;
+
+// ─────────────────────────────────────────────────────────────────────────────
+
 const App = () => {
   const formRef = useRef(null);
+
+  // Estado base
   const [local, setLocal] = useState(null);
   const [fase, setFase] = useState(null);
   const [sig, setSig] = useState(0);
@@ -107,20 +125,35 @@ const App = () => {
   const [timerReady, setTimerReady] = useState(false);
   const [showModal_rol, setShowModal_rol] = useState(false);
   const [showModal_fase, setShowModal_fase] = useState(false);
+
+  // Estado de validación para signature
+  const [sigUnlocked, setSigUnlocked] = useState({}); // { "linea::clave": true }
+  const [sigModal, setSigModal] = useState({
+    open: false,
+    linea: null,
+    clave: null,
+    allowedRoles: [],
+  });
+  const [sigPassword, setSigPassword] = useState("");
+
+  // Derivados seguros
+  const orden = local?.orden;
+  const linea = local?.linea;
   const isProceso =
     typeof fase?.phase_type === "string" &&
-    fase.phase_type.toLowerCase().includes("proceso"); // "Proceso" o "Procesos"
-  // Cargar datos iniciales
+    fase.phase_type.toLowerCase().includes("proceso");
+
+  // ─── Cargar datos iniciales (localStorage) ────────────────────────────────
   useEffect(() => {
     try {
       const data = localStorage.getItem("ejecutar");
       if (data) setLocal(JSON.parse(data));
-    } catch (error) {
+    } catch {
       showError("Datos inválidos en el almacenamiento local.");
     }
   }, []);
 
-  // Cargar memoria fase desde IndexedDB
+  // ─── Cargar memoria fase desde IndexedDB ──────────────────────────────────
   useEffect(() => {
     const cargarMemoria = async () => {
       const memoria = await readFromDB("memoria_fase");
@@ -129,29 +162,25 @@ const App = () => {
     cargarMemoria();
   }, []);
 
-  // Obtener la siguiente fase
+  // ─── Obtener siguiente fase ───────────────────────────────────────────────
   useEffect(() => {
     if (!local?.id || !local.linea || !local.tipo) return;
-
     const cargarFase = async () => {
       try {
-        // console.log(local);
         const resp = await siguiente_fase(local.id, local.linea, local.tipo);
-        console.log(resp);
-        // console.log(resp);
         setFase(resp.fases);
-      } catch (error) {
+      } catch {
         showError("No se pudo obtener la fase.");
       }
     };
-
     cargarFase();
   }, [local, sig]);
 
-  // Lógica principal: crear y cargar el timer
+  // ─── Condiciones de fase + Timer (solo en Proceso) ────────────────────────
   useEffect(() => {
+    if (!fase) return;
+
     const guardarTimer = async () => {
-      if (!fase) return;
       try {
         const adaptation = await controlStage(fase.adaptation_id);
         if (!adaptation?.id) return;
@@ -160,7 +189,7 @@ const App = () => {
         if (!Number.isFinite(ejecutadaId) || ejecutadaId <= 0) return;
 
         const time = Number(adaptation.repeat_minutes ?? 0);
-        const createResult = await createTimer({
+        await createTimer({
           ejecutada_id: ejecutadaId,
           stage_id: adaptation?.id,
           control_id: adaptation?.id,
@@ -193,7 +222,6 @@ const App = () => {
     };
 
     const condicionFase = async () => {
-      if (!fase) return;
       const resp = await condiciones_fase(
         fase.adaptation_date_id,
         fase.fases_fk
@@ -228,26 +256,122 @@ const App = () => {
 
     condicionFase();
 
-    // 🔒 Timer solo para Procesos
     if (isProceso) {
       guardarTimer();
     } else {
-      // Asegura que no muestre loader ni timer en fases NO-Procesos
       setTimerData(null);
       setTimerReady(false);
     }
-  }, [fase]);
+  }, [fase, isProceso]);
 
-  // Manejador de cambio de inputs
+  // ─── Inicializar valores por defecto de memoriaFase (sin mutar estado) ────
+  useEffect(() => {
+    if (!fase || linea == null) return;
+    let parsed = [];
+    try {
+      parsed = JSON.parse(fase.forms || "[]");
+    } catch {
+      parsed = [];
+    }
+    if (!Array.isArray(parsed) || parsed.length === 0) return;
+
+    setMemoriaFase((prev) => {
+      // si ya hay datos para esta línea, no tocar
+      if (prev?.[linea]) return prev;
+
+      const inicialLinea = parsed.reduce((acc, item) => {
+        acc[item.clave] = item.valor ?? "";
+        return acc;
+      }, {});
+      const actualizado = { ...prev, [linea]: inicialLinea };
+      saveToDB("memoria_fase", actualizado);
+      return actualizado;
+    });
+  }, [fase, linea]);
+
+  // ─── Handlers firma protegida ─────────────────────────────────────────────
+  const openSigModal = (l, c, allowedRoles = []) =>
+    setSigModal({ open: true, linea: l, clave: c, allowedRoles });
+
+  const closeSigModal = () => {
+    setSigModal({ open: false, linea: null, clave: null, allowedRoles: [] });
+    setSigPassword("");
+  };
+
+  const onSigSelectMouseDown = (e, cfg, l, c) => {
+    if (cfg?.signatureSpecific && !sigUnlocked[sigKey(l, c)]) {
+      e.preventDefault();
+      e.stopPropagation();
+      openSigModal(
+        l,
+        c,
+        Array.isArray(cfg.allowedRoles) ? cfg.allowedRoles : []
+      );
+    }
+  };
+
+  const onSigSelectKeyDown = (e, cfg, l, c) => {
+    if (cfg?.signatureSpecific && !sigUnlocked[sigKey(l, c)]) {
+      if (["Enter", " ", "ArrowDown", "ArrowUp"].includes(e.key)) {
+        e.preventDefault();
+        openSigModal(
+          l,
+          c,
+          Array.isArray(cfg.allowedRoles) ? cfg.allowedRoles : []
+        );
+      }
+    }
+  };
+
+  // util: lee rol desde cookie "role="
+  const getCookieRole = () => {
+    const raw = document.cookie
+      .split("; ")
+      .find((r) => r.startsWith("role="))
+      ?.split("=")[1];
+    return raw ? decodeURIComponent(raw).replace(/"/g, "").trim() : "";
+  };
+
+  // util: comparación case-insensitive
+  const includesCI = (arr, val) =>
+    Array.isArray(arr) &&
+    arr.some(
+      (x) => String(x).trim().toLowerCase() === String(val).trim().toLowerCase()
+    );
+
+  const submitSigValidation = async () => {
+    try {
+      const pass = String(sigPassword || "").trim();
+      if (!pass) return showError("Ingresa la contraseña.");
+      // 🔑 Usa el rol que existe en DB
+      const roleStr =
+        (local?.user?.role && String(local.user.role)) || getCookieRole();
+      if (!roleStr) return showError("No se detectó tu rol actual.");
+
+      const res = await validateSecurityPassWithRole(roleStr, pass);
+      if (!res?.valid) return showError("Contraseña o rol no autorizado.");
+
+      setSigUnlocked((prev) => ({
+        ...prev,
+        [sigKey(sigModal.linea, sigModal.clave)]: true,
+      }));
+      closeSigModal();
+    } catch (e) {
+      console.error("❌ Validación firma error:", e);
+      showError(e?.message ?? "Validación fallida. Intenta de nuevo.");
+    }
+  };
+
+  // ─── Handlers generales ───────────────────────────────────────────────────
   const inputChange = (e) => {
     const { name, value } = e.target;
-    const lineaIndex = local.linea;
+    if (linea == null) return;
 
     setMemoriaFase((prev) => {
       const actualizado = {
         ...prev,
-        [lineaIndex]: {
-          ...prev[lineaIndex],
+        [linea]: {
+          ...prev[linea],
           [name]: value,
         },
       };
@@ -258,18 +382,22 @@ const App = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
-    if (!fase || !memoriaFase[linea]) {
+    if (!fase || linea == null || !memoriaFase[linea]) {
       showError("No hay datos disponibles para procesar.");
       return;
     }
 
-    const datosLinea = memoriaFase[linea];
+    let formsParsedSrc = [];
+    try {
+      formsParsedSrc = JSON.parse(fase.forms || "[]");
+    } catch {
+      formsParsedSrc = [];
+    }
 
-    // Recorremos cada form original y le agregamos el valor correspondiente
-    const formsParsed = JSON.parse(fase.forms).map((form) => ({
+    const datosLinea = memoriaFase[linea] || {};
+    const formsParsed = formsParsedSrc.map((form) => ({
       ...form,
-      valor: datosLinea[form.clave] ?? "", // si no tiene valor, se deja vacío
+      valor: datosLinea[form.clave] ?? "",
     }));
 
     const resultado = {
@@ -281,78 +409,18 @@ const App = () => {
       description_fase: fase.description_fase || "",
       phase_type: fase.phase_type || "",
       forms: formsParsed,
-      user: local.user,
+      user: local?.user,
     };
 
     const resp = await guardar_formulario(resultado);
-    if (resp.estado === 200) {
-      // localStorage.removeItem("ejecutar");
-      // limpiar indexedDB
-      clearDB();
+    if (resp?.estado === 200) {
+      await clearDB();
       setSig((prev) => prev + 1);
     }
   };
 
-  // Mostrar mensaje si no hay datos
-  if (!local || !local.orden) {
-    return (
-      <DateLoader
-        message=" No hay datos de la orden o líneas de procesos"
-        backgroundColor="#111827"
-        color="#ffff"
-      />
-    );
-  }
-
-  // si no hay fase
-  if (!fase) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-gray-900 gap-4">
-        <DateLoader
-          message="Fase finalizada."
-          backgroundColor="#111827"
-          color="#ffff"
-        />
-        <button
-          className="w-20 bg-blue-600 text-white p-2 rounded-xl hover:bg-blue-700 transition-colors"
-          onClick={async () => {
-            await validate_orden(local.id);
-            // window.close();
-            console.log(localStorage);
-            window.open("/pages/lineas", "_self");
-          }}
-        >
-          Cerrar
-        </button>
-      </div>
-    );
-  }
-
-  // obtener formularios
-  let forms = [];
-  try {
-    forms = JSON.parse(fase?.forms || "[]");
-  } catch {
-    showError("El formato de los formularios es inválido.");
-  }
-
-  // Información de la orden y linea
-  const orden = local.orden;
-  const linea = local.linea;
-
-  if (!memoriaFase[linea]) {
-    const dba = JSON.parse(fase.forms);
-    dba.map((item) => {
-      memoriaFase[linea] = {
-        ...memoriaFase[linea],
-        [item.clave]: item.valor,
-      };
-    });
-  }
-
   const refetchTimer = async () => {
-    if (!fase || !isProceso) return; // 👈 evita recargar timer en fases no-Procesos
-
+    if (!fase || !isProceso) return;
     const stage = await getStageId(fase.fases_fk);
     if (!stage?.id) return;
 
@@ -360,7 +428,6 @@ const App = () => {
     if (!Number.isFinite(ejecutadaId) || ejecutadaId <= 0) return;
 
     const timerResult = await getTimerEjecutadaById(ejecutadaId);
-
     if (
       timerResult?.timer &&
       timerResult.timer.id > 0 &&
@@ -381,24 +448,62 @@ const App = () => {
     }
   };
 
+  // ─── Guardas y loaders previos ────────────────────────────────────────────
+  if (!local || !local.orden) {
+    return (
+      <DateLoader
+        message=" No hay datos de la orden o líneas de procesos"
+        backgroundColor="#111827"
+        color="#ffff"
+      />
+    );
+  }
+
+  if (!fase) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen bg-gray-900 gap-4">
+        <DateLoader
+          message="Fase finalizada."
+          backgroundColor="#111827"
+          color="#ffff"
+        />
+        <button
+          className="w-20 bg-blue-600 text-white p-2 rounded-xl hover:bg-blue-700 transition-colors"
+          onClick={async () => {
+            await validate_orden(local.id);
+            window.open("/pages/lineas", "_self");
+          }}
+        >
+          Cerrar
+        </button>
+      </div>
+    );
+  }
+
+  // Formularios
+  let forms = [];
+  try {
+    forms = JSON.parse(fase?.forms || "[]");
+  } catch {
+    forms = [];
+    showError("El formato de los formularios es inválido.");
+  }
+
   return (
     <>
-      {/* Timer */}
-      <>
-        <ModalBlock
-          isOpen={showModal_rol}
-          onClose={() => setShowModal_rol(false)}
-          message="Tu acceso está bloqueado temporalmente. Contacta al administrador."
-        />
+      {/* Modales de bloqueo */}
+      <ModalBlock
+        isOpen={showModal_rol}
+        onClose={() => setShowModal_rol(false)}
+        message="Tu acceso está bloqueado temporalmente. Contacta al administrador."
+      />
+      <ModalBlock
+        isOpen={showModal_fase}
+        onClose={() => setShowModal_fase(false)}
+        message="Fase bloqueada temporalmente. Contacta al administrador."
+      />
 
-        {/* Contenido principal */}
-        <ModalBlock
-          isOpen={showModal_fase}
-          onClose={() => setShowModal_fase(false)}
-          message="Fase bloqueado temporalmente. Contacta al administrador."
-        />
-      </>
-      {/* 🔔 TIMER SOLO EN PROCESOS */}
+      {/* TIMER SOLO EN PROCESOS */}
       {isProceso && (!timerReady || !timerData) && (
         <DateLoader
           message="Cargando datos del temporizador..."
@@ -406,8 +511,7 @@ const App = () => {
           color="#ffff"
         />
       )}
-
-      {isProceso && timerReady && timerData && linea !== "0" && (
+      {isProceso && timerReady && timerData && String(linea) !== "0" && (
         <Timer
           ejecutadaId={timerData.ejecutadaId}
           stageId={timerData.stageId}
@@ -416,7 +520,7 @@ const App = () => {
         />
       )}
 
-      {/* 🔽 Contenido principal SIEMPRE visible */}
+      {/* CONTENIDO PRINCIPAL */}
       <div className="min-h-screen w-full bg-[#1b2535] text-white p-3 sm:p-4 md:p-[10px] flex flex-col rounded-2xl">
         <div className="w-full rounded-2xl bg-white/5 backdrop-blur-sm border border-white/10 shadow-md overflow-hidden">
           <div className="bg-white/5 px-3 sm:px-[10px] py-3 sm:py-[10px] border-b border-white/10 backdrop-blur-sm">
@@ -426,10 +530,10 @@ const App = () => {
           </div>
           <div
             className="
-                  px-3 sm:px-6 md:px-8 py-4 sm:py-6
-                  grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-6
-                  gap-3 sm:gap-4 text-sm text-gray-200
-                "
+              px-3 sm:px-6 md:px-8 py-4 sm:py-6
+              grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-6
+              gap-3 sm:gap-4 text-sm text-gray-200
+            "
           >
             <div>
               <p className="text-gray-500 text-center">Orden N°</p>
@@ -469,6 +573,7 @@ const App = () => {
             </div>
           </div>
         </div>
+
         {/* Fase */}
         <div className="w-full rounded-2xl bg-white/5 backdrop-blur-sm border border-white/10 shadow-md overflow-hidden mt-4">
           <div className="bg-white/2.5 px-[10px] py-[10px] border-b border-white/5 backdrop-blur-sm">
@@ -476,6 +581,7 @@ const App = () => {
               Fase de {fase?.description_fase} ({fase?.phase_type})
             </Text>
           </div>
+
           {/* Formulario */}
           <form
             ref={formRef}
@@ -483,23 +589,19 @@ const App = () => {
             className="min-h-screen w-full bg-[#1b2535] text-white p-[10px] sm:p-[10px] flex flex-col rounded-2xl"
           >
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {console.log("Renderizando formulario con memoriaFase:", forms)}
               {forms.map((item, index) => {
-                // obtener tipo de actividad
-                let config = item.config;
-                try {
-                  if (typeof config === "string") {
-                    config = JSON.parse(config);
-                  }
-
-                  if (typeof config === "string") {
-                    config = JSON.parse(config);
-                  }
-                } catch (error) {
-                  config = {};
-                }
-                const { type, options, min, max, items, signatureSpecific } =
-                  config;
+                const config = parseConfigRobusto(item.config);
+                const {
+                  type,
+                  options = [],
+                  min,
+                  max,
+                  items = [],
+                  signatureSpecific,
+                } = config || {};
                 const clave = item.clave;
+
                 return (
                   <div key={index}>
                     <Text type="subtitle" color="text-white">
@@ -509,13 +611,15 @@ const App = () => {
                     {/* MUESTREO */}
                     {type === "muestreo" && (
                       <p className="text-red-500">
-                        {items.map(({ min, max, valor }) => {
+                        {items.map(({ min: a, max: b, valor }) => {
                           if (
-                            min <= orden.cantidad_producir &&
-                            orden.cantidad_producir <= max
+                            orden?.cantidad_producir != null &&
+                            a <= orden.cantidad_producir &&
+                            orden.cantidad_producir <= b
                           ) {
                             return valor;
                           }
+                          return null;
                         })}
                       </p>
                     )}
@@ -531,8 +635,8 @@ const App = () => {
                         onChange={inputChange}
                       />
                     )}
-                    {/* TEXTAREA */}
 
+                    {/* TEXTAREA */}
                     {type === "textarea" && (
                       <textarea
                         rows={1}
@@ -542,8 +646,8 @@ const App = () => {
                         value={memoriaFase[linea]?.[clave] ?? ""}
                         required={item.binding}
                         onChange={(e) => {
-                          e.target.style.height = "auto"; // Reinicia el alto
-                          e.target.style.height = `${e.target.scrollHeight}px`; // Ajusta al contenido
+                          e.target.style.height = "auto";
+                          e.target.style.height = `${e.target.scrollHeight}px`;
                           inputChange(e);
                         }}
                       />
@@ -625,7 +729,6 @@ const App = () => {
                                   : "border-gray-300 bg-white/10 hover:bg-gray-50"
                               }`}
                             >
-                              {/* Input accesible pero oculto visualmente */}
                               <input
                                 className="sr-only"
                                 type="radio"
@@ -635,7 +738,6 @@ const App = () => {
                                 checked={isSelected}
                                 onChange={inputChange}
                               />
-
                               <span
                                 className={`flex-1 text-sm font-medium text-center ${
                                   isSelected
@@ -645,7 +747,6 @@ const App = () => {
                               >
                                 {opt}
                               </span>
-
                               {isSelected && (
                                 <svg
                                   className="h-5 w-5 text-indigo-600"
@@ -834,12 +935,37 @@ const App = () => {
                     {/* SIGNATURE */}
                     {type === "signature" && (
                       <>
+                        {signatureSpecific &&
+                          !sigUnlocked[sigKey(linea, clave)] && (
+                            <div className="mb-2 text-xs text-amber-300 text-center">
+                              🔒 Requiere validación de rol antes de firmar.
+                            </div>
+                          )}
+
                         <select
-                          className="text-center last:block w-full px-3 py-2 bg-[#1a1d23] border border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-white placeholder-gray-400 mb-2"
+                          className={`text-center last:block w-full px-3 py-2 bg-[#1a1d23] border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-white placeholder-gray-400 mb-2 ${
+                            signatureSpecific &&
+                            !sigUnlocked[sigKey(linea, clave)]
+                              ? "border-amber-500"
+                              : "border-gray-600"
+                          }`}
                           value={
                             memoriaFase[linea]?.[`tipo_entrada_${clave}`] || ""
                           }
+                          onMouseDown={(e) =>
+                            onSigSelectMouseDown(e, config, linea, clave)
+                          }
+                          onKeyDown={(e) =>
+                            onSigSelectKeyDown(e, config, linea, clave)
+                          }
                           onChange={(e) => {
+                            if (
+                              signatureSpecific &&
+                              !sigUnlocked[sigKey(linea, clave)]
+                            ) {
+                              e.preventDefault();
+                              return;
+                            }
                             const updated = { ...memoriaFase };
                             updated[linea] = {
                               ...updated[linea],
@@ -853,7 +979,6 @@ const App = () => {
                           <option value="firma">Firma</option>
                         </select>
 
-                        {/* Mostrar Input si selecciona "texto" */}
                         {memoriaFase[linea]?.[`tipo_entrada_${clave}`] ===
                           "texto" && (
                           <input
@@ -866,7 +991,6 @@ const App = () => {
                           />
                         )}
 
-                        {/* Mostrar Firma si selecciona "firma" */}
                         {memoriaFase[linea]?.[`tipo_entrada_${clave}`] ===
                           "firma" && (
                           <Firma
@@ -901,16 +1025,16 @@ const App = () => {
                             memoriaFase[linea][clave] > max) && (
                             <p
                               className="
-                            mt-2 mb-2 px-4 py-2
-                            text-sm text-center font-semibold
-                            text-yellow-100
-                            bg-gradient-to-r from-purple-900/90 via-purple-700/80 to-blue-900/80
-                            rounded-xl shadow-lg
-                            border border-yellow-400/40
-                            backdrop-blur-sm
-                            animate-pulse
-                            max-w-xs mx-auto
-                          "
+                                mt-2 mb-2 px-4 py-2
+                                text-sm text-center font-semibold
+                                text-yellow-100
+                                bg-gradient-to-r from-purple-900/90 via-purple-700/80 to-blue-900/80
+                                rounded-xl shadow-lg
+                                border border-yellow-400/40
+                                backdrop-blur-sm
+                                animate-pulse
+                                max-w-xs mx-auto
+                              "
                             >
                               ⚠️ Valor ingresado debe estar entre{" "}
                               <span className="font-bold">{min}</span> y{" "}
@@ -920,30 +1044,65 @@ const App = () => {
                       </>
                     )}
 
-                    
                     {/* INFORMATIVO */}
                     {type === "informativo" && (
                       <label
                         className="block w-full px-3 py-2 bg-[#1a1d23] border border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-white placeholder-gray-400 text-center"
-                        name={clave}>
+                        name={clave}
+                      >
                         {item.placeholder}
                       </label>
                     )}
                   </div>
                 );
               })}
+
+              {/* Modal de contraseña para firma */}
+              {sigModal.open && (
+                <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 p-4">
+                  <div className="w-full max-w-sm rounded-xl bg-[#111827] border border-white/10 p-5 shadow-2xl">
+                    <h3 className="text-white text-lg font-semibold mb-2">
+                      Validación requerida
+                    </h3>
+                    <p className="text-white/70 text-sm mb-4">
+                      Ingresa la contraseña para habilitar la firma.
+                    </p>
+                    <input
+                      type="password"
+                      autoFocus
+                      value={sigPassword}
+                      onChange={(e) => setSigPassword(e.target.value)}
+                      onKeyDown={(e) =>
+                        e.key === "Enter" && submitSigValidation()
+                      }
+                      className="block w-full px-3 py-2 bg-[#1a1d23] border border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-white placeholder-gray-400"
+                      placeholder="Contraseña"
+                    />
+                    <div className="mt-4 flex justify-end gap-2">
+                      <button
+                        type="button"
+                        onClick={closeSigModal}
+                        className="px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 text-white text-sm"
+                      >
+                        Cancelar
+                      </button>
+                      <button
+                        type="button"
+                        onClick={submitSigValidation}
+                        className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm shadow"
+                      >
+                        Validar
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
-            <>
-              <hr className="border-t border-white/20 my-6" />
-              <div className="flex justify-center">
-                <button
-                  type="submit"
-                  className="bg-blue-600 text-white px-5 py-2 text-sm rounded-lg hover:bg-blue-700 transition-all shadow-md"
-                >
-                  Siguiente Fase
-                </button>
-              </div>
-            </>
+
+            <hr className="border-t border-white/20 my-6" />
+            <div className="flex justify-center">
+              <Button type="submit" variant="after2" label="Siguiente Fase" />
+            </div>
           </form>
         </div>
       </div>
