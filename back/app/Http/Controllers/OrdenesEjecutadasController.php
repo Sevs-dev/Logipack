@@ -834,6 +834,66 @@ class OrdenesEjecutadasController extends Controller
     }
 
     /**
+     * Relacionar orden
+     *
+     * @param int $id
+     * @return JsonResponse
+     */
+    public function relacionarOrden($id): JsonResponse
+    {
+        // 1. Busca la última orden ejecutada con ese adaptation_date_id y estado = 100
+        $orden = OrdenesEjecutadas::where('adaptation_date_id', $id)
+            ->where('estado', '100')
+            ->first();
+
+        // 2. Busca la actividad con estado_form = false y phase_type = Procesos
+        $actividad = ActividadesEjecutadas::where('adaptation_date_id', $id)
+            ->where('phase_type', 'Procesos')
+            ->where('estado_form', false)
+            ->first();
+
+        // 2. Si existe una actividad con estado_form = false y phase_type = Procesos...
+        if ($orden && $actividad) {
+            
+            // 3. clona/crea las actividades de esa orden tipo hijo
+            DB::table('adaptation_dates')->insertUsing([
+                'client_id', 'factory_id', 'master', 'bom', 'number_order',
+                'orderType', 'codart', 'orderNumber', 'deliveryDate', 'quantityToProduce',
+                'lot', 'healthRegistration', 'ingredients', 'adaptation_id', 'status_dates',
+                'factory', 'line', 'activities', 'resource', 'machine',
+                'users', 'color', 'icon', 'duration', 'duration_breakdown',
+                'start_date', 'end_date', 'clock', 'pause', 'finish_notificade',
+                'out', 'user', 'created_at', 'updated_at'
+            ], DB::table('adaptation_dates')
+                ->select(
+                    'client_id', 'factory_id', 'master', 'bom', 'number_order',
+                    DB::raw("'H' as orderType"),
+                    'codart', 'orderNumber', 'deliveryDate', 'quantityToProduce',
+                    'lot', 'healthRegistration', 'ingredients', 'adaptation_id', 'status_dates',
+                    'factory', 'line', 'activities', 'resource', 'machine',
+                    'users', 'color', 'icon', 'duration', 'duration_breakdown',
+                    'start_date', 'end_date', 'clock', 'pause', 'finish_notificade',
+                    'out', 'user',
+                    DB::raw("'" . date('Y-m-d H:i:s') . "' as created_at"),
+                    DB::raw("'" . date('Y-m-d H:i:s') . "' as updated_at")
+                )
+                ->where('id', $id));
+
+            // 5. Devuelve respuesta JSON
+            return response()->json([
+                'message' => 'Orden restablecida correctamente',
+                'estado' => 200,
+            ]);
+        }
+
+        // 5. Devuelve respuesta JSON
+        return response()->json([
+            'message' => 'Error, no se puede restabler orden',
+            'estado' => -11500,
+        ]);
+    }
+
+    /**
      * Crear Orden de acondicionamiento en la tabla OrdenesEjecutadas
      *
      * @param int $id

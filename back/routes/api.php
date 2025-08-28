@@ -224,6 +224,7 @@ Route::controller(OrdenesEjecutadasController::class)->group(function () {
     Route::post('/guardar_actividades_control', 'guardar_actividades_control');
     Route::get('/getActividadesTestigo/{id}', 'getActividadesTestigo');
     Route::post('/guardar_actividades_testigos', 'guardar_actividades_testigos');
+    Route::get('/relacionarOrden/{id}', 'relacionarOrden');
     
 });
 
