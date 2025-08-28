@@ -8,6 +8,11 @@ import { showError, showSuccess } from "../toastr/Toaster";
 
 const NewConsolida = () => {
   const params = useParams();
+  const [teorica, setTeorica] = useState({
+    padre: "",
+    hijo: "",
+    diferencia: "",
+  });
   const [data, setData] = useState({
     orden_ejecutada: "",
     adaptation_date_id: "",
@@ -36,6 +41,7 @@ const NewConsolida = () => {
     const obtener_conciliacion = async () => {
       try {
         const response = await getConciliacion(Number(params.id));
+        console.log(response);
         setData((prev) => ({
           ...prev,
           orden_ejecutada: response?.orden?.orden_ejecutada,
@@ -45,7 +51,14 @@ const NewConsolida = () => {
           descripcion_maestra: response?.orden?.descripcion_maestra,
           codart: response?.conciliacion?.codart,
           desart: response?.conciliacion?.desart,
-          quantityToProduce: response?.conciliacion?.quantityToProduce,
+          quantityToProduce: response?.orden?.orderType === 'H' ?
+            "" : response?.diferencia,
+        }));
+        setTeorica((prev) => ({
+          ...prev,
+          padre: response?.padre,
+          hijo: response?.hijos,
+          diferencia: response?.diferencia,
         }));
       } catch (error: unknown) {
         console.error("Error en getConciliacion:", error);
@@ -159,6 +172,28 @@ const NewConsolida = () => {
     }
   };
 
+  const validaCantidad = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (data.quantityToProduce === "") {
+      showError("Debe ingresar una cantidad.");
+      return false;
+    }
+
+    if (Number(data.quantityToProduce) < 0) {
+      showError("La cantidad debe ser mayor a 0.");
+      setData({ ...data, quantityToProduce: "" });
+      return false;
+    }
+
+    if (Number(data.quantityToProduce) > Number(teorica.diferencia)) {
+      showError("La cantidad debe ser menor o igual a la diferencia.");
+      setData({ ...data, quantityToProduce: "" });
+      return false;
+    }
+
+    return true;
+  };
+
   if (data?.orden_ejecutada === "") {
     return (
       <div>
@@ -167,9 +202,7 @@ const NewConsolida = () => {
     );
   }
 
-  if (data?.orden_ejecutada === undefined
-    || data?.orden_ejecutada === null
-    || data?.orden_ejecutada === "") {
+  if (data?.orden_ejecutada === undefined || data?.orden_ejecutada === null || data?.orden_ejecutada === "") {
     return (
       <div>
         <h1>Sin datos de conciliación</h1>
@@ -243,6 +276,30 @@ const NewConsolida = () => {
                   {data.codart}
                 </p>
               </div>
+              <div>
+                <label className="block text-sm font-medium leading-6 text-slate-600">
+                  Total
+                </label>
+                <p className="mt-1 text-base font-semibold text-slate-800 bg-slate-100 rounded-md px-3 py-2 font-mono">
+                  {teorica?.padre}
+                </p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium leading-6 text-slate-600">
+                  Total Parciales
+                </label>
+                <p className="mt-1 text-base font-semibold text-slate-800 bg-slate-100 rounded-md px-3 py-2 font-mono">
+                  {teorica?.hijo}
+                </p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium leading-6 text-slate-600">
+                  Diferencia
+                </label>
+                <p className="mt-1 text-base font-semibold text-slate-800 bg-slate-100 rounded-md px-3 py-2 font-mono">
+                  {teorica?.diferencia}
+                </p>
+              </div>
             </div>
           </div>
 
@@ -272,6 +329,7 @@ const NewConsolida = () => {
                     required
                     value={data.quantityToProduce}
                     onChange={inputChange}
+                    onBlur={validaCantidad}
                     className="mt-2 w-full rounded-md border-0 bg-white 
                     px-3.5 py-2 text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300"
                   />

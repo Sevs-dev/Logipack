@@ -15,7 +15,6 @@ use Illuminate\Support\Facades\DB;
 
 class OrdenesEjecutadasController extends Controller
 {
-
     /**
      * Validar estado de la orden
      *
@@ -181,6 +180,10 @@ class OrdenesEjecutadasController extends Controller
                 COALESCE(ada.maestra_fases_fk, ''), '[', ''), ']', ''), ' ', ''), '\"', '')) as posicion")
             );
 
+        // validar conciliacion
+        $response = $this->validateConciliacion($id);
+        $validateConciliacion = json_decode($response->getContent(), true);
+
         // Obtener solo las fases de conciliación
         $linea_fases_2 = DB::table('ordenes_ejecutadas as ada')
             ->join('stages as std', function ($join) {
@@ -201,6 +204,9 @@ class OrdenesEjecutadasController extends Controller
             //         ->where('co.adaptation_date_id', $id);
             // })
             ->where('repeat_line', 0)
+            ->when(!$validateConciliacion['validate'], function ($q) {
+                $q->whereRaw('1 = 0');  // fuerza a que no devuelva nada
+            })
             ->select(
                 'std.id',
                 'std.description as descripcion',
@@ -633,29 +639,37 @@ class OrdenesEjecutadasController extends Controller
         $orden = DB::table('ordenes_ejecutadas')
             ->where('adaptation_date_id', $id)
             ->where('proceso', 'eject')
-            // ->where('estado', '100')
+            ->where('estado', '100')
             ->first();
 
-        if ($orden) {
+        // validar conciliacion
+        $response = $this->validateConciliacion($id);
+        $validateConciliacion = json_decode($response->getContent(), true);
+
+        if ($orden && $validateConciliacion['validate']) {
             $ada_date = DB::table('adaptation_dates')
                 ->where('id', $id)
                 ->first();
 
+            // generar orden
+            $data_orden = [
+                'orden_ejecutada' => $orden->id,
+                'adaptation_date_id' => $orden->adaptation_date_id,
+                'number_order' => $orden->number_order,
+                'orderType' => $ada_date->orderType,
+                'descripcion_maestra' => $orden->descripcion_maestra,
+            ];
+
             // maestra sin bom
             if (strtolower($orden->requiere_bom) == '0') {
                 return response()->json([
-                    'orden' => [
-                        'orden_ejecutada' => $orden->id,
-                        'adaptation_date_id' => $orden->adaptation_date_id,
-                        'number_order' => $orden->number_order,
-                        'orderType' => $ada_date->orderType,
-                        'descripcion_maestra' => $orden->descripcion_maestra,
-                    ],
+                    'orden' => $data_orden,
                     'conciliacion' => [
                         'codart' => $ada_date->codart,
                         'desart' => '',  // no existe el campo desart, en la base de datos
                         'quantityToProduce' => $ada_date->quantityToProduce,
                     ],
+                    ...$validateConciliacion,
                     'estado' => 200,
                 ]);
             }
@@ -663,18 +677,13 @@ class OrdenesEjecutadasController extends Controller
             // maestra con bom
             $ingredientes = json_decode(json_decode($ada_date->ingredients))[0];
             return response()->json([
-                'orden' => [
-                    'orden_ejecutada' => $orden->id,
-                    'adaptation_date_id' => $orden->adaptation_date_id,
-                    'number_order' => $orden->number_order,
-                    'orderType' => $ada_date->orderType,
-                    'descripcion_maestra' => $orden->descripcion_maestra,
-                ],
+                'orden' => $data_orden,
                 'conciliacion' => [
                     'codart' => $ingredientes->codart,
                     'desart' => $ingredientes->desart,
                     'quantityToProduce' => $ingredientes->teorica,
                 ],
+                ...$validateConciliacion,
                 'estado' => 200,
             ]);
         }
@@ -682,6 +691,45 @@ class OrdenesEjecutadasController extends Controller
         return response()->json([
             'orden' => null,
             'estado' => 200,
+        ]);
+    }
+
+    /**
+     * Validate Conciliación
+     *
+     * @param int $id
+     * @return JsonResponse
+     */
+    public function validateConciliacion($id): JsonResponse
+    {
+        $orden = DB::table('ordenes_ejecutadas')
+            ->where('adaptation_date_id', $id)
+            ->where('proceso', 'eject')
+            ->where('estado', '100')
+            ->first();
+
+        if ($orden) {
+            $conciliaciones = DB::table('conciliaciones')
+                ->where('number_order', $orden->number_order)
+                ->get();
+
+            $padre = $orden->cantidad_producir;
+            $hijos = $conciliaciones->sum('quantityToProduce');
+
+            return response()->json([
+                'orderType' => $orden->orderType,
+                'padre' => $padre,
+                'hijos' => $hijos,
+                'diferencia' => $padre - $hijos,
+                'validate' => ($padre - $hijos) > 0,
+                'conciliaciones' => $conciliaciones,
+                'estado' => 200,
+            ]);
+        }
+
+        return response()->json([
+            'conciliaciones' => [],
+            'estado' => 500,
         ]);
     }
 
