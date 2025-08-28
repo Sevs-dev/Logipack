@@ -50,7 +50,18 @@ const NewLineas = () => {
             if (data.estado === 100 || data.estado === null) {
 
                 // confirmar para restablecer
-                handleConfirmar(plan.id);
+                showConfirm("¿Estás seguro desea restablecer la orden?", async () => {
+                    const response = await getRestablecerOrden(plan.id);
+                    if (response.estado !== 200) {
+                        showError("Error, orden no permitida para restablecer");
+                        return;
+                    }
+                    showSuccess("Orden restablecida correctamente");
+        
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1000);
+                });
 
             } else {
                 showError("La orden ya fue finalizada. Estado: " + data.estado);
@@ -83,32 +94,7 @@ const NewLineas = () => {
         },
         []
     );
-
-    const handleConfirmar = async (id: number) => {
-        showConfirm("¿Estás seguro desea restablecer la orden?", async () => {
-            const response = await getRestablecerOrden(id);
-            if (response.estado !== 200) {
-                showError("Error, orden no permitida para restablecer");
-                return;
-            }
-            showSuccess("Orden restablecida correctamente");
-
-            setTimeout(() => {
-                window.location.reload();
-            }, 1000);
-            // const user = document.cookie
-            //     .split("; ")
-            //     .find((row) => row.startsWith("name="))
-            //     ?.split("=")[1];
-
-            // if (!user) {
-            //     showError("No se encontró usuario");
-            //     return;
-            // }
-        });
-    };
-
-
+    
     useEffect(() => {
         const data = validar_estado();
         if (data) setLocal(data);

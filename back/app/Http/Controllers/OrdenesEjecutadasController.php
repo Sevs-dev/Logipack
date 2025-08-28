@@ -881,14 +881,14 @@ class OrdenesEjecutadasController extends Controller
 
             // 5. Devuelve respuesta JSON
             return response()->json([
-                'message' => 'Orden restablecida correctamente',
+                'message' => 'Orden relacionada correctamente',
                 'estado' => 200,
             ]);
         }
 
         // 5. Devuelve respuesta JSON
         return response()->json([
-            'message' => 'Error, no se puede restabler orden',
+            'message' => 'Error, no se puede relacionar orden',
             'estado' => -11500,
         ]);
     }

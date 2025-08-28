@@ -369,8 +369,8 @@ function Table<T extends { id: number }>({
                       )}
                       {showOrdenHijaButton && onOrdenHija
                         && row?.orderType === "P"
-                        && (row?.status_dates === "En Ejecución"
-                          || row?.status_dates === "Planificación") && (
+                        && (row?.status_dates === "En ejecución") && (
+                          // || row?.status_dates === "Planificación"
                           <Button
                             onClick={() => onOrdenHija(row.id)}
                             variant="control"
