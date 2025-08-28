@@ -743,13 +743,16 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
         );
 
         window.open("/pages/lineas", "_blank");
-        handleClose();
+        setTimeout(() => {
+            window.location.reload();
+        }, 3000);
+        // handleClose();
       } else {
         showError("La orden ya fue finalizada. Estado: " + data.estado);
         fetchAll();
       }
     },
-    [fetchAll, handleClose]
+    [fetchAll]
   );
 
   const hableRestablecerOrden = useCallback(
@@ -791,6 +794,9 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
             user: userCookie,
           })
         );
+
+        // refrescar tabla
+        fetchAll();
 
         setTimeout(() => {
           window.open("/pages/lineas", "_blank");
@@ -844,10 +850,10 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
       showConfirm("¿Estás seguro desea crear una orden relacionada ?", async () => {
         const response = await getRelacionarOrden(plan.id);
         if (response.estado !== 200) {
-          showError("Error, orden no permitida para ser relaodada");
+          showError("Error, orden no permitida para ser relacionada");
           return;
         }
-        showSuccess("Orden relaodada correctamente");
+        showSuccess("Orden relacionada correctamente");
         setTimeout(() => {
           window.location.reload();
         }, 1000);
@@ -1199,8 +1205,8 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
                         if (!isDisabled) setDraggedActivityId(act.id);
                       }}
                       className={`border border-gray-300 p-3 mb-3 rounded-md ${isDisabled
-                          ? "cursor-not-allowed bg-gray-100 text-gray-900"
-                          : "cursor-grab bg-white hover:shadow"
+                        ? "cursor-not-allowed bg-gray-100 text-gray-900"
+                        : "cursor-grab bg-white hover:shadow"
                         } shadow-sm transition-shadow flex justify-between items-center`}
                       title={
                         isDisabled

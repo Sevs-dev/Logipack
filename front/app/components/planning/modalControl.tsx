@@ -190,6 +190,7 @@ export default function ModalControl({
     (getActividadesControl as (id: number) => Promise<ApiActividadesResponse>)(
       id
     ).then((data) => {
+      console.log(id);
       if (data && Array.isArray(data.actividades)) {
         setMemoriaFase((prev) => ({
           ...prev,
@@ -252,10 +253,12 @@ export default function ModalControl({
     <div className={className ?? "w-full max-w-5xl"}>
       <Text type="title" color="text-[#000]">
         {heading}
+        
       </Text>
 
       {memoriaFase.fase_control && (
-        <div className="mt-2 rounded-lg border border-gray-200 bg-white p-4 shadow-sm justify-center flex">
+        <div className="mt-2 rounded-lg border border-gray-200 
+          bg-white p-4 shadow-sm justify-center flex">
           <p className="font-medium text-gray-800 mr-2">
             {memoriaFase.fase_control.descripcion} |
           </p>
@@ -277,9 +280,9 @@ export default function ModalControl({
                 <Text type="subtitle" color="text-[#000]">
                   {item.description}
                 </Text>
-                <p className="mt-1 text-sm text-gray-500 text-center">
+                {/* <p className="mt-1 text-sm text-gray-500 text-center">
                   Selecciona una de las siguientes opciones.
-                </p>
+                </p> */}
 
                 {/* TEXT */}
                 {cfg?.type === "text" && (

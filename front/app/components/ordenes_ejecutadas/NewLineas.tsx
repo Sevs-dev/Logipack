@@ -50,7 +50,18 @@ const NewLineas = () => {
             if (data.estado === 100 || data.estado === null) {
 
                 // confirmar para restablecer
-                handleConfirmar(plan.id);
+                showConfirm("¿Estás seguro desea restablecer la orden?", async () => {
+                    const response = await getRestablecerOrden(plan.id);
+                    if (response.estado !== 200) {
+                        showError("Error, orden no permitida para restablecer");
+                        return;
+                    }
+                    showSuccess("Orden restablecida correctamente");
+
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1000);
+                });
 
             } else {
                 showError("La orden ya fue finalizada. Estado: " + data.estado);
@@ -83,31 +94,6 @@ const NewLineas = () => {
         },
         []
     );
-
-    const handleConfirmar = async (id: number) => {
-        showConfirm("¿Estás seguro desea restablecer la orden?", async () => {
-            const response = await getRestablecerOrden(id);
-            if (response.estado !== 200) {
-                showError("Error, orden no permitida para restablecer");
-                return;
-            }
-            showSuccess("Orden restablecida correctamente");
-
-            setTimeout(() => {
-                window.location.reload();
-            }, 1000);
-            // const user = document.cookie
-            //     .split("; ")
-            //     .find((row) => row.startsWith("name="))
-            //     ?.split("=")[1];
-
-            // if (!user) {
-            //     showError("No se encontró usuario");
-            //     return;
-            // }
-        });
-    };
-
 
     useEffect(() => {
         const data = validar_estado();
@@ -150,18 +136,16 @@ const NewLineas = () => {
 
     const verificarYGenerar = async () => {
         if (orden === null && local) {
-            const { message } = await generar_orden(local.id);
-            console.log(message);
+            const { estado, message } = await generar_orden(local.id);
             if (local) {
                 await cargarLineasProceso(local);
             }
-        }
-
-        // ⚠️ Revalida después de intentar generar
-        const procesosActualizados = Array.isArray(lista.linea_procesos) ? lista.linea_procesos : [];
-        if (procesosActualizados.length === 0) {
-            // window.close();
-            console.log("No hay procesos disponibles para la orden.");
+            if (estado === 200) {
+                showSuccess(message);
+                return;
+            } else {
+                showError(message);
+            }
         }
     };
     verificarYGenerar();
@@ -342,7 +326,7 @@ const NewLineas = () => {
                     isVisible={showModalControl}
                     onClose={() => setShowModalControl(false)}>
                     <ModalControl
-                        id={25}
+                        id={local?.id}
                         showModal={showModalControl}
                         setShowModal={setShowModalControl}
                     />
