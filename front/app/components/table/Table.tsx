@@ -316,9 +316,9 @@ function Table<T extends { id: number }>({
                     })}
                     <td className="px-6 py-3 flex justify-center gap-3 border-r border-gray-700 last:border-r-0">
                       {showEditButton && onEdit
-                        && ((row as any).status_dates !== "Ejecutado"
-                          && (row as any).status_dates !== "Planificación"
-                          && (row as any).status_dates !== "En ejecución") && (
+                        && (((row as { status_dates?: string }).status_dates) !== "Ejecutado"
+                          && ((row as { status_dates?: string }).status_dates) !== "Planificación"
+                          && ((row as { status_dates?: string }).status_dates) !== "En ejecución") && (
                           <Button onClick={() => onEdit(row.id)} variant="edit" />
                         )}
                       {showDeleteButton && onDelete && (
@@ -368,8 +368,8 @@ function Table<T extends { id: number }>({
                         />
                       )}
                       {showOrdenHijaButton && onOrdenHija
-                        && ((row as any).orderType === "P")
-                        && ((row as any).status_dates === "En ejecución") && (
+                        && ((row as { orderType?: string }).orderType) === "P"
+                        && ((row as { status_dates?: string }).status_dates === "En ejecución") && (
                           // || row?.status_dates === "Planificación"
                           <Button
                             onClick={() => onOrdenHija(row.id)}
