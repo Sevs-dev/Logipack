@@ -270,7 +270,7 @@ function Table<T extends { id: number }>({
                   </td>
                 </tr>
               ) : (
-                paginatedRows.map((row, index) => (
+                paginatedRows.map((row , index) => (
                   <tr
                     key={index}
                     className="border-b border-gray-700 text-sm odd:bg-gray-800 even:bg-gray-850 hover:bg-gray-700 transition-all duration-300">
@@ -316,9 +316,9 @@ function Table<T extends { id: number }>({
                     })}
                     <td className="px-6 py-3 flex justify-center gap-3 border-r border-gray-700 last:border-r-0">
                       {showEditButton && onEdit
-                        && (row?.status_dates !== "Ejecutado"
-                          && row?.status_dates !== "Planificación"
-                          && row?.status_dates !== "En ejecución") && (
+                        && ((row as any).status_dates !== "Ejecutado"
+                          && (row as any).status_dates !== "Planificación"
+                          && (row as any).status_dates !== "En ejecución") && (
                           <Button onClick={() => onEdit(row.id)} variant="edit" />
                         )}
                       {showDeleteButton && onDelete && (
@@ -368,8 +368,8 @@ function Table<T extends { id: number }>({
                         />
                       )}
                       {showOrdenHijaButton && onOrdenHija
-                        && row?.orderType === "P"
-                        && (row?.status_dates === "En ejecución") && (
+                        && ((row as any).orderType === "P")
+                        && ((row as any).status_dates === "En ejecución") && (
                           // || row?.status_dates === "Planificación"
                           <Button
                             onClick={() => onOrdenHija(row.id)}
