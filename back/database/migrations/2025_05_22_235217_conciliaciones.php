@@ -16,6 +16,7 @@ return new class extends Migration
             $table->string('orden_ejecutada')->nullable();
             $table->string('adaptation_date_id')->nullable();
             $table->string('number_order')->nullable();
+            $table->string('orderType')->nullable();
             $table->string('descripcion_maestra')->nullable();
 
             // articulos a conciliar

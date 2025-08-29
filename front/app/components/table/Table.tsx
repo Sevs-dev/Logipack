@@ -32,11 +32,43 @@ type TableProps<T extends { id: number }> = {
   showPDFCondition?: (row: T) => boolean;
   showViewCondition?: (row: T) => boolean;
   showOrdenHijaButton?: boolean;
+};
 
-  /** NUEVO: decide si el registro puede editarse (por defecto, true) */
-  canEditRow?: (row: T) => boolean;
-  /** NUEVO: condición para mostrar botón de Orden Hija además de showOrdenHijaButton (por defecto, sin condición extra) */
-  showOrdenHijaCondition?: (row: T) => boolean;
+const Header = ({
+  column,
+  label,
+  onSort,
+  sortOrder,
+  sortColumn,
+}: {
+  column: string;
+  label: string;
+  onSort: (column: string) => void;
+  sortOrder: "asc" | "desc";
+  sortColumn: string;
+}) => {
+  const isActive = column === sortColumn;
+  return (
+    <th
+      className={`px-6 py-3 text-center font-semibold text-gray-300 tracking-wide cursor-pointer transition-all border-r border-gray-700 last:border-r-0
+        ${isActive ? "text-white bg-gray-700 shadow-md" : "hover:bg-gray-800"}`}
+      onClick={() => onSort(column)}
+      title="Click para ordenar"
+    >
+      {label}
+      <span className="ml-2 inline-flex items-center">
+        {isActive ? (
+          sortOrder === "asc" ? (
+            <FaArrowUp size={12} className="text-white" />
+          ) : (
+            <FaArrowDown size={12} className="text-white" />
+          )
+        ) : (
+          <FaSort size={12} className="text-gray-400" />
+        )}
+      </span>
+    </th>
+  );
 };
 
 function Table<T extends { id: number }>({
@@ -55,7 +87,6 @@ function Table<T extends { id: number }>({
   onView,
   showTerciarioCondition,
   showOrdenHijaButton,
-  showOrdenHijaCondition,
   showPDFCondition,
   showViewCondition,
   showDeleteButton = true,
@@ -66,9 +97,8 @@ function Table<T extends { id: number }>({
   showHistory = true,
   showPDF = true,
   showViewButton = false,
-  canEditRow,
 }: TableProps<T>) {
-  const [sortColumn, setSortColumn] = useState<keyof T>("id" as keyof T);
+  const [sortColumn, setSortColumn] = useState("id");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const [columnSearchTerms, setColumnSearchTerms] = useState<
     Partial<Record<keyof T, string>>
@@ -89,31 +119,32 @@ function Table<T extends { id: number }>({
 
   const filteredRows = rows.filter((row) =>
     columns.every((column) => {
-      const searchValue = (columnSearchTerms[column] ?? "").toLowerCase();
+      const searchValue = columnSearchTerms[column]?.toLowerCase() ?? "";
       const cellValue = String(row[column] ?? "").toLowerCase();
       return cellValue.includes(searchValue);
     })
   );
 
-  const toPrimitive = (v: unknown): string | number => {
-    if (v instanceof Date) return v.getTime();
-    const t = typeof v;
-    if (t === "number" || t === "bigint") return Number(v as number | bigint);
-    if (t === "boolean") return (v as boolean) ? 1 : 0;
-    if (v == null) return "";
-    return String(v);
-  };
-
   const sortedRows = [...filteredRows].sort((a, b) => {
-    const valA = toPrimitive(a[sortColumn]);
-    const valB = toPrimitive(b[sortColumn]);
-    if (typeof valA === "number" && typeof valB === "number") {
-      return sortOrder === "asc" ? valA - valB : valB - valA;
+    if (sortColumn === "id") {
+      return sortOrder === "asc" ? a.id - b.id : b.id - a.id;
     }
-    // comparador seguro para strings
-    const sA = String(valA);
-    const sB = String(valB);
-    return sortOrder === "asc" ? sA.localeCompare(sB) : sB.localeCompare(sA);
+    const valA = a[sortColumn as keyof T] ?? "";
+    const valB = b[sortColumn as keyof T] ?? "";
+
+    if (typeof valA === "string" && typeof valB === "string") {
+      return sortOrder === "asc"
+        ? valA.localeCompare(valB)
+        : valB.localeCompare(valA);
+    } else {
+      return sortOrder === "asc"
+        ? valA > valB
+          ? 1
+          : -1
+        : valA < valB
+          ? 1
+          : -1;
+    }
   });
 
   const totalPages = Math.ceil(sortedRows.length / itemsPerPage);
@@ -129,10 +160,10 @@ function Table<T extends { id: number }>({
     currentPage * itemsPerPage
   );
 
-  const handleSort = (column: keyof T) => {
+  const handleSort = (column: string) => {
     setSortColumn(column);
-    setSortOrder((prev) =>
-      sortColumn === column ? (prev === "asc" ? "desc" : "asc") : "asc"
+    setSortOrder(
+      sortColumn === column ? (sortOrder === "asc" ? "desc" : "asc") : "asc"
     );
   };
 
@@ -149,44 +180,6 @@ function Table<T extends { id: number }>({
     { length: endPage - startPage + 1 },
     (_, i) => startPage + i
   );
-
-  // Header tipado dentro para capturar T
-  const Header = ({
-    column,
-    label,
-    onSort,
-    sortOrder,
-    sortColumn,
-  }: {
-    column: keyof T;
-    label: string;
-    onSort: (column: keyof T) => void;
-    sortOrder: "asc" | "desc";
-    sortColumn: keyof T;
-  }) => {
-    const isActive = column === sortColumn;
-    return (
-      <th
-        className={`px-6 py-3 text-center font-semibold text-gray-300 tracking-wide cursor-pointer transition-all border-r border-gray-700 last:border-r-0
-        ${isActive ? "text-white bg-gray-700 shadow-md" : "hover:bg-gray-800"}`}
-        onClick={() => onSort(column)}
-        title="Click para ordenar"
-      >
-        {label}
-        <span className="ml-2 inline-flex items-center">
-          {isActive ? (
-            sortOrder === "asc" ? (
-              <FaArrowUp size={12} className="text-white" />
-            ) : (
-              <FaArrowDown size={12} className="text-white" />
-            )
-          ) : (
-            <FaSort size={12} className="text-gray-400" />
-          )}
-        </span>
-      </th>
-    );
-  };
 
   return (
     <div className="w-full overflow-hidden rounded-xl shadow-lg p-3 sm:p-4 bg-gray-900 transition-all duration-300">
@@ -244,7 +237,7 @@ function Table<T extends { id: number }>({
                 {columns.map((column) => (
                   <Header
                     key={String(column)}
-                    column={column}
+                    column={String(column)}
                     label={columnLabels[column] ?? String(column)}
                     onSort={handleSort}
                     sortColumn={sortColumn}
@@ -288,22 +281,23 @@ function Table<T extends { id: number }>({
                           String(column) as BooleanColumns
                         )
                       ) {
-                        const isActive =
-                          (value as unknown) === true || (value as unknown) === 1;
                         return (
                           <td
                             key={String(column)}
                             className="px-4 py-2 text-gray-300 border-r border-gray-700 last:border-r-0"
                           >
                             <span
-                              className={`inline-flex items-center px-3 py-1 rounded-full text-white ${
-                                isActive ? "bg-green-600" : "bg-red-600"
-                              }`}
+                              className={`inline-flex items-center px-3 py-1 rounded-full text-white ${value === true || value === 1
+                                ? "bg-green-600"
+                                : "bg-red-600"
+                                }`}
                             >
-                              {isActive && (
+                              {(value === true || value === 1) && (
                                 <span className="mr-2 w-2 h-2 bg-white rounded-full animate-pulse"></span>
                               )}
-                              {isActive ? "Activo" : "Inactivo"}
+                              {value === true || value === 1
+                                ? "Activo"
+                                : "Inactivo"}
                             </span>
                           </td>
                         );
@@ -321,19 +315,18 @@ function Table<T extends { id: number }>({
                       }
                     })}
                     <td className="px-6 py-3 flex justify-center gap-3 border-r border-gray-700 last:border-r-0">
-                      {showEditButton &&
-                        onEdit &&
-                        (!canEditRow || canEditRow(row)) && (
+                      {showEditButton && onEdit
+                        && (row?.status_dates !== "Ejecutado"
+                          && row?.status_dates !== "Planificación"
+                          && row?.status_dates !== "En ejecución") && (
                           <Button onClick={() => onEdit(row.id)} variant="edit" />
                         )}
-
                       {showDeleteButton && onDelete && (
                         <Button
                           onClick={() => onDelete(row.id)}
                           variant="delete"
                         />
                       )}
-
                       {showTerciarioButton &&
                         onTerciario &&
                         (!showTerciarioCondition ||
@@ -343,21 +336,18 @@ function Table<T extends { id: number }>({
                             variant="create2"
                           />
                         )}
-
                       {showRestablecerButton && onRestablecer && (
                         <Button
                           onClick={() => onRestablecer(row.id)}
                           variant="restablecer"
                         />
                       )}
-
                       {showControlButton && onControl && (
                         <Button
                           onClick={() => onControl(row.id)}
                           variant="control"
                         />
                       )}
-
                       {showViewButton &&
                         onView &&
                         (!showViewCondition || showViewCondition(row)) && (
@@ -366,24 +356,21 @@ function Table<T extends { id: number }>({
                             variant="view"
                           />
                         )}
-
                       {showPDF &&
                         onPDF &&
                         (!showPDFCondition || showPDFCondition(row)) && (
                           <Button onClick={() => onPDF(row.id)} variant="pdf" />
                         )}
-
                       {showHistory && onHistory && (
                         <Button
                           onClick={() => onHistory(row.id)}
                           variant="history"
                         />
                       )}
-
-                      {showOrdenHijaButton &&
-                        onOrdenHija &&
-                        (!showOrdenHijaCondition ||
-                          showOrdenHijaCondition(row)) && (
+                      {showOrdenHijaButton && onOrdenHija
+                        && row?.orderType === "P"
+                        && (row?.status_dates === "En ejecución") && (
+                          // || row?.status_dates === "Planificación"
                           <Button
                             onClick={() => onOrdenHija(row.id)}
                             variant="control"
@@ -397,6 +384,8 @@ function Table<T extends { id: number }>({
           </table>
         </motion.div>
       </AnimatePresence>
+      {/* En Creación */}
+      {/* En ejecución */}
 
       {/* Vista en formato tarjetas para pantallas pequeñas */}
       <div className="md:hidden space-y-4 mt-4">
@@ -406,7 +395,7 @@ function Table<T extends { id: number }>({
             className="bg-gray-800 p-4 rounded-lg shadow-md transition-all duration-300 hover:shadow-lg"
           >
             {columns.map((column) => {
-              const colKey = String(column);
+              const colKey = String(column); // React.Key = string | number
               const value = row[column];
               return (
                 <div
@@ -424,7 +413,7 @@ function Table<T extends { id: number }>({
             })}
 
             <div className="flex justify-end flex-wrap gap-2 mt-3">
-              {showEditButton && onEdit && (!canEditRow || canEditRow(row)) && (
+              {showEditButton && onEdit && (
                 <Button onClick={() => onEdit(row.id)} variant="edit" />
               )}
               {showDeleteButton && onDelete && (
@@ -491,11 +480,10 @@ function Table<T extends { id: number }>({
               <button
                 key={page}
                 onClick={() => setCurrentPage(page)}
-                className={`px-2 py-1 text-sm rounded-md transition-all duration-200 ease-out hover:scale-105 ${
-                  page === currentPage
-                    ? "bg-blue-600 text-white scale-105"
-                    : "bg-gray-700 text-gray-300 hover:bg-gray-600"
-                }`}
+                className={`px-2 py-1 text-sm rounded-md transition-all duration-200 ease-out hover:scale-105 ${page === currentPage
+                  ? "bg-blue-600 text-white scale-105"
+                  : "bg-gray-700 text-gray-300 hover:bg-gray-600"
+                  }`}
               >
                 {page}
               </button>
