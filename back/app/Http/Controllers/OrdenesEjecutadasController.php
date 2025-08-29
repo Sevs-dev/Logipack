@@ -728,6 +728,11 @@ class OrdenesEjecutadasController extends Controller
         }
 
         return response()->json([
+            'orderType' => null,
+            'padre' => 0,
+            'hijos' => 0,
+            'diferencia' => 0,
+            'validate' => false,
             'conciliaciones' => [],
             'estado' => 500,
         ]);
