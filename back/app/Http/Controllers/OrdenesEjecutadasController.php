@@ -1047,7 +1047,7 @@ class OrdenesEjecutadasController extends Controller
             ->orderByRaw('posicion ASC')
             ->get(), $orden);
 
-        $version = $fases[0]->adaptation_date_id . '-version-' . date("Y_m_d_H_i_s");
+        $version = 'v-' . date("Y_m_d_H_i_s");
         // crear actividades de la orden ejecutada
         foreach ($fases as $fase) {
             ActividadesEjecutadas::create([
