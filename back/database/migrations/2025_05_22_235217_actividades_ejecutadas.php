@@ -23,6 +23,7 @@ return new class extends Migration
             $table->string('repeat_line')->nullable()->default(0);
             $table->json('forms')->nullable();
             $table->json('estado_form')->nullable()->default(false);
+            $table->string('version')->nullable();
             $table->string('user')->nullable();
             $table->timestamps();
         });
