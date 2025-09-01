@@ -18,7 +18,7 @@ return new class extends Migration
             $table->unsignedBigInteger('master');
             $table->unsignedBigInteger('bom')->nullable();
             $table->json('article_code');
-            $table->string('attachment')->nullable();
+            $table->json('attachment')->nullable();
             $table->string('number_order')->nullable();  
             $table->json('ingredients')->nullable();
             $table->foreign('client_id')->references('id')->on('clients')->onDelete('cascade');

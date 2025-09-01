@@ -561,7 +561,7 @@
             <thead>
               <tr>
                 <th style="width:30%">Actividad</th>
-                <th style="width:25%">Resultado</th>
+                <th style="width:25%">Resultado</th> 
                 <th style="width:15%">Línea</th>
                 <th style="width:15%">Usuario</th>
                 <th style="width:15%">Hora</th>

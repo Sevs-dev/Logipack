@@ -6,8 +6,9 @@ import Table from "../table/Table";
 import Button from "../buttons/buttons";
 import Text from "../text/Text";
 import ModalSection from "../modal/ModalSection";
-import { showError, showConfirm } from "../toastr/Toaster";
+import { showSuccess, showError, showConfirm } from '../toastr/Toaster';
 import { CreateClientProps } from "../../interfaces/CreateClientProps";
+import { InfoPopover } from "../buttons/InfoPopover";
 // importaciones de interfaces
 import {
   TipoAcondicionamiento,
@@ -176,8 +177,8 @@ export default function NewTipoAcondicionamiento({
     try {
       // ✅ Sin eliminación optimista: eliminamos primero en backend
       await deleteLineaTipoAcom(Number(id));
-    } catch  {
-      const was404 = ("404");
+    } catch {
+      const was404 = "404";
       if (!was404) {
         showError(`No se pudo eliminar la línea`);
         return; // no sigas si el error es real
@@ -193,9 +194,7 @@ export default function NewTipoAcondicionamiento({
         );
         setLineas(updated);
       } catch {
-        showError(
-          `No se pudieron recargar las líneas`
-        );
+        showError(`No se pudieron recargar las líneas`);
       }
     }
   };
@@ -203,6 +202,7 @@ export default function NewTipoAcondicionamiento({
   const handleBtnAplicarEdit = async () => {
     await updateTipoAcom(objectTipoAcom.id, objectTipoAcom);
     await getListTipoAcom();
+    showSuccess("Tipo de Acondiciopnamiento Actualizado Correctamente");
   };
 
   // función para abrir el modal de edición+líneas
@@ -340,7 +340,19 @@ export default function NewTipoAcondicionamiento({
             {/* Formulario principal */}
             <div className="mb-8">
               <Text type="subtitle" color="#000">
-                Descripción
+                Descripción{" "}
+                {isOpenEdit ? (
+                  ""
+                ) : (
+                  <InfoPopover
+                    content={
+                      <>
+                        Al crear la descripción deberas editarla para poder
+                        guardar los datos necesarios.
+                      </>
+                    }
+                  />
+                )}
               </Text>
               <input
                 id="descripcion"
@@ -358,7 +370,13 @@ export default function NewTipoAcondicionamiento({
             {(btnAplicar || isOpenEdit) && (
               <>
                 <Text type="title" color="text-[#000]">
-                  Líneas de Acondicionamiento
+                  Líneas de Acondicionamiento  <InfoPopover
+                    content={
+                      <>
+                       Los datos se guardan automaticamente al crearlos 
+                      </>
+                    }
+                  />
                 </Text>
                 <div className="overflow-x-auto rounded-lg border border-gray-200 shadow-sm">
                   <table className="min-w-full divide-y divide-gray-200 text-gray-700 text-center border border-gray-200">
@@ -626,7 +644,7 @@ export default function NewTipoAcondicionamiento({
                     }
                   }}
                   variant="create"
-                  label={isOpenEdit ? "Actualizar" : "Aplicar"}
+                  label={isOpenEdit ? "Actualizar" : "Guardar"}
                 />
               )}
             </div>

@@ -45,26 +45,35 @@ class AdaptationController extends Controller
     public function newAdaptation(Request $request)
     {
         try {
-            $validatedData = $request->validate([
-                'client_id'    => 'required|exists:clients,id',
-                'article_code' => 'required|json',
-                'attachment'   => 'nullable|file',
-                'attachments'  => 'nullable',
-                'master'       => 'nullable|exists:maestras,id',
-                'bom'          => 'nullable|exists:boms,id',
-                'ingredients'  => 'nullable|json',
-                'number_order' => 'required|string',
-                'factory_id'   => 'required|exists:factories,id',
-                'user'         => 'string|nullable',
+            Log::info('🚀 Iniciando newAdaptation', [
+                'request_all' => $request->all(),
+                'files'       => array_keys($request->allFiles()),
             ]);
 
+            $validatedData = $request->validate([
+                'client_id'     => 'required|exists:clients,id',
+                'article_code'  => 'required|json',
+                'attachment'    => 'nullable|file|mimes:pdf|max:10240',   // único
+                'attachments'   => 'nullable|array|max:20',               // múltiples
+                'attachments.*' => 'file|mimes:pdf|max:10240',
+                'master'        => 'nullable|exists:maestras,id',
+                'bom'           => 'nullable|exists:boms,id',
+                'ingredients'   => 'nullable|json',
+                'number_order'  => 'required|string',
+                'factory_id'    => 'required|exists:factories,id',
+                'user'          => 'string|nullable',
+            ]);
+            Log::info('✅ Datos validados', $validatedData);
+
             // === Consecutivo y número de orden ===
-            $now = Carbon::now();
-            $prefix = Str::before($validatedData['number_order'], '-');
-            $currentYear = $now->year;
+            $now          = Carbon::now();
+            $prefix       = Str::before($validatedData['number_order'], '-');
+            $currentYear  = $now->year;
             $currentMonth = $now->format('m');
 
             $consecutive = Consecutive::firstOrNew(['prefix' => $prefix]);
+            Log::info('🔢 Consecutive cargado', $consecutive->toArray());
+
             if ($consecutive->year != $currentYear || $consecutive->month != $currentMonth) {
                 $consecutive->year = $currentYear;
                 $consecutive->month = $currentMonth;
@@ -73,14 +82,17 @@ class AdaptationController extends Controller
                 $consecutive->consecutive = str_pad((int)$consecutive->consecutive + 1, 7, '0', STR_PAD_LEFT);
             }
             $consecutive->save();
+            Log::info('💾 Consecutive actualizado', $consecutive->toArray());
 
             $newNumberOrder = sprintf('%s-%04d-%02d-%07d', $prefix, $consecutive->year, $consecutive->month, $consecutive->consecutive);
             $validatedData['number_order'] = $newNumberOrder;
+            Log::info('🆕 Nuevo número de orden generado', ['number_order' => $newNumberOrder]);
 
             // === Carpetas por orden ===
             $baseDir     = "attachments/{$newNumberOrder}";
             $generalDir  = "{$baseDir}/general";
             Storage::disk('public')->makeDirectory($generalDir);
+            Log::info('📂 Carpetas creadas', ['baseDir' => $baseDir, 'generalDir' => $generalDir]);
 
             // === Adjuntos generales (múltiples + único) ===
             $generalFiles = [];
@@ -90,35 +102,37 @@ class AdaptationController extends Controller
                         $file = LaravelUploadedFile::createFromBase($file);
                     }
                     $filename = $this->uniqueFilenameFromUpload($file);
-                    $path = $file->storeAs($generalDir, $filename, 'public');
+                    $path     = $file->storeAs($generalDir, $filename, 'public');
                     $generalFiles[] = $path;
                 }
+                Log::info('📎 Adjuntos múltiples procesados', ['generalFiles' => $generalFiles]);
             }
 
+            $mainPath = null;
             if ($request->hasFile('attachment')) {
                 $file = $request->file('attachment');
                 if ($file instanceof SymfonyUploadedFile && !$file instanceof LaravelUploadedFile) {
                     $file = LaravelUploadedFile::createFromBase($file);
                 }
                 $filename = $this->uniqueFilenameFromUpload($file);
-                $path = $file->storeAs($generalDir, $filename, 'public');
-                $validatedData['attachment'] = $path;
+                $path     = $file->storeAs($generalDir, $filename, 'public');
+                $mainPath = $path;
+                Log::info('📎 Adjunto único procesado', ['mainPath' => $mainPath]);
             } elseif (!empty($generalFiles)) {
-                // guarda el primero como "attachment" (referencia principal)
-                $validatedData['attachment'] = $generalFiles[0];
+                $mainPath = $generalFiles[0];
+                Log::info('ℹ️ Usando primer adjunto múltiple como principal', ['mainPath' => $mainPath]);
             }
 
-            // === Adjuntos por artículo: attachment_{codart} o attachment_{codart}[] === 
+            // === Adjuntos por artículo ===
             $articleAttachments = [];
             $allFiles = $request->allFiles();
-            Log::info('📥 allFiles keys', ['keys' => array_keys($allFiles)]);
+            Log::info('📥 Archivos recibidos', ['keys' => array_keys($allFiles)]);
 
             foreach ($allFiles as $key => $fileOrArray) {
                 if (!Str::startsWith($key, 'attachment_')) continue;
 
                 $codart = Str::after($key, 'attachment_');
                 $safeCodart = $this->sanitizeBasename($codart);
-
                 $filesForArticle = is_array($fileOrArray) ? $fileOrArray : [$fileOrArray];
 
                 $articleDir = "{$baseDir}/articles/{$safeCodart}";
@@ -129,24 +143,53 @@ class AdaptationController extends Controller
                         $fa = LaravelUploadedFile::createFromBase($fa);
                     }
                     $filename = $this->uniqueFilenameFromUpload($fa);
-                    $path = $fa->storeAs($articleDir, $filename, 'public'); // ← importante
+                    $path = $fa->storeAs($articleDir, $filename, 'public');
                     $articleAttachments[$codart][] = $path;
                 }
             }
+            Log::info('📎 Archivos adjuntos por artículo procesados', ['article_attachments' => $articleAttachments]);
 
-            Log::info("📎 Archivos adjuntos por artículo procesados", ['article_attachments' => $articleAttachments]);
+            // === Preparar attachment JSON ===
+            $attachmentPayload = [
+                'main'       => $mainPath,
+                'others'     => $generalFiles,
+                'by_article' => $articleAttachments,
+            ];
+            Log::info('📦 Payload final de attachment', $attachmentPayload);
 
             // === Crear Adaptation ===
-            $validatedData['version'] = '1';
-            $validatedData['reference_id'] = (string) Str::uuid();
-            $adaptation = Adaptation::create($validatedData);
+            $articleCodeArr = json_decode($validatedData['article_code'], true);
+            $ingredientsArr = isset($validatedData['ingredients']) ? json_decode($validatedData['ingredients'], true) : [];
 
-            // === Duración por etapas (opcional) ===
+            // IMPORTANTE:
+            // Si NO tienes $casts en el modelo, forzamos JSON aquí para evitar "Array to string conversion".
+            // Si agregas en el modelo:
+            //   protected $casts = ['article_code'=>'array','ingredients'=>'array','attachment'=>'array'];
+            // puedes reemplazar estos json_encode por los arrays directos.
+            $dataToCreate = [
+                'client_id'    => (int)$validatedData['client_id'],
+                'factory_id'   => (int)$validatedData['factory_id'],
+                'article_code' => json_encode($articleCodeArr, JSON_UNESCAPED_SLASHES),  // ← forzado a JSON
+                'number_order' => $newNumberOrder,
+                'attachment'   => json_encode($attachmentPayload, JSON_UNESCAPED_SLASHES), // ← forzado a JSON
+                'master'       => $validatedData['master'] ?? null,
+                'bom'          => $validatedData['bom'] ?? null,
+                'ingredients'  => json_encode($ingredientsArr, JSON_UNESCAPED_SLASHES),  // ← forzado a JSON
+                'version'      => '1',
+                'reference_id' => (string) Str::uuid(),
+                'user'         => $validatedData['user'] ?? null,
+            ];
+            Log::info('📝 Datos a crear en Adaptation (serializados)', $dataToCreate);
+
+            $adaptation = Adaptation::create($dataToCreate);
+            Log::info('✅ Adaptation creada', ['id' => $adaptation->id]);
+
+            // === Duración por etapas (opcional)
             $masterDuration = null;
             $duration_breakdown = [];
             if (!empty($validatedData['master'])) {
                 $master = Maestra::find($validatedData['master']);
-                $ingredients = json_decode($validatedData['ingredients'] ?? '[]', true) ?? [];
+                $ingredients = $ingredientsArr ?? [];
 
                 if ($master && is_array($master->type_stage)) {
                     $totalDuration = 0;
@@ -174,30 +217,30 @@ class AdaptationController extends Controller
             }
 
             // === Crear AdaptationDate por artículo ===
-            $articleCodes = json_decode($validatedData['article_code'], true);
+            $articleCodes = $articleCodeArr;
             $factory = Factory::find($validatedData['factory_id']);
             if (!$factory) return response()->json(['error' => 'Fábrica no encontrada'], 404);
             $factoryName = $factory->name;
 
             foreach ($articleCodes as $article) {
                 AdaptationDate::create([
-                    'client_id'           => $validatedData['client_id'],
-                    'factory_id'          => $validatedData['factory_id'],
+                    'client_id'           => (int)$validatedData['client_id'],
+                    'factory_id'          => (int)$validatedData['factory_id'],
                     'codart'              => $article['codart'],
-                    'number_order'        => $validatedData['number_order'],
+                    'number_order'        => $newNumberOrder,
                     'orderNumber'         => $article['orderNumber'],
                     'deliveryDate'        => $article['deliveryDate'],
                     'quantityToProduce'   => $article['quantityToProduce'],
                     'lot'                 => $article['lot'],
                     'healthRegistration'  => $article['healthRegistration'],
-                    'master'              => $validatedData['master'],
-                    'bom'                 => $validatedData['bom'],
-                    'ingredients'         => $validatedData['ingredients'],
+                    'master'              => $validatedData['master'] ?? null,
+                    'bom'                 => $validatedData['bom'] ?? null,
+                    'ingredients'         => json_encode($ingredientsArr, JSON_UNESCAPED_SLASHES), // según tu tabla
                     'adaptation_id'       => $adaptation->id,
                     'duration'            => $masterDuration,
                     'factory'             => $factoryName,
-                    'duration_breakdown'  => json_encode($duration_breakdown),
-                    'user'                => $adaptation->user,
+                    'duration_breakdown'  => json_encode($duration_breakdown, JSON_UNESCAPED_SLASHES),
+                    'user'                => $validatedData['user'] ?? null,
                 ]);
             }
 

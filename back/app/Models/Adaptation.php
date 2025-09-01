@@ -13,6 +13,10 @@ class Adaptation extends Model
 
     protected $guarded = [];
 
+    protected $casts = [
+        'attachment'         => 'array',
+    ];
+
     public $timestamps = false; 
 
     public function adaptations()
