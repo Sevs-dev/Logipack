@@ -222,36 +222,55 @@ const App = () => {
     };
 
     const condicionFase = async () => {
-      const resp = await condiciones_fase(
-        fase.adaptation_date_id,
-        fase.fases_fk
-      );
+      try {
+        const resp = await condiciones_fase(
+          fase.adaptation_date_id,
+          fase.fases_fk
+        );
 
-      const rawPerfil = document.cookie
-        .split("; ")
-        .find((row) => row.startsWith("role="))
-        ?.split("=")[1];
-      const perfil = rawPerfil
-        ? decodeURIComponent(rawPerfil).replace(/"/g, "").trim()
-        : "";
+        const rawEntry = (
+          typeof document !== "undefined" ? document.cookie : ""
+        )
+          .split("; ")
+          .find((row) => row.startsWith("role="));
+        const rawPerfil = rawEntry?.split("=")[1] ?? "";
+        const decoded = decodeURIComponent(rawPerfil).replace(/"/g, "").trim();
 
-      const isPrivileged = ["administrador", "master"].includes(
-        perfil.toLowerCase()
-      );
-      if (isPrivileged) {
-        setShowModal_rol(false);
-        setShowModal_fase(resp.condicion_1 > 0);
-        return;
+        const norm = (s) =>
+          (s || "")
+            .normalize("NFD")
+            .replace(/[\u0300-\u036f]/g, "")
+            .trim()
+            .toLowerCase();
+
+        // 👇 Soporta múltiples roles en la cookie: "Master,Coordinador"
+        const userRoles = decoded
+          .split(/[,;|]/)
+          .map((r) => norm(r))
+          .filter(Boolean);
+
+        // Bypass por rol privilegiado
+        const privileged = new Set(["administrador", "master"]);
+        if (userRoles.some((r) => privileged.has(r))) {
+          setShowModal_rol(false);
+          setShowModal_fase(resp?.condicion_1 > 0);
+          return;
+        }
+
+        // Validación contra roles permitidos por la fase
+        const { roles } = await validate_rol(fase.fases_fk);
+        const allowed = (roles?.role ?? "")
+          .toString()
+          .split(/[,;|]/)
+          .map((r) => norm(r))
+          .filter(Boolean);
+
+        const tienePermiso = userRoles.some((r) => allowed.includes(r)); 
+        setShowModal_rol(!tienePermiso);
+        setShowModal_fase(resp?.condicion_1 > 0);
+      } catch {
+        // silencioso como pediste
       }
-
-      const { roles } = await validate_rol(fase.fases_fk);
-      const tienePermiso = roles?.role
-        ?.toString()
-        .split(",")
-        .map((r) => r.trim().toLowerCase())
-        .some((r) => r === perfil.toLowerCase());
-      setShowModal_rol(!tienePermiso);
-      setShowModal_fase(resp.condicion_1 > 0);
     };
 
     condicionFase();
@@ -589,7 +608,7 @@ const App = () => {
             className="min-h-screen w-full bg-[#1b2535] text-white p-[10px] sm:p-[10px] flex flex-col rounded-2xl"
           >
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {console.log("Renderizando formulario con memoriaFase:", forms)}
+              {/* {console.log("Renderizando formulario con memoriaFase:", forms)} */}
               {forms.map((item, index) => {
                 const config = parseConfigRobusto(item.config);
                 const {
