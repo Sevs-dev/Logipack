@@ -5,6 +5,9 @@ namespace App\Services;
 use iio\libmergepdf\Merger;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use setasign\Fpdi\PdfParser\StreamReader as PdfParserStreamReader;
+use setasign\Fpdi\PdfReader\StreamReader;
+use setasign\Fpdi\Tcpdf\Fpdi as TcpdfFpdi;
 
 class PdfAttachmentService
 {
@@ -76,5 +79,51 @@ class PdfAttachmentService
         } finally {
             Storage::disk('local')->delete($tmpName);
         }
+    }
+
+    public function applyMetadata(
+        string $pdfBytes,
+        string $title,
+        string $author = 'Logismart',
+        string $subject = 'Orden de producción'
+    ): string {
+        $pdf = new TcpdfFpdi();
+
+        // No queremos headers/footers automáticos
+        $pdf->setPrintHeader(false);
+        $pdf->setPrintFooter(false);
+
+        // Metadata que verá la pestaña del navegador
+        $pdf->SetTitle($title, true);   // true = UTF-8
+        $pdf->SetAuthor($author, true);
+        $pdf->SetSubject($subject, true);
+
+        // Importa todas las páginas del PDF de entrada
+        $reader = PdfParserStreamReader::createByString($pdfBytes);
+        $pageCount = $pdf->setSourceFile($reader);
+
+        for ($i = 1; $i <= $pageCount; $i++) {
+            $tplId = $pdf->importPage($i);
+            $size  = $pdf->getTemplateSize($tplId);
+            $pdf->AddPage($size['orientation'], [$size['width'], $size['height']]);
+            $pdf->useTemplate($tplId);
+        }
+
+        // 'S' = devuelve el resultado como string (bytes)
+        return $pdf->Output('', 'S');
+    }
+
+    /**
+     * (Azúcar) Fusiona y aplica metadata en un solo paso.
+     */
+    public function mergeWithAttachmentsAndMetadata(
+        string $mainPdfBytes,
+        string $numberOrder,
+        string $title,
+        string $author = 'Logismart',
+        string $subject = 'Orden de producción'
+    ): string {
+        $merged = $this->mergeMainWithAttachments($mainPdfBytes, $numberOrder);
+        return $this->applyMetadata($merged, $title, $author, $subject);
     }
 }

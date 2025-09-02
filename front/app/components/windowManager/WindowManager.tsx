@@ -182,15 +182,16 @@ const WindowManager: React.FC<WindowManagerProps> = ({
   }, [windows, activeWindow, closeWindow]);
 
   return (
-    <div className="relative h-auto flex flex-col bg-gray-900 rounded-xl border border-gray-500 text-white overflow-hidden shadow-lg mt-2 mx-2 w-auto">
+    <div className="relative h-auto flex flex-col bg-surface text-foreground rounded-xl border border-border overflow-hidden shadow-soft mt-2 mx-2 w-auto">
       {/* Header móvil */}
-      <div className="sm:hidden flex justify-between items-center px-4 py-2 bg-gray-850 border-b border-gray-700">
-        <span className="text-white font-semibold ml-16">Ventanas</span>
+      <div className="sm:hidden flex justify-between items-center px-4 py-2 bg-surface/80 backdrop-blur border-b border-border">
+        <span className="font-semibold ml-16">Ventanas</span>
         <button
           onClick={() => setMenuOpen((v) => !v)}
-          className="text-white p-2 hover:bg-gray-700 rounded-md"
+          className="p-2 rounded-md hover:bg-accent/10 active:scale-[0.98] transition focus:outline-none focus:ring-2 focus:ring-accent/40"
           aria-expanded={menuOpen}
           aria-controls="mobile-window-menu"
+          aria-label="Abrir menú de ventanas"
         >
           <Menu size={24} />
         </button>
@@ -204,47 +205,50 @@ const WindowManager: React.FC<WindowManagerProps> = ({
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
-            className="sm:hidden absolute top-12 left-0 w-full bg-gray-850 border-b border-gray-700 z-10"
+            className="sm:hidden absolute top-12 left-0 w-full bg-surface/95 backdrop-blur border-b border-border z-10"
           >
-            {windows.map((win) => (
-              <div key={win.id} className="relative">
-                <button
-                  aria-label={`Ventana ${win.title}`}
-                  className={[
-                    "block w-full px-4 py-2 text-left text-sm font-semibold border-b border-gray-700 transition-all",
-                    activeWindow === win.id
-                      ? "bg-gray-950 text-white"
-                      : "bg-gray-800 text-gray-300 hover:bg-gray-700",
-                  ].join(" ")}
-                  onClick={() => {
-                    setActiveWindow(win.id);
-                    setMenuOpen(false);
-                  }}
-                >
-                  {win.title}
-                </button>
-                {!win.isProtected && (
+            {windows.map((win) => {
+              const active = activeWindow === win.id;
+              return (
+                <div key={win.id} className="relative">
                   <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      closeWindow(win.id);
+                    aria-label={`Ventana ${win.title}`}
+                    className={[
+                      "block w-full px-4 py-2 text-left text-sm font-semibold border-b border-border/80 transition-colors",
+                      active
+                        ? "bg-accent/15 text-[rgb(var(--accent))]"
+                        : "hover:bg-accent/10 text-foreground/80",
+                    ].join(" ")}
+                    onClick={() => {
+                      setActiveWindow(win.id);
+                      setMenuOpen(false);
                     }}
-                    className="absolute top-1 right-2 text-red-400 hover:text-red-300 text-xs"
-                    aria-label={`Cerrar ${win.title}`}
                   >
-                    ✖
+                    {win.title}
                   </button>
-                )}
-              </div>
-            ))}
+
+                  {!win.isProtected && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        closeWindow(win.id);
+                      }}
+                      className="absolute top-1 right-2 text-[rgb(var(--danger))] hover:text-[rgb(var(--danger))/80] text-xs"
+                      aria-label={`Cerrar ${win.title}`}
+                    >
+                      ✖
+                    </button>
+                  )}
+                </div>
+              );
+            })}
           </motion.div>
         )}
       </AnimatePresence>
 
       {/* Tabs escritorio */}
       <div
-        className="hidden sm:flex ml-8 items-center flex-nowrap gap-0 px-3 py-2
-             bg-gray-850 rounded-t-xl shadow-md border-b border-gray-700"
+        className="hidden sm:flex ml-8 items-center flex-nowrap gap-0 px-3 py-2 bg-surface/80 backdrop-blur rounded-t-xl shadow-md border-b border-border overflow-x-auto"
         role="tablist"
         aria-orientation="horizontal"
         id={tabsListId}
@@ -255,7 +259,6 @@ const WindowManager: React.FC<WindowManagerProps> = ({
           const tabId = `tab-${win.id}`;
 
           return (
-            // solapa 1px para evitar “doble borde” entre botones
             <div key={win.id} className="relative -ml-px first:ml-0">
               <button
                 id={tabId}
@@ -264,13 +267,17 @@ const WindowManager: React.FC<WindowManagerProps> = ({
                 aria-controls={panelId}
                 tabIndex={selected ? 0 : -1}
                 className={[
-                  // sin gap, todos pegados; mantenemos borde en cada uno
                   "px-4 py-2 text-xs sm:text-sm font-semibold rounded-t-md transition-all flex items-center",
-                  "border border-gray-700 shadow-sm ml-1",
+                  "border border-border shadow-sm ml-1 focus:outline-none focus:ring-2 focus:ring-accent/30",
                   selected
-                    ? "bg-gray-950 text-white border-blue-500"
-                    : "bg-gray-800 text-gray-300 hover:bg-gray-700",
+                    ? "bg-surface text-[rgb(var(--accent))]"
+                    : "bg-surface/70 text-foreground/80 hover:bg-accent/10",
                 ].join(" ")}
+                style={
+                  selected
+                    ? { boxShadow: "inset 0 -2px 0 rgb(var(--accent))" } // subrayado elegante
+                    : undefined
+                }
                 onClick={() => setActiveWindow(win.id)}
                 onMouseUp={(e) => handleTabMouseUp(e, win.id)}
                 onAuxClick={(e) => {
@@ -284,7 +291,7 @@ const WindowManager: React.FC<WindowManagerProps> = ({
 
               {!win.isProtected && (
                 <button
-                  className="absolute -top-1 -right-1 text-red-400 hover:text-red-300 cursor-pointer text-xs hover:scale-110"
+                  className="absolute -top-1 -right-1 text-[rgb(var(--danger))] hover:text-[rgb(var(--danger))/80] cursor-pointer text-xs hover:scale-110"
                   onClick={(e) => {
                     e.stopPropagation();
                     closeWindow(win.id);
@@ -300,7 +307,7 @@ const WindowManager: React.FC<WindowManagerProps> = ({
       </div>
 
       {/* Contenido */}
-      <div className="flex-grow bg-gray-800 rounded-b-xl shadow-inner border border-gray-500 w-full max-h-full overflow-auto flex items-center justify-center p-[20px]">
+      <div className="flex-grow bg-card rounded-b-xl shadow-inner border border-border w-full max-h-full overflow-auto flex items-center justify-center p-5">
         <AnimatePresence mode="wait">
           {isLoading ? (
             <motion.div
@@ -323,7 +330,7 @@ const WindowManager: React.FC<WindowManagerProps> = ({
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -20 }}
               transition={{ duration: 0.3, ease: "easeOut" }}
-              className="w-full h-full overflow-auto p-[20px]"
+              className="w-full h-full overflow-auto p-5"
             >
               {currentWindow.content}
               {currentWindow.component}
@@ -333,7 +340,7 @@ const WindowManager: React.FC<WindowManagerProps> = ({
               key="empty"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              className="w-full h-full flex items-center justify-center text-gray-400 text-sm"
+              className="w-full h-full flex items-center justify-center text-foreground/60 text-sm"
             >
               No hay ventanas abiertas.
             </motion.div>

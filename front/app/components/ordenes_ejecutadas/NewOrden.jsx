@@ -265,7 +265,7 @@ const App = () => {
           .map((r) => norm(r))
           .filter(Boolean);
 
-        const tienePermiso = userRoles.some((r) => allowed.includes(r)); 
+        const tienePermiso = userRoles.some((r) => allowed.includes(r));
         setShowModal_rol(!tienePermiso);
         setShowModal_fase(resp?.condicion_1 > 0);
       } catch {
@@ -470,31 +470,24 @@ const App = () => {
   // ─── Guardas y loaders previos ────────────────────────────────────────────
   if (!local || !local.orden) {
     return (
-      <DateLoader
-        message=" No hay datos de la orden o líneas de procesos"
-        backgroundColor="#111827"
-        color="#ffff"
-      />
+      <div className="flex flex-col items-center justify-center min-h-screen bg-[rgb(var(--background))] gap-4">
+        <DateLoader
+          message=" No hay datos de la orden o líneas de procesos"
+          backgroundColor={"rgb(var(--surface))"}
+          color={"rgb(var(--foreground))"}
+        />
+      </div>
     );
   }
 
   if (!fase) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-gray-900 gap-4">
+      <div className="flex flex-col items-center justify-center min-h-screen bg-[rgb(var(--background))] gap-4">
         <DateLoader
           message="Fase finalizada."
-          backgroundColor="#111827"
-          color="#ffff"
+          backgroundColor={"rgb(var(--surface))"}
+          color={"rgb(var(--foreground))"}
         />
-        <button
-          className="w-20 bg-blue-600 text-white p-2 rounded-xl hover:bg-blue-700 transition-colors"
-          onClick={async () => {
-            await validate_orden(local.id);
-            window.open("/pages/lineas", "_self");
-          }}
-        >
-          Cerrar
-        </button>
       </div>
     );
   }
@@ -540,53 +533,66 @@ const App = () => {
       )}
 
       {/* CONTENIDO PRINCIPAL */}
-      <div className="min-h-screen w-full bg-[#1b2535] text-white p-3 sm:p-4 md:p-[10px] flex flex-col rounded-2xl">
-        <div className="w-full rounded-2xl bg-white/5 backdrop-blur-sm border border-white/10 shadow-md overflow-hidden">
-          <div className="bg-white/5 px-3 sm:px-[10px] py-3 sm:py-[10px] border-b border-white/10 backdrop-blur-sm">
-            <Text type="title" color="text-white">
+      <div className="min-h-screen w-full bg-[rgb(var(--background))] text-[rgb(var(--foreground))] p-3 sm:p-4 md:p-[10px] flex flex-col rounded-2xl">
+        <div className="w-full rounded-2xl bg-[rgb(var(--surface))] backdrop-blur-sm border border-[rgb(var(--border))] shadow-md overflow-hidden">
+          <div className="bg-[rgb(var(--surface-muted))] px-3 sm:px-[10px] py-3 sm:py-[10px] border-b border-[rgb(var(--border))] backdrop-blur-sm">
+            <Text type="title" color="text-[rgb(var(--foreground))]">
               Información de la Orden
             </Text>
           </div>
+
           <div
             className="
-              px-3 sm:px-6 md:px-8 py-4 sm:py-6
-              grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-6
-              gap-3 sm:gap-4 text-sm text-gray-200
-            "
+        px-3 sm:px-6 md:px-8 py-4 sm:py-6
+        grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-6
+        gap-3 sm:gap-4 text-sm text-[rgb(var(--foreground))]/85
+      "
           >
             <div>
-              <p className="text-gray-500 text-center">Orden N°</p>
-              <p className="font-medium text-gray-200 text-center">
+              <p className="text-[rgb(var(--foreground))]/60 text-center">
+                Orden N°
+              </p>
+              <p className="font-medium text-[rgb(var(--foreground))] text-center">
                 {orden?.number_order}
               </p>
             </div>
             <div>
-              <p className="text-gray-500 text-center">Cliente</p>
-              <p className="font-medium text-gray-200 text-center">
+              <p className="text-[rgb(var(--foreground))]/60 text-center">
+                Cliente
+              </p>
+              <p className="font-medium text-[rgb(var(--foreground))] text-center">
                 {orden?.cliente}
               </p>
             </div>
             <div>
-              <p className="text-gray-500 text-center">Planta</p>
-              <p className="font-medium text-gray-200 text-center">
+              <p className="text-[rgb(var(--foreground))]/60 text-center">
+                Planta
+              </p>
+              <p className="font-medium text-[rgb(var(--foreground))] text-center">
                 {orden?.planta}
               </p>
             </div>
             <div>
-              <p className="text-gray-500 text-center">Maestra</p>
-              <p className="font-medium text-gray-200 text-center">
+              <p className="text-[rgb(var(--foreground))]/60 text-center">
+                Maestra
+              </p>
+              <p className="font-medium text-[rgb(var(--foreground))] text-center">
                 {orden?.descripcion_maestra}
               </p>
             </div>
             <div>
-              <p className="text-gray-500 text-center">Línea</p>
-              <p className="font-medium text-gray-200 text-center">
+              <p className="text-[rgb(var(--foreground))]/60 text-center">
+                Línea
+              </p>
+              <p className="font-medium text-[rgb(var(--foreground))] text-center">
                 {linea} ({local.descripcion})
               </p>
             </div>
             <div>
-              <p className="text-gray-500 text-center">Cantidad a producir</p>
-              <p className="font-medium text-gray-200 text-center">
+              <p className="text-[rgb(var(--foreground))]/60 text-center">
+                Cantidad a producir
+              </p>
+              <p className="font-medium text-[rgb(var(--foreground))] text-center">
                 {orden?.cantidad_producir}
               </p>
             </div>
@@ -594,9 +600,9 @@ const App = () => {
         </div>
 
         {/* Fase */}
-        <div className="w-full rounded-2xl bg-white/5 backdrop-blur-sm border border-white/10 shadow-md overflow-hidden mt-4">
-          <div className="bg-white/2.5 px-[10px] py-[10px] border-b border-white/5 backdrop-blur-sm">
-            <Text type="title" color="text-white">
+        <div className="w-full rounded-2xl bg-[rgb(var(--surface))] backdrop-blur-sm border border-[rgb(var(--border))] shadow-md overflow-hidden mt-4">
+          <div className="bg-[rgb(var(--surface-muted))] px-[10px] py-[10px] border-b border-[rgb(var(--border))] backdrop-blur-sm">
+            <Text type="title" color="text-[rgb(var(--foreground))]">
               Fase de {fase?.description_fase} ({fase?.phase_type})
             </Text>
           </div>
@@ -605,10 +611,9 @@ const App = () => {
           <form
             ref={formRef}
             onSubmit={handleSubmit}
-            className="min-h-screen w-full bg-[#1b2535] text-white p-[10px] sm:p-[10px] flex flex-col rounded-2xl"
+            className="min-h-screen w-full bg-[rgb(var(--background))] text-[rgb(var(--foreground))] p-[10px] sm:p-[10px] flex flex-col rounded-2xl"
           >
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* {console.log("Renderizando formulario con memoriaFase:", forms)} */}
               {forms.map((item, index) => {
                 const config = parseConfigRobusto(item.config);
                 const {
@@ -623,13 +628,13 @@ const App = () => {
 
                 return (
                   <div key={index}>
-                    <Text type="subtitle" color="text-white">
+                    <Text type="subtitle" color="text-[rgb(var(--foreground))]">
                       {item.descripcion_activitie}
                     </Text>
 
                     {/* MUESTREO */}
                     {type === "muestreo" && (
-                      <p className="text-red-500">
+                      <p className="text-[rgb(var(--warning))]">
                         {items.map(({ min: a, max: b, valor }) => {
                           if (
                             orden?.cantidad_producir != null &&
@@ -647,7 +652,7 @@ const App = () => {
                     {type === "text" && (
                       <input
                         type="text"
-                        className="block w-full px-3 py-2 bg-[#1a1d23] border border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-white placeholder-gray-400 text-center"
+                        className="block w-full px-3 py-2 bg-[rgb(var(--surface))] border border-[rgb(var(--border))] rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-[rgb(var(--ring))] focus:border-[rgb(var(--ring))] text-[rgb(var(--foreground))] placeholder-[rgb(var(--foreground))]/50 text-center"
                         name={clave}
                         value={memoriaFase[linea]?.[clave] ?? ""}
                         required={item.binding}
@@ -660,7 +665,7 @@ const App = () => {
                       <textarea
                         rows={1}
                         style={{ maxHeight: "15rem" }}
-                        className="block w-full px-3 py-2 bg-[#1a1d23] border border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-white placeholder-gray-400 text-center"
+                        className="block w-full px-3 py-2 bg-[rgb(var(--surface))] border border-[rgb(var(--border))] rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-[rgb(var(--ring))] focus:border-[rgb(var(--ring))] text-[rgb(var(--foreground))] placeholder-[rgb(var(--foreground))]/50 text-center"
                         name={clave}
                         value={memoriaFase[linea]?.[clave] ?? ""}
                         required={item.binding}
@@ -676,7 +681,7 @@ const App = () => {
                     {type === "number" && (
                       <input
                         type="number"
-                        className="block w-full px-3 py-2 bg-[#1a1d23] border border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-white placeholder-gray-400 text-center"
+                        className="block w-full px-3 py-2 bg-[rgb(var(--surface))] border border-[rgb(var(--border))] rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-[rgb(var(--ring))] focus:border-[rgb(var(--ring))] text-[rgb(var(--foreground))] placeholder-[rgb(var(--foreground))]/50 text-center"
                         name={clave}
                         value={memoriaFase[linea]?.[clave] ?? ""}
                         required={item.binding}
@@ -688,17 +693,11 @@ const App = () => {
                     {type === "date" && (
                       <input
                         type="date"
-                        className="block w-full px-3 py-2 bg-[#1a1d23] border border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-white placeholder-gray-400 text-center"
+                        className="block w-full px-3 py-2 bg-[rgb(var(--surface))] border border-[rgb(var(--border))] rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-[rgb(var(--ring))] focus:border-[rgb(var(--ring))] text-[rgb(var(--foreground))] placeholder-[rgb(var(--foreground))]/50 text-center"
                         name={clave}
                         value={memoriaFase[linea]?.[clave] ?? ""}
                         required={item.binding}
                         onChange={inputChange}
-                        style={{
-                          colorScheme: "dark",
-                          WebkitCalendarPickerIndicator: {
-                            filter: "invert(1)",
-                          },
-                        }}
                       />
                     )}
 
@@ -706,7 +705,7 @@ const App = () => {
                     {type === "time" && (
                       <input
                         type="time"
-                        className="block w-full px-3 py-2 bg-[#1a1d23] border border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-white placeholder-gray-400 text-center"
+                        className="block w-full px-3 py-2 bg-[rgb(var(--surface))] border border-[rgb(var(--border))] rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-[rgb(var(--ring))] focus:border-[rgb(var(--ring))] text-[rgb(var(--foreground))] placeholder-[rgb(var(--foreground))]/50 text-center"
                         name={clave}
                         value={memoriaFase[linea]?.[clave] ?? ""}
                         required={item.binding}
@@ -717,7 +716,7 @@ const App = () => {
                     {/* SELECT */}
                     {type === "select" && (
                       <select
-                        className="block w-full px-3 py-2 bg-[#1a1d23] border border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-white placeholder-gray-400 text-center"
+                        className="block w-full px-3 py-2 bg-[rgb(var(--surface))] border border-[rgb(var(--border))] rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-[rgb(var(--ring))] focus:border-[rgb(var(--ring))] text-[rgb(var(--foreground))] placeholder-[rgb(var(--foreground))]/50 text-center"
                         name={clave}
                         value={memoriaFase[linea]?.[clave] ?? ""}
                         required={item.binding}
@@ -738,14 +737,13 @@ const App = () => {
                         {options.map((opt) => {
                           const isSelected =
                             memoriaFase[linea]?.[clave] === opt;
-
                           return (
                             <label
                               key={opt}
                               className={`relative flex cursor-pointer items-center justify-between rounded-lg border p-4 shadow-sm transition-all duration-200 ${
                                 isSelected
-                                  ? "border-indigo-500 bg-indigo-50 ring-2 ring-indigo-500"
-                                  : "border-gray-300 bg-white/10 hover:bg-gray-50"
+                                  ? "border-[rgb(var(--accent))] bg-[rgb(var(--accent))]/10 ring-2 ring-[rgb(var(--accent))]"
+                                  : "border-[rgb(var(--border))] bg-[rgb(var(--surface))] hover:bg-[rgb(var(--surface-muted))]"
                               }`}
                             >
                               <input
@@ -760,15 +758,15 @@ const App = () => {
                               <span
                                 className={`flex-1 text-sm font-medium text-center ${
                                   isSelected
-                                    ? "text-indigo-900"
-                                    : "text-gray-400"
+                                    ? "text-[rgb(var(--foreground))]"
+                                    : "text-[rgb(var(--foreground))]/70"
                                 }`}
                               >
                                 {opt}
                               </span>
                               {isSelected && (
                                 <svg
-                                  className="h-5 w-5 text-indigo-600"
+                                  className="h-5 w-5 text-[rgb(var(--accent))]"
                                   viewBox="0 0 20 20"
                                   fill="currentColor"
                                   aria-hidden="true"
@@ -792,7 +790,7 @@ const App = () => {
                         {options.map((opt, idx) => (
                           <label
                             key={idx}
-                            className="flex items-center gap-2 text-white"
+                            className="flex items-center gap-2 text-[rgb(var(--foreground))]"
                           >
                             <input
                               type="checkbox"
@@ -828,7 +826,7 @@ const App = () => {
                                   return actualizado;
                                 });
                               }}
-                              className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                              className="h-4 w-4 rounded border-[rgb(var(--border))] accent-[rgb(var(--accent))] focus:ring-[rgb(var(--ring))]"
                             />
                             <span className="text-sm">{opt}</span>
                           </label>
@@ -849,13 +847,13 @@ const App = () => {
                               width="100%"
                               height="400px"
                             >
-                              <p className="text-gray-600">
+                              <p className="text-[rgb(var(--foreground))]/60">
                                 No se pudo mostrar el PDF.{" "}
                                 <a
                                   href={memoriaFase[linea][clave]}
                                   target="_blank"
                                   rel="noopener noreferrer"
-                                  className="text-blue-600 underline"
+                                  className="text-[rgb(var(--accent))] underline"
                                 >
                                   Haz clic aquí para verlo
                                 </a>
@@ -865,7 +863,7 @@ const App = () => {
                         )}
 
                         <input
-                          className="block w-full px-3 py-2 bg-[#1a1d23] border border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-white placeholder-gray-400 text-center"
+                          className="block w-full px-3 py-2 bg-[rgb(var(--surface))] border border-[rgb(var(--border))] rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-[rgb(var(--ring))] focus:border-[rgb(var(--ring))] text-[rgb(var(--foreground))] placeholder-[rgb(var(--foreground))]/50 text-center"
                           type="file"
                           accept="application/pdf"
                           required={
@@ -915,9 +913,7 @@ const App = () => {
                         )}
 
                         <input
-                          className="block w-full px-3 py-2 bg-[#1a1d23] border border-gray-600 rounded-md 
-                          shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 
-                          focus:border-blue-500 text-white placeholder-gray-400 text-center"
+                          className="block w-full px-3 py-2 bg-[rgb(var(--surface))] border border-[rgb(var(--border))] rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-[rgb(var(--ring))] focus:border-[rgb(var(--ring))] text-[rgb(var(--foreground))] placeholder-[rgb(var(--foreground))]/50 text-center"
                           type="file"
                           accept="image/*"
                           required={
@@ -956,17 +952,17 @@ const App = () => {
                       <>
                         {signatureSpecific &&
                           !sigUnlocked[sigKey(linea, clave)] && (
-                            <div className="mb-2 text-xs text-amber-300 text-center">
+                            <div className="mb-2 text-xs text-[rgb(var(--warning))] text-center">
                               🔒 Requiere validación de rol antes de firmar.
                             </div>
                           )}
 
                         <select
-                          className={`text-center last:block w-full px-3 py-2 bg-[#1a1d23] border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-white placeholder-gray-400 mb-2 ${
+                          className={`text-center block w-full px-3 py-2 bg-[rgb(var(--surface))] border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-[rgb(var(--ring))] focus:border-[rgb(var(--ring))] text-[rgb(var(--foreground))] placeholder-[rgb(var(--foreground))]/50 mb-2 ${
                             signatureSpecific &&
                             !sigUnlocked[sigKey(linea, clave)]
-                              ? "border-amber-500"
-                              : "border-gray-600"
+                              ? "border-[rgb(var(--warning))]"
+                              : "border-[rgb(var(--border))]"
                           }`}
                           value={
                             memoriaFase[linea]?.[`tipo_entrada_${clave}`] || ""
@@ -1002,7 +998,7 @@ const App = () => {
                           "texto" && (
                           <input
                             type="text"
-                            className="text-center block w-full px-3 py-2 bg-[#1a1d23] border border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-white placeholder-gray-400"
+                            className="text-center block w-full px-3 py-2 bg-[rgb(var(--surface))] border border-[rgb(var(--border))] rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-[rgb(var(--ring))] focus:border-[rgb(var(--ring))] text-[rgb(var(--foreground))] placeholder-[rgb(var(--foreground))]/50"
                             name={clave}
                             value={memoriaFase[linea]?.[clave] ?? ""}
                             required={item.binding}
@@ -1030,7 +1026,7 @@ const App = () => {
                       <>
                         <input
                           type="number"
-                          className="block w-full px-3 py-2 bg-[#1a1d23] border border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-white placeholder-gray-400 text-center"
+                          className="block w-full px-3 py-2 bg-[rgb(var(--surface))] border border-[rgb(var(--border))] rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-[rgb(var(--ring))] focus:border-[rgb(var(--ring))] text-[rgb(var(--foreground))] placeholder-[rgb(var(--foreground))]/50 text-center"
                           min={min}
                           max={max}
                           step="0.01"
@@ -1044,16 +1040,15 @@ const App = () => {
                             memoriaFase[linea][clave] > max) && (
                             <p
                               className="
-                                mt-2 mb-2 px-4 py-2
-                                text-sm text-center font-semibold
-                                text-yellow-100
-                                bg-gradient-to-r from-purple-900/90 via-purple-700/80 to-blue-900/80
-                                rounded-xl shadow-lg
-                                border border-yellow-400/40
-                                backdrop-blur-sm
-                                animate-pulse
-                                max-w-xs mx-auto
-                              "
+                          mt-2 mb-2 px-4 py-2
+                          text-sm text-center font-semibold
+                          text-[rgb(var(--foreground))]
+                          bg-[rgb(var(--warning))]/20
+                          rounded-xl shadow
+                          border border-[rgb(var(--warning))]/40
+                          backdrop-blur-sm
+                          max-w-xs mx-auto
+                        "
                             >
                               ⚠️ Valor ingresado debe estar entre{" "}
                               <span className="font-bold">{min}</span> y{" "}
@@ -1066,7 +1061,7 @@ const App = () => {
                     {/* INFORMATIVO */}
                     {type === "informativo" && (
                       <label
-                        className="block w-full px-3 py-2 bg-[#1a1d23] border border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-white placeholder-gray-400 text-center"
+                        className="block w-full px-3 py-2 bg-[rgb(var(--surface))] border border-[rgb(var(--border))] rounded-md shadow-sm text-[rgb(var(--foreground))] text-center"
                         name={clave}
                       >
                         {item.placeholder}
@@ -1079,11 +1074,11 @@ const App = () => {
               {/* Modal de contraseña para firma */}
               {sigModal.open && (
                 <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 p-4">
-                  <div className="w-full max-w-sm rounded-xl bg-[#111827] border border-white/10 p-5 shadow-2xl">
-                    <h3 className="text-white text-lg font-semibold mb-2">
+                  <div className="w-full max-w-sm rounded-xl bg-[rgb(var(--surface))] border border-[rgb(var(--border))] p-5 shadow-2xl">
+                    <h3 className="text-[rgb(var(--foreground))] text-lg font-semibold mb-2">
                       Validación requerida
                     </h3>
-                    <p className="text-white/70 text-sm mb-4">
+                    <p className="text-[rgb(var(--foreground))]/80 text-sm mb-4">
                       Ingresa la contraseña para habilitar la firma.
                     </p>
                     <input
@@ -1094,21 +1089,21 @@ const App = () => {
                       onKeyDown={(e) =>
                         e.key === "Enter" && submitSigValidation()
                       }
-                      className="block w-full px-3 py-2 bg-[#1a1d23] border border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-white placeholder-gray-400"
+                      className="block w-full px-3 py-2 bg-[rgb(var(--surface))] border border-[rgb(var(--border))] rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-[rgb(var(--ring))] focus:border-[rgb(var(--ring))] text-[rgb(var(--foreground))] placeholder-[rgb(var(--foreground))]/50"
                       placeholder="Contraseña"
                     />
                     <div className="mt-4 flex justify-end gap-2">
                       <button
                         type="button"
                         onClick={closeSigModal}
-                        className="px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 text-white text-sm"
+                        className="px-4 py-2 rounded-lg bg-[rgb(var(--surface-muted))] hover:bg-[rgb(var(--surface-muted))]/80 text-[rgb(var(--foreground))] text-sm"
                       >
                         Cancelar
                       </button>
                       <button
                         type="button"
                         onClick={submitSigValidation}
-                        className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm shadow"
+                        className="px-4 py-2 rounded-lg bg-[rgb(var(--accent))] hover:bg-[rgb(var(--accent-hover))] text-[rgb(var(--accent-foreground))] text-sm shadow"
                       >
                         Validar
                       </button>
@@ -1118,7 +1113,7 @@ const App = () => {
               )}
             </div>
 
-            <hr className="border-t border-white/20 my-6" />
+            <hr className="border-t border-[rgb(var(--border))] my-6" />
             <div className="flex justify-center">
               <Button type="submit" variant="after2" label="Siguiente Fase" />
             </div>

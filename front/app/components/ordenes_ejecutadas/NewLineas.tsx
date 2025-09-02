@@ -178,157 +178,155 @@ const NewLineas = () => {
     };
 
     return (
-        <div className="min-h-screen w-full bg-[#0a0d12] text-white p-[10px] sm:p-[10px] flex flex-col rounded-2xl">
-            <motion.section
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.4 }}>
-                <div className="w-full rounded-2xl bg-white/5 backdrop-blur-sm border border-white/10 shadow-md overflow-hidden">
-                    <div className="bg-white/2.5 px-[10px] py-[10px] border-b border-white/5 backdrop-blur-sm">
-                        <Text type="title" color="text-white">Información de la Orden</Text>
-                    </div>
+       <div className="min-h-screen w-full bg-[rgb(var(--background))] text-[rgb(var(--foreground))] p-[10px] sm:p-[10px] flex flex-col rounded-2xl">
+  <motion.section
+    initial={{ opacity: 0, y: 10 }}
+    animate={{ opacity: 1, y: 0 }}
+    transition={{ duration: 0.4 }}
+  >
+    <div className="w-full rounded-2xl bg-[rgb(var(--surface))] border border-[rgb(var(--border))] shadow-md overflow-hidden">
+      <div className="bg-[rgb(var(--surface-muted))] px-[10px] py-[10px] border-b border-[rgb(var(--border))] backdrop-blur-sm">
+        <Text type="title" color="text-[rgb(var(--foreground))]">Información de la Orden</Text>
+      </div>
 
-                    <div className="px-[10px] py-[10px] grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 text-sm text-white/80">
-                        <div>
-                            <p className="text-white/60 text-center">Orden N°</p>
-                            <p className="font-medium text-white text-center">{orden?.number_order}</p>
-                        </div>
-                        <div>
-                            <p className="text-white/60 text-center">Descripción</p>
-                            <p className="font-semibold text-white text-center">{orden?.descripcion_maestra}</p>
-                        </div>
-                        <div>
-                            <p className="text-white/60 text-center">Cliente</p>
-                            <p className="font-semibold text-white text-center">{orden?.cliente}</p>
-                        </div>
-                        <div>
-                            <p className="text-white/60 text-center">Planta</p>
-                            <p className="font-semibold text-white text-center">{orden?.planta}</p>
-                        </div>
-                        <div>
-                            <p className="text-white/60 text-center">Cantidad a producir</p>
-                            <p className="font-semibold text-white text-center">{orden?.cantidad_producir}</p>
-                        </div>
-                        <div className="flex flex-col items-center gap-y-2">
-                            <p className="text-sm font-medium text-white/60">Acciones</p>
-
-                            {/* Contenedor para alinear los botones en horizontal */}
-                            <div className="flex items-center gap-x-2">
-                                {document.cookie
-                                    .split("; ")
-                                    .find((row) => row.startsWith("role="))
-                                    ?.split("=")[1] === "Jefe de Calidad"
-                                    || document.cookie
-                                        .split("; ")
-                                        .find((row) => row.startsWith("role="))
-                                        ?.split("=")[1] === "Calidad"
-                                    || document.cookie
-                                        .split("; ")
-                                        .find((row) => row.startsWith("role="))
-                                        ?.split("=")[1] === "Master" && (
-                                        <button
-                                            onClick={() => hableRestablecerOrden(local?.id)}
-                                            className="bg-[#ff8000] hover:bg-[#ffa200] text-white p-2.5 rounded-md transition shadow-md hover:shadow-lg"
-                                            aria-label="Restablecer Orden"
-                                            title="Restablecer">
-                                            <FaListUl />
-                                        </button>
-                                    )}
-                                <button
-                                    onClick={() => hableControlOrden(local?.id)}
-                                    className="bg-[#ea0263] hover:bg-[#ff00b7] text-white p-2.5 rounded-md transition shadow-md hover:shadow-lg"
-                                    aria-label="Controlar Orden"
-                                    title="Control">
-                                    <FaCreativeCommonsNd />
-                                </button>
-                            </div>
-                        </div>
-
-                    </div>
-
-                    {/* Líneas */}
-                    <section className="px-[10px] pb-[10px] pt-[10px]">
-                        <Text type="title" color="text-white">Líneas</Text>
-                        <div className="mt-3 flex flex-wrap justify-center gap-3">
-                            {lista_procesos.map((linea, index) => (
-                                <motion.div
-                                    key={linea.id}
-                                    role="button"
-                                    tabIndex={0}
-                                    aria-label={`Seleccionar línea: ${linea.descripcion}`}
-                                    onClick={() => handleLinea(linea.id, "linea", linea.descripcion, linea.phase_type)}
-                                    initial={{ opacity: 0, scale: 0.95 }}
-                                    animate={{ opacity: 1, scale: 1 }}
-                                    transition={{
-                                        duration: 0.3,
-                                        delay: index * 0.05,
-                                        ease: "easeOut",
-                                    }}
-                                    whileHover={{ scale: 1.03 }}
-                                    whileTap={{ scale: 0.95 }}
-                                    className="w-[200px] group relative cursor-pointer rounded-lg 
-                                    bg-[#841ae0]/60 border border-white/10 backdrop-blur-sm 
-                                    text-white transition-all shadow-sm hover:shadow-md 
-                                    hover:bg-[#b941ff]/60 active:scale-95">
-                                    <div className="flex items-center justify-center h-14 px-2 rounded-lg">
-                                        <span className="text-sm font-medium text-center truncate max-w-[200px]">
-                                            {linea.descripcion}
-                                        </span>
-                                    </div>
-                                </motion.div>
-                            ))}
-                        </div>
-                    </section>
-
-                    {/* Fases */}
-                    <section className="px-[10px] pb-[10px] pt-[10px]">
-                        <Text type="title" color="text-white">Fases</Text>
-                        <div className="mt-3 flex flex-wrap justify-center gap-3">
-                            {lista_fases.map((linea, index) => (
-                                <motion.div
-                                    key={linea.id}
-                                    role="button"
-                                    tabIndex={0}
-                                    aria-label={`Seleccionar línea: ${linea.descripcion}`}
-                                    onClick={() => handleLinea(linea.id, "fase", linea.descripcion, linea.phase_type)}
-                                    initial={{ opacity: 0, scale: 0.95 }}
-                                    animate={{ opacity: 1, scale: 1 }}
-                                    transition={{
-                                        duration: 0.3,
-                                        delay: index * 0.05,
-                                        ease: "easeOut",
-                                    }}
-                                    whileHover={{ scale: 1.03 }}
-                                    whileTap={{ scale: 0.95 }}
-                                    className="w-[200px] group relative cursor-pointer 
-                                    rounded-lg bg-[#841ae0]/60 border border-white/10 
-                                    backdrop-blur-sm text-white transition-all shadow-sm 
-                                    hover:shadow-md hover:bg-[#b941ff]/60 active:scale-95">
-                                    <div className="flex items-center justify-center h-14 px-2 rounded-lg">
-                                        <span className="text-sm font-medium text-center truncate max-w-[300px]">
-                                            {linea.descripcion}
-                                        </span>
-                                    </div>
-                                </motion.div>
-                            ))}
-                        </div>
-                    </section>
-                </div>
-            </motion.section>
-
-            {/* Modal de control */}
-            {showModalControl && (
-                <ModalSection
-                    isVisible={showModalControl}
-                    onClose={() => setShowModalControl(false)}>
-                    <ModalControl
-                        id={local?.id}
-                        showModal={showModalControl}
-                        setShowModal={setShowModalControl}
-                    />
-                </ModalSection>
-            )}
+      <div className="px-[10px] py-[10px] grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 text-sm text-[rgb(var(--foreground))]/80">
+        <div>
+          <p className="text-[rgb(var(--foreground))]/60 text-center">Orden N°</p>
+          <p className="font-medium text-[rgb(var(--foreground))] text-center">{orden?.number_order}</p>
         </div>
+        <div>
+          <p className="text-[rgb(var(--foreground))]/60 text-center">Descripción</p>
+          <p className="font-semibold text-[rgb(var(--foreground))] text-center">{orden?.descripcion_maestra}</p>
+        </div>
+        <div>
+          <p className="text-[rgb(var(--foreground))]/60 text-center">Cliente</p>
+          <p className="font-semibold text-[rgb(var(--foreground))] text-center">{orden?.cliente}</p>
+        </div>
+        <div>
+          <p className="text-[rgb(var(--foreground))]/60 text-center">Planta</p>
+          <p className="font-semibold text-[rgb(var(--foreground))] text-center">{orden?.planta}</p>
+        </div>
+        <div>
+          <p className="text-[rgb(var(--foreground))]/60 text-center">Cantidad a producir</p>
+          <p className="font-semibold text-[rgb(var(--foreground))] text-center">{orden?.cantidad_producir}</p>
+        </div>
+
+        <div className="flex flex-col items-center gap-y-2">
+          <p className="text-sm font-medium text-[rgb(var(--foreground))]/60">Acciones</p>
+          <div className="flex items-center gap-x-2">
+            {document.cookie
+              .split("; ")
+              .find((row) => row.startsWith("role="))
+              ?.split("=")[1] === "Jefe de Calidad"
+              || document.cookie
+                .split("; ")
+                .find((row) => row.startsWith("role="))
+                ?.split("=")[1] === "Calidad"
+              || (document.cookie
+                .split("; ")
+                .find((row) => row.startsWith("role="))
+                ?.split("=")[1] === "Master") ? (
+              <button
+                onClick={() => hableRestablecerOrden(local?.id)}
+                className="bg-[rgb(var(--warning))] hover:bg-[rgb(var(--warning))]/90 text-[rgb(var(--foreground))] p-2.5 rounded-md transition shadow-md hover:shadow-lg"
+                aria-label="Restablecer Orden"
+                title="Restablecer"
+              >
+                <FaListUl />
+              </button>
+            ) : null}
+
+            <button
+              onClick={() => hableControlOrden(local?.id)}
+              className="bg-[rgb(var(--accent))] hover:bg-[rgb(var(--accent-hover))] text-[rgb(var(--accent-foreground))] p-2.5 rounded-md transition shadow-md hover:shadow-lg"
+              aria-label="Controlar Orden"
+              title="Control"
+            >
+              <FaCreativeCommonsNd />
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Líneas */}
+      <section className="px-[10px] pb-[10px] pt-[10px]">
+        <Text type="title" color="text-[rgb(var(--foreground))]">Líneas</Text>
+        <div className="mt-3 flex flex-wrap justify-center gap-3">
+          {lista_procesos.map((linea, index) => (
+            <motion.div
+              key={linea.id}
+              role="button"
+              tabIndex={0}
+              aria-label={`Seleccionar línea: ${linea.descripcion}`}
+              onClick={() => handleLinea(linea.id, "linea", linea.descripcion, linea.phase_type)}
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.3, delay: index * 0.05, ease: "easeOut" }}
+              whileHover={{ scale: 1.03 }}
+              whileTap={{ scale: 0.95 }}
+              className="w-[200px] group relative cursor-pointer rounded-lg
+                         bg-[rgb(var(--accent))]/15 border border-[rgb(var(--accent))]/30
+                         text-[rgb(var(--foreground))] backdrop-blur-sm transition-all shadow-sm
+                         hover:shadow-md hover:bg-[rgb(var(--accent))]/25 active:scale-95"
+            >
+              <div className="flex items-center justify-center h-14 px-2 rounded-lg">
+                <span className="text-sm font-medium text-center truncate max-w-[200px]">
+                  {linea.descripcion}
+                </span>
+              </div>
+            </motion.div>
+          ))}
+        </div>
+      </section>
+
+      {/* Fases */}
+      <section className="px-[10px] pb-[10px] pt-[10px]">
+        <Text type="title" color="text-[rgb(var(--foreground))]">Fases</Text>
+        <div className="mt-3 flex flex-wrap justify-center gap-3">
+          {lista_fases.map((linea, index) => (
+            <motion.div
+              key={linea.id}
+              role="button"
+              tabIndex={0}
+              aria-label={`Seleccionar línea: ${linea.descripcion}`}
+              onClick={() => handleLinea(linea.id, "fase", linea.descripcion, linea.phase_type)}
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.3, delay: index * 0.05, ease: "easeOut" }}
+              whileHover={{ scale: 1.03 }}
+              whileTap={{ scale: 0.95 }}
+              className="w-[200px] group relative cursor-pointer rounded-lg
+                         bg-[rgb(var(--accent))]/15 border border-[rgb(var(--accent))]/30
+                         text-[rgb(var(--foreground))] backdrop-blur-sm transition-all shadow-sm
+                         hover:shadow-md hover:bg-[rgb(var(--accent))]/25 active:scale-95"
+            >
+              <div className="flex items-center justify-center h-14 px-2 rounded-lg">
+                <span className="text-sm font-medium text-center truncate max-w-[300px]">
+                  {linea.descripcion}
+                </span>
+              </div>
+            </motion.div>
+          ))}
+        </div>
+      </section>
+    </div>
+  </motion.section>
+
+  {/* Modal de control */}
+  {showModalControl && (
+    <ModalSection
+      isVisible={showModalControl}
+      onClose={() => setShowModalControl(false)}
+    >
+      <ModalControl
+        id={local?.id}
+        showModal={showModalControl}
+        setShowModal={setShowModalControl}
+      />
+    </ModalSection>
+  )}
+</div>
+
     );
 };
 

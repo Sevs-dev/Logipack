@@ -1,16 +1,43 @@
 "use client";
 
-import { ToastContainer, toast, Slide, ToastOptions } from "react-toastify";
+import {
+  ToastContainer,
+  toast,
+  Slide,
+  ToastOptions,
+  TypeOptions,
+  ToastPosition,
+} from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { CheckCircle, XCircle, AlertTriangle } from "lucide-react";
 import Button from "../buttons/buttons";
 import Image from "next/image";
 
-// Estilos base para el toast (visibles en temas oscuros o claros)
-const commonToastClass =
-  "bg-white text-gray-900 rounded-xl shadow-lg flex items-center gap-4 p-5 border border-gray-300 backdrop-blur-md z-[9999]";
+/** Clase base con overrides fuertes para que el texto SIEMPRE use --foreground */
+const baseToastSurface =
+  [
+    "rounded-xl shadow-lg flex items-center gap-4 p-5 border backdrop-blur-md z-[9999]",
+    "bg-[rgb(var(--surface))] border-[rgb(var(--border))]",
+    // 🔥 el truco: forzar color en root y en el body del toast
+    "!text-[rgb(var(--foreground))]",
+    "[&_.Toastify__toast-body]:!text-[rgb(var(--foreground))]",
+  ].join(" ");
 
-// Componente contenedor del sistema de toasts
+/** Borde sutil por tipo */
+function toastClassByType(context?: {
+  type?: TypeOptions;
+  defaultClassName?: string;
+  position?: ToastPosition;
+  rtl?: boolean;
+}) {
+  const t = context?.type;
+  if (t === "success") return `${baseToastSurface} border-[color:rgb(var(--success))]/30`;
+  if (t === "error") return `${baseToastSurface} border-[color:rgb(var(--danger))]/30`;
+  if (t === "warning") return `${baseToastSurface} border-[color:rgb(var(--warning))]/30`;
+  return baseToastSurface;
+}
+
+/** Contenedor */
 const Toaster = () => {
   return (
     <ToastContainer
@@ -21,42 +48,44 @@ const Toaster = () => {
       pauseOnHover
       draggable
       transition={Slide}
-      toastClassName={() => commonToastClass}
+      toastClassName={toastClassByType}
+      progressClassName="Toastify__progress-bar bg-[rgb(var(--accent))]"
       closeButton={false}
       newestOnTop
-      style={{ zIndex: 9999 }} // 👈 Esto asegura que esté sobre todo
+      style={{ zIndex: 9999 }}
+      theme="auto"
+      // ✅ Inline style gana a casi todo: refuerza fondo/borde/texto
+      toastStyle={{
+        background: "rgb(var(--surface))",
+        color: "rgb(var(--foreground))",
+        border: "1px solid rgb(var(--border))",
+      }}
     />
   );
 };
 
-// Configuración base
+/** Config común */
 const baseConfig: ToastOptions = {
   className: "flex items-center gap-3",
 };
 
-// Toasts simples
+/** Íconos (semaforito) */
+const IconSuccess = <CheckCircle className="w-6 h-6 text-[rgb(var(--success))]" />;
+const IconError = <XCircle className="w-6 h-6 text-[rgb(var(--danger))]" />;
+const IconWarn = <AlertTriangle className="w-6 h-6 text-[rgb(var(--warning))]" />;
+
+/** Simples */
 export const showSuccess = (message: string) =>
-  toast.success(message, {
-    ...baseConfig,
-    icon: <CheckCircle className="text-green-500 w-6 h-6" />,
-  });
-
+  toast.success(message, { ...baseConfig, icon: IconSuccess });
 export const showError = (message: string) =>
-  toast.error(message, {
-    ...baseConfig,
-    icon: <XCircle className="text-red-500 w-6 h-6" />,
-  });
-
+  toast.error(message, { ...baseConfig, icon: IconError });
 export const showWarning = (message: string) =>
-  toast.warning(message, {
-    ...baseConfig,
-    icon: <AlertTriangle className="text-yellow-400 w-6 h-6" />,
-  });
+  toast.warning(message, { ...baseConfig, icon: IconWarn });
 
-// Toast con botones de confirmación
+/** Confirm */
 export const showConfirm = (message: string, onConfirm: () => void) => {
   const toastId = toast.info(
-    <div className="flex flex-col gap-4 text-sm text-gray-900 text-center">
+    <div className="flex flex-col gap-4 text-sm !text-[rgb(var(--foreground))] text-center">
       <p>{message}</p>
       <div className="flex justify-center gap-2">
         <Button onClick={() => toast.dismiss(toastId)} variant="cancel" label="Cancelar" />
@@ -75,48 +104,39 @@ export const showConfirm = (message: string, onConfirm: () => void) => {
       autoClose: false,
       closeOnClick: false,
       closeButton: false,
-      className: "bg-white text-gray-900 border border-gray-300 rounded-xl shadow-md z-[9999]",
+      className:
+        "rounded-xl shadow-md z-[9999] border bg-[rgb(var(--surface))] border-[rgb(var(--border))] !text-[rgb(var(--foreground))] [&_.Toastify__toast-body]:!text-[rgb(var(--foreground))]",
     }
   );
 };
 
-// Toast animado para inicio de sesión
+/** On session */
 export const showOnSession = () =>
   toast.info(
     <div className="flex items-center gap-3">
-      <Image
-        src="/animated/feliz.gif"
-        alt="Cargando"
-        width={40}
-        height={40}
-        className="rounded-full"
-      />
+      <Image src="/animated/feliz.gif" alt="Cargando" width={40} height={40} className="rounded-full" />
       <span>¡Bienvenido a Logipack!</span>
     </div>,
     {
       position: "top-center",
       autoClose: 3000,
-      className: "bg-white text-gray-900 rounded-xl shadow-lg z-[9999]",
+      className:
+        "rounded-xl shadow-lg z-[9999] border bg-[rgb(var(--surface))] border-[rgb(var(--border))] !text-[rgb(var(--foreground))] [&_.Toastify__toast-body]:!text-[rgb(var(--foreground))]",
     }
   );
 
-// Toast animado para cierre de sesión
+/** Off session */
 export const showOffSession = () =>
   toast.info(
     <div className="flex items-center gap-3">
-      <Image
-        src="/animated/sudor.gif"
-        alt="Cargando"
-        width={40}
-        height={40}
-        className="rounded-full"
-      />
+      <Image src="/animated/sudor.gif" alt="Cargando" width={40} height={40} className="rounded-full" />
       <span>Cerrando sesión...</span>
     </div>,
     {
       position: "top-center",
       autoClose: 3000,
-      className: "bg-white text-gray-900 rounded-xl shadow-lg z-[9999]",
+      className:
+        "rounded-xl shadow-lg z-[9999] border bg-[rgb(var(--surface))] border-[rgb(var(--border))] !text-[rgb(var(--foreground))] [&_.Toastify__toast-body]:!text-[rgb(var(--foreground))]",
     }
   );
 

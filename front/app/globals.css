@@ -2,15 +2,135 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ========= THEME TOKENS (LIGHT / DARK) ========= */
+:root,
+html {
+  /* Base */
+  --background: 248 250 252; /* slate-50 */
+  --foreground: 0 0 0; /* slate-900 */
+  --background-two: #1e1e1e;
+
+  /* Surfaces */
+  --surface: 255 255 255; /* white */
+  --surface-muted: 241 245 249; /* slate-100 */
+  --card: 255 255 255; /* white */
+  --popover: 255 255 255; /* white */
+
+  /* Borders / Inputs / Ring */
+  --border: 203 213 225; /* slate-300 */
+  --input: 226 232 240; /* slate-200 */
+  --ring: 14 165 233; /* sky-500 */
+
+  /* Accents (brand) */
+  --accent: 14 165 233; /* sky-500 */
+  --accent-hover: 2 132 199; /* sky-600 */
+  --accent-foreground: 255 255 255;
+
+  /* Feedback (semáforo) */
+  --success: 16 185 129; /* emerald-500 */
+  --success-foreground: 240 253 244;
+  --warning: 245 158 11; /* amber-500 */
+  --warning-foreground: 255 251 235;
+  --danger: 239 68 68; /* red-500 */
+  --danger-foreground: 254 242 242;
+  --info: 59 130 246; /* blue-500 */
+  --info-foreground: 239 246 255;
+
+  /* Charts (categorical) */
+  --chart-1: 14 165 233; /* sky-500 */
+  --chart-2: 99 102 241; /* indigo-500 */
+  --chart-3: 236 72 153; /* pink-500 */
+  --chart-4: 16 185 129; /* emerald-500 */
+  --chart-5: 245 158 11; /* amber-500 */
+  --chart-6: 244 63 94; /* rose-500 */
+
+  /* Gradiente (light) */
+  --bg-from: 248 250 252;
+  --bg-via: 241 245 249;
+  --bg-to: 226 232 240;
+
+  /* Elevación (sombra base en RGB para mezclar) */
+  --shadow: 2 6 23; /* azul oscuro muy suave */
+}
+
+:root[data-theme="dark"],
+html[data-theme="dark"] {
+  /* Base */
+  --background: 11 18 32; /* navy-ish dark */
+  --foreground: 229 231 235; /* slate-200 */
+
+  /* Surfaces */
+  --surface: 17 24 39; /* slate-900 */
+  --surface-muted: 31 41 55; /* slate-800 */
+  --card: 17 24 39; /* slate-900 */
+  --popover: 17 24 39; /* slate-900 */
+
+  /* Borders / Inputs / Ring */
+  --border: 51 65 85; /* slate-700 */
+  --input: 71 85 105; /* slate-600 */
+  --ring: 6 182 212; /* cyan-500 */
+
+  /* Accents (brand) */
+  --accent: 6 182 212; /* cyan-500 */
+  --accent-hover: 8 145 178; /* cyan-600 */
+  --accent-foreground: 2 6 23;
+
+  /* Feedback */
+  --success: 16 185 129; /* emerald-500 */
+  --success-foreground: 2 44 34;
+  --warning: 245 158 11; /* amber-500 */
+  --warning-foreground: 45 32 1;
+  --danger: 248 113 113; /* red-400 */
+  --danger-foreground: 82 7 7;
+  --info: 59 130 246; /* blue-500 */
+  --info-foreground: 7 22 55;
+
+  /* Charts (ajuste de saturación para dark) */
+  --chart-1: 34 211 238; /* cyan-400 */
+  --chart-2: 129 140 248; /* indigo-400 */
+  --chart-3: 244 114 182; /* pink-400 */
+  --chart-4: 52 211 153; /* emerald-400 */
+  --chart-5: 251 191 36; /* amber-400 */
+  --chart-6: 251 113 133; /* rose-400 */
+
+  /* Gradiente (dark) */
+  --bg-from: 0 0 0;
+  --bg-via: 17 24 39;
+  --bg-to: 3 7 18;
+
+  /* Elevación */
+  --shadow: 0 0 0; /* sombras más suaves sobre fondo oscuro */
+}
+
+/* ========= HELPERS ========= */
+
+/* Fondo con gradiente temeable */
+.app-bg {
+  background-image: linear-gradient(
+    to bottom right,
+    rgb(var(--bg-from)),
+    rgb(var(--bg-via)),
+    rgb(var(--bg-to))
+  );
+}
+
+/* Suaves transiciones temáticas */
+*,
+*::before,
+*::after {
+  transition: background-color 0.2s ease, color 0.2s ease,
+    border-color 0.2s ease;
+}
+
+/* Animación de entrada */
 @layer utilities {
   .animate-fade-in {
     animation: fadeIn 0.6s ease-out;
   }
-
   @keyframes fadeIn {
     from {
       opacity: 0;
-      transform: scale(0.9);
+      transform: scale(0.98);
     }
     to {
       opacity: 1;

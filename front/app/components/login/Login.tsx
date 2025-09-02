@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import type { CSSProperties } from 'react';
 import { login } from '../../services/userDash/authservices';
 import nookies from 'nookies';
@@ -17,18 +17,59 @@ const bgStyle: CSSProperties = {
   position: 'fixed',
   top: 0,
   left: 0,
-  zIndex: -1,
+  zIndex: 0,                // 🔁 antes era -1 → ponlo >= 0
   overflow: 'hidden',
+  pointerEvents: 'none',    // 🛡️ no bloquea interacciones
 };
 
 const cookieOptions = {
   maxAge: 60 * 60 * 2,
   path: '/',
   secure: process.env.NODE_ENV === 'production',
-  sameSite: 'lax',
+  sameSite: 'lax' as const,
 };
 
 export default function Login() {
+  // 🔒 Bloquea herencia de tema (claro/oscuro) SOLO en esta vista
+  useEffect(() => {
+    const root = document.documentElement;
+
+    const hadDark = root.classList.contains('dark');
+    const prevDataTheme = root.getAttribute('data-theme');
+    const prevColorScheme = root.style.colorScheme;
+
+    const enforceLight = () => {
+      // Solo aplicar si hace falta (evita loops con MutationObserver)
+      const needs =
+        root.classList.contains('dark') ||
+        root.getAttribute('data-theme') !== 'light' ||
+        root.style.colorScheme !== 'light';
+
+      if (needs) {
+        root.classList.remove('dark');
+        root.setAttribute('data-theme', 'light');
+        root.style.colorScheme = 'light';
+      }
+    };
+
+    // Estado inicial forzado
+    enforceLight();
+
+    // Si algo intenta re-aplicar .dark u otro theme mientras está montado, lo neutralizamos
+    const observer = new MutationObserver(() => enforceLight());
+    observer.observe(root, { attributes: true, attributeFilter: ['class', 'data-theme', 'style'] });
+
+    // Restaurar exactamente como estaba al desmontar
+    return () => {
+      observer.disconnect();
+      root.style.colorScheme = prevColorScheme || '';
+      if (prevDataTheme) root.setAttribute('data-theme', prevDataTheme);
+      else root.removeAttribute('data-theme');
+      if (hadDark) root.classList.add('dark');
+      else root.classList.remove('dark');
+    };
+  }, []);
+
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -44,10 +85,10 @@ export default function Login() {
           usuario: { email: string; role: string; name: string };
         };
         const { token } = data.autorización;
-        const { email, role, name } = data.usuario;
+        const { email: userEmail, role, name } = data.usuario;
 
         nookies.set(null, 'token', token, cookieOptions);
-        nookies.set(null, 'email', email, cookieOptions);
+        nookies.set(null, 'email', userEmail, cookieOptions);
         nookies.set(null, 'role', role, cookieOptions);
         nookies.set(null, 'name', name, cookieOptions);
 
@@ -83,7 +124,7 @@ export default function Login() {
       {loading && (
         <div
           className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm"
-          style={{ pointerEvents: "all" }}
+          style={{ pointerEvents: 'all' }}
         >
           <DateLoader message="Iniciando sesión..." backgroundColor="transparent" color="#fff" />
         </div>
@@ -109,12 +150,12 @@ export default function Login() {
             opacity: 1,
             scale: 1,
             y: 0,
-            transition: { type: "spring", stiffness: 62, damping: 18, duration: 0.84 },
+            transition: { type: 'spring', stiffness: 62, damping: 18, duration: 0.84 },
           }}
           whileHover={{
             scale: 1.018,
             boxShadow: '0 0 60px 0 rgba(128,64,255,0.15), 0 20px 90px 0 rgba(78,33,202,0.24)',
-            transition: { duration: 0.34 }
+            transition: { duration: 0.34 },
           }}
           variants={parentFade}
           className={`
@@ -127,7 +168,7 @@ export default function Login() {
           transition-all duration-300 group mt-10
         `}
           style={{
-            boxShadow: '0 20px 90px 0 rgba(78, 33, 202, 0.22)'
+            boxShadow: '0 20px 90px 0 rgba(78, 33, 202, 0.22)',
           }}
         >
           {/* Glow animado alrededor */}
@@ -163,7 +204,6 @@ export default function Login() {
             <div>
               <div className="text-center mb-4">
                 <h1 className="text-3xl font-bold text-white mb-2 drop-shadow-xl tracking-wide">Inicia sesión</h1>
-
               </div>
               <form onSubmit={handleSubmit} className="space-y-7">
                 <Input
@@ -200,15 +240,13 @@ export default function Login() {
                   active:scale-95
                   tracking-wider"
                 >
-                  <span className="flex items-center gap-2">
-                    Iniciar Sesión
-                  </span>
+                  <span className="flex items-center gap-2">Iniciar Sesión</span>
                 </motion.button>
 
                 <p className="text-sm text-gray-400 text-center mt-4">
-                  ¿Se te olvido la contraseña?{' '} <br />
+                  ¿Se te olvido la contraseña? <br />
                   <a href="" className="text-purple-300 hover:underline">
-                    Comunicate con un administrador para mas información
+                    Comunícate con un administrador para más información
                   </a>
                 </p>
               </form>
@@ -218,50 +256,88 @@ export default function Login() {
 
         {/* Animaciones Keyframes y media query para mobile */}
         <style jsx>{`
-        @media (max-width: 640px) {
-          .xs\\:max-w-sm { max-width: 90vw; }
-          .xs\\:text-4xl { font-size: 2.2rem; }
-          .xs\\:p-9 { padding: 2.3rem; }
-        }
-        @media (max-width: 500px) {
-          .login-card-main {
-            margin-top: 10vh !important;
-            margin-bottom: 8vh !important;
-            min-height: unset !important;
-            height: auto !important;
+          @media (max-width: 640px) {
+            .xs\\:max-w-sm {
+              max-width: 90vw;
+            }
+            .xs\\:text-4xl {
+              font-size: 2.2rem;
+            }
+            .xs\\:p-9 {
+              padding: 2.3rem;
+            }
           }
-        }
-        @keyframes gradient-slow {
-          0% { background-position: 0% 50%;}
-          50% { background-position: 100% 50%;}
-          100% { background-position: 0% 50%;}
-        }
-        .animate-gradient-slow {
-          background-size: 200% 200%;
-          animation: gradient-slow 8s ease-in-out infinite;
-        }
-        @keyframes fadein {
-          from { opacity: 0; transform: translateY(20px);}
-          to { opacity: 1; transform: none;}
-        }
-        .animate-fadein { animation: fadein 1.15s cubic-bezier(0.4,0,0.2,1) both;}
-        .animate-fadein-slow { animation: fadein 2.2s cubic-bezier(0.4,0,0.2,1) both;}
+          @media (max-width: 500px) {
+            .login-card-main {
+              margin-top: 10vh !important;
+              margin-bottom: 8vh !important;
+              min-height: unset !important;
+              height: auto !important;
+            }
+          }
+          @keyframes gradient-slow {
+            0% {
+              background-position: 0% 50%;
+            }
+            50% {
+              background-position: 100% 50%;
+            }
+            100% {
+              background-position: 0% 50%;
+            }
+          }
+          .animate-gradient-slow {
+            background-size: 200% 200%;
+            animation: gradient-slow 8s ease-in-out infinite;
+          }
+          @keyframes fadein {
+            from {
+              opacity: 0;
+              transform: translateY(20px);
+            }
+            to {
+              opacity: 1;
+              transform: none;
+            }
+          }
+          .animate-fadein {
+            animation: fadein 1.15s cubic-bezier(0.4, 0, 0.2, 1) both;
+          }
+          .animate-fadein-slow {
+            animation: fadein 2.2s cubic-bezier(0.4, 0, 0.2, 1) both;
+          }
 
-        /* GLOW/SOMBRA animada en el contenedor */
-        @keyframes glow {
-          0% { box-shadow: 0 0 40px 0 rgba(128,64,255,0.08), 0 20px 90px 0 rgba(78,33,202,0.19);}
-          50% { box-shadow: 0 0 80px 8px rgba(178,98,255,0.19), 0 20px 90px 0 rgba(78,33,202,0.27);}
-          100% { box-shadow: 0 0 40px 0 rgba(128,64,255,0.08), 0 20px 90px 0 rgba(78,33,202,0.19);}
-        }
-        .animate-glow { animation: glow 5.5s ease-in-out infinite; }
+          /* GLOW/SOMBRA animada en el contenedor */
+          @keyframes glow {
+            0% {
+              box-shadow: 0 0 40px 0 rgba(128, 64, 255, 0.08), 0 20px 90px 0 rgba(78, 33, 202, 0.19);
+            }
+            50% {
+              box-shadow: 0 0 80px 8px rgba(178, 98, 255, 0.19), 0 20px 90px 0 rgba(78, 33, 202, 0.27);
+            }
+            100% {
+              box-shadow: 0 0 40px 0 rgba(128, 64, 255, 0.08), 0 20px 90px 0 rgba(78, 33, 202, 0.19);
+            }
+          }
+          .animate-glow {
+            animation: glow 5.5s ease-in-out infinite;
+          }
 
-        @keyframes bgshine {
-          0% { opacity: 0.7; }
-          50% { opacity: 1; }
-          100% { opacity: 0.7; }
-        }
-        .animate-bgshine { animation: bgshine 6.6s ease-in-out infinite; }
-      `}</style>
+          @keyframes bgshine {
+            0% {
+              opacity: 0.7;
+            }
+            50% {
+              opacity: 1;
+            }
+            100% {
+              opacity: 0.7;
+            }
+          }
+          .animate-bgshine {
+            animation: bgshine 6.6s ease-in-out infinite;
+          }
+        `}</style>
       </div>
     </>
   );
@@ -297,8 +373,9 @@ const Input = ({
       <div className="relative">
         {Icon && (
           <Icon
-            className={`absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none transition-colors duration-200
-              ${hasValue ? 'text-purple-700' : 'text-purple-300/70'}`}
+            className={`absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none transition-colors duration-200 ${
+              hasValue ? 'text-purple-700' : 'text-purple-300/70'
+            }`}
             size={19}
           />
         )}
@@ -313,16 +390,17 @@ const Input = ({
             border border-white/40
             transition duration-300 shadow-md shadow-purple-700/10 hover:shadow-purple-400/10 focus:shadow-purple-500/25
             ${Icon ? 'pl-10' : ''}
-            ${hasValue
-              ? 'bg-gray-100 text-black placeholder-gray-500 focus:bg-gray-100'
-              : 'bg-white/10 text-white placeholder-gray-400 focus:bg-gradient-to-l focus:from-purple-700/15 focus:to-indigo-900/15'
+            ${
+              hasValue
+                ? 'bg-gray-100 text-black placeholder-gray-500 focus:bg-gray-100'
+                : 'bg-white/10 text-white placeholder-gray-400 focus:bg-gradient-to-l focus:from-purple-700/15 focus:to-indigo-900/15'
             }
             focus:ring-2 focus:ring-purple-500/60 outline-none
           `}
           placeholder={placeholder}
           required
         />
-        {/* Botón mostrar/ocultar password igual que antes */}
+        {/* Botón mostrar/ocultar password */}
         {isPassword && (
           <button
             type="button"
@@ -351,12 +429,10 @@ const Input = ({
 
 // Burbujas/partículas animadas para el fondo
 function Bubbles() {
-  // Niveles de locura de las burbujas
   const total = 44;
   return (
     <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
       {[...Array(total)].map((_, i) => {
-        // Aleatoriedad total para que nunca se vean igual
         const size = 26 + Math.random() * 56;
         const left = Math.random() * 97;
         const bottom = Math.random() * 80;

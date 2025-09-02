@@ -5,6 +5,8 @@ import {
 } from "@/app/services/planing/planingServices";
 import { useParams } from "next/navigation";
 import { showError, showSuccess } from "../toastr/Toaster";
+import Text from "../text/Text";
+import Button from "../buttons/buttons";
 
 const NewConsolida = () => {
   const params = useParams();
@@ -51,8 +53,8 @@ const NewConsolida = () => {
           descripcion_maestra: response?.orden?.descripcion_maestra,
           codart: response?.conciliacion?.codart,
           desart: response?.conciliacion?.desart,
-          quantityToProduce: response?.orden?.orderType === 'H' ?
-            "" : response?.diferencia,
+          quantityToProduce:
+            response?.orden?.orderType === "H" ? "" : response?.diferencia,
         }));
         setTeorica((prev) => ({
           ...prev,
@@ -133,7 +135,7 @@ const NewConsolida = () => {
       }
 
       // Calcula unidades_caja
-      const saldo = (unidades_caja * numero_caja) + unidades_saldo;
+      const saldo = unidades_caja * numero_caja + unidades_saldo;
 
       // Actualizar estado, redondeando a 2 decimales
       setData((prev) => ({
@@ -202,7 +204,11 @@ const NewConsolida = () => {
     );
   }
 
-  if (data?.orden_ejecutada === undefined || data?.orden_ejecutada === null || data?.orden_ejecutada === "") {
+  if (
+    data?.orden_ejecutada === undefined ||
+    data?.orden_ejecutada === null ||
+    data?.orden_ejecutada === ""
+  ) {
     return (
       <div>
         <h1>Sin datos de conciliación</h1>
@@ -214,115 +220,123 @@ const NewConsolida = () => {
 
   return (
     // Contenedor principal con un fondo sutil para que el formulario resalte
-    <div className="bg-silver-50 min-h-screen py-12">
+    <div className="min-h-screen py-12 bg-[rgb(var(--background))]">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
         <form
           id="formConciliacion"
           onSubmit={handleSubmit}
-          className="bg-white rounded-2xl shadow-xl p-8 space-y-10">
+          className="bg-[rgb(var(--surface))] rounded-2xl shadow-xl p-8 space-y-10 border border-[rgb(var(--border))]"
+        >
           {/* --- Encabezado del Formulario --- */}
           <div className="text-center">
-            <h1 className="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
+            <Text type="title" color="text-[rgb(var(--foreground))]">
               Formulario de Conciliación
-            </h1>
-            <p className="mt-3 text-lg leading-8 text-slate-600">
+            </Text>
+            <p className="mt-3 text-lg leading-8 text-[rgb(var(--foreground))]/70">
               Complete los campos para calcular la producción y el rendimiento.
             </p>
           </div>
 
           {/* --- Sección de Información de la Orden (Solo lectura) --- */}
-          <div className="border-b border-slate-200 pb-8">
-            <h2 className="text-base font-semibold leading-7 text-slate-900">
+          <fieldset className="border border-[rgb(var(--border))] p-6 rounded-xl">
+            <legend className="-ml-1 px-2 text-lg font-semibold text-[rgb(var(--accent))]">
               Información de la Orden
-            </h2>
+            </legend>
+
             <div className="mt-4 grid grid-cols-1 gap-x-6 gap-y-6 sm:grid-cols-3">
               <div>
-                <label className="block text-sm font-medium leading-6 text-slate-600">
+                <Text type="subtitle" color="text-[rgb(var(--foreground))]">
                   Orden Ejecutada
-                </label>
-                <p className="mt-1 text-base font-semibold text-slate-800 bg-slate-100 rounded-md px-3 py-2">
+                </Text>
+                <p className="mt-1 text-base font-semibold text-center text-[rgb(var(--foreground))] bg-[rgb(var(--surface-muted))] rounded-md px-3 py-2">
                   {data.orden_ejecutada}
                 </p>
               </div>
+
               <div>
-                <label className="block text-sm font-medium leading-6 text-slate-600">
+                <Text type="subtitle" color="text-[rgb(var(--foreground))]">
                   Número de Orden
-                </label>
-                <p className="mt-1 text-base font-semibold text-slate-800 bg-slate-100 rounded-md px-3 py-2 font-mono">
+                </Text>
+                <p className="mt-1 text-base font-semibold text-center text-[rgb(var(--foreground))] bg-[rgb(var(--surface-muted))] rounded-md px-3 py-2 font-mono">
                   {data.number_order}
                 </p>
               </div>
+
               <div>
-                <label className="block text-sm font-medium leading-6 text-slate-600">
+                <Text type="subtitle" color="text-[rgb(var(--foreground))]">
                   Tipo de Orden
-                </label>
-                <p className="mt-1 text-base font-semibold text-slate-800 bg-slate-100 rounded-md px-3 py-2 font-mono">
+                </Text>
+                <p className="mt-1 text-base font-semibold text-center text-[rgb(var(--foreground))] bg-[rgb(var(--surface-muted))] rounded-md px-3 py-2 font-mono">
                   {data.orderType}
                 </p>
               </div>
+
               <div className="sm:col-span-2">
-                <label className="block text-sm font-medium leading-6 text-slate-600">
+                <Text type="subtitle" color="text-[rgb(var(--foreground))]">
                   Descripción Maestra
-                </label>
-                <p className="mt-1 text-base font-semibold text-slate-800 bg-slate-100 rounded-md px-3 py-2">
+                </Text>
+                <p className="mt-1 text-base font-semibold text-center text-[rgb(var(--foreground))] bg-[rgb(var(--surface-muted))] rounded-md px-3 py-2">
                   {data.descripcion_maestra}
                 </p>
               </div>
+
               <div>
-                <label className="block text-sm font-medium leading-6 text-slate-600">
+                <Text type="subtitle" color="text-[rgb(var(--foreground))]">
                   Código Artículo
-                </label>
-                <p className="mt-1 text-base font-semibold text-slate-800 bg-slate-100 rounded-md px-3 py-2 font-mono">
+                </Text>
+                <p className="mt-1 text-base font-semibold text-center text-[rgb(var(--foreground))] bg-[rgb(var(--surface-muted))] rounded-md px-3 py-2 font-mono">
                   {data.codart}
                 </p>
               </div>
+
               <div>
-                <label className="block text-sm font-medium leading-6 text-slate-600">
+                <Text type="subtitle" color="text-[rgb(var(--foreground))]">
                   Total
-                </label>
-                <p className="mt-1 text-base font-semibold text-slate-800 bg-slate-100 rounded-md px-3 py-2 font-mono">
+                </Text>
+                <p className="mt-1 text-base font-semibold text-center text-[rgb(var(--foreground))] bg-[rgb(var(--surface-muted))] rounded-md px-3 py-2 font-mono">
                   {teorica?.padre}
                 </p>
               </div>
+
               <div>
-                <label className="block text-sm font-medium leading-6 text-slate-600">
+                <Text type="subtitle" color="text-[rgb(var(--foreground))]">
                   Total Parciales
-                </label>
-                <p className="mt-1 text-base font-semibold text-slate-800 bg-slate-100 rounded-md px-3 py-2 font-mono">
+                </Text>
+                <p className="mt-1 text-base font-semibold text-center text-[rgb(var(--foreground))] bg-[rgb(var(--surface-muted))] rounded-md px-3 py-2 font-mono">
                   {teorica?.hijo}
                 </p>
               </div>
+
               <div>
-                <label className="block text-sm font-medium leading-6 text-slate-600">
+                <Text type="subtitle" color="text-[rgb(var(--foreground))]">
                   Diferencia
-                </label>
-                <p className="mt-1 text-base font-semibold text-slate-800 bg-slate-100 rounded-md px-3 py-2 font-mono">
+                </Text>
+                <p className="mt-1 text-base font-semibold text-center text-[rgb(var(--foreground))] bg-[rgb(var(--surface-muted))] rounded-md px-3 py-2 font-mono">
                   {teorica?.diferencia}
                 </p>
               </div>
             </div>
-          </div>
+          </fieldset>
 
           {/* --- Sección de Producción y Desperdicio --- */}
-          <fieldset className="border border-slate-200 p-6 rounded-xl">
-            <legend className="-ml-1 px-2 text-lg font-semibold text-indigo-700">
+          <fieldset className="border border-[rgb(var(--border))] p-6 rounded-xl">
+            <legend className="-ml-1 px-2 text-lg font-semibold text-[rgb(var(--accent))]">
               Producción y Desperdicio
             </legend>
 
-            {/* --- Sección de Producción y Desperdicio --- */}
             <div className="grid grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-4 mt-4">
-
               {/* Cantidad Teórica */}
               <div className="sm:col-span-2">
-                <label className="flex items-center text-sm font-medium leading-6 text-slate-900">
+                <Text type="subtitle" color="text-[rgb(var(--foreground))]">
                   Cantidad Teórica
-                  <span className="ml-2 font-mono text-xs bg-slate-200 
-                    text-slate-600 px-1.5 py-0.5 rounded-full">
+                  <span className="ml-2 font-mono text-xs bg-[rgb(var(--surface-muted))] text-[rgb(var(--foreground))]/70 px-1.5 py-0.5 rounded-full">
                     a
                   </span>
-                </label>
-                {data?.orderType === 'H' ? (
-                  <input type="number"
+                </Text>
+
+                {data?.orderType === "H" ? (
+                  <input
+                    type="number"
                     step="any"
                     id="quantityToProduce"
                     name="quantityToProduce"
@@ -330,14 +344,17 @@ const NewConsolida = () => {
                     value={data.quantityToProduce}
                     onChange={inputChange}
                     onBlur={validaCantidad}
-                    className="mt-2 w-full rounded-md border-0 bg-white 
-                    px-3.5 py-2 text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300"
+                    className="mt-2 w-full rounded-md bg-[rgb(var(--surface))] px-3.5 py-2 text-[rgb(var(--foreground))]
+                           shadow-sm ring-1 ring-inset ring-[rgb(var(--border))] border border-transparent
+                           placeholder:text-[rgb(var(--foreground))]/50
+                           focus:outline-none focus:ring-2 focus:ring-[rgb(var(--ring))] focus:border-[rgb(var(--ring))]"
                   />
                 ) : (
                   <p
-                    className="mt-2 block w-full rounded-md border-0 py-2
-                    px-3.5 text-slate-500 bg-slate-100 shadow-sm ring-1 ring-inset ring-slate-300 
-                    cursor-not-allowed">
+                    className="mt-2 block w-full text-center rounded-md py-2 px-3.5 text-[rgb(var(--foreground))]/60
+                           bg-[rgb(var(--surface-muted))] shadow-sm ring-1 ring-inset ring-[rgb(var(--border))]
+                           cursor-not-allowed"
+                  >
                     {data.quantityToProduce}
                   </p>
                 )}
@@ -345,16 +362,12 @@ const NewConsolida = () => {
 
               {/* Faltante */}
               <div>
-                <label
-                  htmlFor="faltante"
-                  className="flex items-center text-sm 
-                    font-medium leading-6 text-slate-900">
+                <Text type="subtitle" color="text-[rgb(var(--foreground))]">
                   Faltante
-                  <span className="ml-2 font-mono text-xs bg-slate-200 
-                    text-slate-600 px-1.5 py-0.5 rounded-full">
+                  <span className="ml-2 font-mono text-xs bg-[rgb(var(--surface-muted))] text-[rgb(var(--foreground))]/70 px-1.5 py-0.5 rounded-full">
                     b
                   </span>
-                </label>
+                </Text>
                 <input
                   type="number"
                   step="any"
@@ -363,25 +376,21 @@ const NewConsolida = () => {
                   required
                   value={data.faltante}
                   onChange={inputChange}
-                  className="mt-2 block w-full rounded-md border-0 py-2 
-                    px-3.5 text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 
-                    placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 
-                    sm:text-sm sm:leading-6"
+                  className="mt-2 block w-full text-center rounded-md bg-[rgb(var(--surface))] px-3.5 py-2 text-[rgb(var(--foreground))]
+                         shadow-sm ring-1 ring-inset ring-[rgb(var(--border))] border border-transparent
+                         placeholder:text-[rgb(var(--foreground))]/50
+                         focus:outline-none focus:ring-2 focus:ring-[rgb(var(--ring))] focus:border-[rgb(var(--ring))]"
                 />
               </div>
 
               {/* Adicionales */}
               <div>
-                <label
-                  htmlFor="adicionales"
-                  className="flex items-center text-sm 
-                    font-medium leading-6 text-slate-900">
+                <Text type="subtitle" color="text-[rgb(var(--foreground))]">
                   Adicionales
-                  <span className="ml-2 font-mono text-xs bg-slate-200 
-                    text-slate-600 px-1.5 py-0.5 rounded-full">
+                  <span className="ml-2 font-mono text-xs bg-[rgb(var(--surface-muted))] text-[rgb(var(--foreground))]/70 px-1.5 py-0.5 rounded-full">
                     c
                   </span>
-                </label>
+                </Text>
                 <input
                   type="number"
                   step="any"
@@ -390,25 +399,21 @@ const NewConsolida = () => {
                   required
                   value={data.adicionales}
                   onChange={inputChange}
-                  className="mt-2 block w-full rounded-md border-0 py-2 
-                    px-3.5 text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 
-                    placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 
-                    sm:text-sm sm:leading-6"
+                  className="mt-2 block w-full text-center rounded-md bg-[rgb(var(--surface))] px-3.5 py-2 text-[rgb(var(--foreground))]
+                         shadow-sm ring-1 ring-inset ring-[rgb(var(--border))] border border-transparent
+                         placeholder:text-[rgb(var(--foreground))]/50
+                         focus:outline-none focus:ring-2 focus:ring-[rgb(var(--ring))] focus:border-[rgb(var(--ring))]"
                 />
               </div>
 
               {/* Rechazo */}
               <div>
-                <label
-                  htmlFor="rechazo"
-                  className="flex items-center text-sm 
-                    font-medium leading-6 text-slate-900">
+                <Text type="subtitle" color="text-[rgb(var(--foreground))]">
                   Rechazo
-                  <span className="ml-2 font-mono text-xs bg-slate-200 
-                    text-slate-600 px-1.5 py-0.5 rounded-full">
+                  <span className="ml-2 font-mono text-xs bg-[rgb(var(--surface-muted))] text-[rgb(var(--foreground))]/70 px-1.5 py-0.5 rounded-full">
                     d
                   </span>
-                </label>
+                </Text>
                 <input
                   type="number"
                   step="any"
@@ -417,25 +422,21 @@ const NewConsolida = () => {
                   required
                   value={data.rechazo}
                   onChange={inputChange}
-                  className="mt-2 block w-full rounded-md border-0 py-2 
-                    px-3.5 text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 
-                    placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 
-                    sm:text-sm sm:leading-6"
+                  className="mt-2 block w-full text-center rounded-md bg-[rgb(var(--surface))] px-3.5 py-2 text-[rgb(var(--foreground))]
+                         shadow-sm ring-1 ring-inset ring-[rgb(var(--border))] border border-transparent
+                         placeholder:text-[rgb(var(--foreground))]/50
+                         focus:outline-none focus:ring-2 focus:ring-[rgb(var(--ring))] focus:border-[rgb(var(--ring))]"
                 />
               </div>
 
               {/* Daño en Proceso */}
               <div>
-                <label
-                  htmlFor="danno_proceso"
-                  className="flex items-center text-sm 
-                    font-medium leading-6 text-slate-900">
+                <Text type="subtitle" color="text-[rgb(var(--foreground))]">
                   Daño en Proceso
-                  <span className="ml-2 font-mono text-xs bg-slate-200 
-                    text-slate-600 px-1.5 py-0.5 rounded-full">
+                  <span className="ml-2 font-mono text-xs bg-[rgb(var(--surface-muted))] text-[rgb(var(--foreground))]/70 px-1.5 py-0.5 rounded-full">
                     e
                   </span>
-                </label>
+                </Text>
                 <input
                   type="number"
                   step="any"
@@ -444,25 +445,21 @@ const NewConsolida = () => {
                   required
                   value={data.danno_proceso}
                   onChange={inputChange}
-                  className="mt-2 block w-full rounded-md border-0 py-2 
-                    px-3.5 text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 
-                    placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 
-                    sm:text-sm sm:leading-6"
+                  className="mt-2 block w-full text-center rounded-md bg-[rgb(var(--surface))] px-3.5 py-2 text-[rgb(var(--foreground))]
+                         shadow-sm ring-1 ring-inset ring-[rgb(var(--border))] border border-transparent
+                         placeholder:text-[rgb(var(--foreground))]/50
+                         focus:outline-none focus:ring-2 focus:ring-[rgb(var(--ring))] focus:border-[rgb(var(--ring))]"
                 />
               </div>
 
               {/* Devolución */}
               <div>
-                <label
-                  htmlFor="devolucion"
-                  className="flex items-center text-sm 
-                    font-medium leading-6 text-slate-900">
+                <Text type="subtitle" color="text-[rgb(var(--foreground))]">
                   Devolución
-                  <span className="ml-2 font-mono text-xs bg-slate-200 
-                    text-slate-600 px-1.5 py-0.5 rounded-full">
+                  <span className="ml-2 font-mono text-xs bg-[rgb(var(--surface-muted))] text-[rgb(var(--foreground))]/70 px-1.5 py-0.5 rounded-full">
                     f
                   </span>
-                </label>
+                </Text>
                 <input
                   type="number"
                   step="any"
@@ -471,25 +468,21 @@ const NewConsolida = () => {
                   required
                   value={data.devolucion}
                   onChange={inputChange}
-                  className="mt-2 block w-full rounded-md border-0 py-2 
-                    px-3.5 text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 
-                    placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 
-                    sm:text-sm sm:leading-6"
+                  className="mt-2 block w-full text-center rounded-md bg-[rgb(var(--surface))] px-3.5 py-2 text-[rgb(var(--foreground))]
+                         shadow-sm ring-1 ring-inset ring-[rgb(var(--border))] border border-transparent
+                         placeholder:text-[rgb(var(--foreground))]/50
+                         focus:outline-none focus:ring-2 focus:ring-[rgb(var(--ring))] focus:border-[rgb(var(--ring))]"
                 />
               </div>
 
               {/* Sobrante */}
               <div>
-                <label
-                  htmlFor="sobrante"
-                  className="flex items-center text-sm 
-                    font-medium leading-6 text-slate-900">
+                <Text type="subtitle" color="text-[rgb(var(--foreground))]">
                   Sobrante
-                  <span className="ml-2 font-mono text-xs bg-slate-200 
-                    text-slate-600 px-1.5 py-0.5 rounded-full">
+                  <span className="ml-2 font-mono text-xs bg-[rgb(var(--surface-muted))] text-[rgb(var(--foreground))]/70 px-1.5 py-0.5 rounded-full">
                     g
                   </span>
-                </label>
+                </Text>
                 <input
                   type="number"
                   step="any"
@@ -498,83 +491,74 @@ const NewConsolida = () => {
                   required
                   value={data.sobrante}
                   onChange={inputChange}
-                  className="mt-2 block w-full rounded-md border-0 py-2 px-3.5 text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
+                  className="mt-2 block w-full text-center rounded-md bg-[rgb(var(--surface))] px-3.5 py-2 text-[rgb(var(--foreground))]
+                         shadow-sm ring-1 ring-inset ring-[rgb(var(--border))] border border-transparent
+                         placeholder:text-[rgb(var(--foreground))]/50
+                         focus:outline-none focus:ring-2 focus:ring-[rgb(var(--ring))] focus:border-[rgb(var(--ring))]"
                 />
               </div>
             </div>
           </fieldset>
 
           {/* --- Sección de Totales y Cajas --- */}
-          <fieldset className="border border-slate-200 p-6 rounded-xl">
-            <legend className="-ml-1 px-2 text-lg font-semibold text-indigo-700">
+          <fieldset className="border border-[rgb(var(--border))] p-6 rounded-xl">
+            <legend className="-ml-1 px-2 text-lg font-semibold text-[rgb(var(--accent))]">
               Totales y Empacado
             </legend>
+
             <div className="grid grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-2 mt-4">
-              {/* Total */}
+              {/* Total Producido */}
               <div>
-                <label
-                  htmlFor="total"
-                  className="flex items-center text-sm 
-                    font-medium leading-6 text-slate-900">
+                <Text type="subtitle" color="text-[rgb(var(--foreground))]">
                   Total Producido
-                  <span className="ml-2 font-mono text-xs bg-slate-200 
-                    text-slate-600 px-1.5 py-0.5 rounded-full">
+                  <span className="ml-2 font-mono text-xs bg-[rgb(var(--surface-muted))] text-[rgb(var(--foreground))]/70 px-1.5 py-0.5 rounded-full">
                     h
                   </span>
-                </label>
+                </Text>
                 <input
                   type="number"
                   readOnly
                   value={data.total}
-                  className="mt-2 block w-full rounded-md border-0 py-2
-                    px-3.5 text-slate-500 bg-slate-100 shadow-sm ring-1 ring-inset ring-slate-300 
-                    cursor-not-allowed"
+                  className="mt-2 block w-full text-center rounded-md py-2 px-3.5
+                         text-[rgb(var(--foreground))]/60 bg-[rgb(var(--surface-muted))]
+                         shadow-sm ring-1 ring-inset ring-[rgb(var(--border))] cursor-not-allowed"
                 />
-                <p className="mt-1 text-xs text-slate-500">
+                <p className="mt-1 text-xs text-[rgb(var(--foreground))]/60">
                   Cálculo: a + c + g - (b + d + e + f)
                 </p>
               </div>
 
               {/* Rendimiento */}
               <div>
-                <label
-                  htmlFor="rendimiento"
-                  className="flex items-center text-sm 
-                    font-medium leading-6 text-slate-900">
+                <Text type="subtitle" color="text-[rgb(var(--foreground))]">
                   Rendimiento (%)
-                  <span className="ml-2 font-mono text-xs bg-slate-200 
-                    text-slate-600 px-1.5 py-0.5 rounded-full">
+                  <span className="ml-2 font-mono text-xs bg-[rgb(var(--surface-muted))] text-[rgb(var(--foreground))]/70 px-1.5 py-0.5 rounded-full">
                     i
                   </span>
-                </label>
+                </Text>
                 <input
                   type="number"
                   readOnly
                   value={data.rendimiento}
-                  className="mt-2 block w-full rounded-md border-0 py-2
-                   px-3.5 text-slate-500 bg-slate-100 shadow-sm ring-1 ring-inset ring-slate-300 
-                   cursor-not-allowed"
+                  className="mt-2 block w-full text-center rounded-md py-2 px-3.5
+                         text-[rgb(var(--foreground))]/60 bg-[rgb(var(--surface-muted))]
+                         shadow-sm ring-1 ring-inset ring-[rgb(var(--border))] cursor-not-allowed"
                 />
-                <p className="mt-1 text-xs text-slate-500">
+                <p className="mt-1 text-xs text-[rgb(var(--foreground))]/60">
                   Cálculo: (h - e) / (a - (d + b)) × 100
                 </p>
               </div>
             </div>
 
-            <div className="grid grid-cols-1 gap-x-6 gap-y-8 
-              sm:grid-cols-3 mt-8 pt-8 border-t border-slate-200">
+            <div className="grid grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-3 mt-8 pt-8 border-t border-[rgb(var(--border))]">
               {/* Unidades por Caja */}
               <div>
-                <label
-                  htmlFor="unidades_caja"
-                  className="flex items-center text-sm 
-                    font-medium leading-6 text-slate-900">
+                <Text type="subtitle" color="text-[rgb(var(--foreground))]">
                   Unidades por Caja
-                  <span className="ml-2 font-mono text-xs bg-slate-200 
-                    text-slate-600 px-1.5 py-0.5 rounded-full">
+                  <span className="ml-2 font-mono text-xs bg-[rgb(var(--surface-muted))] text-[rgb(var(--foreground))]/70 px-1.5 py-0.5 rounded-full">
                     j
                   </span>
-                </label>
+                </Text>
                 <input
                   type="number"
                   id="unidades_caja"
@@ -582,22 +566,21 @@ const NewConsolida = () => {
                   required
                   value={data.unidades_caja}
                   onChange={inputChange}
-                  className="mt-2 block w-full rounded-md border-0 py-2 px-3.5 text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
+                  className="mt-2 block w-full text-center rounded-md bg-[rgb(var(--surface))] px-3.5 py-2 text-[rgb(var(--foreground))]
+                         shadow-sm ring-1 ring-inset ring-[rgb(var(--border))] border border-transparent
+                         placeholder:text-[rgb(var(--foreground))]/50
+                         focus:outline-none focus:ring-2 focus:ring-[rgb(var(--ring))] focus:border-[rgb(var(--ring))] sm:text-sm sm:leading-6"
                 />
               </div>
 
               {/* Número de Cajas */}
               <div>
-                <label
-                  htmlFor="numero_caja"
-                  className="flex items-center text-sm 
-                    font-medium leading-6 text-slate-900">
+                <Text type="subtitle" color="text-[rgb(var(--foreground))]">
                   Número de Cajas
-                  <span className="ml-2 font-mono text-xs bg-slate-200 
-                    text-slate-600 px-1.5 py-0.5 rounded-full">
+                  <span className="ml-2 font-mono text-xs bg-[rgb(var(--surface-muted))] text-[rgb(var(--foreground))]/70 px-1.5 py-0.5 rounded-full">
                     k
                   </span>
-                </label>
+                </Text>
                 <input
                   type="number"
                   id="numero_caja"
@@ -605,25 +588,21 @@ const NewConsolida = () => {
                   required
                   value={data.numero_caja}
                   onChange={inputChange}
-                  className="mt-2 block w-full rounded-md border-0 py-2 
-                    px-3.5 text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 
-                    placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 
-                    sm:text-sm sm:leading-6"
+                  className="mt-2 block w-full text-center rounded-md bg-[rgb(var(--surface))] px-3.5 py-2 text-[rgb(var(--foreground))]
+                         shadow-sm ring-1 ring-inset ring-[rgb(var(--border))] border border-transparent
+                         placeholder:text-[rgb(var(--foreground))]/50
+                         focus:outline-none focus:ring-2 focus:ring-[rgb(var(--ring))] focus:border-[rgb(var(--ring))] sm:text-sm sm:leading-6"
                 />
               </div>
 
               {/* Unidades de Saldo */}
               <div>
-                <label
-                  htmlFor="unidades_saldo"
-                  className="flex items-center text-sm 
-                    font-medium leading-6 text-slate-900">
+                <Text type="subtitle" color="text-[rgb(var(--foreground))]">
                   Unidades de Saldo
-                  <span className="ml-2 font-mono text-xs bg-slate-200 
-                    text-slate-600 px-1.5 py-0.5 rounded-full">
+                  <span className="ml-2 font-mono text-xs bg-[rgb(var(--surface-muted))] text-[rgb(var(--foreground))]/70 px-1.5 py-0.5 rounded-full">
                     l
                   </span>
-                </label>
+                </Text>
                 <input
                   type="number"
                   id="unidades_saldo"
@@ -631,64 +610,44 @@ const NewConsolida = () => {
                   required
                   value={data.unidades_saldo}
                   onChange={inputChange}
-                  className="mt-2 block w-full rounded-md 
-                      border-0 py-2 px-3.5 text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 
-                      placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 
-                      sm:text-sm sm:leading-6"
+                  className="mt-2 block w-full text-center rounded-md bg-[rgb(var(--surface))] px-3.5 py-2 text-[rgb(var(--foreground))]
+                         shadow-sm ring-1 ring-inset ring-[rgb(var(--border))] border border-transparent
+                         placeholder:text-[rgb(var(--foreground))]/50
+                         focus:outline-none focus:ring-2 focus:ring-[rgb(var(--ring))] focus:border-[rgb(var(--ring))] sm:text-sm sm:leading-6"
                 />
               </div>
 
               {/* Total Saldo */}
               <div className="sm:col-span-3">
-                <label
-                  htmlFor="total_saldo"
-                  className="flex items-center text-sm 
-                    font-medium leading-6 text-slate-900">
+                <Text type="subtitle" color="text-[rgb(var(--foreground))]">
                   Total Saldo
-                  <span className="ml-2 font-mono text-xs bg-slate-200 
-                    text-slate-600 px-1.5 py-0.5 rounded-full">
+                  <span className="ml-2 font-mono text-xs bg-[rgb(var(--surface-muted))] text-[rgb(var(--foreground))]/70 px-1.5 py-0.5 rounded-full">
                     L
                   </span>
-                </label>
+                </Text>
                 <input
                   type="number"
                   readOnly
                   value={data.total_saldo}
-                  className="mt-2 block w-full rounded-md 
-                      border-0 py-2 px-3.5 text-slate-500 bg-slate-100 
-                      shadow-sm ring-1 ring-inset ring-slate-300 cursor-not-allowed"
+                  className="mt-2 block w-full text-center rounded-md py-2 px-3.5
+                         text-[rgb(var(--foreground))]/60 bg-[rgb(var(--surface-muted))]
+                         shadow-sm ring-1 ring-inset ring-[rgb(var(--border))] cursor-not-allowed"
                 />
-                <p className="mt-1 text-xs text-slate-500">
+                <p className="mt-1 text-xs text-center text-[rgb(var(--foreground))]/60">
                   Cálculo: (j * k) + l
                 </p>
               </div>
-
             </div>
           </fieldset>
 
           {/* --- Botón de Envío --- */}
-          <div className="flex justify-end pt-6">
-            <button
+          <hr className="border-t border-[rgb(var(--border))] my-6" />
+          <div className="flex justify-center">
+            <Button
               type="submit"
-              className="inline-flex items-center justify-center 
-                gap-2 rounded-lg bg-indigo-600 px-8 py-3 text-lg font-semibold text-white 
-                shadow-lg transition-all hover:bg-indigo-700 focus:outline-none focus:ring-2 
-                focus:ring-indigo-500 focus:ring-offset-2">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-5 w-5"
-                viewBox="0 0 20 20"
-                fill="currentColor">
-                <path
-                  fillRule="evenodd"
-                  d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 
-                  01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 
-                  011.414 0z"
-                  clipRule="evenodd"
-                />
-              </svg>
-              Guardar Conciliación
-            </button>
+              variant="create"
+              label="Guardar Conciliación"
+            />
           </div>
         </form>
       </div>

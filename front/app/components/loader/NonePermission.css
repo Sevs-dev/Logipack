@@ -1,19 +1,29 @@
+/* ====== Card contenedor, 100% theme-driven ====== */
 .contenedor {
-  width: 100%;
-  max-width: 700px;
-  height: auto;
+  /* tokens locales para afinar sin romper el theme global */
+  --card-bg: rgb(var(--surface));
+  --card-fg: rgb(var(--foreground));
+  --card-radius: 12px;
+  --card-gap: 2rem;
+
+  width: min(100%, 700px);
   position: relative;
   display: flex;
-  justify-content: flex-start;
   align-items: center;
+  justify-content: flex-start;
   flex-direction: row;
-  gap: 2rem;
+  gap: var(--card-gap);
   padding: 1rem;
-  background-color: #1e1e1e;
-  border-radius: 12px;
+  background: var(--card-bg);
+  color: var(--card-fg);
+  border-radius: var(--card-radius);
+
+  /* borde y sombra suaves, respetando ambos temas */
+  border: 1px solid color-mix(in oklab, rgb(var(--border)) 55%, transparent);
+  box-shadow: 0 10px 30px -15px color-mix(in oklab, rgb(var(--shadow)) 22%, transparent);
 }
 
-/* Texto ocupa más ancho para que se vea bien */
+/* Texto ocupa más ancho */
 .text {
   flex: 1;
   display: flex;
@@ -22,13 +32,13 @@
 
 .loader__text {
   font-size: clamp(1rem, 1.5vw, 1.5rem);
-  color: #ffffff;
   line-height: 1.4;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   text-align: center;
+  color: var(--card-fg);
 }
 
-/* Animación loader */
+/* ====== Loader (usa --accent) ====== */
 .loader {
   display: block;
   width: 84px;
@@ -36,7 +46,9 @@
   position: relative;
 }
 
-.loader:before, .loader:after {
+/* Dos burbujas que se turnan */
+.loader::before,
+.loader::after {
   content: "";
   position: absolute;
   left: 50%;
@@ -44,12 +56,13 @@
   width: 64px;
   height: 64px;
   border-radius: 50%;
-  background: linear-gradient(45deg, #fbff01, #fffb00);
+  /* degradé basado en el acento del tema */
+  background: linear-gradient(45deg, #ff8c00, #ff9900);
   transform: translate(-50%, -100%) scale(0);
   animation: push_401 2s infinite linear;
 }
 
-.loader:after {
+.loader::after {
   animation-delay: 1s;
 }
 
@@ -60,4 +73,20 @@
   100% {
     transform: translate(-50%, -100%) scale(0);
   }
+}
+
+/* Respeto a quienes odian el mareo: pausa animación */
+@media (prefers-reduced-motion: reduce) {
+  .loader::before,
+  .loader::after {
+    animation: none;
+    transform: translate(-50%, 0%) scale(1);
+  }
+}
+
+/* Variante compacta opcional (por si el layout aprieta) */
+.contenedor--compacto {
+  --card-gap: 1rem;
+  padding: 0.75rem;
+  border-radius: 10px;
 }

@@ -4,7 +4,13 @@ import { motion, AnimatePresence } from "framer-motion";
 import Button from "../buttons/buttons";
 import Mini from "../loader/MiniLoader";
 
-type BooleanColumns = "binding" | "status" | "aprobado" | "paralelo" | "canEdit" | "canView";
+type BooleanColumns =
+  | "binding"
+  | "status"
+  | "aprobado"
+  | "paralelo"
+  | "canEdit"
+  | "canView";
 
 type TableProps<T extends { id: number }> = {
   rows: T[];
@@ -50,8 +56,13 @@ const Header = ({
   const isActive = column === sortColumn;
   return (
     <th
-      className={`px-6 py-3 text-center font-semibold text-gray-300 tracking-wide cursor-pointer transition-all border-r border-gray-700 last:border-r-0
-        ${isActive ? "text-white bg-gray-700 shadow-md" : "hover:bg-gray-800"}`}
+      className={`px-6 py-3 text-center font-semibold tracking-wide cursor-pointer transition-all border-r last:border-r-0
+        text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-700
+        ${
+          isActive
+            ? "bg-gray-100 text-gray-900 dark:bg-gray-700 dark:text-white shadow-md"
+            : "hover:bg-gray-100 dark:hover:bg-gray-800"
+        }`}
       onClick={() => onSort(column)}
       title="Click para ordenar"
     >
@@ -59,12 +70,12 @@ const Header = ({
       <span className="ml-2 inline-flex items-center">
         {isActive ? (
           sortOrder === "asc" ? (
-            <FaArrowUp size={12} className="text-white" />
+            <FaArrowUp size={12} className="text-gray-900 dark:text-white" />
           ) : (
-            <FaArrowDown size={12} className="text-white" />
+            <FaArrowDown size={12} className="text-gray-900 dark:text-white" />
           )
         ) : (
-          <FaSort size={12} className="text-gray-400" />
+          <FaSort size={12} className="text-gray-500 dark:text-gray-400" />
         )}
       </span>
     </th>
@@ -142,8 +153,8 @@ function Table<T extends { id: number }>({
           ? 1
           : -1
         : valA < valB
-          ? 1
-          : -1;
+        ? 1
+        : -1;
     }
   });
 
@@ -182,7 +193,7 @@ function Table<T extends { id: number }>({
   );
 
   return (
-    <div className="w-full overflow-hidden rounded-xl shadow-lg p-3 sm:p-4 bg-gray-900 transition-all duration-300">
+    <div className="w-full overflow-hidden rounded-xl shadow-lg p-3 sm:p-4 bg-white dark:bg-gray-900 transition-all duration-300">
       {isFiltered && (
         <div className="flex justify-end mb-2">
           <button
@@ -207,13 +218,13 @@ function Table<T extends { id: number }>({
           transition={{ duration: 0.3 }}
           className="hidden md:block overflow-x-auto"
         >
-          <table className="w-full border-collapse bg-gray-900 text-gray-300 text-center">
+          <table className="w-full border-collapse bg-white text-gray-700 dark:bg-gray-900 dark:text-gray-300 text-center">
             <thead>
-              <tr className="bg-gray-900 text-sm">
+              <tr className="bg-white dark:bg-gray-900 text-sm">
                 {columns.map((column) => (
                   <th
                     key={`input-${String(column)}`}
-                    className="px-2 py-1 border-r border-gray-700 last:border-r-0"
+                    className="px-2 py-1 border-r last:border-r-0 border-gray-200 dark:border-gray-700"
                   >
                     <input
                       type="text"
@@ -225,7 +236,8 @@ function Table<T extends { id: number }>({
                         }));
                         setCurrentPage(1);
                       }}
-                      className="w-full px-2 py-1 text-sm text-gray-200 bg-gray-800 border border-gray-600 rounded-md 
+                      className="w-full px-2 py-1 text-sm text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md 
+                      placeholder-gray-400 dark:placeholder-gray-500
                       focus:outline-none focus:ring-2 focus:ring-blue-500 text-center"
                       placeholder="Buscar..."
                     />
@@ -233,7 +245,7 @@ function Table<T extends { id: number }>({
                 ))}
                 <th />
               </tr>
-              <tr className="bg-gradient-to-r from-gray-800 to-gray-700 text-sm">
+              <tr className="bg-gradient-to-r from-gray-100 to-gray-50 dark:from-gray-800 dark:to-gray-700 text-sm">
                 {columns.map((column) => (
                   <Header
                     key={String(column)}
@@ -244,7 +256,7 @@ function Table<T extends { id: number }>({
                     sortOrder={sortOrder}
                   />
                 ))}
-                <th className="px-6 py-3 text-center font-semibold text-gray-300 border-r border-gray-700">
+                <th className="px-6 py-3 text-center font-semibold text-gray-700 dark:text-gray-300 border-r border-gray-200 dark:border-gray-700">
                   Acciones
                 </th>
               </tr>
@@ -254,7 +266,7 @@ function Table<T extends { id: number }>({
                 <tr>
                   <td
                     colSpan={columns.length + 1}
-                    className="py-8 text-center text-gray-400 px-4 border-r border-gray-700"
+                    className="py-8 text-center text-gray-500 dark:text-gray-400 px-4 border-r border-gray-200 dark:border-gray-700"
                   >
                     {loading ? (
                       <div className="flex items-center justify-center gap-2">
@@ -270,10 +282,13 @@ function Table<T extends { id: number }>({
                   </td>
                 </tr>
               ) : (
-                paginatedRows.map((row , index) => (
+                paginatedRows.map((row, index) => (
                   <tr
                     key={index}
-                    className="border-b border-gray-700 text-sm odd:bg-gray-800 even:bg-gray-850 hover:bg-gray-700 transition-all duration-300">
+                    className="border-b border-gray-200 dark:border-gray-700 text-sm
+                  odd:bg-white even:bg-gray-50 dark:odd:bg-gray-800 dark:even:bg-gray-900
+                  hover:bg-gray-100 dark:hover:bg-gray-700 transition-all duration-300"
+                  >
                     {columns.map((column) => {
                       const value = row[column];
                       if (
@@ -284,13 +299,14 @@ function Table<T extends { id: number }>({
                         return (
                           <td
                             key={String(column)}
-                            className="px-4 py-2 text-gray-300 border-r border-gray-700 last:border-r-0"
+                            className="px-4 py-2 text-gray-700 dark:text-gray-300 border-r border-gray-200 dark:border-gray-700 last:border-r-0"
                           >
                             <span
-                              className={`inline-flex items-center px-3 py-1 rounded-full text-white ${value === true || value === 1
-                                ? "bg-green-600"
-                                : "bg-red-600"
-                                }`}
+                              className={`inline-flex items-center px-3 py-1 rounded-full text-white ${
+                                value === true || value === 1
+                                  ? "bg-green-600"
+                                  : "bg-red-600"
+                              }`}
                             >
                               {(value === true || value === 1) && (
                                 <span className="mr-2 w-2 h-2 bg-white rounded-full animate-pulse"></span>
@@ -305,7 +321,7 @@ function Table<T extends { id: number }>({
                         return (
                           <td
                             key={String(column)}
-                            className="px-4 py-2 text-gray-300 border-r border-gray-700 last:border-r-0"
+                            className="px-4 py-2 text-gray-700 dark:text-gray-300 border-r border-gray-200 dark:border-gray-700 last:border-r-0"
                           >
                             {value !== null && value !== undefined
                               ? String(value)
@@ -314,12 +330,19 @@ function Table<T extends { id: number }>({
                         );
                       }
                     })}
-                    <td className="px-6 py-3 flex justify-center gap-3 border-r border-gray-700 last:border-r-0">
-                      {showEditButton && onEdit
-                        && (((row as { status_dates?: string }).status_dates) !== "Ejecutado"
-                          && ((row as { status_dates?: string }).status_dates) !== "Planificación"
-                          && ((row as { status_dates?: string }).status_dates) !== "En ejecución") && (
-                          <Button onClick={() => onEdit(row.id)} variant="edit" />
+                    <td className="px-6 py-3 flex justify-center gap-3 border-r border-gray-200 dark:border-gray-700 last:border-r-0">
+                      {showEditButton &&
+                        onEdit &&
+                        (row as { status_dates?: string }).status_dates !==
+                          "Ejecutado" &&
+                        (row as { status_dates?: string }).status_dates !==
+                          "Planificación" &&
+                        (row as { status_dates?: string }).status_dates !==
+                          "En ejecución" && (
+                          <Button
+                            onClick={() => onEdit(row.id)}
+                            variant="edit"
+                          />
                         )}
                       {showDeleteButton && onDelete && (
                         <Button
@@ -367,10 +390,11 @@ function Table<T extends { id: number }>({
                           variant="history"
                         />
                       )}
-                      {showOrdenHijaButton && onOrdenHija
-                        && ((row as { orderType?: string }).orderType) === "P"
-                        && ((row as { status_dates?: string }).status_dates === "En ejecución") && (
-                          // || row?.status_dates === "Planificación"
+                      {showOrdenHijaButton &&
+                        onOrdenHija &&
+                        (row as { orderType?: string }).orderType === "P" &&
+                        (row as { status_dates?: string }).status_dates ===
+                          "En ejecución" && (
                           <Button
                             onClick={() => onOrdenHija(row.id)}
                             variant="control"
@@ -384,28 +408,26 @@ function Table<T extends { id: number }>({
           </table>
         </motion.div>
       </AnimatePresence>
-      {/* En Creación */}
-      {/* En ejecución */}
 
       {/* Vista en formato tarjetas para pantallas pequeñas */}
       <div className="md:hidden space-y-4 mt-4">
         {paginatedRows.map((row, index) => (
           <div
             key={index}
-            className="bg-gray-800 p-4 rounded-lg shadow-md transition-all duration-300 hover:shadow-lg"
+            className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-md transition-all duration-300 hover:shadow-lg"
           >
             {columns.map((column) => {
-              const colKey = String(column); // React.Key = string | number
+              const colKey = String(column);
               const value = row[column];
               return (
                 <div
                   key={colKey}
-                  className="flex justify-between items-center py-1 border-b border-gray-700 last:border-none"
+                  className="flex justify-between items-center py-1 border-b last:border-none border-gray-200 dark:border-gray-700"
                 >
-                  <span className="font-semibold text-gray-400 text-sm">
+                  <span className="font-semibold text-gray-500 dark:text-gray-400 text-sm">
                     {columnLabels[column] ?? colKey}
                   </span>
-                  <span className="text-gray-300 text-sm text-right max-w-[60%] truncate">
+                  <span className="text-gray-700 dark:text-gray-300 text-sm text-right max-w-[60%] truncate">
                     {value != null ? String(value) : ""}
                   </span>
                 </div>
@@ -455,12 +477,12 @@ function Table<T extends { id: number }>({
             <button
               onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
               disabled={currentPage === 1}
-              className="px-2 py-1 bg-gray-700 text-gray-300 rounded-md hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 active:scale-95"
+              className="px-2 py-1 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 active:scale-95 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
             >
               ‹
             </button>
 
-            <span className="px-2 py-1 text-sm font-medium bg-gray-800 text-gray-300 rounded-md">
+            <span className="px-2 py-1 text-sm font-medium bg-gray-100 text-gray-700 rounded-md dark:bg-gray-800 dark:text-gray-300">
               {currentPage} / {totalPages}
             </span>
 
@@ -469,7 +491,7 @@ function Table<T extends { id: number }>({
                 setCurrentPage((prev) => Math.min(prev + 1, totalPages))
               }
               disabled={currentPage === totalPages}
-              className="px-2 py-1 bg-gray-700 text-gray-300 rounded-md hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 active:scale-95"
+              className="px-2 py-1 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 active:scale-95 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
             >
               ›
             </button>
@@ -480,10 +502,11 @@ function Table<T extends { id: number }>({
               <button
                 key={page}
                 onClick={() => setCurrentPage(page)}
-                className={`px-2 py-1 text-sm rounded-md transition-all duration-200 ease-out hover:scale-105 ${page === currentPage
-                  ? "bg-blue-600 text-white scale-105"
-                  : "bg-gray-700 text-gray-300 hover:bg-gray-600"
-                  }`}
+                className={`px-2 py-1 text-sm rounded-md transition-all duration-200 ease-out hover:scale-105 ${
+                  page === currentPage
+                    ? "bg-blue-600 text-white scale-105"
+                    : "bg-gray-200 text-gray-700 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
+                }`}
               >
                 {page}
               </button>

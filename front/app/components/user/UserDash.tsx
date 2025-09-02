@@ -20,7 +20,7 @@ function User() {
       {/* Administrador de ventanas */}
       <WindowManager
         windowsData={[
-          { id: 1, title: "Usuarios", component: <PermissionWrapper fallback={<NonePermission />}><CreateUser /></PermissionWrapper>, isProtected: true },
+          { id: 1, title: "Usuarios", component: <PermissionWrapper fallback={<NonePermission />} allowedRoles={["Administrador","Master"]}><CreateUser /></PermissionWrapper>, isProtected: true },
           { id: 7, title: "Roles", component: <PermissionWrapper fallback={<NonePermission />}><Role /></PermissionWrapper>, isProtected: true },
           { id: 2, title: "Lineas", component: <PermissionWrapper fallback={<NonePermission />}><Lista /></PermissionWrapper>, isProtected: true },
           { id: 3, title: "Tipo de Productos", component: <PermissionWrapper fallback={<NonePermission />}><Products /></PermissionWrapper>, isProtected: true },

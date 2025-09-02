@@ -8,7 +8,6 @@ import FirmaB64 from "./FirmaB64";
 import axios from "axios";
 import { API_URL } from "@/app/config/api";
 
-
 // ⬇️ IMPORTA el servicio de seguridad (rol + pass)
 import {
   validateSecurityPassWithRole,
@@ -364,9 +363,9 @@ const NewTestigos = () => {
   };
 
   return (
-    <div className="w-full rounded-2xl bg-white/5 backdrop-blur-sm border border-white/10 shadow-md overflow-hidden mt-4">
-      <div className="bg-white/2.5 px-[10px] py-[10px] border-b border-white/5 backdrop-blur-sm">
-        <Text type="title" color="text-white">
+    <div className="w-full rounded-2xl bg-[rgb(var(--surface))] backdrop-blur-sm border border-[rgb(var(--border))] shadow-md overflow-hidden mt-4">
+      <div className="bg-[rgb(var(--surface-muted))] px-[10px] py-[10px] border-b border-[rgb(var(--border))] backdrop-blur-sm">
+        <Text type="title" color="text-[rgb(var(--foreground))]">
           Fase de testigos
         </Text>
       </div>
@@ -375,7 +374,7 @@ const NewTestigos = () => {
         <form
           onSubmit={handleSubmit}
           ref={ref}
-          className="min-h-screen w-full bg-[#1b2535] text-white p-[10px] sm:p-[10px] flex flex-col rounded-2xl"
+          className="min-h-screen w-full bg-[rgb(var(--background))] text-[rgb(var(--foreground))] p-[10px] sm:p-[10px] flex flex-col rounded-2xl"
         >
           {controlData.map((item) => {
             const cfg = parseConfig(item.config);
@@ -388,7 +387,7 @@ const NewTestigos = () => {
             return (
               <div key={item.id}>
                 <div className="mt-4">
-                  <Text type="subtitle" color="text-white">
+                  <Text type="subtitle" color="text-[rgb(var(--foreground))]">
                     {item.description}
                   </Text>
                 </div>
@@ -401,7 +400,9 @@ const NewTestigos = () => {
                     name={fieldName}
                     value={(memoriaActividades[fieldName] as string) ?? ""}
                     onChange={(e) => setValue(fieldName, e.target.value)}
-                    className="block w-full px-3 py-2 bg-[#1a1d23] border border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-white placeholder-gray-400 text-center"
+                    className="block w-full px-3 py-2 bg-[rgb(var(--surface))] border border-[rgb(var(--border))] rounded-md shadow-sm
+                           focus:outline-none focus:ring-2 focus:ring-[rgb(var(--ring))] focus:border-[rgb(var(--ring))]
+                           text-[rgb(var(--foreground))] placeholder-[rgb(var(--foreground))]/50 text-center"
                     required={item.binding}
                   />
                 )}
@@ -410,25 +411,26 @@ const NewTestigos = () => {
                 {cfg?.type === "signature" && (
                   <>
                     {isProtected && !isUnlocked && (
-                      <div className="mt-3 mb-2 text-xs text-amber-600 text-center">
+                      <div className="mt-3 mb-2 text-xs text-[rgb(var(--warning))] text-center">
                         🔒 Requiere validación de rol antes de firmar.
                       </div>
                     )}
 
                     <select
-                      className={`text-center last:block w-full px-3 py-2 bg-[#1a1d23] border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-white placeholder-gray-400 mb-2
-                        ${
-                          isProtected && !isUnlocked
-                            ? "border-amber-500"
-                            : "border-gray-600"
-                        }`}
+                      className={`text-center block w-full px-3 py-2 bg-[rgb(var(--surface))] border rounded-md shadow-sm
+                              focus:outline-none focus:ring-2 focus:ring-[rgb(var(--ring))] focus:border-[rgb(var(--ring))]
+                              text-[rgb(var(--foreground))] placeholder-[rgb(var(--foreground))]/50 mb-2
+                              ${
+                                isProtected && !isUnlocked
+                                  ? "border-[rgb(var(--warning))]"
+                                  : "border-[rgb(var(--border))]"
+                              }`}
                       value={(memoriaActividades[modeName] as string) ?? ""}
                       onMouseDown={(e) =>
                         onSigSelectMouseDown(e, cfg, fieldName)
                       }
                       onKeyDown={(e) => onSigSelectKeyDown(e, cfg, fieldName)}
                       onChange={(e) => {
-                        // Si está protegido y bloqueado, ignora cambios
                         if (isProtected && !isUnlocked) {
                           e.preventDefault();
                           return;
@@ -448,7 +450,9 @@ const NewTestigos = () => {
                     {memoriaActividades[modeName] === "texto" && (
                       <input
                         type="text"
-                        className="text-center block w-full px-3 py-2 bg-[#1a1d23] border border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-white placeholder-gray-400"
+                        className="text-center block w-full px-3 py-2 bg-[rgb(var(--surface))] border border-[rgb(var(--border))] rounded-md shadow-sm
+                               focus:outline-none focus:ring-2 focus:ring-[rgb(var(--ring))] focus:border-[rgb(var(--ring))]
+                               text-[rgb(var(--foreground))] placeholder-[rgb(var(--foreground))]/50"
                         name={fieldName}
                         value={(memoriaActividades[fieldName] as string) ?? ""}
                         required={item.binding}
@@ -471,12 +475,12 @@ const NewTestigos = () => {
 
           {/* Modal de validación firma */}
           {sigModal.open && (
-            <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 p-4">
-              <div className="w-full max-w-sm rounded-xl bg-white border border-gray-200 p-5 shadow-2xl">
-                <h3 className="text-gray-900 text-lg font-semibold mb-2">
+            <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-[rgb(var(--shadow))]/60 p-4">
+              <div className="w-full max-w-sm rounded-xl bg-[rgb(var(--surface))] border border-[rgb(var(--border))] p-5 shadow-2xl">
+                <h3 className="text-[rgb(var(--foreground))] text-lg font-semibold mb-2">
                   Validación requerida
                 </h3>
-                <p className="text-gray-600 text-sm mb-4">
+                <p className="text-[rgb(var(--foreground))]/80 text-sm mb-4">
                   Ingresa la contraseña para habilitar la firma.
                 </p>
                 <input
@@ -485,28 +489,31 @@ const NewTestigos = () => {
                   value={sigPassword}
                   onChange={(e) => setSigPassword(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && submitSigValidation()}
-                  className="block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 placeholder-gray-400"
+                  className="block w-full px-3 py-2 bg-[rgb(var(--surface))] border border-[rgb(var(--border))] rounded-md shadow-sm
+                         focus:outline-none focus:ring-2 focus:ring-[rgb(var(--ring))] focus:border-[rgb(var(--ring))]
+                         text-[rgb(var(--foreground))] placeholder-[rgb(var(--foreground))]/50"
                   placeholder="Contraseña"
                 />
                 <div className="mt-4 flex justify-end gap-2">
                   <button
                     type="button"
                     onClick={closeSigModal}
-                    className="px-4 py-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-900 text-sm"
+                    className="px-4 py-2 rounded-lg bg-[rgb(var(--surface-muted))] hover:bg-[rgb(var(--surface-muted))]/80 text-[rgb(var(--foreground))] text-sm"
                   >
                     Cancelar
                   </button>
                   <button
                     type="button"
                     onClick={submitSigValidation}
-                    className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm shadow"
+                    className="px-4 py-2 rounded-lg bg-[rgb(var(--accent))] hover:bg-[rgb(var(--accent-hover))] text-[rgb(var(--accent-foreground))] text-sm shadow"
                   >
                     Validar
                   </button>
                 </div>
+
                 {Array.isArray(sigModal.allowedRoles) &&
                   sigModal.allowedRoles.length > 0 && (
-                    <p className="mt-3 text-xs text-gray-500">
+                    <p className="mt-3 text-xs text-[rgb(var(--foreground))]/70">
                       Roles permitidos: {sigModal.allowedRoles.join(", ")}
                     </p>
                   )}
@@ -514,7 +521,7 @@ const NewTestigos = () => {
             </div>
           )}
 
-          <hr className="my-4 border-t border-gray-300 w-full max-w-lg mx-auto opacity-60" />
+          <hr className="my-4 border-t border-[rgb(var(--border))] w-full max-w-lg mx-auto opacity-60" />
           <div className="flex justify-center gap-4 mt-6">
             <Button type="submit" variant="after2" label="Siguiente Fase" />
           </div>

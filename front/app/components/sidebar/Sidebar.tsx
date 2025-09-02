@@ -12,9 +12,10 @@ import { motion, AnimatePresence } from "framer-motion";
 import { getUserByEmail } from "../../services/userDash/authservices";
 import Image from "next/image";
 import SidebarFlyoutPortal from "./SidebarFlyoutPortal";
+import ThemeToggle from "../buttons/ThemeToggle";
 
 // ---- Hook Mobile ----
-function useIsMobile(breakpoint = 1024) { // <= lg
+function useIsMobile(breakpoint = 1024) {
   const [isMobile, setIsMobile] = useState(
     typeof window !== "undefined" ? window.innerWidth < breakpoint : false
   );
@@ -61,8 +62,8 @@ const menuItems: MenuItem[] = [
     ],
   },
   { key: "ajustes", label: "Ajustes", icon: <FaCog />, children: [
-    { key: "general", label: "General", icon: <FaCog />, link: "/pages/perfil" },
-  ]},
+    { key: "general", label: "General", icon: <FaCog />, link: "/pages/perfil" }, 
+  ]}, 
 ];
 
 const Sidebar: React.FC<SidebarProps> = ({ sidebarOpen, setSidebarOpen }) => {
@@ -75,7 +76,7 @@ const Sidebar: React.FC<SidebarProps> = ({ sidebarOpen, setSidebarOpen }) => {
   const isMobile = useIsMobile();
   const isAuthenticated = Boolean(nookies.get(null).token);
 
-  // Cargar usuario (igual que tenías)
+  // Cargar usuario
   useEffect(() => {
     const fetchUserData = async () => {
       try {
@@ -117,7 +118,7 @@ const Sidebar: React.FC<SidebarProps> = ({ sidebarOpen, setSidebarOpen }) => {
     return () => { document.body.style.overflow = original || ""; };
   }, [isMobile, sidebarOpen]);
 
-  // Swipe-to-close (móvil opcional)
+  // Swipe-to-close (móvil)
   useEffect(() => {
     if (!isMobile) return;
     let startX = 0;
@@ -136,7 +137,6 @@ const Sidebar: React.FC<SidebarProps> = ({ sidebarOpen, setSidebarOpen }) => {
     const onTouchEnd = () => {
       if (!touching) return;
       const delta = currentX - startX;
-      // deslizar hacia la izquierda para cerrar
       if (delta < -60 && sidebarOpen) setSidebarOpen(false);
       touching = false;
     };
@@ -165,13 +165,13 @@ const Sidebar: React.FC<SidebarProps> = ({ sidebarOpen, setSidebarOpen }) => {
 
   const isSubMenuItemActive = (sub: MenuItem) => sub.link === pathname;
 
-  // --- Botón hamburguesa flotante SOLO móvil ---
+  // --- Botón hamburguesa SOLO móvil ---
   const MobileHamburger = () =>
     !sidebarOpen ? (
       <button
         aria-label="Abrir menú"
         onClick={() => setSidebarOpen(true)}
-        className="lg:hidden fixed top-3 left-3 z-[60] rounded-full p-2 bg-black/70 text-white shadow-md active:scale-95"
+        className="lg:hidden fixed top-3 left-3 z-[60] rounded-full p-2 bg-background/80 text-foreground border border-foreground/20 shadow-md active:scale-95"
       >
         <FaBars />
       </button>
@@ -183,7 +183,7 @@ const Sidebar: React.FC<SidebarProps> = ({ sidebarOpen, setSidebarOpen }) => {
       {isMobile && sidebarOpen && (
         <div
           onClick={() => setSidebarOpen(false)}
-          className="fixed inset-0 z-40 bg-black/50 backdrop-blur-[1px]"
+          className="fixed inset-0 z-40 bg-foreground/50 backdrop-blur-[1px]"
           aria-hidden="true"
         />
       )}
@@ -191,35 +191,32 @@ const Sidebar: React.FC<SidebarProps> = ({ sidebarOpen, setSidebarOpen }) => {
       {/* Hamburguesa móvil */}
       <MobileHamburger />
 
-      {/* Sidebar: fijo off-canvas en móvil, sticky en desktop.
-         - En móvil se desplaza con translate-x
-         - En desktop mantiene tu animación de width */}
+      {/* Sidebar */}
       <motion.aside
-        // Animar width sólo en desktop
         animate={!isMobile ? { width: sidebarOpen ? 256 : 64 } : {}}
         transition={{ duration: 0.35, ease: "easeInOut" }}
         className={[
-          "z-50 bg-[#242424] rounded-none lg:rounded-xl shadow-lg",
-          // móvil: panel fijo deslizante
+          "z-50 bg-background text-foreground rounded-none lg:rounded-xl shadow-lg",
           "fixed lg:sticky inset-y-0 left-0",
           "w-72 max-w-[85vw] lg:w-auto",
           "transform transition-transform duration-300 ease-in-out",
           isMobile ? (sidebarOpen ? "translate-x-0" : "-translate-x-full") : "translate-x-0",
           "lg:top-0 lg:h-screen",
+          "border-r border-foreground/20"
         ].join(" ")}
         role="dialog"
         aria-modal={isMobile ? true : false}
         aria-label="Barra lateral de navegación"
       >
-        <div className="h-full w-full bg-[#242424] flex flex-col">
+        <div className="h-full w-full bg-background text-foreground flex flex-col">
           {/* Header */}
-          <div className={`flex items-center ${sidebarOpen ? "justify-between" : "justify-center"} p-4 border-b border-white/20`}>
+          <div className={`flex items-center ${sidebarOpen ? "justify-between" : "justify-center"} p-4 border-b border-foreground/20`}>
             {sidebarOpen && (
               <Image src="/logipack_2.png" alt="Logipack" width={60} height={40} priority />
             )}
             <button
               onClick={() => setSidebarOpen((p) => !p)}
-              className="p-2 bg-black/50 text-white rounded hover:bg-black/70 transition-colors"
+              className="p-2 bg-background text-foreground border border-foreground/20 rounded hover:border-foreground/40 transition-colors"
               aria-label={sidebarOpen ? "Cerrar Sidebar" : "Abrir Sidebar"}
             >
               {sidebarOpen ? <FaArrowLeft /> : <FaBars />}
@@ -258,32 +255,32 @@ const Sidebar: React.FC<SidebarProps> = ({ sidebarOpen, setSidebarOpen }) => {
                     aria-expanded={!!openSubMenus[item.key]}
                     onClick={() => {
                       if (!sidebarOpen) setSidebarOpen(true);
-                      else
-                        setOpenSubMenus((prev) => ({ ...prev, [item.key]: !prev[item.key] }));
+                      else setOpenSubMenus((prev) => ({ ...prev, [item.key]: !prev[item.key] }));
                     }}
                     onKeyDown={(e) => {
                       if (e.key === "Enter" || e.key === " ") {
                         e.preventDefault();
                         if (!sidebarOpen) setSidebarOpen(true);
-                        else
-                          setOpenSubMenus((prev) => ({ ...prev, [item.key]: !prev[item.key] }));
+                        else setOpenSubMenus((prev) => ({ ...prev, [item.key]: !prev[item.key] }));
                       }
                     }}
                     className={[
-                      "relative cursor-pointer p-2 hover:bg-white/20 rounded transition-colors select-none",
+                      "relative cursor-pointer p-2 rounded transition-colors select-none",
+                      "hover:bg-foreground/10",
                       sidebarOpen ? "flex items-center" : "flex justify-center",
                     ].join(" ")}
                     style={{
                       borderLeft: isMenuItemActive(item) ? "4px solid #eab308" : "4px solid transparent",
-                      background: isMenuItemActive(item) ? "rgba(255,255,255,0.08)" : "transparent",
+                      // usa var para un highlight suave en ambos temas
+                      background: isMenuItemActive(item) ? "color-mix(in oklab, rgb(var(--foreground)) 10%, transparent)" : "transparent",
                       transition: "border-color 0.2s, background 0.2s",
                     }}
                   >
-                    <span className="text-lg text-white mr-2">{item.icon}</span>
+                    <span className="text-lg mr-2">{item.icon}</span>
                     {sidebarOpen && (
                       <div className="flex items-center w-full">
-                        <span className="text-white mr-2">{item.label}</span>
-                        <span className="ml-auto text-white transition-transform duration-300 transform">
+                        <span className="mr-2">{item.label}</span>
+                        <span className="ml-auto transition-transform duration-300 transform">
                           <FaAngleDown className={`${openSubMenus[item.key] ? "rotate-180" : ""}`} />
                         </span>
                       </div>
@@ -300,7 +297,7 @@ const Sidebar: React.FC<SidebarProps> = ({ sidebarOpen, setSidebarOpen }) => {
                           animate={{ opacity: 1, x: 0 }}
                           exit={{ opacity: 0, x: 10 }}
                           transition={{ duration: 0.18 }}
-                          className="fixed z-[9999] min-w-[180px] bg-[#232323] rounded-xl shadow-xl border border-gray-700 py-2"
+                          className="fixed z-[9999] min-w-[180px] bg-background text-foreground rounded-xl shadow-xl border border-foreground/20 py-2"
                           style={{ top: flyoutPosition.top, left: flyoutPosition.left, boxShadow: "0 2px 12px 0 #00000060" }}
                           onMouseLeave={() => {
                             setHoveredMenu(null);
@@ -314,7 +311,7 @@ const Sidebar: React.FC<SidebarProps> = ({ sidebarOpen, setSidebarOpen }) => {
                               role="button"
                               tabIndex={0}
                               aria-current={isSubMenuItemActive(sub)}
-                              className="flex items-center cursor-pointer p-2 hover:bg-white/20 rounded transition-colors select-none"
+                              className="flex items-center cursor-pointer p-2 rounded transition-colors select-none hover:bg-foreground/10"
                               onClick={() => {
                                 if (sub.link) router.push(sub.link);
                                 setHoveredMenu(null);
@@ -330,12 +327,12 @@ const Sidebar: React.FC<SidebarProps> = ({ sidebarOpen, setSidebarOpen }) => {
                               }}
                               style={{
                                 borderLeft: isSubMenuItemActive(sub) ? "3px solid #22d3ee" : "3px solid transparent",
-                                background: isSubMenuItemActive(sub) ? "rgba(34,211,238,0.1)" : "transparent",
+                                background: isSubMenuItemActive(sub) ? "color-mix(in oklab, rgb(var(--foreground)) 8%, transparent)" : "transparent",
                                 transition: "border-color 0.2s, background 0.2s",
                               }}
                             >
-                              <span className="text-lg text-white mr-2">{sub.icon}</span>
-                              <span className="text-white">{sub.label}</span>
+                              <span className="text-lg mr-2">{sub.icon}</span>
+                              <span>{sub.label}</span>
                             </div>
                           ))}
                         </motion.div>
@@ -343,7 +340,7 @@ const Sidebar: React.FC<SidebarProps> = ({ sidebarOpen, setSidebarOpen }) => {
                     )}
                   </AnimatePresence>
 
-                  {/* Submenú acordeón (cuando está abierto el sidebar) */}
+                  {/* Submenú acordeón */}
                   <AnimatePresence initial={false}>
                     {openSubMenus[item.key] && sidebarOpen && (
                       <motion.div
@@ -359,7 +356,7 @@ const Sidebar: React.FC<SidebarProps> = ({ sidebarOpen, setSidebarOpen }) => {
                             role="button"
                             tabIndex={0}
                             aria-current={isSubMenuItemActive(sub)}
-                            className="flex items-center cursor-pointer p-2 hover:bg-white/20 rounded transition-colors select-none"
+                            className="flex items-center cursor-pointer p-2 rounded transition-colors select-none hover:bg-foreground/10"
                             onClick={() => sub.link && router.push(sub.link)}
                             onKeyDown={(e) => {
                               if (e.key === "Enter" || e.key === " ") {
@@ -369,12 +366,12 @@ const Sidebar: React.FC<SidebarProps> = ({ sidebarOpen, setSidebarOpen }) => {
                             }}
                             style={{
                               borderLeft: isSubMenuItemActive(sub) ? "3px solid #22d3ee" : "3px solid transparent",
-                              background: isSubMenuItemActive(sub) ? "rgba(34,211,238,0.1)" : "transparent",
+                              background: isSubMenuItemActive(sub) ? "color-mix(in oklab, rgb(var(--foreground)) 8%, transparent)" : "transparent",
                               transition: "border-color 0.2s, background 0.2s",
                             }}
                           >
-                            <span className="text-lg text-white mr-2">{sub.icon}</span>
-                            {sidebarOpen && <span className="text-white">{sub.label}</span>}
+                            <span className="text-lg mr-2">{sub.icon}</span>
+                            {sidebarOpen && <span>{sub.label}</span>}
                           </div>
                         ))}
                       </motion.div>
@@ -395,17 +392,18 @@ const Sidebar: React.FC<SidebarProps> = ({ sidebarOpen, setSidebarOpen }) => {
                       }
                     }}
                     className={[
-                      "relative cursor-pointer p-2 hover:bg-white/20 rounded transition-colors select-none",
+                      "relative cursor-pointer p-2 rounded transition-colors select-none",
+                      "hover:bg-foreground/10",
                       sidebarOpen ? "flex items-center" : "flex justify-center",
                     ].join(" ")}
                     style={{
                       borderLeft: isMenuItemActive(item) ? "4px solid #eab308" : "4px solid transparent",
-                      background: isMenuItemActive(item) ? "rgba(255,255,255,0.08)" : "transparent",
+                      background: isMenuItemActive(item) ? "color-mix(in oklab, rgb(var(--foreground)) 10%, transparent)" : "transparent",
                       transition: "border-color 0.2s, background 0.2s",
                     }}
                   >
-                    <span className="text-lg text-white mr-2">{item.icon}</span>
-                    {sidebarOpen && <span className="text-white">{item.label}</span>}
+                    <span className="text-lg mr-2">{item.icon}</span>
+                    {sidebarOpen && <span>{item.label}</span>}
                   </div>
                 </div>
               )
@@ -413,7 +411,14 @@ const Sidebar: React.FC<SidebarProps> = ({ sidebarOpen, setSidebarOpen }) => {
           </nav>
 
           {/* Footer */}
-          <div className="mt-auto p-3 border-t border-white/20">
+          <div className="mt-auto p-3 border-t border-foreground/20">
+            <ThemeToggle
+              showLabel={sidebarOpen}
+              className={[
+                "w-full", 
+                sidebarOpen ? "justify-center mb-2" : "justify-center mb-2 p-2",
+              ].join(" ")}
+            />
             <div className="mb-2 flex items-center">
               <Image
                 src="/avatar.png"
@@ -428,7 +433,7 @@ const Sidebar: React.FC<SidebarProps> = ({ sidebarOpen, setSidebarOpen }) => {
                 }}
               />
               {sidebarOpen && (
-                <span className="ml-2 text-white font-medium truncate max-w-[120px]">{userName}</span>
+                <span className="ml-2 font-medium truncate max-w-[120px]">{userName}</span>
               )}
             </div>
             <button

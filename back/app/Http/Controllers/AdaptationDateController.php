@@ -496,6 +496,8 @@ class AdaptationDateController extends Controller
                 return $actividadArr;
             });
 
+            Log::info("📚 Actividades del plan", [$actividadesEjecutadas]);
+
             // --- Timers para TODAS las actividades del plan ---
             $timers = collect();
             if ($actividades->isEmpty()) {
@@ -631,46 +633,42 @@ class AdaptationDateController extends Controller
         $options = new Options();
         $options->set('defaultFont', 'Georgia');
         $options->set('isHtml5ParserEnabled', true);
-        $options->set('isPhpEnabled', true); // si no usas <script> en la vista, puedes dejarlo en false
+        $options->set('isPhpEnabled', true);
 
         $dompdf = new Dompdf($options);
-        $html = view('pdf.plan', $data)->render();
+
+        $numberOrder = $data['plan']->number_order;
+        $clienteRaw  = $data['cliente']->name ?? 'Cliente';
+        $clienteName = preg_replace('/[^a-zA-Z0-9_-]/', '_', $clienteRaw);
+        $pdfTitle    = "Orden {$numberOrder} — {$clienteRaw}";
+
+        // Tu Blade ya lleva <title> … </title> (bien)
+        $html = view('pdf.plan', array_merge($data, ['__pdfTitle' => $pdfTitle]))->render();
 
         $dompdf->loadHtml($html);
         $dompdf->setPaper('A4', 'portrait');
         $dompdf->render();
 
-        // Paginación (si quieres mantenerla)
-        // $canvas = $dompdf->getCanvas();
-        // $font = $dompdf->getFontMetrics()->getFont('Georgia', 'normal');
-        // $canvas->page_script(function ($pageNumber, $pageCount, $canvas, $fontMetrics) use ($font) {
-        //     $text = "Página $pageNumber de $pageCount";
-        //     $fontSize = 10;
-        //     $color = "#6e737c";
-        //     $width = $fontMetrics->getTextWidth($text, $font, $fontSize);
-        //     $x = 520 - $width;
-        //     $y = 25;
-        //     $canvas->text($x, $y, $text, $font, $fontSize, $color);
-        // });
-
         $mainPdfBytes = $dompdf->output();
 
-        // (opcional) micro-validación
-        if (strpos($mainPdfBytes, '%PDF') !== 0) {
-            Log::warning('El PDF principal no empieza con %PDF — posible fallo de Dompdf');
-        }
+        // 🔒 FUSIONA + SELLA METADATA EN EL PDF FINAL
+        $finalBytes = $this->pdfService->mergeWithAttachmentsAndMetadata(
+            $mainPdfBytes,
+            $numberOrder,
+            $pdfTitle,
+            'Logismart',
+            'Orden de producción'
+        );
 
-        // 🔗 FUSIONA principal + anexos de la orden usando el Service
-        $numberOrder = $data['plan']->number_order;
-        $mergedBytes = $this->pdfService->mergeMainWithAttachments($mainPdfBytes, $numberOrder);
+        $downloadName = 'Orden_' . $numberOrder . '_' . $clienteName . '.pdf';
 
-        $clienteName = preg_replace('/[^a-zA-Z0-9_-]/', '_', $data['cliente']->name ?? 'cliente');
-
-        return response($mergedBytes, 200)
+        return response($finalBytes, 200)
             ->header('Content-Type', 'application/pdf')
-            ->header('Content-Disposition', 'inline; filename="Orden_' . $numberOrder . '_' . $clienteName . '.pdf"');
+            ->header(
+                'Content-Disposition',
+                'inline; filename="' . $downloadName . '"; filename*=UTF-8\'\'' . rawurlencode($downloadName)
+            );
     }
-
 
     public function testImage()
     {

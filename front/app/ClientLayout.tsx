@@ -5,18 +5,19 @@ import Navbar from "./components/navbar/Navbar";
 import Sidebar from "./components/sidebar/Sidebar";
 import Toaster from "./components/toastr/Toaster";
 import { AuthProvider } from "./context/AuthProvider";
-// import PlanningNotifier from "@/app/components/clock/PlanningNotifier"; 
 
-export default function ClientLayout({ children }: { children: React.ReactNode }) {
+export default function ClientLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   const pathname = usePathname();
   const navbarRoutes = ["/", "/pages/login", "/pages/register"];
   const showNavbar = navbarRoutes.includes(pathname);
-
-  // Estado para controlar si el sidebar está expandido o colapsado
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
-    <div className="min-h-screen flex">
+    <div className="min-h-screen flex bg-background text-foreground">
       <AuthProvider>
         {showNavbar ? (
           <main className="w-full">
@@ -26,16 +27,15 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
           </main>
         ) : (
           <>
-            <Sidebar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
-            <main className="flex-1 bg-[#242424]"> 
-              {children}
-            </main> 
-            {/* <PlanningNotifier /> */}
+            <Sidebar
+              sidebarOpen={sidebarOpen}
+              setSidebarOpen={setSidebarOpen}
+            />
+            <main className="flex-1 bg-background">{children}</main>
             <Toaster />
           </>
         )}
       </AuthProvider>
     </div>
   );
-
 }
