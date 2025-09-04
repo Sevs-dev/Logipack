@@ -274,7 +274,7 @@ const NewTestigos = () => {
       if (err && typeof err === "object" && "message" in err) {
         showError(
           (err as { message?: string }).message ??
-            "Validación fallida. Intenta de nuevo."
+          "Validación fallida. Intenta de nuevo."
         );
       } else {
         showError("Validación fallida. Intenta de nuevo.");
@@ -406,6 +406,34 @@ const NewTestigos = () => {
                     required={item.binding}
                   />
                 )}
+
+                {/* IMAGE */}
+                {cfg?.type === "image" && (
+                  <input
+                    type="file"
+                    accept="image/*"
+                    id={fieldName}
+                    name={fieldName}
+                    value={(memoriaActividades[fieldName] as string) ?? ""}
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        const reader = new FileReader();
+                        reader.onloadend = () => {
+                          const base64 = reader.result;
+                          setValue(fieldName, base64 as string);
+                        };
+                        reader.readAsDataURL(file);
+                      }
+                    }}
+                    className="block w-full px-3 py-2 bg-[#1a1d23] border 
+                    border-gray-600 rounded-md shadow-sm focus:outline-none
+                    focus:ring-2 focus:ring-blue-500 focus:border-blue-500 
+                    text-white placeholder-gray-400 text-center"
+                    required={item.binding}
+                  />
+                )}
+
 
                 {/* SIGNATURE */}
                 {cfg?.type === "signature" && (

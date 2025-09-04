@@ -14,13 +14,13 @@ use App\Models\Stage;
 use App\Models\Timer;
 use App\Models\User;
 use App\Services\ArticleService;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Log;
+use App\Services\PdfAttachmentService;
 use Dompdf\Dompdf;
 use Dompdf\Options;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
-use App\Services\PdfAttachmentService;
 
 class AdaptationDateController extends Controller
 {
@@ -153,7 +153,7 @@ class AdaptationDateController extends Controller
                 'trace' => $e->getTraceAsString()
             ]);
             return response()->json([
-                'error'   => 'Error retrieving plan',
+                'error' => 'Error retrieving plan',
                 'details' => $e->getMessage()
             ], 500);
         }
@@ -176,7 +176,7 @@ class AdaptationDateController extends Controller
                 'trace' => $e->getTraceAsString()
             ]);
             return response()->json([
-                'error'   => 'Error retrieving plan',
+                'error' => 'Error retrieving plan',
                 'details' => $e->getMessage()
             ], 500);
         }
@@ -311,7 +311,7 @@ class AdaptationDateController extends Controller
 
             // ✅ Decodificar `forms` y reemplazar `linea` por nombre
             $actividadesEje = $actividadesEje->map(function ($actividad) use ($lineMap) {
-                $actividadArr = $actividad->toArray(); // ✅ ya no es modelo, sino array simple
+                $actividadArr = $actividad->toArray();  // ✅ ya no es modelo, sino array simple
 
                 try {
                     $forms = json_decode($actividadArr['forms'], true);
@@ -328,7 +328,7 @@ class AdaptationDateController extends Controller
 
                     $actividadArr['forms'] = $forms;
                 } catch (\Throwable $e) {
-                    Log::warning("⚠️ Error al decodificar forms", [
+                    Log::warning('⚠️ Error al decodificar forms', [
                         'actividad_id' => $actividad->id,
                         'error' => $e->getMessage(),
                     ]);
@@ -348,7 +348,7 @@ class AdaptationDateController extends Controller
             // Log::info("⚙️ Máquinas", ['machines' => $machines->toArray()]);
 
             $users = User::whereIn('id', $userIds)->get();
-            // Log::info("👥 Usuarios", ['users' => $users->toArray()]); 
+            // Log::info("👥 Usuarios", ['users' => $users->toArray()]);
 
             $timers = Timer::with('timerControls')
                 ->where('ejecutada_id', $plan->id)
@@ -370,7 +370,7 @@ class AdaptationDateController extends Controller
                 'timers' => $timers,
             ]);
         } catch (\Exception $e) {
-            Log::error("💥 Error en getPlanByIdPDF: " . $e->getMessage());
+            Log::error('💥 Error en getPlanByIdPDF: ' . $e->getMessage());
             return response()->json([
                 'error' => 'Error retrieving plan',
                 'details' => $e->getMessage(),
@@ -381,29 +381,29 @@ class AdaptationDateController extends Controller
     public function getPlanDataForPDF($id)
     {
         try {
-            Log::info("📄 getPlanDataForPDF() iniciado", ['adaptation_date_id' => $id]);
+            Log::info('📄 getPlanDataForPDF() iniciado', ['adaptation_date_id' => $id]);
 
             // --- Plan + relaciones base ---
             $plan = AdaptationDate::with('adaptation.maestra')->find($id);
             if (!$plan) {
-                Log::warning("❌ Plan no encontrado", ['adaptation_date_id' => $id]);
+                Log::warning('❌ Plan no encontrado', ['adaptation_date_id' => $id]);
                 return null;
             }
 
-            Log::info("✅ Plan encontrado", [
-                'plan_id'        => $plan->id,
-                'adaptation_id'  => $plan->adaptation_id ?? null,
-                'client_id'      => $plan->adaptation?->client_id,
+            Log::info('✅ Plan encontrado', [
+                'plan_id' => $plan->id,
+                'adaptation_id' => $plan->adaptation_id ?? null,
+                'client_id' => $plan->adaptation?->client_id,
             ]);
 
             // --- Cliente / artículo ---
             $clienteId = $plan->adaptation?->client_id;
-            $codart    = $plan->codart;
-            $maestra   = $plan->adaptation?->maestra;
+            $codart = $plan->codart;
+            $maestra = $plan->adaptation?->maestra;
 
-            $cliente   = $clienteId ? Clients::find($clienteId) : null;
-            $coddiv    = $cliente->code ?? null;
-            $desart    = $coddiv ? ArticleService::getDesartByCodart($coddiv, $codart) : null;
+            $cliente = $clienteId ? Clients::find($clienteId) : null;
+            $coddiv = $cliente->code ?? null;
+            $desart = $coddiv ? ArticleService::getDesartByCodart($coddiv, $codart) : null;
 
             // --- Conciliación (la más reciente si existe updated_at, si no por id) ---
             $conciliacion = Conciliaciones::where('adaptation_date_id', $plan->id)
@@ -415,14 +415,14 @@ class AdaptationDateController extends Controller
                 ->first();
 
             if ($conciliacion) {
-                Log::info("ℹ️ Conciliación encontrada", [
-                    'conciliacion_id'    => $conciliacion->id,
+                Log::info('ℹ️ Conciliación encontrada', [
+                    'conciliacion_id' => $conciliacion->id,
                     'adaptation_date_id' => $plan->id,
-                    'created_at'         => $conciliacion->created_at,
-                    'updated_at'         => $conciliacion->updated_at,
+                    'created_at' => $conciliacion->created_at,
+                    'updated_at' => $conciliacion->updated_at,
                 ]);
             } else {
-                Log::info("ℹ️ No hay conciliación para el plan", ['adaptation_date_id' => $plan->id]);
+                Log::info('ℹ️ No hay conciliación para el plan', ['adaptation_date_id' => $plan->id]);
             }
 
             // --- Stages ordenados según type_stage de la maestra ---
@@ -430,7 +430,7 @@ class AdaptationDateController extends Controller
             if ($maestra && isset($maestra->type_stage)) {
                 $stageRaw = $maestra->type_stage;
                 if (is_string($stageRaw)) {
-                    $decoded  = json_decode($stageRaw, true);
+                    $decoded = json_decode($stageRaw, true);
                     $stageIds = is_array($decoded) ? $decoded : [];
                 } elseif (is_array($stageRaw)) {
                     $stageIds = $stageRaw;
@@ -439,22 +439,23 @@ class AdaptationDateController extends Controller
 
             $stages = collect();
             if (!empty($stageIds)) {
-                $stages = Stage::whereIn('id', $stageIds)->get()
+                $stages = Stage::whereIn('id', $stageIds)
+                    ->get()
                     ->sortBy(fn($stage) => array_search($stage->id, $stageIds))
                     ->values();
             }
 
             // --- IDs del plan con casteo seguro a array ---
-            $masterIds  = is_array($plan->master)  ? $plan->master  : (is_null($plan->master)  ? [] : [$plan->master]);
-            $lineIds    = is_array($plan->line)    ? $plan->line    : (is_null($plan->line)    ? [] : [$plan->line]);
+            $masterIds = is_array($plan->master) ? $plan->master : (is_null($plan->master) ? [] : [$plan->master]);
+            $lineIds = is_array($plan->line) ? $plan->line : (is_null($plan->line) ? [] : [$plan->line]);
             $machineIds = is_array($plan->machine) ? $plan->machine : (is_null($plan->machine) ? [] : [$plan->machine]);
-            $userIds    = is_array($plan->users)   ? $plan->users   : (is_null($plan->users)   ? [] : [$plan->users]);
+            $userIds = is_array($plan->users) ? $plan->users : (is_null($plan->users) ? [] : [$plan->users]);
 
-            $lines      = !empty($lineIds)    ? Manufacturing::whereIn('id', $lineIds)->get()    : collect();
-            $lineMap    = $lines->pluck('name', 'id');
-            $machines   = !empty($machineIds) ? Machinery::whereIn('id', $machineIds)->get()     : collect();
-            $users      = !empty($userIds)    ? User::whereIn('id', $userIds)->get()             : collect();
-            $masterStages = !empty($masterIds) ? Stage::whereIn('id', $masterIds)->get()         : collect();
+            $lines = !empty($lineIds) ? Manufacturing::whereIn('id', $lineIds)->get() : collect();
+            $lineMap = $lines->pluck('name', 'id');
+            $machines = !empty($machineIds) ? Machinery::whereIn('id', $machineIds)->get() : collect();
+            $users = !empty($userIds) ? User::whereIn('id', $userIds)->get() : collect();
+            $masterStages = !empty($masterIds) ? Stage::whereIn('id', $masterIds)->get() : collect();
 
             // --- Orden ejecutada (si existe) ---
             $ordenasEje = OrdenesEjecutadas::where('adaptation_date_id', $plan->id)->first();
@@ -468,10 +469,10 @@ class AdaptationDateController extends Controller
                 )
                 ->get();
 
-            Log::info("📚 Actividades del plan", [
+            Log::info('📚 Actividades del plan', [
                 'adaptation_date_id' => $plan->id,
-                'total'              => $actividades->count(),
-                'ids'                => $actividades->pluck('id'),
+                'total' => $actividades->count(),
+                'ids' => $actividades->pluck('id'),
             ]);
 
             // --- Actividades (mapeadas a array) con normalización de 'forms' y líneas por nombre ---
@@ -479,7 +480,8 @@ class AdaptationDateController extends Controller
                 $actividadArr = $actividad->toArray();
                 try {
                     $forms = json_decode($actividadArr['forms'] ?? '[]', true);
-                    if (!is_array($forms)) $forms = [];
+                    if (!is_array($forms))
+                        $forms = [];
                     foreach ($forms as &$form) {
                         if (isset($form['linea']) && isset($lineMap[$form['linea']])) {
                             $form['linea'] = $lineMap[$form['linea']];
@@ -487,9 +489,9 @@ class AdaptationDateController extends Controller
                     }
                     $actividadArr['forms'] = $forms;
                 } catch (\Throwable $e) {
-                    Log::warning("⚠️ Error al decodificar forms", [
+                    Log::warning('⚠️ Error al decodificar forms', [
                         'actividad_id' => $actividad->id,
-                        'error'        => $e->getMessage(),
+                        'error' => $e->getMessage(),
                     ]);
                     $actividadArr['forms'] = [];
                 }
@@ -501,77 +503,77 @@ class AdaptationDateController extends Controller
             // --- Timers para TODAS las actividades del plan ---
             $timers = collect();
             if ($actividades->isEmpty()) {
-                Log::warning("⚠️ No hay actividades ejecutadas para el plan; no se buscarán timers", [
+                Log::warning('⚠️ No hay actividades ejecutadas para el plan; no se buscarán timers', [
                     'adaptation_date_id' => $plan->id
                 ]);
             } else {
                 $actividadIds = $actividades->pluck('id');
 
-                Log::info("🔍 Buscando timers para actividades", [
+                Log::info('🔍 Buscando timers para actividades', [
                     'adaptation_date_id' => $plan->id,
-                    'actividad_ids'      => $actividadIds,
+                    'actividad_ids' => $actividadIds,
                 ]);
 
                 $timers = Timer::with(['timerControls', 'ejecutada'])
                     ->whereIn('ejecutada_id', $actividadIds)
                     ->get();
 
-                Log::info("⏱️ Timers encontrados", [
+                Log::info('⏱️ Timers encontrados', [
                     'total_timers' => $timers->count(),
                 ]);
 
                 if ($timers->isEmpty()) {
-                    Log::warning("⚠️ No se encontraron timers para las actividades", [
+                    Log::warning('⚠️ No se encontraron timers para las actividades', [
                         'adaptation_date_id' => $plan->id,
                     ]);
                 } else {
                     // Resumen por actividad
                     $timersPorActividad = $timers->groupBy('ejecutada_id')->map->count();
-                    Log::info("📊 Timers por actividad", $timersPorActividad->toArray());
+                    Log::info('📊 Timers por actividad', $timersPorActividad->toArray());
 
                     // Log detallado (con protección para blobs/imágenes)
                     foreach ($timers as $timer) {
                         $fase = $timer->ejecutada->description_fase ?? 'Sin fase';
                         $controlsCount = $timer->timerControls->count();
 
-                        Log::info("🧩 Timer", [
-                            'timer_id'        => $timer->id,
-                            'ejecutada_id'    => $timer->ejecutada_id,
-                            'fase'            => $fase,
+                        Log::info('🧩 Timer', [
+                            'timer_id' => $timer->id,
+                            'ejecutada_id' => $timer->ejecutada_id,
+                            'fase' => $fase,
                             'controles_total' => $controlsCount,
-                            'created_at'      => $timer->created_at,
-                            'updated_at'      => $timer->updated_at,
+                            'created_at' => $timer->created_at,
+                            'updated_at' => $timer->updated_at,
                         ]);
 
                         if ($controlsCount === 0) {
-                            Log::info("🔎 Timer sin controles", ['timer_id' => $timer->id]);
+                            Log::info('🔎 Timer sin controles', ['timer_id' => $timer->id]);
                             continue;
                         }
 
                         foreach ($timer->timerControls as $control) {
                             $data = is_string($control->data) ? json_decode($control->data, true) : $control->data;
                             if (!is_array($data)) {
-                                Log::warning("❌ Data inválida en control", [
-                                    'timer_id'   => $timer->id,
+                                Log::warning('❌ Data inválida en control', [
+                                    'timer_id' => $timer->id,
                                     'control_id' => $control->id,
-                                    'tipo_dato'  => gettype($control->data),
+                                    'tipo_dato' => gettype($control->data),
                                 ]);
                                 continue;
                             }
 
-                            Log::info("📋 Control", [
+                            Log::info('📋 Control', [
                                 'control_id' => $control->id,
-                                'timer_id'   => $timer->id,
-                                'registros'  => count($data),
+                                'timer_id' => $timer->id,
+                                'registros' => count($data),
                                 'created_at' => $control->created_at,
                                 'updated_at' => $control->updated_at,
                             ]);
 
                             foreach ($data as $i => $registro) {
-                                $tipo        = $registro['tipo'] ?? '—';
+                                $tipo = $registro['tipo'] ?? '—';
                                 $descripcion = $registro['descripcion'] ?? ($registro['description'] ?? '—');
-                                $valor       = $registro['valor'] ?? '—';
-                                $unidad      = $registro['unidad'] ?? '';
+                                $valor = $registro['valor'] ?? '—';
+                                $unidad = $registro['unidad'] ?? '';
 
                                 // Evitar loguear blobs/imágenes gigantes
                                 if (is_string($valor) && Str::startsWith($valor, 'data:image')) {
@@ -586,12 +588,12 @@ class AdaptationDateController extends Controller
                                     $descripcion = Str::limit($descripcion, 120);
                                 }
 
-                                Log::info("   • Registro control", [
-                                    'idx'         => $i,
-                                    'tipo'        => $tipo,
+                                Log::info('   • Registro control', [
+                                    'idx' => $i,
+                                    'tipo' => $tipo,
                                     'descripcion' => $descripcion,
-                                    'valor'       => $valor,
-                                    'unidad'      => $unidad,
+                                    'valor' => $valor,
+                                    'unidad' => $unidad,
                                 ]);
                             }
                         }
@@ -600,21 +602,21 @@ class AdaptationDateController extends Controller
             }
 
             return [
-                'plan'                  => $plan,
-                'cliente'               => $cliente,
-                'ordenadas'             => $ordenasEje,
+                'plan' => $plan,
+                'cliente' => $cliente,
+                'ordenadas' => $ordenasEje,
                 'actividadesEjecutadas' => $actividadesEjecutadas,
-                'stages'                => $stages,
-                'masterStages'          => $masterStages,
-                'lines'                 => $lines,
-                'machines'              => $machines,
-                'users'                 => $users,
-                'desart'                => $desart,
-                'timers'                => $timers,
-                'conciliacion'          => $conciliacion,
+                'stages' => $stages,
+                'masterStages' => $masterStages,
+                'lines' => $lines,
+                'machines' => $machines,
+                'users' => $users,
+                'desart' => $desart,
+                'timers' => $timers,
+                'conciliacion' => $conciliacion,
             ];
         } catch (\Throwable $e) {
-            Log::error("💥 Error en getPlanDataForPDF", [
+            Log::error('💥 Error en getPlanDataForPDF', [
                 'adaptation_date_id' => $id,
                 'error' => $e->getMessage(),
                 'trace' => Str::limit($e->getTraceAsString(), 2000),
