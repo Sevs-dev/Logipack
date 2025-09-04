@@ -862,7 +862,7 @@ class OrdenesEjecutadasController extends Controller
         // 2. Busca la actividad con estado_form = false y phase_type = Procesos
         $actividad = ActividadesEjecutadas::where('adaptation_date_id', $id)
             ->where('phase_type', 'Procesos')
-            ->where('estado_form', false)
+            // ->where('estado_form', false)
             ->first();
 
         // 2. Si existe una actividad con estado_form = false y phase_type = Procesos...
