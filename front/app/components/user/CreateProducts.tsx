@@ -11,16 +11,17 @@ import { showSuccess, showError, showConfirm } from "../toastr/Toaster";
 import Button from "../buttons/buttons";
 import { CreateClientProps } from "../../interfaces/CreateClientProps";
 import ModalSection from "../modal/ModalSection";
-import Text from "../text/Text"; 
+import Text from "../text/Text";
 import AuditModal from "../history/AuditModal";
 import { Audit } from "../../interfaces/Audit";
 import { Product } from "../../interfaces/Products";
-import DateLoader from '@/app/components/loader/DateLoader';
+import DateLoader from "@/app/components/loader/DateLoader";
+import { Input } from "../inputs/Input";
 
 /**
  * Componente principal para gestionar productos.
  * Permite crear, editar, eliminar y ver historial de productos.
-*/
+ */
 function Products({ canEdit = false, canView = false }: CreateClientProps) {
   // Estado para la lista de productos
   const [products, setProducts] = useState<Product[]>([]);
@@ -34,9 +35,8 @@ function Products({ canEdit = false, canView = false }: CreateClientProps) {
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   // Estado para la lista de auditorías
   const [auditList, setAuditList] = useState<Audit[]>([]);
-  // Estado para la auditoría seleccionada (no se usa, pero se deja para posible ampliación) 
+  // Estado para la auditoría seleccionada (no se usa, pero se deja para posible ampliación)
   const [isSaving, setIsSaving] = useState(false);
-
 
   // Efecto para cargar productos si el usuario puede verlos
   useEffect(() => {
@@ -172,46 +172,89 @@ function Products({ canEdit = false, canView = false }: CreateClientProps) {
     }
   };
 
-
   // Renderizado del componente
   return (
     <div>
       {/* Botón para crear producto, solo si tiene permisos de edición */}
       {canEdit && (
         <div className="flex justify-center mb-2">
-          <Button onClick={openCreateModal} variant="create" label="Crear Tipo de Productos" />
+          <Button
+            onClick={openCreateModal}
+            variant="create"
+            label="Crear Tipo de Productos"
+          />
         </div>
       )}
 
       {isSaving && (
-        <DateLoader message="Cargando..." backgroundColor="rgba(0, 0, 0, 0.28)" color="rgba(255, 255, 0, 1)" />
+        <DateLoader
+          message="Cargando..."
+          backgroundColor="rgba(0, 0, 0, 0.28)"
+          color="rgba(255, 255, 0, 1)"
+        />
       )}
 
       {/* Modal para crear o editar producto */}
       {showModal && (
         <ModalSection isVisible={showModal} onClose={() => setShowModal(false)}>
-          <Text type="title" color="text-[#000]">{editingProduct ? "Editar Tipo de Producto" : "Crear Tipo de Producto"}</Text>
-          <form onSubmit={editingProduct ? handleUpdate : handleCreate}>
-            <div className="mb-4">
-              <Text type="subtitle" color="#000" >Nombre del Tipo</Text>
-              <input
-                type="text"
-                id="name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                className="w-full text-black px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-400 outline-none text-center"
-                disabled={!canEdit}
-              />
-            </div>
-            {error && <p className="text-red-500 mb-4">{error}</p>}
-            <hr className="my-4 border-t border-gray-600 w-full max-w-lg mx-auto opacity-60" />
-            <div className="flex justify-center gap-4 mt-6">
-              <Button onClick={() => setShowModal(false)} variant="cancel" />
-              {canEdit && (
-                <Button type="submit" variant="save" label={isSaving ? "Guardando..." : (editingProduct ? "Actualizar" : "Crear")} disabled={isSaving} />
+          <div className="dark:[--surface:30_41_59] dark:[--surface-muted:51_65_85] dark:[--border:71_85_105] dark:[--foreground:241_245_249] dark:[--ring:56_189_248] dark:[--accent:56_189_248]">
+            <Text type="title" color="text-[rgb(var(--foreground))]">
+              {editingProduct
+                ? "Editar Tipo de Producto"
+                : "Crear Tipo de Producto"}
+            </Text>
+
+            <form
+              onSubmit={editingProduct ? handleUpdate : handleCreate}
+              className="mt-4 space-y-4"
+            >
+              <div className="space-y-2">
+                <Text type="subtitle" color="text-[rgb(var(--foreground))]">
+                  Nombre del Tipo
+                </Text>
+                <Input
+                  id="name"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  disabled={!canEdit}
+                  placeholder="Ej. Materia Prima"
+                  tone="strong"
+                  className="mt-1 text-center"
+                  aria-invalid={!!error}
+                  aria-describedby={error ? "type-error" : undefined}
+                />
+              </div>
+
+              {error && (
+                <p
+                  id="type-error"
+                  className="rounded-lg px-3 py-2 text-sm border bg-red-500/10 text-red-600 border-red-200 dark:border-red-400/40"
+                >
+                  {error}
+                </p>
               )}
-            </div>
-          </form>
+
+              <hr className="my-4 border-t border-[rgb(var(--border))]/60 w-full max-w-lg mx-auto opacity-60 dark:border-slate-700" />
+
+              <div className="flex justify-center gap-4 pt-2">
+                <Button onClick={() => setShowModal(false)} variant="cancel" />
+                {canEdit && (
+                  <Button
+                    type="submit"
+                    variant="save"
+                    disabled={isSaving}
+                    label={
+                      isSaving
+                        ? "Guardando..."
+                        : editingProduct
+                        ? "Actualizar"
+                        : "Crear"
+                    }
+                  />
+                )}
+              </div>
+            </form>
+          </div>
         </ModalSection>
       )}
 
@@ -221,7 +264,7 @@ function Products({ canEdit = false, canView = false }: CreateClientProps) {
         rows={products}
         columnLabels={{ name: "Nombre" }}
         onDelete={canEdit ? handleDelete : undefined}
-        onEdit={openEditModal} 
+        onEdit={openEditModal}
       />
 
       {/* Modal de auditoría */}

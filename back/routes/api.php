@@ -40,7 +40,13 @@ Route::controller(AuthController::class)->group(function () {
     Route::delete('/delete/{id}', 'getUserDelete');
     Route::put('/update/{id}', 'getUserUpdate');
     Route::get('/date/{id}', 'getuserById');
-    Route::post('/users/validate-security-pass', 'validateSecurityPassByRole');
+    Route::post('/auth/validate-signature-pass', 'validateSignaturePass')
+        ->name('auth.validate-signature-pass')
+        ->middleware('throttle:60,1'); // opcional: limitar intentos
+
+    // ♻️ Legacy (si quieres mantener compat)
+    Route::post('/users/validate-security-pass', 'validateSecurityPassByRole')
+        ->name('users.validate-security-pass');
 });
 
 //Rutas Permissions

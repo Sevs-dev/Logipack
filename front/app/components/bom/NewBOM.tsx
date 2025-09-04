@@ -8,6 +8,8 @@ import { showSuccess, showError, showConfirm } from "../toastr/Toaster";
 import ModalSection from "../modal/ModalSection";
 import { CreateClientProps } from "../../interfaces/CreateClientProps";
 import AuditModal from "../history/AuditModal";
+import { Input } from "../inputs/Input";
+import { Toggle } from "../inputs/Toggle";
 
 // Servicios
 import {
@@ -522,523 +524,589 @@ function BOMManager({ canEdit = false, canView = false }: CreateClientProps) {
           isVisible={isModalOpen}
           onClose={() => setIsModalOpen(false)}
         >
-          {/* Contenedor con header y footer fijos */}
-          <div className=" flex flex-col">
-            {/* Header modal */}
-            <div className=" bg-white border-b border-gray-200 px-2 sm:px-4 py-3">
-              <Text type="title" color="text-[#000]">
-                {currentBomId ? "Editar BOM" : "Crear BOM"}
-              </Text>
-            </div>
-
-            {/* Body scrollable */}
-            <div className="px-2 sm:px-4 py-4 space-y-6 overflow-y-auto">
-              {/* Cliente */}
-              <section className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5 space-y-4">
-                <Text type="subtitle" color="#000">
-                  Selecciona un Cliente
+          {/* Scope de tokens para este modal */}
+          <div className="dark:[--surface:30_41_59] dark:[--surface-muted:51_65_85] dark:[--border:71_85_105] dark:[--foreground:241_245_249] dark:[--ring:56_189_248] dark:[--accent:56_189_248]">
+            {/* Contenedor con header y footer fijos */}
+            <div className="flex flex-col">
+              {/* Header modal */}
+              <div className="bg-[rgb(var(--surface))] border-b border-[rgb(var(--border))] px-2 sm:px-4 py-3">
+                <Text type="title" color="text-[rgb(var(--foreground))]">
+                  {currentBomId ? "Editar BOM" : "Crear BOM"}
                 </Text>
+              </div>
 
-                <div className="relative">
-                  <input
-                    type="text"
-                    placeholder="Buscar por nombre, código o ID…"
-                    value={clientQuery}
-                    onChange={(e) => {
-                      setClientQuery(e.target.value);
-                      setClientListOpen(true);
-                    }}
-                    onFocus={() => setClientListOpen(true)}
-                    className="w-full border border-gray-300 rounded-lg px-4 py-3 text-black text-base text-center focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    disabled={!canEdit}
-                    aria-label="Buscador de clientes"
-                  />
+              {/* Body scrollable */}
+              <div className="px-2 sm:px-4 py-4 space-y-6 overflow-y-auto">
+                {/* Cliente */}
+                <section className="bg-[rgb(var(--surface))] rounded-2xl border border-[rgb(var(--border))] shadow-sm p-5 space-y-4">
+                  <Text type="subtitle" color="text-[rgb(var(--foreground))]">
+                    Selecciona un Cliente
+                  </Text>
 
-                  {clientListOpen && (
-                    <div
-                      className="absolute left-0 right-0 z-20 mt-1 max-h-64 overflow-y-auto bg-white border border-gray-200 rounded-lg shadow-xl scrollbar-thin"
-                      onMouseLeave={() => setClientListOpen(false)}
-                    >
-                      {filteredClientsByQuery.length > 0 ? (
-                        filteredClientsByQuery.map((client) => (
-                          <button
-                            type="button"
-                            key={client.id}
-                            className={`w-full px-4 py-3 text-black text-left text-base transition ${
-                              selectedClient === String(client.id)
-                                ? "bg-blue-100"
-                                : "hover:bg-blue-50"
-                            }`}
-                            onClick={() => {
-                              setSelectedClient(String(client.id));
-                              setClientQuery(
-                                `${client.name} (${client.code ?? client.id})`
-                              );
-                              setClientListOpen(false);
-                            }}
-                            disabled={!canEdit}
-                            title={client.name}
-                          >
-                            <div className="font-medium truncate">
-                              {client.name}
-                            </div>
-                            <div className="text-sm text-gray-600">
-                              Código: {client.code ?? "—"} · ID: {client.id}
-                            </div>
-                          </button>
-                        ))
-                      ) : (
-                        <div className="px-4 py-3 text-gray-600">
-                          Sin coincidencias.
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <span className="text-sm text-gray-700">
-                    Seleccionado:{" "}
-                    {selectedClient
-                      ? (() => {
-                          const c = clients.find(
-                            (x) => String(x.id) === selectedClient
-                          );
-                          return c ? `${c.name} (${c.code ?? c.id})` : "—";
-                        })()
-                      : "—"}
-                  </span>
-
-                  {selectedClient && canEdit && (
-                    <button
-                      type="button"
-                      className="ml-auto bg-red-500 hover:bg-red-400 text-white text-xs px-2 py-1 rounded"
-                      onClick={() => {
-                        setSelectedClient("");
-                        setClientQuery("");
-                      }}
-                    >
-                      Limpiar
-                    </button>
-                  )}
-                </div>
-              </section>
-
-              {/* Artículos */}
-              {(selectedClient || currentBomId) && (
-                <section className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {/* Lista */}
-                  <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-4 space-y-3">
-                    <Text type="subtitle" color="#000">
-                      Artículos Disponibles
-                    </Text>
-
-                    <input
+                  <div className="relative">
+                    <Input
                       type="text"
-                      placeholder="Buscar artículos..."
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      className="border border-gray-300 rounded-lg p-2.5 w-full text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="Buscar por nombre, código o ID…"
+                      value={clientQuery}
+                      onChange={(e) => {
+                        setClientQuery(e.target.value);
+                        setClientListOpen(true);
+                      }}
+                      onFocus={() => setClientListOpen(true)}
+                      className="text-center"
                       disabled={!canEdit}
-                      aria-label="Buscador de artículos"
+                      aria-label="Buscador de clientes"
+                      tone="strong"
                     />
 
-                    {loadingArticles ? (
-                      <p className="text-blue-500">Cargando artículos...</p>
-                    ) : filteredArticles.length > 0 ? (
-                      <ul className="border border-gray-200 rounded-lg bg-gray-50 h-48 overflow-y-auto divide-y divide-gray-200 scrollbar-thin">
-                        {filteredArticles.map((article) => (
-                          <li
-                            key={article.codart}
-                            className={`px-3 py-2 text-black cursor-pointer transition ${
-                              canEdit
-                                ? "hover:bg-blue-100"
-                                : "text-gray-400 cursor-not-allowed"
-                            }`}
-                            onClick={() => {
-                              if (canEdit) handleSelectArticle(article);
-                            }}
-                            title={
-                              !canEdit
-                                ? "No tienes permiso para seleccionar artículos"
-                                : ""
-                            }
-                          >
-                            <span className="font-medium">
-                              {article.desart}
-                            </span>{" "}
-                            <span className="text-gray-600">
-                              ({article.codart})
-                            </span>
-                          </li>
-                        ))}
-                      </ul>
-                    ) : (
-                      <div className="text-sm text-gray-600">
-                        No se encontraron coincidencias.
+                    {clientListOpen && (
+                      <div
+                        className="absolute left-0 right-0 z-20 mt-1 max-h-64 overflow-y-auto bg-[rgb(var(--surface))] border border-[rgb(var(--border))] rounded-lg shadow-xl scrollbar-thin"
+                        onMouseLeave={() => setClientListOpen(false)}
+                      >
+                        {filteredClientsByQuery.length > 0 ? (
+                          filteredClientsByQuery.map((client) => (
+                            <button
+                              type="button"
+                              key={client.id}
+                              className={[
+                                "w-full px-4 py-3 text-left text-base transition",
+                                "text-[rgb(var(--foreground))]",
+                                selectedClient === String(client.id)
+                                  ? "bg-[rgb(var(--accent))]/25"
+                                  : "hover:bg-[rgb(var(--accent))]/15",
+                              ].join(" ")}
+                              onClick={() => {
+                                setSelectedClient(String(client.id));
+                                setClientQuery(
+                                  `${client.name} (${client.code ?? client.id})`
+                                );
+                                setClientListOpen(false);
+                              }}
+                              disabled={!canEdit}
+                              title={client.name}
+                            >
+                              <div className="font-medium truncate">
+                                {client.name}
+                              </div>
+                              <div className="text-sm text-[rgb(var(--foreground))]/70">
+                                Código: {client.code ?? "—"} · ID: {client.id}
+                              </div>
+                            </button>
+                          ))
+                        ) : (
+                          <div className="px-4 py-3 text-[rgb(var(--foreground))]/80">
+                            Sin coincidencias.
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
 
-                  {/* Seleccionado */}
-                  <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-4 space-y-3">
-                    <Text type="subtitle" color="#000">
-                      Artículo Seleccionado
-                    </Text>
-                    {selectedArticle ? (
-                      <div className="border border-gray-200 rounded-lg bg-gray-50 px-3 py-2 flex items-center gap-3">
-                        <span className="text-black truncate">
-                          {selectedArticle.desart} ({selectedArticle.codart})
-                        </span>
-                        <button
-                          onClick={handleDeselectArticle}
-                          className="ml-auto bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded"
-                          disabled={!canEdit}
-                          aria-label="Quitar artículo seleccionado"
-                        >
-                          X
-                        </button>
-                      </div>
-                    ) : (
-                      <Text type="alert">
-                        No se ha seleccionado ningún artículo.
-                      </Text>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-[rgb(var(--foreground))]/80">
+                      Seleccionado:{" "}
+                      {selectedClient
+                        ? (() => {
+                            const c = clients.find(
+                              (x) => String(x.id) === selectedClient
+                            );
+                            return c ? `${c.name} (${c.code ?? c.id})` : "—";
+                          })()
+                        : "—"}
+                    </span>
+
+                    {selectedClient && canEdit && (
+                      <button
+                        type="button"
+                        className="ml-auto bg-red-500 hover:bg-red-400 text-white text-xs px-2 py-1 rounded"
+                        onClick={() => {
+                          setSelectedClient("");
+                          setClientQuery("");
+                        }}
+                      >
+                        Limpiar
+                      </button>
                     )}
                   </div>
                 </section>
-              )}
 
-              {/* Config básica + Ingredientes */}
-              {selectedArticle && (
-                <>
-                  {/* Config básica */}
+                {/* Artículos */}
+                {(selectedClient || currentBomId) && (
                   <section className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-4 space-y-2">
-                      <Text type="subtitle" color="#000">
-                        Cantidad Base
+                    {/* Lista */}
+                    <div className="bg-[rgb(var(--surface))] rounded-2xl border border-[rgb(var(--border))] shadow-sm p-4 space-y-3">
+                      <Text
+                        type="subtitle"
+                        color="text-[rgb(var(--foreground))]"
+                      >
+                        Artículos Disponibles
                       </Text>
-                      <input
-                        type="number"
-                        min="0"
-                        step="any"
-                        placeholder="0"
-                        className="w-full border border-gray-300 rounded-lg p-2.5 text-black text-center focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        value={baseQuantity === 0 ? "" : baseQuantity}
-                        onChange={(e) => {
-                          const val = e.target.value;
-                          setBaseQuantity(val === "" ? 0 : Number(val));
-                        }}
+
+                      <Input
+                        type="text"
+                        placeholder="Buscar artículos..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className=""
                         disabled={!canEdit}
+                        aria-label="Buscador de artículos"
+                        tone="strong"
                       />
+
+                      {loadingArticles ? (
+                        <p className="text-[rgb(var(--foreground))]">
+                          Cargando artículos...
+                        </p>
+                      ) : filteredArticles.length > 0 ? (
+                        <ul className="border border-[rgb(var(--border))] rounded-lg bg-[rgb(var(--surface-muted))] h-48 overflow-y-auto divide-y divide-[rgb(var(--border))] scrollbar-thin">
+                          {filteredArticles.map((article) => (
+                            <li
+                              key={article.codart}
+                              className={[
+                                "px-3 py-2 transition cursor-pointer",
+                                canEdit
+                                  ? "hover:bg-[rgb(var(--accent))]/15"
+                                  : "text-[rgb(var(--foreground))]/50 cursor-not-allowed",
+                                "text-[rgb(var(--foreground))]",
+                              ].join(" ")}
+                              onClick={() => {
+                                if (canEdit) handleSelectArticle(article);
+                              }}
+                              title={
+                                !canEdit
+                                  ? "No tienes permiso para seleccionar artículos"
+                                  : ""
+                              }
+                            >
+                              <span className="font-medium">
+                                {article.desart}
+                              </span>{" "}
+                              <span className="text-[rgb(var(--foreground))]/70">
+                                ({article.codart})
+                              </span>
+                            </li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <div className="text-sm text-[rgb(var(--foreground))]/80">
+                          No se encontraron coincidencias.
+                        </div>
+                      )}
                     </div>
 
-                    <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-4 space-y-2">
-                      <Text type="subtitle" color="#000">
-                        Estado
-                      </Text>
-                      <select
-                        className="w-full border border-gray-300 rounded-lg p-2.5 text-black text-center focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        value={bomStatus ? "activo" : "inactivo"}
-                        onChange={(e) =>
-                          setBomStatus(e.target.value === "activo")
-                        }
-                        disabled={!canEdit}
+                    {/* Seleccionado */}
+                    <div className="bg-[rgb(var(--surface))] rounded-2xl border border-[rgb(var(--border))] shadow-sm p-4 space-y-3">
+                      <Text
+                        type="subtitle"
+                        color="text-[rgb(var(--foreground))]"
                       >
-                        <option value="activo">Activo</option>
-                        <option value="inactivo">Inactivo</option>
-                      </select>
+                        Artículo Seleccionado
+                      </Text>
+                      {selectedArticle ? (
+                        <div className="border border-[rgb(var(--border))] rounded-lg bg-[rgb(var(--surface-muted))] px-3 py-2 flex items-center gap-3">
+                          <span className="truncate text-[rgb(var(--foreground))]">
+                            {selectedArticle.desart} ({selectedArticle.codart})
+                          </span>
+                          <button
+                            onClick={handleDeselectArticle}
+                            className="ml-auto bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded"
+                            disabled={!canEdit}
+                            aria-label="Quitar artículo seleccionado"
+                          >
+                            X
+                          </button>
+                        </div>
+                      ) : (
+                        <Text type="alert">
+                          No se ha seleccionado ningún artículo.
+                        </Text>
+                      )}
                     </div>
                   </section>
+                )}
 
-                  {/* Ingredientes */}
-                  <section className="space-y-4">
-                    <Text type="subtitle" color="text-gray-800">
-                      Materiales
-                    </Text>
+                {/* Config básica + Ingredientes */}
+                {selectedArticle && (
+                  <>
+                    {/* Config básica */}
+                    <section className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="bg-[rgb(var(--surface))] rounded-2xl border border-[rgb(var(--border))] shadow-sm p-4 space-y-2">
+                        <Text
+                          type="subtitle"
+                          color="text-[rgb(var(--foreground))]"
+                        >
+                          Cantidad Base
+                        </Text>
+                        <Input
+                          type="number"
+                          min="0"
+                          step="any"
+                          placeholder="0"
+                          className="text-center"
+                          value={baseQuantity === 0 ? "" : baseQuantity}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            setBaseQuantity(val === "" ? 0 : Number(val));
+                          }}
+                          disabled={!canEdit}
+                          tone="strong"
+                        />
+                      </div>
 
-                    {ingredients.length > 0 ? (
-                      <>
-                        {ingredients.map((ing, index) => {
-                          const term = ingredientSearch[ing.uid] ?? "";
-                          const rowFilteredArticles = allArticles.filter(
-                            (article) =>
-                              article.desart
-                                .toLowerCase()
-                                .includes(term.toLowerCase()) ||
-                              article.codart
-                                .toLowerCase()
-                                .includes(term.toLowerCase())
-                          );
+                      <div className="bg-[rgb(var(--surface))] rounded-2xl border border-[rgb(var(--border))] shadow-sm p-4 space-y-2">
+                        <Text
+                          type="subtitle"
+                          color="text-[rgb(var(--foreground))]"
+                        >
+                          Estado
+                        </Text>
+                        {/* select SIN cambios */}
+                        <select
+                          className={[
+                            "w-full rounded-lg p-2.5 text-center transition",
+                            "bg-[rgb(var(--surface))] text-[rgb(var(--foreground))]",
+                            "border border-[rgb(var(--border))]",
+                            "focus:outline-none focus:ring-2 focus:ring-[rgb(var(--ring))]",
+                          ].join(" ")}
+                          value={bomStatus ? "activo" : "inactivo"}
+                          onChange={(e) =>
+                            setBomStatus(e.target.value === "activo")
+                          }
+                          disabled={!canEdit}
+                        >
+                          <option value="activo">Activo</option>
+                          <option value="inactivo">Inactivo</option>
+                        </select>
+                      </div>
+                    </section>
 
-                          return (
-                            <div
-                              key={ing.uid}
-                              className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5 hover:shadow-md transition-shadow"
-                            >
-                              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                {/* Buscador y lista */}
-                                <div className="md:col-span-2 space-y-2">
-                                  <Text type="subtitle" color="#000">
-                                    Buscar artículo
-                                  </Text>
-                                  <input
-                                    type="text"
-                                    placeholder="Nombre o código del artículo..."
-                                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                    value={term}
-                                    onChange={(e) =>
-                                      setIngredientSearch((prev) => ({
-                                        ...prev,
-                                        [ing.uid]: e.target.value,
-                                      }))
-                                    }
-                                    disabled={!canEdit}
-                                  />
+                    {/* Ingredientes */}
+                    <section className="space-y-4">
+                      <Text
+                        type="subtitle"
+                        color="text-[rgb(var(--foreground))]"
+                      >
+                        Materiales
+                      </Text>
 
-                                  <div className="mt-3 max-h-56 overflow-y-auto border border-gray-200 rounded-lg divide-y divide-gray-100 bg-white scrollbar-thin">
-                                    {rowFilteredArticles.length > 0 ? (
-                                      rowFilteredArticles.map((article) => (
-                                        <label
-                                          key={article.codart}
-                                          className={`flex items-center gap-3 px-4 py-2.5 cursor-pointer text-black transition ${
-                                            ing.codart === article.codart
-                                              ? "bg-blue-100 font-medium"
-                                              : "hover:bg-blue-50"
-                                          }`}
-                                        >
-                                          <input
-                                            type="radio"
-                                            name={`article-${ing.uid}`}
-                                            className="accent-blue-600"
-                                            value={article.codart}
-                                            checked={
-                                              !!(ing.codart === article.codart)
-                                            }
-                                            onChange={() =>
-                                              handleIngredientSelect(
-                                                index,
-                                                article.codart
-                                              )
-                                            }
-                                            disabled={!canEdit}
-                                          />
-                                          <span className="truncate">
-                                            {article.desart} ({article.codart})
-                                          </span>
-                                        </label>
-                                      ))
-                                    ) : (
-                                      <div className="p-4 text-sm text-gray-500">
-                                        No se encontraron artículos.
-                                      </div>
-                                    )}
-                                  </div>
-                                </div>
+                      {ingredients.length > 0 ? (
+                        <>
+                          {ingredients.map((ing, index) => {
+                            const term = ingredientSearch[ing.uid] ?? "";
+                            const rowFilteredArticles = allArticles.filter(
+                              (article) =>
+                                article.desart
+                                  .toLowerCase()
+                                  .includes(term.toLowerCase()) ||
+                                article.codart
+                                  .toLowerCase()
+                                  .includes(term.toLowerCase())
+                            );
 
-                                {/* Cantidades y acción */}
-                                <div className="space-y-3">
-                                  <div>
-                                    <Text type="subtitle" color="#000">
-                                      Cantidad
-                                    </Text>
-                                    <input
-                                      type="number"
-                                      min="0"
-                                      step="any"
-                                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-center text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                      placeholder="0"
-                                      value={ing.quantity}
-                                      onChange={(e) =>
-                                        handleIngredientChange(
-                                          index,
-                                          "quantity",
-                                          e.target.value
-                                        )
-                                      }
-                                      disabled={!canEdit}
-                                    />
-                                  </div>
-
-                                  <div>
-                                    <Text type="subtitle" color="#000">
-                                      % Merma
-                                    </Text>
-                                    <input
-                                      type="number"
-                                      min="0"
-                                      step="any"
-                                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-center text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                      placeholder="0"
-                                      value={ing.merma}
-                                      onChange={(e) =>
-                                        handleIngredientChange(
-                                          index,
-                                          "merma",
-                                          e.target.value
-                                        )
-                                      }
-                                      disabled={!canEdit}
-                                    />
-                                  </div>
-
-                                  {/* Cálculo neto */}
-                                  {(() => {
-                                    const qty =
-                                      parseFloat(
-                                        String(ing.quantity ?? "").replace(
-                                          ",",
-                                          "."
-                                        )
-                                      ) || 0;
-                                    const rawWaste =
-                                      parseFloat(
-                                        String(ing.merma ?? "").replace(
-                                          ",",
-                                          "."
-                                        )
-                                      ) || 0;
-                                    const waste = Math.min(
-                                      100,
-                                      Math.max(0, rawWaste)
-                                    );
-                                    const net = qty * (1 - waste / 100);
-
-                                    return (
-                                      <div className="text-sm text-gray-700">
-                                        Resultado Calculado:{" "}
-                                        <span className="font-semibold">
-                                          {net.toFixed(3)}
-                                        </span>{" "}
-                                      </div>
-                                    );
-                                  })()}
-
-                                  <div className="pt-1">
-                                    <button
-                                      onClick={() => removeIngredientRow(index)}
-                                      className="w-full bg-red-500 hover:bg-red-600 text-white text-sm font-semibold px-4 py-2 rounded-lg transition"
-                                      disabled={!canEdit}
+                            return (
+                              <div
+                                key={ing.uid}
+                                className="bg-[rgb(var(--surface))] rounded-2xl border border-[rgb(var(--border))] shadow-sm p-5 hover:shadow-md transition-shadow"
+                              >
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                  {/* Buscador y lista */}
+                                  <div className="md:col-span-2 space-y-2">
+                                    <Text
+                                      type="subtitle"
+                                      color="text-[rgb(var(--foreground))]"
                                     >
-                                      Eliminar
-                                    </button>
+                                      Buscar artículo
+                                    </Text>
+                                    <Input
+                                      type="text"
+                                      placeholder="Nombre o código del artículo..."
+                                      className=""
+                                      value={term}
+                                      onChange={(e) =>
+                                        setIngredientSearch((prev) => ({
+                                          ...prev,
+                                          [ing.uid]: e.target.value,
+                                        }))
+                                      }
+                                      disabled={!canEdit}
+                                      tone="strong"
+                                    />
+
+                                    <div className="mt-3 max-h-56 overflow-y-auto border border-[rgb(var(--border))] rounded-lg divide-y divide-[rgb(var(--border))] bg-[rgb(var(--surface-muted))] scrollbar-thin">
+                                      {rowFilteredArticles.length > 0 ? (
+                                        rowFilteredArticles.map((article) => (
+                                          <label
+                                            key={article.codart}
+                                            className={[
+                                              "flex items-center gap-3 px-4 py-2.5 cursor-pointer transition",
+                                              ing.codart === article.codart
+                                                ? "bg-[rgb(var(--accent))]/25 font-medium"
+                                                : "hover:bg-[rgb(var(--accent))]/15",
+                                              "text-[rgb(var(--foreground))]",
+                                            ].join(" ")}
+                                          >
+                                            {/* radios SIN cambios */}
+                                            <input
+                                              type="radio"
+                                              name={`article-${ing.uid}`}
+                                              className="accent-[rgb(var(--accent))]"
+                                              value={article.codart}
+                                              checked={
+                                                !!(
+                                                  ing.codart === article.codart
+                                                )
+                                              }
+                                              onChange={() =>
+                                                handleIngredientSelect(
+                                                  index,
+                                                  article.codart
+                                                )
+                                              }
+                                              disabled={!canEdit}
+                                            />
+                                            <span className="truncate">
+                                              {article.desart} ({article.codart}
+                                              )
+                                            </span>
+                                          </label>
+                                        ))
+                                      ) : (
+                                        <div className="p-4 text-sm text-[rgb(var(--foreground))]/80">
+                                          No se encontraron artículos.
+                                        </div>
+                                      )}
+                                    </div>
+                                  </div>
+
+                                  {/* Cantidades y acción */}
+                                  <div className="space-y-3">
+                                    <div>
+                                      <Text
+                                        type="subtitle"
+                                        color="text-[rgb(var(--foreground))]"
+                                      >
+                                        Cantidad
+                                      </Text>
+                                      <Input
+                                        type="number"
+                                        min="0"
+                                        step="any"
+                                        className="text-center text-sm"
+                                        placeholder="0"
+                                        value={ing.quantity}
+                                        onChange={(e) =>
+                                          handleIngredientChange(
+                                            index,
+                                            "quantity",
+                                            e.target.value
+                                          )
+                                        }
+                                        disabled={!canEdit}
+                                        tone="strong"
+                                      />
+                                    </div>
+
+                                    <div>
+                                      <Text
+                                        type="subtitle"
+                                        color="text-[rgb(var(--foreground))]"
+                                      >
+                                        % Merma
+                                      </Text>
+                                      <Input
+                                        type="number"
+                                        min="0"
+                                        step="any"
+                                        className="text-center text-sm"
+                                        placeholder="0"
+                                        value={ing.merma}
+                                        onChange={(e) =>
+                                          handleIngredientChange(
+                                            index,
+                                            "merma",
+                                            e.target.value
+                                          )
+                                        }
+                                        disabled={!canEdit}
+                                        tone="strong"
+                                      />
+                                    </div>
+
+                                    {/* Cálculo neto */}
+                                    {(() => {
+                                      const qty =
+                                        parseFloat(
+                                          String(ing.quantity ?? "").replace(
+                                            ",",
+                                            "."
+                                          )
+                                        ) || 0;
+                                      const rawWaste =
+                                        parseFloat(
+                                          String(ing.merma ?? "").replace(
+                                            ",",
+                                            "."
+                                          )
+                                        ) || 0;
+                                      const waste = Math.min(
+                                        100,
+                                        Math.max(0, rawWaste)
+                                      );
+                                      const net = qty * (1 - waste / 100);
+                                      return (
+                                        <div className="text-sm text-[rgb(var(--foreground))]/85">
+                                          Resultado Calculado:{" "}
+                                          <span className="font-semibold">
+                                            {net.toFixed(3)}
+                                          </span>
+                                        </div>
+                                      );
+                                    })()}
+
+                                    <div className="pt-1">
+                                      <button
+                                        onClick={() =>
+                                          removeIngredientRow(index)
+                                        }
+                                        className="w-full bg-red-500 hover:bg-red-600 text-white text-sm font-semibold px-4 py-2 rounded-lg transition"
+                                        disabled={!canEdit}
+                                      >
+                                        Eliminar
+                                      </button>
+                                    </div>
                                   </div>
                                 </div>
                               </div>
-                            </div>
-                          );
-                        })}
+                            );
+                          })}
 
-                        {/* Stickers */}
-
-                        <div className="border-t border-gray-200 pt-4 flex justify-center">
-                          <Button
-                            onClick={addIngredientRow}
-                            variant="create"
-                            label="Agregar Ingrediente"
-                            disabled={!canEdit}
-                          />
+                          <div className="border-t border-[rgb(var(--border))] pt-4 flex justify-center">
+                            <Button
+                              onClick={addIngredientRow}
+                              variant="create"
+                              label="Agregar Ingrediente"
+                              disabled={!canEdit}
+                            />
+                          </div>
+                        </>
+                      ) : (
+                        <div className="bg-[rgb(var(--surface))] rounded-2xl border border-[rgb(var(--border))] shadow-sm p-6 text-center space-y-4">
+                          <Text type="alert">
+                            No hay ingredientes agregados.
+                          </Text>
+                          <div className="flex justify-center">
+                            <Button
+                              onClick={addIngredientRow}
+                              variant="create"
+                              label="Agregar Ingrediente"
+                              disabled={!canEdit}
+                            />
+                          </div>
                         </div>
-                      </>
-                    ) : (
-                      <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 text-center space-y-4">
-                        <Text type="alert">No hay ingredientes agregados.</Text>
-                        <div className="flex justify-center">
-                          <Button
-                            onClick={addIngredientRow}
-                            variant="create"
-                            label="Agregar Ingrediente"
+                      )}
+                    </section>
+
+                    <section className="bg-[rgb(var(--surface))] rounded-2xl border border-[rgb(var(--border))] shadow-sm p-4 space-y-3">
+                      <div className="flex flex-wrap justify-center gap-6">
+                        <div className="flex items-center gap-2">
+                          <Toggle
+                            checked={showStickers}
+                            onCheckedChange={(v) => setShowStickers(v)}
                             disabled={!canEdit}
+                            aria-label="Añadir Sticker"
+                            size="sm"
                           />
+                          <span className="text-sm text-[rgb(var(--foreground))]">
+                            Añadir Sticker
+                          </span>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          <Toggle
+                            checked={showStickers2}
+                            onCheckedChange={(v) => setShowStickers2(v)}
+                            disabled={!canEdit}
+                            aria-label="Añadir Sticker Blanco"
+                            size="sm"
+                          />
+                          <span className="text-sm text-[rgb(var(--foreground))]">
+                            Añadir Sticker Blanco
+                          </span>
                         </div>
                       </div>
-                    )}
-                  </section>
 
-                  <section className="bg-white rounded-2xl border border-gray-200 shadow-sm p-4 space-y-3">
-                    <div className="flex flex-wrap justify-center gap-6">
-                      <label className="flex items-center gap-2">
-                        <input
-                          type="checkbox"
-                          id="toggleStickers1"
-                          className="h-4 w-4"
-                          checked={showStickers}
-                          onChange={(e) => setShowStickers(e.target.checked)}
-                          disabled={!canEdit}
-                        />
-                        <span className="text-sm text-black">
-                          Añadir Sticker
-                        </span>
-                      </label>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {showStickers && (
+                          <div className="space-y-2">
+                            <Text
+                              type="subtitle"
+                              color="text-[rgb(var(--foreground))]"
+                            >
+                              Sticker
+                            </Text>
+                            <Input
+                              type="text"
+                              value={sticker}
+                              onChange={(e) => setSticker(e.target.value)}
+                              disabled={!canEdit}
+                              className="text-center"
+                              tone="strong"
+                            />
+                          </div>
+                        )}
 
-                      <label className="flex items-center gap-2">
-                        <input
-                          type="checkbox"
-                          id="toggleStickers2"
-                          className="h-4 w-4"
-                          checked={showStickers2}
-                          onChange={(e) => setShowStickers2(e.target.checked)}
-                          disabled={!canEdit}
-                        />
-                        <span className="text-sm text-black">
-                          Añadir Sticker Blanco
-                        </span>
-                      </label>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {showStickers && (
-                        <div className="space-y-2">
-                          <Text type="subtitle" color="#000">
-                            Sticker
-                          </Text>
-                          <input
-                            type="text"
-                            className="w-full border border-gray-300 rounded-lg p-2.5 text-black text-center focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            value={sticker}
-                            onChange={(e) => setSticker(e.target.value)}
-                            disabled={!canEdit}
-                          />
-                        </div>
-                      )}
-
-                      {showStickers2 && (
-                        <div className="space-y-2">
-                          <Text type="subtitle" color="#000">
-                            Sticker Blanco
-                          </Text>
-                          <input
-                            type="text"
-                            className="w-full border border-gray-300 rounded-lg p-2.5 text-black text-center focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            value={sticker2}
-                            onChange={(e) => setSticker2(e.target.value)}
-                            disabled={!canEdit}
-                          />
-                        </div>
-                      )}
-                    </div>
-                  </section>
-                </>
-              )}
-            </div>
-
-            {/* Footer acciones */}
-            <div className="sticky bottom-0 z-10 bg-white border-t border-gray-200 px-2 sm:px-4 py-3">
-              <div className="flex justify-center gap-3">
-                <Button
-                  onClick={() => setIsModalOpen(false)}
-                  variant="cancel"
-                  label="Cancelar"
-                />
-                {canEdit && (
-                  <Button
-                    onClick={handleSaveBOM}
-                    variant="create"
-                    label={currentBomId ? "Actualizar BOM" : "Guardar BOM"}
-                    disabled={loadingArticles && isSaving}
-                  />
+                        {showStickers2 && (
+                          <div className="space-y-2">
+                            <Text
+                              type="subtitle"
+                              color="text-[rgb(var(--foreground))]"
+                            >
+                              Sticker Blanco
+                            </Text>
+                            <Input
+                              type="text"
+                              value={sticker2}
+                              onChange={(e) => setSticker2(e.target.value)}
+                              disabled={!canEdit}
+                              className="text-center"
+                              tone="strong"
+                            />
+                          </div>
+                        )}
+                      </div>
+                    </section>
+                  </>
                 )}
               </div>
+
+              {/* Footer acciones */}
+              <div className="sticky bottom-0 z-10 bg-[rgb(var(--surface))] border-t border-[rgb(var(--border))] px-2 sm:px-4 py-3">
+                <div className="flex justify-center gap-3">
+                  <Button
+                    onClick={() => setIsModalOpen(false)}
+                    variant="cancel"
+                    label="Cancelar"
+                  />
+                  {canEdit && (
+                    <Button
+                      onClick={handleSaveBOM}
+                      variant="create"
+                      label={currentBomId ? "Actualizar BOM" : "Guardar BOM"}
+                      disabled={loadingArticles && isSaving}
+                    />
+                  )}
+                </div>
+              </div>
             </div>
+
+            {/* Scrollbar suave en ambos modos */}
+            <style>{`
+      .scrollbar-thin::-webkit-scrollbar { width: 8px; height: 8px; }
+      .scrollbar-thin::-webkit-scrollbar-thumb { background: rgba(148,163,184,.35); border-radius: 8px; }
+      .scrollbar-thin::-webkit-scrollbar-thumb:hover { background: rgba(148,163,184,.55); }
+      .scrollbar-thin { scrollbar-width: thin; scrollbar-color: rgba(148,163,184,.35) transparent; }
+    `}</style>
           </div>
         </ModalSection>
       )}

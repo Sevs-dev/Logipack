@@ -290,64 +290,77 @@ class AuthController extends Controller
         ]);
     }
 
-    /** =======================
-     *     Validar Usuario y Security Pass por Rol
-     *  ======================= */
-    public function validateSecurityPassByRole(Request $request)
+    /**
+     * Valida ÚNICAMENTE por contraseña (cualquier rol).
+     * - Si encuentra un match en texto plano, migra a bcrypt.
+     * - Si encuentra un match por hash, valida.
+     * - Si no, devuelve valid:false.
+     * Nota: signature_id se conserva para auditoría, pero NO afecta autorización.
+     */
+    public function validateSignaturePass(Request $request)
     {
         try {
             $data = $request->validate([
-                'role'          => 'sometimes|required_without:role_id|string',
-                'role_id'       => 'sometimes|required_without:role|integer',
                 'security_pass' => 'required|string|min:1',
+                'signature_id'  => 'required|string', // solo para auditoría
             ]);
 
-            Log::info('validateSecurityPassByRole:payload', $data);
+            // ⚠️ Nunca loguear la contraseña
+            Log::info('validateSignaturePass:start', [
+                'signature_id' => $data['signature_id'],
+                'ip'           => $request->ip(),
+                'user_agent'   => substr($request->userAgent() ?? '', 0, 120),
+            ]);
 
-            $inputPass = $data['security_pass'];
-            $query = User::query()->whereNotNull('security_pass');
+            $input = $data['security_pass'];
 
-            // Prioriza rol por texto (tu caso)
-            if (isset($data['role'])) {
-                $query->where('role', $data['role']);
-            } elseif (isset($data['role_id'])) {
-                if (Schema::hasColumn('users', 'role_id')) {
-                    $query->where('role_id', $data['role_id']);
-                } else {
-                    // Traduce role_id → roles.name si no existe users.role_id
-                    $roleName = DB::table('roles')->where('id', $data['role_id'])->value('name');
-                    if (!$roleName) return response()->json(['valid' => false], 200);
-                    $query->where('role', $roleName);
-                }
+            // --- Camino rápido: buscar coincidencias en TEXTO PLANO y migrar ---
+            // (Esto evita escanear toda la tabla solo para migración)
+            $plainMatches = User::query()
+                ->where('security_pass', $input) // texto plano exacto
+                ->get(['id', 'name', 'role', 'security_pass']);
+
+            foreach ($plainMatches as $u) {
+                $u->forceFill(['security_pass' => Hash::make($input)])->save();
+
+                return response()->json([
+                    'valid'    => true,
+                    'user'     => ['id' => $u->id, 'name' => $u->name, 'role' => $u->role],
+                    'migrated' => true,
+                ], 200);
             }
 
-            // Evita 500: si no hay nadie que matchee, devuelve false
-            $candidatos = $query->get(['id', 'name', 'role', 'security_pass']);
-            foreach ($candidatos as $u) {
-                if (Hash::check($inputPass, $u->security_pass)) {
-                    return response()->json([
-                        'valid' => true,
-                        'user'  => ['id' => $u->id, 'name' => $u->name, 'role' => $u->role],
-                    ], 200);
-                }
-                if (hash_equals((string)$u->security_pass, (string)$inputPass)) {
-                    $u->forceFill(['security_pass' => Hash::make($inputPass)])->save();
-                    return response()->json([
-                        'valid' => true,
-                        'user'  => ['id' => $u->id, 'name' => $u->name, 'role' => $u->role],
-                        'migrated' => true,
-                    ], 200);
-                }
+            // --- Camino hash: escanear por chunks para evitar cargar toda la tabla ---
+            $matched = null;
+
+            User::query()
+                ->whereNotNull('security_pass')
+                ->select(['id', 'name', 'role', 'security_pass'])
+                ->orderBy('id')
+                ->chunkById(500, function ($chunk) use ($input, &$matched) {
+                    foreach ($chunk as $u) {
+                        if (Hash::check($input, $u->security_pass)) {
+                            $matched = $u;
+                            return false; // corta el chunking
+                        }
+                    }
+                });
+
+            if ($matched) {
+                return response()->json([
+                    'valid' => true,
+                    'user'  => ['id' => $matched->id, 'name' => $matched->name, 'role' => $matched->role],
+                ], 200);
             }
 
+            // Nada coincidió
             return response()->json(['valid' => false], 200);
         } catch (\Throwable $e) {
-            Log::error('validateSecurityPassByRole:error', [
-                'msg' => $e->getMessage(),
+            Log::error('validateSignaturePass:error', [
+                'msg'  => $e->getMessage(),
                 'file' => $e->getFile(),
-                'line' => $e->getLine()
+                'line' => $e->getLine(),
             ]);
-            // Nunca 500 al cliente: devuelve false y loguea
             return response()->json(['valid' => false], 200);
         }
     }

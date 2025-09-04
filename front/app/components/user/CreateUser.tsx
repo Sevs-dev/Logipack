@@ -6,11 +6,11 @@ import { InfoPopover } from "../buttons/InfoPopover";
 import {
   post,
   updateUser,
-  getRole,
   deleteUser,
   getUsers,
   getDate,
 } from "../../services/userDash/authservices";
+import { getRole } from "../../services/userDash/rolesServices";
 import { getFactory } from "../../services/userDash/factoryServices";
 import Text from "../text/Text";
 import ModalSection from "../modal/ModalSection";
@@ -22,6 +22,7 @@ import { User } from "@/app/interfaces/Auth";
 import { CreateClientProps } from "../../interfaces/CreateClientProps";
 import SelectorDual from "../SelectorDual/SelectorDual";
 import DateLoader from "@/app/components/loader/DateLoader";
+import { Input } from "../inputs/Input";
 
 function CreateUser({ canEdit = false, canView = false }: CreateClientProps) {
   // Estados para formulario
@@ -115,26 +116,32 @@ function CreateUser({ canEdit = false, canView = false }: CreateClientProps) {
 
   // Validar campos antes de crear o editar
   const validateFields = () => {
-    if (!name || !email || !role) {
+    if (!name?.trim() || !email?.trim() || !role?.trim()) {
       showError("Nombre, correo y rol son obligatorios");
       return false;
     }
+
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
       showError("El correo electrónico no es válido");
       return false;
     }
-    // Validar contraseña solo si es creación o si se modificó la contraseña al editar
-    if (
-      (!userToEdit || password) &&
-      !/^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d!@#$%^&*()_+{}\[\]:;<>,.?~\\/-]{8,}$/.test(
-        password
-      )
-    ) {
-      showError(
-        "La contraseña debe tener al menos 8 caracteres, incluir letras y números, y puede contener caracteres especiales"
-      );
-      return false;
+
+    // Validar contraseña sólo si es creación o si fue modificada al editar
+    const mustValidatePassword = !userToEdit || !!password;
+    if (mustValidatePassword) {
+      // Reglas: 8+ chars, al menos 1 minúscula, 1 mayúscula, 1 dígito y 1 símbolo
+      // Solo permite letras, números y estos símbolos comunes
+      const STRONG_PASS =
+        /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z\d])[A-Za-z\d!@#$%^&*()_+{}\[\]:;<>,.?~\\/\-]{8,}$/;
+
+      if (!STRONG_PASS.test(password)) {
+        showError(
+          "La contraseña debe tener mínimo 8 caracteres e incluir al menos: 1 mayúscula, 1 minúscula, 1 número y 1 símbolo."
+        );
+        return false;
+      }
     }
+
     return true;
   };
 
@@ -339,163 +346,224 @@ function CreateUser({ canEdit = false, canView = false }: CreateClientProps) {
       {/* Modal crear/editar usuario */}
       {isModalOpen && (
         <ModalSection isVisible={isModalOpen || editForm} onClose={closeModal}>
-          <Text type="title" color="text-[#000]">
-            {userToEdit ? "Editar Usuario" : "Crear Usuario"}
-          </Text>
+          <div className="dark:[--surface:30_41_59] dark:[--surface-muted:51_65_85] dark:[--border:71_85_105] dark:[--foreground:241_245_249] dark:[--ring:56_189_248] dark:[--accent:56_189_248]">
+            <Text type="title" color="text-[rgb(var(--foreground))]">
+              {userToEdit ? "Editar Usuario" : "Crear Usuario"}
+            </Text>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-            {/* Nombre */}
-            <div>
-              <Text type="subtitle" color="#000">
-                Nombre de Usuario
-                <InfoPopover content="Nombre completo o identificador del usuario en el sistema." />
-              </Text>
-              <input
-                type="text"
-                placeholder="Nombre"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                className="w-full text-black border border-gray-300 rounded p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                disabled={!canEdit}
-              />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+              {/* Nombre */}
+              <div>
+                <Text type="subtitle" color="text-[rgb(var(--foreground))]">
+                  Nombre de Usuario
+                  <InfoPopover content="Nombre completo o identificador del usuario en el sistema." />
+                </Text>
+                <Input
+                  type="text"
+                  placeholder="Nombre"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  disabled={!canEdit}
+                  className="text-center"
+                  tone="strong"
+                />
+              </div>
+
+              {/* Email */}
+              <div>
+                <Text type="subtitle" color="text-[rgb(var(--foreground))]">
+                  Correo Electrónico
+                  <InfoPopover content="Correo principal para notificaciones y acceso al sistema." />
+                </Text>
+                <Input
+                  type="email"
+                  placeholder="email@dominio.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  disabled={!canEdit}
+                  className="text-center"
+                  tone="strong"
+                />
+              </div>
+
+              {/* Contraseña */}
+              <div className="relative">
+                <Text type="subtitle" color="text-[rgb(var(--foreground))]">
+                  Contraseña
+                  {userToEdit && (
+                    <InfoPopover content="Para no cambiar la contraseña, deja este campo vacío." />
+                  )}
+                  <InfoPopover content="Debe incluir mayúsculas, minúsculas, números y símbolos." />
+                </Text>
+
+                <div className="relative">
+                  <Input
+                    type={showPassword ? "text" : "password"}
+                    placeholder="Contraseña"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    disabled={!canEdit}
+                    className="text-center pr-24"
+                    tone="strong"
+                  />
+
+                  {/* Toggle ver */}
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    disabled={!canEdit}
+                    aria-label={
+                      showPassword ? "Ocultar contraseña" : "Mostrar contraseña"
+                    }
+                    className={[
+                      "absolute top-1/2 -translate-y-1/2 right-12 p-2 rounded border transition",
+                      "border-[rgb(var(--border))] text-[rgb(var(--foreground))] bg-[rgb(var(--surface))]",
+                      "hover:bg-[rgb(var(--surface-muted))] focus:outline-none focus:ring-2 focus:ring-[rgb(var(--ring))]",
+                      !canEdit ? "opacity-60 cursor-not-allowed" : "",
+                      "dark:bg-slate-900 dark:text-slate-100 dark:border-slate-700",
+                    ].join(" ")}
+                  >
+                    {showPassword ? (
+                      <FiEyeOff size={16} />
+                    ) : (
+                      <FiEye size={16} />
+                    )}
+                  </button>
+
+                  {/* Generar */}
+                  <button
+                    type="button"
+                    onClick={generatePassword}
+                    disabled={!canEdit}
+                    title="Generar contraseña"
+                    className={[
+                      "absolute top-1/2 -translate-y-1/2 right-2 p-2 rounded border transition",
+                      "border-[rgb(var(--border))] text-[rgb(var(--accent))] bg-[rgb(var(--surface))]",
+                      "hover:bg-[rgb(var(--accent))]/10 focus:outline-none focus:ring-2 focus:ring-[rgb(var(--ring))]",
+                      !canEdit ? "opacity-60 cursor-not-allowed" : "",
+                      "dark:bg-slate-900 dark:text-slate-100 dark:border-slate-700",
+                    ].join(" ")}
+                  >
+                    <BiLock size={16} />
+                  </button>
+                </div>
+
+                {/* Medidor simple de fuerza */}
+                <div className="mt-2 h-1.5 rounded bg-[rgb(var(--border))]/50">
+                  <div
+                    className={[
+                      "h-full rounded transition-all",
+                      (password?.length || 0) < 6
+                        ? "bg-red-500"
+                        : (password?.length || 0) < 10
+                        ? "bg-yellow-500"
+                        : "bg-green-500",
+                    ].join(" ")}
+                    style={{
+                      width: `${Math.min(100, (password?.length || 0) * 8)}%`,
+                    }}
+                  />
+                </div>
+              </div>
+
+              {/* Contraseña de seguridad */}
+              <div>
+                <Text type="subtitle" color="text-[rgb(var(--foreground))]">
+                  Contraseña de Seguridad
+                  <InfoPopover content="Dependiendo del rol (p. ej., Calidad), se pedirá al firmar para validar la identidad." />
+                </Text>
+                <Input
+                  type="text"
+                  placeholder="Requerido según el Rol"
+                  value={security_pass}
+                  onChange={(e) => setSecurityPASS(e.target.value)}
+                  disabled={!canEdit}
+                  className="text-center"
+                  tone="strong"
+                />
+              </div>
+
+              {/* Rol (select se deja igual) */}
+              <div>
+                <Text type="subtitle" color="text-[rgb(var(--foreground))]">
+                  Rol
+                  <InfoPopover content="Define los permisos y accesos que tendrá este usuario." />
+                </Text>
+                <select
+                  value={role}
+                  onChange={(e) => setRole(e.target.value)}
+                  disabled={!canEdit}
+                  className={[
+                    "w-full p-2 text-center rounded border transition",
+                    "bg-[rgb(var(--surface))] text-[rgb(var(--foreground))]",
+                    "border-[rgb(var(--border))] focus:outline-none focus:ring-2 focus:ring-[rgb(var(--ring))]",
+                    !canEdit ? "opacity-60 cursor-not-allowed" : "",
+                    "dark:bg-slate-900 dark:text-slate-100 dark:border-slate-700",
+                  ].join(" ")}
+                >
+                  <option value="">Selecciona un rol</option>
+                  {roles.map((r) => (
+                    <option
+                      key={r.id}
+                      value={r.name}
+                      className="bg-[rgb(var(--surface))] text-[rgb(var(--foreground))]"
+                    >
+                      {r.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Firma BPM */}
+              <div>
+                <Text type="subtitle" color="text-[rgb(var(--foreground))]">
+                  Firma BPM
+                  <InfoPopover content="Firma utilizada en procesos BPM para validar acciones." />
+                </Text>
+                <Input
+                  type="text"
+                  placeholder="Firma BPM"
+                  value={signature_bpm}
+                  onChange={(e) => setSignatureBPM(e.target.value)}
+                  disabled={!canEdit}
+                  className="text-center"
+                  tone="strong"
+                />
+              </div>
+
+              {/* Fábricas (SelectorDual se deja igual) */}
+              <div className="col-span-1 md:col-span-2">
+                <SelectorDual
+                  titulo="Fábricas asignadas"
+                  disponibles={factory}
+                  seleccionados={selectedFactorys}
+                  onAgregar={agregarMaquina}
+                  onQuitar={removerMaquina}
+                />
+              </div>
             </div>
 
-            {/* Email */}
-            <div>
-              <Text type="subtitle" color="#000">
-                Correo Electrónico
-                <InfoPopover content="Correo principal para notificaciones y acceso al sistema." />
-              </Text>
-              <input
-                type="email"
-                placeholder="email@dominio.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full text-black border border-gray-300 rounded p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                disabled={!canEdit}
-              />
+            {/* Botones */}
+            <hr className="my-4 border-t border-[rgb(var(--border))]/60 w-full max-w-lg mx-auto opacity-60 dark:border-slate-700" />
+            <div className="flex justify-center gap-4 mt-6">
+              <Button onClick={closeModal} variant="cancel" label="Cancelar" />
+              {canEdit && (
+                <Button
+                  onClick={userToEdit ? handleEditUser : handleCreateUser}
+                  variant="save"
+                  label={
+                    loading
+                      ? "Guardando..."
+                      : userToEdit
+                      ? "Guardar cambios"
+                      : isSaving
+                      ? "Guardando..."
+                      : "Crear usuario"
+                  }
+                  disabled={loading || isSaving}
+                />
+              )}
             </div>
-
-            {/* Contraseña */}
-            <div className="relative">
-              <Text type="subtitle" color="#000">
-                Contraseña
-                {userToEdit && (
-                  <InfoPopover content="Para no cambiar la contraseña, deja este campo vacío." />
-                )}
-                <InfoPopover content="Debe incluir mayúsculas, minúsculas, números y símbolos." />
-              </Text>
-              <input
-                type={showPassword ? "text" : "password"}
-                placeholder="Contraseña"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full text-black border border-gray-300 rounded p-2 pr-10 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                disabled={!canEdit}
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-10 top-12 text-gray-500 mt-3"
-                disabled={!canEdit}
-              >
-                {showPassword ? <FiEyeOff size={20} /> : <FiEye size={20} />}
-              </button>
-              <button
-                type="button"
-                onClick={generatePassword}
-                className="absolute right-2 top-12 bg-yellow-500 text-white p-1 rounded mt-2"
-                disabled={!canEdit}
-              >
-                <BiLock size={16} />
-              </button>
-            </div>
-
-            {/* Contraseña de seguridad */}
-            <div>
-              <Text type="subtitle" color="#000">
-                Contraseña de Seguridad
-                <InfoPopover content="Dependiendo del rol (p. ej., Calidad), se pedirá al firmar para validar la identidad." />
-              </Text>
-              <input
-                type="text"
-                placeholder="Requerido según el Rol"
-                value={security_pass}
-                onChange={(e) => setSecurityPASS(e.target.value)}
-                className="w-full text-black border border-gray-300 rounded p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                disabled={!canEdit}
-              />
-            </div>
-
-            {/* Rol */}
-            <div>
-              <Text type="subtitle" color="#000">
-                Rol
-                <InfoPopover content="Define los permisos y accesos que tendrá este usuario." />
-              </Text>
-              <select
-                value={role}
-                onChange={(e) => setRole(e.target.value)}
-                className="w-full text-black border border-gray-300 rounded p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                disabled={!canEdit}
-              >
-                <option value="">Selecciona un rol</option>
-                {roles.map((r) => (
-                  <option key={r.id} value={r.name}>
-                    {r.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Firma BPM */}
-            <div>
-              <Text type="subtitle" color="#000">
-                Firma BPM
-                <InfoPopover content="Firma utilizada en procesos BPM para validar acciones." />
-              </Text>
-              <input
-                type="text"
-                placeholder="Firma BPM"
-                value={signature_bpm}
-                onChange={(e) => setSignatureBPM(e.target.value)}
-                className="w-full text-black border border-gray-300 rounded p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                disabled={!canEdit}
-              />
-            </div>
-
-            {/* Fábricas */}
-            <div className="col-span-1 md:col-span-2">
-              <SelectorDual
-                titulo="Fábricas asignadas"
-                disponibles={factory}
-                seleccionados={selectedFactorys}
-                onAgregar={agregarMaquina}
-                onQuitar={removerMaquina}
-              />
-            </div>
-          </div>
-
-          {/* Botones */}
-          <hr className="my-4 border-t border-gray-600 w-full max-w-lg mx-auto opacity-60" />
-          <div className="flex justify-center gap-4 mt-6">
-            <Button onClick={closeModal} variant="cancel" label="Cancelar" />
-            {canEdit && (
-              <Button
-                onClick={userToEdit ? handleEditUser : handleCreateUser}
-                variant="save"
-                label={
-                  loading
-                    ? "Guardando..."
-                    : userToEdit
-                    ? "Guardar cambios"
-                    : isSaving
-                    ? "Guardando..."
-                    : "Crear usuario"
-                }
-                disabled={loading || isSaving}
-              />
-            )}
           </div>
         </ModalSection>
       )}

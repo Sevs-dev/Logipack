@@ -6,9 +6,10 @@ import Table from "../table/Table";
 import Button from "../buttons/buttons";
 import Text from "../text/Text";
 import ModalSection from "../modal/ModalSection";
-import { showSuccess, showError, showConfirm } from '../toastr/Toaster';
+import { showSuccess, showError, showConfirm } from "../toastr/Toaster";
 import { CreateClientProps } from "../../interfaces/CreateClientProps";
 import { InfoPopover } from "../buttons/InfoPopover";
+
 // importaciones de interfaces
 import {
   TipoAcondicionamiento,
@@ -331,7 +332,7 @@ export default function NewTipoAcondicionamiento({
             }}
           >
             {/* Título */}
-            <Text type="title" color="text-[#000]">
+            <Text type="title" color="text-[rgb(var(--foreground))]">
               {isOpenEdit
                 ? "Editar Tipo de Orden de Acondicionamiento"
                 : "Crear Nuevo Tipo de Acondicionamiento"}
@@ -339,7 +340,7 @@ export default function NewTipoAcondicionamiento({
 
             {/* Formulario principal */}
             <div className="mb-8">
-              <Text type="subtitle" color="#000">
+              <Text type="subtitle" color="text-[rgb(var(--foreground))]">
                 Descripción{" "}
                 {isOpenEdit ? (
                   ""
@@ -361,7 +362,14 @@ export default function NewTipoAcondicionamiento({
                 value={objectTipoAcom.descripcion}
                 onChange={inputChangeObjectTipoAcom}
                 disabled={btnAplicar || !canEdit}
-                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 placeholder-gray-400 text-center"
+                className={[
+                  "w-full px-4 py-2 rounded-md text-center",
+                  "border bg-[rgb(var(--surface))] text-[rgb(var(--foreground))] border-[rgb(var(--border))]",
+                  "placeholder:text-[rgb(var(--foreground))]/50",
+                  "focus:outline-none focus:ring-2 focus:ring-[rgb(var(--ring))]",
+                  "disabled:opacity-50 disabled:cursor-not-allowed",
+                  "dark:bg-slate-900 dark:text-slate-100 dark:border-slate-700",
+                ].join(" ")}
                 placeholder="Ejemplo: Revisión técnica"
               />
             </div>
@@ -369,70 +377,66 @@ export default function NewTipoAcondicionamiento({
             {/* Tabla y formulario dinámico (solo si se aplicó el tipo base o estás editando) */}
             {(btnAplicar || isOpenEdit) && (
               <>
-                <Text type="title" color="text-[#000]">
-                  Líneas de Acondicionamiento  <InfoPopover
+                <Text type="title" color="text-[rgb(var(--foreground))]">
+                  Líneas de Acondicionamiento{" "}
+                  <InfoPopover
                     content={
-                      <>
-                       Los datos se guardan automaticamente al crearlos 
-                      </>
+                      <>Los datos se guardan automaticamente al crearlos</>
                     }
                   />
                 </Text>
-                <div className="overflow-x-auto rounded-lg border border-gray-200 shadow-sm">
-                  <table className="min-w-full divide-y divide-gray-200 text-gray-700 text-center border border-gray-200">
-                    <thead className="bg-gray-50 border-b border-gray-200">
-                      <tr className="border-b border-gray-200">
-                        <th className="px-4 py-3 text-xs font-medium uppercase tracking-wider text-gray-600 border-r border-gray-200">
-                          Orden
-                        </th>
-                        <th className="px-4 py-3 text-xs font-medium uppercase tracking-wider text-gray-600 border-r border-gray-200">
-                          Descripción
-                        </th>
-                        <th className="px-4 py-3 text-xs font-medium uppercase tracking-wider text-gray-600 border-r border-gray-200">
-                          Fase
-                        </th>
-                        <th className="px-4 py-3 text-xs font-medium uppercase tracking-wider text-gray-600 border-r border-gray-200">
-                          Actividades en Proceso
-                        </th>
-                        <th className="px-4 py-3 text-xs font-medium uppercase tracking-wider text-gray-600 border-r border-gray-200">
-                          Control
-                        </th>
-                        <th className="px-4 py-3 text-xs font-medium uppercase tracking-wider text-gray-600 border-r border-gray-200">
-                          Fase Control
-                        </th>
-                        <th className="px-4 py-3 text-xs font-medium uppercase tracking-wider text-gray-600">
-                          Acciones
-                        </th>
+
+                <div className="overflow-x-auto rounded-lg border border-[rgb(var(--border))] shadow-sm dark:border-slate-700">
+                  <table className="min-w-full text-center border border-[rgb(var(--border))] text-[rgb(var(--foreground))] dark:border-slate-700">
+                    <thead className="bg-[rgb(var(--surface-muted))] border-b border-[rgb(var(--border))] dark:bg-slate-800/70 dark:border-slate-700">
+                      <tr className="border-b border-[rgb(var(--border))]">
+                        {[
+                          "Orden",
+                          "Descripción",
+                          "Fase",
+                          "Actividades en Proceso",
+                          "Control",
+                          "Fase Control",
+                          "Acciones",
+                        ].map((th) => (
+                          <th
+                            key={th}
+                            className="px-4 py-3 text-xs font-medium uppercase tracking-wider text-[rgb(var(--foreground))]/70 border-r last:border-r-0 border-[rgb(var(--border))]"
+                          >
+                            {th}
+                          </th>
+                        ))}
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-gray-200">
+
+                    <tbody className="divide-y divide-[rgb(var(--border))]">
                       {lineas.map((item) => (
                         <tr
                           key={item.id}
-                          className="hover:bg-gray-50 transition-colors border-b border-gray-200"
+                          className="hover:bg-[rgb(var(--surface-muted))] transition-colors border-b border-[rgb(var(--border))] dark:hover:bg-slate-800/60"
                         >
-                          <td className="px-4 py-3 border-r border-gray-200">
+                          <td className="px-4 py-3 border-r border-[rgb(var(--border))]">
                             {item.orden}
                           </td>
-                          <td className="px-4 py-3 border-r border-gray-200">
+                          <td className="px-4 py-3 border-r border-[rgb(var(--border))]">
                             {item.descripcion}
                           </td>
-                          <td className="px-4 py-3 border-r border-gray-200">
+                          <td className="px-4 py-3 border-r border-[rgb(var(--border))]">
                             {item.descripcion_fase}
                           </td>
-                          <td className="px-4 py-3 border-r border-gray-200">
+                          <td className="px-4 py-3 border-r border-[rgb(var(--border))]">
                             {item.editable ? "Sí" : "No"}
                           </td>
-                          <td className="px-4 py-3 border-r border-gray-200">
+                          <td className="px-4 py-3 border-r border-[rgb(var(--border))]">
                             {item.control ? "Sí" : "No"}
                           </td>
-                          <td className="px-4 py-3 border-r border-gray-200">
+                          <td className="px-4 py-3 border-r border-[rgb(var(--border))]">
                             {item.descripcion_fase_control || "-"}
                           </td>
                           <td className="px-4 py-3">
                             <button
                               onClick={() => handleDeleteLinea(item.id)}
-                              className="text-red-500 hover:text-red-700"
+                              className="text-red-500 hover:text-red-600 focus:outline-none focus:ring-2 focus:ring-red-400/50"
                               title="Eliminar línea"
                               disabled={!canEdit}
                             >
@@ -443,8 +447,9 @@ export default function NewTipoAcondicionamiento({
                       ))}
 
                       {/* Fila de formulario */}
-                      <tr className="bg-white border-t border-gray-200">
-                        <td className="px-4 py-3 border-r border-gray-200">
+                      <tr className="bg-[rgb(var(--surface))] border-t border-[rgb(var(--border))] dark:bg-slate-900">
+                        {/* Orden */}
+                        <td className="px-4 py-3 border-r border-[rgb(var(--border))]">
                           <div className="flex justify-center items-center">
                             <input
                               type="number"
@@ -469,23 +474,37 @@ export default function NewTipoAcondicionamiento({
                                 inputChangeObjectLineaTipoAcom(e);
                               }}
                               placeholder="N°"
-                              className="w-full px-3 py-2 border border-gray-300 rounded-md text-center focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              className={[
+                                "w-full px-3 py-2 rounded-md text-center",
+                                "border bg-[rgb(var(--surface))] text-[rgb(var(--foreground))] border-[rgb(var(--border))]",
+                                "focus:outline-none focus:ring-2 focus:ring-[rgb(var(--ring))]",
+                                "dark:bg-slate-900 dark:text-slate-100 dark:border-slate-700",
+                              ].join(" ")}
                               disabled={!canEdit}
                             />
                           </div>
                         </td>
-                        <td className="px-4 py-3 border-r border-gray-200">
+
+                        {/* Descripción línea */}
+                        <td className="px-4 py-3 border-r border-[rgb(var(--border))]">
                           <input
                             type="text"
                             name="descripcion"
                             placeholder="Descripción"
                             value={lineaForm.descripcion}
                             onChange={inputChangeObjectLineaTipoAcom}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md text-center focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            className={[
+                              "w-full px-3 py-2 rounded-md text-center",
+                              "border bg-[rgb(var(--surface))] text-[rgb(var(--foreground))] border-[rgb(var(--border))]",
+                              "focus:outline-none focus:ring-2 focus:ring-[rgb(var(--ring))]",
+                              "dark:bg-slate-900 dark:text-slate-100 dark:border-slate-700",
+                            ].join(" ")}
                             disabled={!canEdit}
                           />
                         </td>
-                        <td className="px-4 py-3 border-r border-gray-200">
+
+                        {/* Fase */}
+                        <td className="px-4 py-3 border-r border-[rgb(var(--border))]">
                           <div className="flex justify-center items-center">
                             <select
                               name="fase"
@@ -496,7 +515,12 @@ export default function NewTipoAcondicionamiento({
                                   fase: e.target.value,
                                 })
                               }
-                              className="w-full px-3 py-2 border border-gray-300 rounded-md text-center text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              className={[
+                                "w-full px-3 py-2 rounded-md text-center",
+                                "border bg-[rgb(var(--surface))] text-[rgb(var(--foreground))] border-[rgb(var(--border))]",
+                                "focus:outline-none focus:ring-2 focus:ring-[rgb(var(--ring))]",
+                                "dark:bg-slate-900 dark:text-slate-100 dark:border-slate-700",
+                              ].join(" ")}
                               disabled={!canEdit}
                             >
                               <option value="">Seleccione una fase</option>
@@ -512,7 +536,7 @@ export default function NewTipoAcondicionamiento({
                                   </option>
                                 )}
 
-                              {/* Mostrar solo última versión por descripción (agrupada) */}
+                              {/* Solo última versión por descripción */}
                               {listStages
                                 .reduce((acc: Stage[], current: Stage) => {
                                   const existing = acc.find(
@@ -535,12 +559,16 @@ export default function NewTipoAcondicionamiento({
                                   }
                                   return acc;
                                 }, [])
-                                .filter((item) => item.phase_type !== "Control") // excluir "Control" aquí
+                                .filter((item) => item.phase_type !== "Control")
                                 .sort((a, b) =>
                                   a.description.localeCompare(b.description)
                                 )
                                 .map((item) => (
-                                  <option key={item.id} value={item.id}>
+                                  <option
+                                    key={item.id}
+                                    value={item.id}
+                                    className="bg-[rgb(var(--surface))] text-[rgb(var(--foreground))] dark:bg-slate-900 dark:text-slate-100"
+                                  >
                                     {item.description}
                                     {Number(item.version) > 1
                                       ? ` (v${item.version})`
@@ -550,7 +578,9 @@ export default function NewTipoAcondicionamiento({
                             </select>
                           </div>
                         </td>
-                        <td className="px-4 py-3 border-r border-gray-200">
+
+                        {/* Editable (switch) */}
+                        <td className="px-4 py-3 border-r border-[rgb(var(--border))]">
                           <div className="flex justify-center items-center">
                             <label className="inline-flex items-center justify-center cursor-pointer">
                               <input
@@ -561,11 +591,27 @@ export default function NewTipoAcondicionamiento({
                                 className="sr-only peer"
                                 disabled={!canEdit}
                               />
-                              <div className="relative w-11 h-6 bg-gray-200 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                              <div
+                                className={[
+                                  // track
+                                  "relative w-11 h-6 rounded-full transition-colors",
+                                  "bg-[rgb(var(--surface-muted))] peer-checked:bg-[rgb(var(--accent))]",
+                                  // focus y disabled via peer
+                                  "peer-focus-visible:outline-none peer-focus-visible:ring-2 peer-focus-visible:ring-[rgb(var(--ring))]",
+                                  "peer-disabled:opacity-50 peer-disabled:cursor-not-allowed",
+                                  // knob (usa ::after)
+                                  "after:content-[''] after:absolute after:top-0.5 after:left-[2px]",
+                                  "after:h-5 after:w-5 after:rounded-full after:transition-transform",
+                                  "after:bg-[rgb(var(--surface))] after:border after:border-[rgb(var(--border))]",
+                                  "peer-checked:after:translate-x-full",
+                                ].join(" ")}
+                              />
                             </label>
                           </div>
                         </td>
-                        <td className="px-4 py-3 border-r border-gray-200">
+
+                        {/* Control (switch) */}
+                        <td className="px-4 py-3 border-r border-[rgb(var(--border))]">
                           <div className="flex justify-center items-center">
                             <label className="inline-flex items-center justify-center cursor-pointer">
                               <input
@@ -576,11 +622,24 @@ export default function NewTipoAcondicionamiento({
                                 className="sr-only peer"
                                 disabled={!canEdit}
                               />
-                              <div className="relative w-11 h-6 bg-gray-200 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                              <div
+                                className={[
+                                  "relative w-11 h-6 rounded-full transition-colors",
+                                  "bg-[rgb(var(--surface-muted))] peer-checked:bg-[rgb(var(--accent))]",
+                                  "peer-focus-visible:outline-none peer-focus-visible:ring-2 peer-focus-visible:ring-[rgb(var(--ring))]",
+                                  "peer-disabled:opacity-50 peer-disabled:cursor-not-allowed",
+                                  "after:content-[''] after:absolute after:top-0.5 after:left-[2px]",
+                                  "after:h-5 after:w-5 after:rounded-full after:transition-transform",
+                                  "after:bg-[rgb(var(--surface))] after:border after:border-[rgb(var(--border))]",
+                                  "peer-checked:after:translate-x-full",
+                                ].join(" ")}
+                              />
                             </label>
                           </div>
                         </td>
-                        <td className="px-4 py-3 border-r border-gray-200">
+
+                        {/* Fase Control */}
+                        <td className="px-4 py-3 border-r border-[rgb(var(--border))]">
                           <div className="flex justify-center items-center">
                             {lineaForm.control && (
                               <select
@@ -593,7 +652,12 @@ export default function NewTipoAcondicionamiento({
                                   })
                                 }
                                 disabled={!canEdit}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md text-center text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                className={[
+                                  "w-full px-3 py-2 rounded-md text-center",
+                                  "border bg-[rgb(var(--surface))] text-[rgb(var(--foreground))] border-[rgb(var(--border))]",
+                                  "focus:outline-none focus:ring-2 focus:ring-[rgb(var(--ring))]",
+                                  "dark:bg-slate-900 dark:text-slate-100 dark:border-slate-700",
+                                ].join(" ")}
                               >
                                 <option value="">
                                   Seleccione una fase control
@@ -603,7 +667,11 @@ export default function NewTipoAcondicionamiento({
                                     a.description.localeCompare(b.description)
                                   )
                                   .map((item) => (
-                                    <option key={item.id} value={item.id}>
+                                    <option
+                                      key={item.id}
+                                      value={item.id}
+                                      className="bg-[rgb(var(--surface))] text-[rgb(var(--foreground))] dark:bg-slate-900 dark:text-slate-100"
+                                    >
                                       {item.description}
                                     </option>
                                   ))}
@@ -611,6 +679,8 @@ export default function NewTipoAcondicionamiento({
                             )}
                           </div>
                         </td>
+
+                        {/* Acción agregar */}
                         <td className="px-4 py-3">
                           <div className="flex justify-center items-center">
                             <Button
@@ -629,7 +699,7 @@ export default function NewTipoAcondicionamiento({
             )}
 
             {/* Acciones finales */}
-            <hr className="my-4 border-t border-gray-600 w-full max-w-lg mx-auto opacity-60" />
+            <hr className="my-4 w-full max-w-lg mx-auto opacity-60 border-t border-[rgb(var(--border))] dark:border-slate-700" />
             <div className="flex justify-center gap-4 mt-6">
               <Button onClick={handleReset} variant="cancel" label={"Cerrar"} />
               {canEdit && (

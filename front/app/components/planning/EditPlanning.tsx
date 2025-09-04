@@ -16,6 +16,8 @@ import { UserPlaning } from "../../interfaces/CreateUser";
 import SelectorDual from "../SelectorDual/SelectorDual";
 import DateLoader from "@/app/components/loader/DateLoader";
 import { API_URL } from "../../config/api";
+import { Input } from "../inputs/Input";
+
 // 🔹 Servicios
 import {
   updatePlanning,
@@ -182,8 +184,8 @@ export async function fetchAndProcessPlans(id: number): Promise<ServerPlan[]> {
   const rawArray: unknown[] = Array.isArray(serverPlansRaw)
     ? serverPlansRaw
     : serverPlansRaw != null
-      ? [serverPlansRaw]
-      : [];
+    ? [serverPlansRaw]
+    : [];
 
   if (rawArray.length === 0) {
     const keys = isRecord(resp) ? Object.keys(resp).join(", ") : "—";
@@ -744,7 +746,7 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
 
         window.open("/pages/lineas", "_blank");
         setTimeout(() => {
-            window.location.reload();
+          window.location.reload();
         }, 3000);
         // handleClose();
       } else {
@@ -846,19 +848,20 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
 
     const data = await validate_orden(plan.id);
     if (data.estado === 100 || data.estado === null) {
-
-      showConfirm("¿Estás seguro desea crear una orden relacionada ?", async () => {
-        const response = await getRelacionarOrden(plan.id);
-        if (response.estado !== 200) {
-          showError("Error, orden no permitida para ser relacionada");
-          return;
+      showConfirm(
+        "¿Estás seguro desea crear una orden relacionada ?",
+        async () => {
+          const response = await getRelacionarOrden(plan.id);
+          if (response.estado !== 200) {
+            showError("Error, orden no permitida para ser relacionada");
+            return;
+          }
+          showSuccess("Orden relacionada correctamente");
+          setTimeout(() => {
+            window.location.reload();
+          }, 1000);
         }
-        showSuccess("Orden relacionada correctamente");
-        setTimeout(() => {
-          window.location.reload();
-        }, 1000);
-      });
-
+      );
     } else {
       showError("La orden ya fue finalizada. Estado: " + data.estado);
     }
@@ -931,562 +934,616 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
             setIsOpen(false);
           }}
         >
-          <Text type="title" color="text-[#000]">
-            Editar Acondicionamiento
-          </Text>
-          <h2 className="text-xl font-bold mb-6">Editar planificación</h2>
+          <div className="dark:[--surface:30_41_59] dark:[--surface-muted:51_65_85] dark:[--border:71_85_105] dark:[--foreground:241_245_249] dark:[--ring:56_189_248] dark:[--accent:56_189_248]">
+            <Text type="title" color="text-[rgb(var(--foreground))]">
+              Editar Acondicionamiento
+            </Text>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="break-inside-avoid mb-4">
-              <Text type="subtitle" color="#000">
-                Consecutivo
-              </Text>
-              <input
-                className="w-full border p-3 rounded-lg text-gray-800 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500 text-center"
-                readOnly
-                value={currentPlan.number_order}
-                onChange={(e) =>
-                  setCurrentPlan({
-                    ...currentPlan,
-                    number_order: e.target.value,
-                  })
-                }
-                disabled={!canEdit}
-              />
-            </div>
-            {/* 🔹 Artículo */}
-            <div className="break-inside-avoid mb-4">
-              <Text type="subtitle" color="#000">
-                Artículo
-              </Text>
-              <input
-                className="w-full border p-3 rounded-lg text-gray-800 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500 text-center"
-                readOnly
-                value={currentPlan.codart}
-                onChange={(e) =>
-                  setCurrentPlan({ ...currentPlan, codart: e.target.value })
-                }
-                disabled={!canEdit}
-              />
-            </div>
-            {/* 🔹 Fecha de entrega */}
-            <div className="break-inside-avoid mb-4">
-              <Text type="subtitle" color="#000">
-                Fecha de entrega
-              </Text>
-              <input
-                className="w-full border p-3 rounded-lg text-gray-800 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500 text-center"
-                type="date"
-                readOnly
-                value={currentPlan.deliveryDate}
-                onChange={(e) =>
-                  setCurrentPlan({
-                    ...currentPlan,
-                    deliveryDate: e.target.value,
-                  })
-                }
-                disabled={!canEdit}
-              />
-            </div>
-            {/* 🔹 Registro Sanitario */}
-            <div className="break-inside-avoid mb-4">
-              <Text type="subtitle" color="#000">
-                Registro Sanitario
-              </Text>
-              <input
-                className="w-full border p-3 rounded-lg text-gray-800 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500 text-center"
-                value={currentPlan.healthRegistration}
-                readOnly
-                onChange={(e) =>
-                  setCurrentPlan({
-                    ...currentPlan,
-                    healthRegistration: e.target.value,
-                  })
-                }
-                disabled={!canEdit}
-              />
-            </div>
-            {/* 🔹 Lote */}
-            <div className="break-inside-avoid mb-4">
-              <Text type="subtitle" color="#000">
-                Lote
-              </Text>
-              <input
-                className="w-full border p-3 rounded-lg text-gray-800 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500 text-center"
-                value={currentPlan.lot}
-                readOnly
-                onChange={(e) =>
-                  setCurrentPlan({ ...currentPlan, lot: e.target.value })
-                }
-                disabled={!canEdit}
-              />
-            </div>
-            {/* 🔹 N° de orden */}
-            <div className="break-inside-avoid mb-4">
-              <Text type="subtitle" color="#000">
-                N° de orden
-              </Text>
-              <input
-                className="w-full border p-3 rounded-lg text-gray-800 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500 text-center"
-                value={currentPlan.orderNumber}
-                readOnly
-                onChange={(e) =>
-                  setCurrentPlan({
-                    ...currentPlan,
-                    orderNumber: e.target.value,
-                  })
-                }
-                disabled={!canEdit}
-              />
-            </div>
-            {/* 🔹 Cantidad a producir */}
-            {currentPlan && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="break-inside-avoid mb-4">
-                <Text type="subtitle" color="#000">
-                  Cantidad a producir
+                <Text type="subtitle" color="text-[rgb(var(--foreground))]">
+                  Consecutivo
                 </Text>
-                <input
-                  className="w-full border p-3 rounded-lg text-gray-800 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500 text-center"
-                  type="number"
+                <Input
                   readOnly
-                  value={currentPlan.quantityToProduce?.toString() ?? ""}
+                  value={currentPlan.number_order}
                   onChange={(e) =>
                     setCurrentPlan({
                       ...currentPlan,
-                      quantityToProduce: parseFloat(e.target.value),
+                      number_order: e.target.value,
                     })
                   }
                   disabled={!canEdit}
+                  tone="strong"
+                  className="w-full text-center mt-1"
                 />
               </div>
-            )}
-            {/* 🔹 Cliente */}
-            <div className="break-inside-avoid mb-4">
-              <Text type="subtitle" color="#000">
-                Cliente
-              </Text>
-              <input
-                className="w-full border p-3 rounded-lg text-gray-800 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500 text-center"
-                value={currentPlan.client_name || ""}
-                readOnly
-                onChange={(e) =>
-                  setCurrentPlan({
-                    ...currentPlan,
-                    client_name: e.target.value,
-                  })
-                }
-                disabled={!canEdit}
-              />
-            </div>
-            {/* 🔹 Planta */}
-            <div className="break-inside-avoid mb-4">
-              <Text type="subtitle" color="#000">
-                Planta
-              </Text>
-              <input
-                className="w-full border p-3 rounded-lg text-gray-800 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500 text-center"
-                value={currentPlan.factory || ""}
-                readOnly
-                disabled={!canEdit}
-              />
-            </div>
-            {/* 🔹 Lineas */}
-            <div className="break-inside-avoid mb-4">
-              <Text type="subtitle" color="#000">
-                Líneas
-              </Text>
-              <div className="flex flex-col sm:flex-row gap-4 mt-2">
-                {/* Lista de líneas disponibles */}
-                <div className="sm:w-1/2 w-full">
-                  <select
-                    multiple
-                    className="w-full h-48 border p-3 rounded-lg text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    value={(() => {
-                      if (!currentPlan.line) return [];
-                      if (Array.isArray(currentPlan.line))
-                        return currentPlan.line.map(String);
-                      try {
-                        return JSON.parse(currentPlan.line).map(String);
-                      } catch {
-                        return [];
-                      }
-                    })()}
-                    onChange={(e) => {
-                      const currentLine = (() => {
-                        if (!currentPlan.line) return [] as number[];
-                        if (Array.isArray(currentPlan.line))
-                          return currentPlan.line;
-                        try {
-                          return JSON.parse(currentPlan.line) as number[];
-                        } catch {
-                          return [] as number[];
-                        }
-                      })();
 
-                      const selected = Array.from(
-                        e.target.selectedOptions,
-                        (option) => Number(option.value)
-                      );
-                      const merged = Array.from(
-                        new Set([...currentLine, ...selected])
-                      );
-                      setCurrentPlan({ ...currentPlan, line: merged });
-                    }}
+              {/* 🔹 Artículo */}
+              <div className="break-inside-avoid mb-4">
+                <Text type="subtitle" color="text-[rgb(var(--foreground))]">
+                  Artículo
+                </Text>
+                <Input
+                  readOnly
+                  value={currentPlan.codart}
+                  onChange={(e) =>
+                    setCurrentPlan({ ...currentPlan, codart: e.target.value })
+                  }
+                  disabled={!canEdit}
+                  tone="strong"
+                  className="w-full text-center mt-1"
+                />
+              </div>
+
+              {/* 🔹 Fecha de entrega */}
+              <div className="break-inside-avoid mb-4">
+                <Text type="subtitle" color="text-[rgb(var(--foreground))]">
+                  Fecha de entrega
+                </Text>
+                <Input
+                  type="date"
+                  readOnly
+                  value={currentPlan.deliveryDate}
+                  onChange={(e) =>
+                    setCurrentPlan({
+                      ...currentPlan,
+                      deliveryDate: e.target.value,
+                    })
+                  }
+                  disabled={!canEdit}
+                  tone="strong"
+                  className="w-full text-center mt-1"
+                />
+              </div>
+
+              {/* 🔹 Registro Sanitario */}
+              <div className="break-inside-avoid mb-4">
+                <Text type="subtitle" color="text-[rgb(var(--foreground))]">
+                  Registro Sanitario
+                </Text>
+                <Input
+                  readOnly
+                  value={currentPlan.healthRegistration}
+                  onChange={(e) =>
+                    setCurrentPlan({
+                      ...currentPlan,
+                      healthRegistration: e.target.value,
+                    })
+                  }
+                  disabled={!canEdit}
+                  tone="strong"
+                  className="w-full text-center mt-1"
+                />
+              </div>
+
+              {/* 🔹 Lote */}
+              <div className="break-inside-avoid mb-4">
+                <Text type="subtitle" color="text-[rgb(var(--foreground))]">
+                  Lote
+                </Text>
+                <Input
+                  readOnly
+                  value={currentPlan.lot}
+                  onChange={(e) =>
+                    setCurrentPlan({ ...currentPlan, lot: e.target.value })
+                  }
+                  disabled={!canEdit}
+                  tone="strong"
+                  className="w-full text-center mt-1"
+                />
+              </div>
+
+              {/* 🔹 N° de orden */}
+              <div className="break-inside-avoid mb-4">
+                <Text type="subtitle" color="text-[rgb(var(--foreground))]">
+                  N° de orden
+                </Text>
+                <Input
+                  readOnly
+                  value={currentPlan.orderNumber}
+                  onChange={(e) =>
+                    setCurrentPlan({
+                      ...currentPlan,
+                      orderNumber: e.target.value,
+                    })
+                  }
+                  disabled={!canEdit}
+                  tone="strong"
+                  className="w-full text-center mt-1"
+                />
+              </div>
+
+              {/* 🔹 Cantidad a producir */}
+              {currentPlan && (
+                <div className="break-inside-avoid mb-4">
+                  <Text type="subtitle" color="text-[rgb(var(--foreground))]">
+                    Cantidad a producir
+                  </Text>
+                  <Input
+                    type="number"
+                    readOnly
+                    value={currentPlan.quantityToProduce?.toString() ?? ""}
+                    onChange={(e) =>
+                      setCurrentPlan({
+                        ...currentPlan,
+                        quantityToProduce: parseFloat(e.target.value),
+                      })
+                    }
                     disabled={!canEdit}
-                  >
-                    {manu.length > 0 ? (
-                      manu
-                        .filter(
-                          (line) => !(currentPlan.line ?? []).includes(line.id)
-                        )
-                        .map((line) => (
-                          <option key={line.id} value={line.id.toString()}>
-                            {line.name}
-                          </option>
-                        ))
-                    ) : (
-                      <option value="" disabled>
-                        No hay líneas disponibles
-                      </option>
-                    )}
-                  </select>
+                    tone="strong"
+                    className="w-full text-center mt-1"
+                  />
                 </div>
+              )}
 
-                {/* Lista de líneas seleccionadas */}
-                <div className="sm:w-1/2 w-full border rounded-lg p-3 h-48 overflow-auto bg-gray-50">
-                  {getLinesArray(currentPlan.line).length > 0 ? (
+              {/* 🔹 Cliente */}
+              <div className="break-inside-avoid mb-4">
+                <Text type="subtitle" color="text-[rgb(var(--foreground))]">
+                  Cliente
+                </Text>
+                <Input
+                  readOnly
+                  value={currentPlan.client_name || ""}
+                  onChange={(e) =>
+                    setCurrentPlan({
+                      ...currentPlan,
+                      client_name: e.target.value,
+                    })
+                  }
+                  disabled={!canEdit}
+                  tone="strong"
+                  className="w-full text-center mt-1"
+                />
+              </div>
+
+              {/* 🔹 Planta */}
+              <div className="break-inside-avoid mb-4">
+                <Text type="subtitle" color="text-[rgb(var(--foreground))]">
+                  Planta
+                </Text>
+                <Input
+                  readOnly
+                  value={currentPlan.factory || ""}
+                  disabled={!canEdit}
+                  tone="strong"
+                  className="w-full text-center mt-1"
+                />
+              </div>
+
+              {/* 🔹 Líneas (select múltiple se mantiene) */}
+              <div className="break-inside-avoid mb-4">
+                <Text type="subtitle" color="text-[rgb(var(--foreground))]">
+                  Líneas
+                </Text>
+                <div className="flex flex-col sm:flex-row gap-4 mt-2">
+                  {/* Lista de líneas disponibles */}
+                  <div className="sm:w-1/2 w-full">
+                    <select
+                      multiple
+                      className="w-full h-48 p-3 rounded-lg border bg-[rgb(var(--surface))] text-[rgb(var(--foreground))] border-[rgb(var(--border))] focus:outline-none focus:ring-2 focus:ring-[rgb(var(--ring))] dark:bg-slate-900 dark:text-slate-100 dark:border-slate-700"
+                      value={(() => {
+                        if (!currentPlan.line) return [];
+                        if (Array.isArray(currentPlan.line))
+                          return currentPlan.line.map(String);
+                        try {
+                          return JSON.parse(currentPlan.line).map(String);
+                        } catch {
+                          return [];
+                        }
+                      })()}
+                      onChange={(e) => {
+                        const currentLine = (() => {
+                          if (!currentPlan.line) return [] as number[];
+                          if (Array.isArray(currentPlan.line))
+                            return currentPlan.line;
+                          try {
+                            return JSON.parse(currentPlan.line) as number[];
+                          } catch {
+                            return [] as number[];
+                          }
+                        })();
+
+                        const selected = Array.from(
+                          e.target.selectedOptions,
+                          (option) => Number(option.value)
+                        );
+                        const merged = Array.from(
+                          new Set([...currentLine, ...selected])
+                        );
+                        setCurrentPlan({ ...currentPlan, line: merged });
+                      }}
+                      disabled={!canEdit}
+                    >
+                      {manu.length > 0 ? (
+                        manu
+                          .filter(
+                            (line) =>
+                              !(currentPlan.line ?? []).includes(line.id)
+                          )
+                          .map((line) => (
+                            <option
+                              key={line.id}
+                              value={line.id.toString()}
+                              className="bg-[rgb(var(--surface))] text-[rgb(var(--foreground))]"
+                            >
+                              {line.name}
+                            </option>
+                          ))
+                      ) : (
+                        <option value="" disabled>
+                          No hay líneas disponibles
+                        </option>
+                      )}
+                    </select>
+                  </div>
+
+                  {/* Lista de líneas seleccionadas */}
+                  <div className="sm:w-1/2 w-full border rounded-lg p-3 h-48 overflow-auto bg-[rgb(var(--surface-muted))] border-[rgb(var(--border))] dark:bg-slate-800/70 dark:border-slate-700">
+                    {getLinesArray(currentPlan.line).length > 0 ? (
+                      getLinesArray(currentPlan.line).map((lineId) => {
+                        const line = manu.find((l) => l.id === lineId);
+                        if (!line) return null;
+                        return (
+                          <div
+                            key={line.id}
+                            className="flex justify-between items-center px-3 py-1 mb-2 rounded-md bg-[rgb(var(--accent))]/15 text-[rgb(var(--accent))]"
+                          >
+                            <span className="truncate">{line.name}</span>
+                            <button
+                              onClick={() =>
+                                setCurrentPlan({
+                                  ...currentPlan,
+                                  line: getLinesArray(currentPlan.line).filter(
+                                    (id) => id !== line.id
+                                  ),
+                                })
+                              }
+                              className="font-bold text-red-500 hover:text-red-600"
+                              disabled={!canEdit}
+                            >
+                              ✖
+                            </button>
+                          </div>
+                        );
+                      })
+                    ) : (
+                      <p className="text-[rgb(var(--foreground))]/50 text-sm">
+                        No hay líneas seleccionadas
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Actividades disponibles (sin cambios) */}
+              <div className="break-inside-avoid mb-4">
+                <div className="flex-1 p-4 max-h-64 overflow-y-auto border rounded-lg shadow-sm transition-all bg-[rgb(var(--surface-muted))] border-[rgb(var(--border))] dark:bg-slate-800/70 dark:border-slate-700">
+                  <Text type="subtitle" color="text-[rgb(var(--foreground))]">
+                    Actividades disponibles
+                  </Text>
+                  {availableActivities.map((act) => {
+                    const isDisabled = !canEdit;
+                    return (
+                      <div
+                        key={act.id}
+                        draggable={!isDisabled}
+                        onDragStart={() => {
+                          if (!isDisabled) setDraggedActivityId(act.id);
+                        }}
+                        className={[
+                          "border p-3 mb-3 rounded-md shadow-sm transition-shadow flex justify-between items-center",
+                          isDisabled
+                            ? "cursor-not-allowed bg-[rgb(var(--surface-muted))] text-[rgb(var(--foreground))] border-[rgb(var(--border))]"
+                            : "cursor-grab bg-[rgb(var(--surface))] hover:shadow-md border-[rgb(var(--border))]",
+                        ].join(" ")}
+                        title={
+                          isDisabled
+                            ? "No tienes permiso para arrastrar actividades"
+                            : ""
+                        }
+                      >
+                        <span className="text-[rgb(var(--foreground))] text-center">
+                          {act.description}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Líneas y sus actividades (sin cambios) */}
+              <div className="break-inside-avoid mb-4">
+                <div className="flex-[3] flex gap-6 flex-wrap">
+                  {!currentPlan || !currentPlan.line ? (
+                    <p className="text-[rgb(var(--foreground))]/70">
+                      No hay líneas disponibles.
+                    </p>
+                  ) : (
                     getLinesArray(currentPlan.line).map((lineId) => {
-                      const line = manu.find((l) => l.id === lineId);
-                      if (!line) return null;
+                      const activitiesForLine = lineActivities[lineId];
                       return (
                         <div
-                          key={line.id}
-                          className="flex justify-between items-center bg-blue-100 text-blue-800 px-3 py-1 rounded-md mb-2"
+                          key={lineId}
+                          onDragOver={(e) => e.preventDefault()}
+                          onDrop={() => handleDrop(lineId)}
+                          className="flex-1 min-w-[250px] p-4 rounded-lg border-2 border-dashed bg-[rgb(var(--accent))]/10 border-[rgb(var(--accent))]/40 transition-colors"
                         >
-                          <span className="truncate">{line.name}</span>
-                          <button
-                            onClick={() =>
-                              setCurrentPlan({
-                                ...currentPlan,
-                                line: getLinesArray(currentPlan.line).filter(
-                                  (id) => id !== line.id
-                                ),
-                              })
-                            }
-                            className="text-red-500 hover:text-red-700 font-bold"
-                            disabled={!canEdit}
+                          <Text
+                            type="subtitle"
+                            color="text-[rgb(var(--foreground))]"
                           >
-                            ✖
-                          </button>
+                            {lineDetails[lineId]?.name || `Línea ${lineId}`}
+                          </Text>
+
+                          {Array.isArray(activitiesForLine) &&
+                          activitiesForLine.length > 0 ? (
+                            activitiesForLine.map((actId) => {
+                              const act = activitiesDetails.find(
+                                (a) => a.id === actId
+                              );
+                              if (!act) {
+                                return (
+                                  <p
+                                    key={actId}
+                                    className="text-red-400 italic"
+                                  >
+                                    Actividad no encontrada (ID: {actId})
+                                  </p>
+                                );
+                              }
+
+                              return (
+                                <div
+                                  key={act.id}
+                                  draggable
+                                  onDragStart={() =>
+                                    setDraggedActivityId(act.id)
+                                  }
+                                  className="border p-3 mb-3 rounded-md cursor-grab bg-[rgb(var(--surface))] shadow-sm hover:shadow-md transition-shadow flex justify-between items-center border-[rgb(var(--border))]"
+                                >
+                                  <span className="text-[rgb(var(--foreground))] text-center">
+                                    {act.description}
+                                  </span>
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      removeActivityFromLine(lineId, act.id);
+                                    }}
+                                    className="ml-3 font-bold text-red-500 hover:text-red-600"
+                                    aria-label={`Eliminar actividad ${act.description}`}
+                                  >
+                                    &times;
+                                  </button>
+                                </div>
+                              );
+                            })
+                          ) : (
+                            <p className="text-[rgb(var(--foreground))]/50 italic">
+                              Sin actividades
+                            </p>
+                          )}
                         </div>
                       );
                     })
-                  ) : (
-                    <p className="text-gray-400 text-sm">
-                      No hay líneas seleccionadas
-                    </p>
                   )}
                 </div>
               </div>
-            </div>
-            {/* Actividades disponibles para arrastrar */}
-            <div className="break-inside-avoid mb-4">
-              <div className="flex-1 border border-gray-200 rounded-lg p-4 bg-gray-50 shadow-sm transition-all max-h-64 overflow-y-auto scrollbar-thin">
-                <Text type="subtitle" color="#000">
-                  Actividades disponibles
-                </Text>
-                {availableActivities.map((act) => {
-                  const isDisabled = !canEdit;
-                  return (
-                    <div
-                      key={act.id}
-                      draggable={!isDisabled}
-                      onDragStart={() => {
-                        if (!isDisabled) setDraggedActivityId(act.id);
-                      }}
-                      className={`border border-gray-300 p-3 mb-3 rounded-md ${isDisabled
-                        ? "cursor-not-allowed bg-gray-100 text-gray-900"
-                        : "cursor-grab bg-white hover:shadow"
-                        } shadow-sm transition-shadow flex justify-between items-center`}
-                      title={
-                        isDisabled
-                          ? "No tienes permiso para arrastrar actividades"
-                          : ""
-                      }
-                    >
-                      <span className="text-gray-700 text-center">
-                        {act.description}
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-            {/* Líneas y sus actividades */}
-            <div className="break-inside-avoid mb-4">
-              <div className="flex-[3] flex gap-6 flex-wrap">
-                {!currentPlan || !currentPlan.line ? (
-                  <p>No hay líneas disponibles.</p>
-                ) : (
-                  getLinesArray(currentPlan.line).map((lineId) => {
-                    const activitiesForLine = lineActivities[lineId];
-                    return (
-                      <div
-                        key={lineId}
-                        onDragOver={(e) => e.preventDefault()}
-                        onDrop={() => handleDrop(lineId)}
-                        className="flex-1 min-w-[250px] border-2 border-dashed border-blue-300 rounded-lg p-4 bg-blue-50 transition-colors"
-                      >
-                        <Text type="subtitle" color="#000">
-                          {lineDetails[lineId]?.name || `Línea ${lineId}`}
-                        </Text>
 
-                        {Array.isArray(activitiesForLine) &&
-                          activitiesForLine.length > 0 ? (
-                          activitiesForLine.map((actId) => {
-                            const act = activitiesDetails.find(
-                              (a) => a.id === actId
-                            );
-                            if (!act) {
-                              return (
-                                <p key={actId} className="text-red-400 italic">
-                                  Actividad no encontrada (ID: {actId})
-                                </p>
-                              );
-                            }
-
-                            return (
-                              <div
-                                key={act.id}
-                                draggable
-                                onDragStart={() => setDraggedActivityId(act.id)}
-                                className="border border-blue-300 p-3 mb-3 rounded-md cursor-grab bg-teal-50 shadow-sm hover:shadow-md transition-shadow flex justify-between items-center"
-                              >
-                                <span className="text-gray-800 text-center">
-                                  {act.description}
-                                </span>
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    removeActivityFromLine(lineId, act.id);
-                                  }}
-                                  className="ml-3 text-red-500 hover:text-red-700 font-bold"
-                                  aria-label={`Eliminar actividad ${act.description}`}
-                                >
-                                  &times;
-                                </button>
-                              </div>
-                            );
-                          })
-                        ) : (
-                          <p className="text-gray-400 italic">
-                            Sin actividades
-                          </p>
-                        )}
-                      </div>
-                    );
-                  })
-                )}
-              </div>
-            </div>
-            {/* 🔹 Maquinaria */}
-            <div className="break-inside-avoid mb-4">
-              <SelectorDual
-                titulo="Maquinaria"
-                disponibles={machine}
-                seleccionados={selectedMachines}
-                onAgregar={agregarMaquina}
-                onQuitar={removerMaquina}
-              />
-            </div>
-            <div className="break-inside-avoid mb-4">
-              <SelectorDual
-                titulo="Usuarios"
-                disponibles={user}
-                seleccionados={selectedUsers}
-                onAgregar={agregarUser}
-                onQuitar={removerUser}
-              />
-            </div>
-            {/* 🔹 Recursos */}
-            <div className="break-inside-avoid mb-4">
-              <Text type="subtitle" color="#000">
-                Recursos
-              </Text>
-              <textarea
-                name="resource"
-                value={currentPlan.resource || ""}
-                onChange={(e) =>
-                  setCurrentPlan({
-                    ...currentPlan,
-                    resource: e.target.value,
-                  })
-                }
-                className="w-full border p-3 rounded-lg text-gray-800 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                rows={4}
-              />
-            </div>
-            {/* Color */}
-            <div className="break-inside-avoid mb-4">
-              <Text type="subtitle" color="#000">
-                Color
-              </Text>
-              <div className="flex flex-wrap gap-2 mt-2">
-                {COLORS.map((color, index) => {
-                  const isSelected = currentPlan.color === color;
-                  return (
-                    <button
-                      key={`${color}-${index}`}
-                      type="button"
-                      className={`w-6 h-6 rounded-full relative flex items-center justify-center transition-shadow duration-200 ${isSelected ? "ring-2 ring-white ring-offset-2" : ""
-                        }`}
-                      style={{ backgroundColor: color }}
-                      onClick={() => setCurrentPlan({ ...currentPlan, color })}
-                      aria-label={`Seleccionar color ${color}`}
-                    >
-                      {isSelected && (
-                        <svg
-                          className="w-3 h-3 text-white"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="3"
-                          viewBox="0 0 24 24"
-                        >
-                          <path d="M5 13l4 4L19 7" />
-                        </svg>
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-            {/* Icono */}
-            <div className="break-inside-avoid mb-4">
-              <Text type="subtitle" color="#000">
-                Icono
-              </Text>
-              <IconSelector
-                selectedIcon={currentPlan?.icon || ""}
-                onChange={(iconName) =>
-                  setCurrentPlan((prev) =>
-                    prev ? { ...prev, icon: iconName } : prev
-                  )
-                }
-              />
-            </div>
-            {/* 🔹 Duración */}
-            <div className="break-inside-avoid mb-4">
-              <Text type="subtitle" color="#000">
-                Duración
-                <InfoPopover content="Esta duracion es calculada segun la cantidad de fases que requiera multiple" />
-              </Text>
-              <input
-                type="text"
-                readOnly
-                className="w-full pl-10 pr-4 py-2 rounded-md border border-gray-300 bg-gray-100 text-sm text-gray-700 text-center"
-                value={`${currentPlan.duration} min ---> ${getFormattedDuration(
-                  Number(currentPlan.duration)
-                )}`}
-              />
-            </div>
-            {/* 🔹 Fecha de Inicio */}
-            <div className="break-inside-avoid mb-4">
-              <Text type="subtitle" color="#000">
-                Fecha y Hora de Inicio
-              </Text>
-              <input
-                className="w-full border p-3 rounded-lg text-gray-800 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500 text-center"
-                value={currentPlan.start_date || ""}
-                type="datetime-local"
-                onChange={(e) => {
-                  const start = e.target.value;
-                  let end = "";
-
-                  if (currentPlan?.duration) {
-                    end = calculateEndDateRespectingWorkHours(
-                      start,
-                      Number(currentPlan.duration)
-                    );
-                  } else {
-                    const fallback = new Date(start);
-                    fallback.setHours(18, 0, 0, 0);
-                    const pad = (n: number) => n.toString().padStart(2, "0");
-                    end = `${fallback.getFullYear()}-${pad(
-                      fallback.getMonth() + 1
-                    )}-${pad(fallback.getDate())}T${pad(
-                      fallback.getHours()
-                    )}:${pad(fallback.getMinutes())}`;
-                  }
-
-                  setCurrentPlan({
-                    ...currentPlan,
-                    start_date: start,
-                    end_date: end,
-                  });
-                }}
-              />
-            </div>
-            <div className="break-inside-avoid mb-4">
-              <Text type="subtitle" color="#000">
-                Duración por fase
-              </Text>
-              <div className="w-full p-3 mt-2 text-sm text-gray-800 bg-gray-100 border rounded whitespace-pre-line">
-                {currentPlan.duration_breakdown
-                  ? formatDurationBreakdown(currentPlan.duration_breakdown)
-                  : "Sin desglose disponible"}
-              </div>
-            </div>
-
-            <div className="break-inside-avoid mb-4">
-              <Text type="subtitle" color="#000">
-                Fecha y Hora de Final
-              </Text>
-              <input
-                className="w-full border p-3 rounded-lg text-gray-800 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500 text-center"
-                value={currentPlan.end_date || ""}
-                type="datetime-local"
-                onChange={(e) =>
-                  setCurrentPlan({ ...currentPlan, end_date: e.target.value })
-                }
-              />
-            </div>
-          </div>
-
-          <div className="flex justify-center gap-2 mt-6">
-            <Button
-              onClick={() => setIsOpen(false)}
-              variant="cancel"
-              label="Cancelar"
-            />
-            {currentPlan?.status_dates !== "Planificación" &&
-              currentPlan?.status_dates !== "En ejecución" &&
-              currentPlan?.status_dates !== "Ejecutado" && (
-                <Button
-                  onClick={async () => {
-                    if (isSaving) return;
-                    setIsSaving(true);
-                    try {
-                      const updatedPlanWithStatus = {
-                        ...currentPlan,
-                        status_dates: "Planificación",
-                      };
-                      await handleSave(updatedPlanWithStatus);
-                    } catch (err) {
-                      console.error("Error al finalizar edición:", err);
-                    } finally {
-                      setIsSaving(false);
-                    }
-                  }}
-                  variant="terciario"
-                  disabled={isSaving}
-                  label={isSaving ? "Guardando..." : "Planificar y Guardar"}
+              {/* 🔹 Maquinaria / Usuarios (sin cambios) */}
+              <div className="break-inside-avoid mb-4">
+                <SelectorDual
+                  titulo="Maquinaria"
+                  disponibles={machine}
+                  seleccionados={selectedMachines}
+                  onAgregar={agregarMaquina}
+                  onQuitar={removerMaquina}
                 />
-              )}
-            <Button
-              onClick={() => currentPlan && handleSave(currentPlan)}
-              variant="save"
-              label={isSaving ? "Guardando..." : "Actualizar"}
-            />
+              </div>
+
+              <div className="break-inside-avoid mb-4">
+                <SelectorDual
+                  titulo="Usuarios"
+                  disponibles={user}
+                  seleccionados={selectedUsers}
+                  onAgregar={agregarUser}
+                  onQuitar={removerUser}
+                />
+              </div>
+
+              {/* 🔹 Recursos */}
+              <div className="break-inside-avoid mb-4">
+                <Text type="subtitle" color="text-[rgb(var(--foreground))]">
+                  Recursos
+                </Text>
+                <textarea
+                  name="resource"
+                  value={currentPlan.resource || ""}
+                  onChange={(e) =>
+                    setCurrentPlan({
+                      ...currentPlan,
+                      resource: e.target.value,
+                    })
+                  }
+                  className="w-full p-3 mt-1 rounded-lg border bg-[rgb(var(--surface))] text-[rgb(var(--foreground))] border-[rgb(var(--border))] focus:outline-none focus:ring-2 focus:ring-[rgb(var(--ring))] dark:bg-slate-900 dark:text-slate-100 dark:border-slate-700"
+                  rows={4}
+                />
+              </div>
+
+              {/* Color (sin cambios) */}
+              <div className="break-inside-avoid mb-4">
+                <Text type="subtitle" color="text-[rgb(var(--foreground))]">
+                  Color
+                </Text>
+                <div className="flex flex-wrap gap-2 mt-2">
+                  {COLORS.map((color, index) => {
+                    const isSelected = currentPlan.color === color;
+                    return (
+                      <button
+                        key={`${color}-${index}`}
+                        type="button"
+                        className={`w-6 h-6 rounded-full relative flex items-center justify-center transition-shadow duration-200 ${
+                          isSelected
+                            ? "ring-2 ring-[rgb(var(--ring))] ring-offset-2 ring-offset-[rgb(var(--surface))]"
+                            : ""
+                        }`}
+                        style={{ backgroundColor: color }}
+                        onClick={() =>
+                          setCurrentPlan({ ...currentPlan, color })
+                        }
+                        aria-label={`Seleccionar color ${color}`}
+                      >
+                        {isSelected && (
+                          <svg
+                            className="w-3 h-3 text-white"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="3"
+                            viewBox="0 0 24 24"
+                          >
+                            <path d="M5 13l4 4L19 7" />
+                          </svg>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Icono (sin cambios) */}
+              <div className="break-inside-avoid mb-4">
+                <Text type="subtitle" color="text-[rgb(var(--foreground))]">
+                  Icono
+                </Text>
+                <IconSelector
+                  selectedIcon={currentPlan?.icon || ""}
+                  onChange={(iconName) =>
+                    setCurrentPlan((prev) =>
+                      prev ? { ...prev, icon: iconName } : prev
+                    )
+                  }
+                />
+              </div>
+
+              {/* 🔹 Duración */}
+              <div className="break-inside-avoid mb-4">
+                <Text type="subtitle" color="text-[rgb(var(--foreground))]">
+                  Duración
+                  <InfoPopover content="Esta duracion es calculada segun la cantidad de fases que requiera multiple" />
+                </Text>
+                <Input
+                  type="text"
+                  readOnly
+                  value={`${
+                    currentPlan.duration
+                  } min ---> ${getFormattedDuration(
+                    Number(currentPlan.duration)
+                  )}`}
+                  tone="strong"
+                  className="w-full text-center mt-1"
+                />
+              </div>
+
+              {/* 🔹 Fecha de Inicio */}
+              <div className="break-inside-avoid mb-4">
+                <Text type="subtitle" color="text-[rgb(var(--foreground))]">
+                  Fecha y Hora de Inicio
+                </Text>
+                <Input
+                  type="datetime-local"
+                  value={currentPlan.start_date || ""}
+                  onChange={(e) => {
+                    const start = e.target.value;
+                    let end = "";
+
+                    if (currentPlan?.duration) {
+                      end = calculateEndDateRespectingWorkHours(
+                        start,
+                        Number(currentPlan.duration)
+                      );
+                    } else {
+                      const fallback = new Date(start);
+                      fallback.setHours(18, 0, 0, 0);
+                      const pad = (n: number) => n.toString().padStart(2, "0");
+                      end = `${fallback.getFullYear()}-${pad(
+                        fallback.getMonth() + 1
+                      )}-${pad(fallback.getDate())}T${pad(
+                        fallback.getHours()
+                      )}:${pad(fallback.getMinutes())}`;
+                    }
+
+                    setCurrentPlan({
+                      ...currentPlan,
+                      start_date: start,
+                      end_date: end,
+                    });
+                  }}
+                  className="w-full text-center mt-1"
+                />
+              </div>
+
+              <div className="break-inside-avoid mb-4">
+                <Text type="subtitle" color="text-[rgb(var(--foreground))]">
+                  Duración por fase
+                </Text>
+                <div className="w-full p-3 mt-2 text-sm whitespace-pre-line rounded border bg-[rgb(var(--surface-muted))] text-[rgb(var(--foreground))] border-[rgb(var(--border))] dark:bg-slate-800/70 dark:text-slate-100 dark:border-slate-700">
+                  {currentPlan.duration_breakdown
+                    ? formatDurationBreakdown(currentPlan.duration_breakdown)
+                    : "Sin desglose disponible"}
+                </div>
+              </div>
+
+              <div className="break-inside-avoid mb-4">
+                <Text type="subtitle" color="text-[rgb(var(--foreground))]">
+                  Fecha y Hora de Final
+                </Text>
+                <Input
+                  type="datetime-local"
+                  value={currentPlan.end_date || ""}
+                  onChange={(e) =>
+                    setCurrentPlan({ ...currentPlan, end_date: e.target.value })
+                  }
+                  className="w-full text-center mt-1"
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-center gap-2 mt-6">
+              <Button
+                onClick={() => setIsOpen(false)}
+                variant="cancel"
+                label="Cancelar"
+              />
+              {currentPlan?.status_dates !== "Planificación" &&
+                currentPlan?.status_dates !== "En ejecución" &&
+                currentPlan?.status_dates !== "Ejecutado" && (
+                  <Button
+                    onClick={async () => {
+                      if (isSaving) return;
+                      setIsSaving(true);
+                      try {
+                        const updatedPlanWithStatus = {
+                          ...currentPlan,
+                          status_dates: "Planificación",
+                        };
+                        await handleSave(updatedPlanWithStatus);
+                      } catch (err) {
+                        console.error("Error al finalizar edición:", err);
+                      } finally {
+                        setIsSaving(false);
+                      }
+                    }}
+                    variant="terciario"
+                    disabled={isSaving}
+                    label={isSaving ? "Guardando..." : "Planificar y Guardar"}
+                  />
+                )}
+              <Button
+                onClick={() => currentPlan && handleSave(currentPlan)}
+                variant="save"
+                label={isSaving ? "Guardando..." : "Actualizar"}
+              />
+            </div>
           </div>
         </ModalSection>
       )}

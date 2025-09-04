@@ -1,13 +1,23 @@
 "use client";
 import React, { useState, useEffect } from "react";
-import { createActivitie, deleteActivitie, getActivitie, getActivitieId, updateActivitie, } from "../../services/maestras/activityServices";
+import {
+  createActivitie,
+  deleteActivitie,
+  getActivitie,
+  getActivitieId,
+  updateActivitie,
+} from "../../services/maestras/activityServices";
 import { getAuditsByModel } from "../../services/history/historyAuditServices";
 import { getRole } from "../../services/userDash/rolesServices";
 import { showError, showSuccess, showConfirm } from "../toastr/Toaster";
 import Button from "../buttons/buttons";
 import Table from "../table/Table";
 import { InfoPopover } from "../buttons/InfoPopover";
-import { ActivityType, Activities, FormData, } from "../../interfaces/NewActivity";
+import {
+  ActivityType,
+  Activities,
+  FormData,
+} from "../../interfaces/NewActivity";
 import Text from "../text/Text";
 import { Clock } from "lucide-react";
 import { CreateClientProps } from "../../interfaces/CreateClientProps";
@@ -17,6 +27,8 @@ import { Audit } from "../../interfaces/Audit";
 import OptionsManager from "../inputs/OptionsManager";
 import DateLoader from "@/app/components/loader/DateLoader";
 import type { Role } from "../../interfaces/Role";
+import { Input } from "../inputs/Input";
+import { Toggle } from "../inputs/Toggle";
 
 export default function NewActivity({
   canEdit = false,
@@ -26,7 +38,7 @@ export default function NewActivity({
     "Texto corto": { type: "text" },
     "Texto largo": { type: "textarea" },
     Fecha: { type: "date" },
-    Adjunto: { type: "file" },
+    // Adjunto: { type: "file" },
     Foto: { type: "image" },
     "Lista desplegable": { type: "select", options: ["Opción 1", "Opción 2"] },
     "Selección única": { type: "radio", options: [""] },
@@ -261,8 +273,8 @@ export default function NewActivity({
         return "Texto largo";
       case "date":
         return "Fecha";
-      case "file":
-        return "Adjunto";
+      // case "file":
+      //   return "Adjunto";
       case "image":
         return "Foto";
       case "select":
@@ -419,40 +431,48 @@ export default function NewActivity({
       {modalOpen && (
         <ModalSection isVisible={modalOpen} onClose={handleModalClose}>
           <div className="text-center">
-            <Text type="title" color="text-[#000]">
+            <Text type="title" color="text-[rgb(var(--foreground))]">
               {isEditing ? "Editar Actividad" : "Crear Actividad"}
             </Text>
           </div>
+
           {/* Campo de descripción */}
           <div>
-            <Text type="subtitle" color="#000">
+            <Text type="subtitle" color="text-[rgb(var(--foreground))]">
               Descripción
             </Text>
-            <input
-              type="text"
-              name="description"
+            <Input
+              placeholder="Descripción"
+              tone="strong"
               value={formData.description}
               onChange={(e) =>
                 setFormData({ ...formData, description: e.target.value })
               }
-              className="w-full border p-2 rounded-md text-black mb-4 text-center border-gray-400"
               disabled={!canEdit && !isEditing}
             />
           </div>
 
           {/* Selector de tipo de actividad */}
           <div>
-            <Text type="subtitle" color="#000">
+            <Text type="subtitle" color="text-[rgb(var(--foreground))]">
               Tipo de Actividad
             </Text>
             <select
               value={selectedType}
               onChange={(e) => handleTypeChange(e.target.value)}
-              className="w-full border p-2 rounded-md text-black mb-4 text-center border-gray-400"
+              className={[
+                "w-full p-2 rounded-md mb-4 text-center",
+                "border bg-[rgb(var(--surface))] text-[rgb(var(--foreground))] !border-[rgb(var(--border))]",
+                "focus:outline-none focus:ring-2 focus:ring-[rgb(var(--ring))]",
+              ].join(" ")}
               disabled={!canEdit && !isEditing}
             >
               {Object.keys(activityTypes).map((type) => (
-                <option key={type} value={type}>
+                <option
+                  key={type}
+                  value={type}
+                  className="bg-[rgb(var(--surface))] text-[rgb(var(--foreground))]"
+                >
                   {type}
                 </option>
               ))}
@@ -465,35 +485,42 @@ export default function NewActivity({
               parsedConfig.type || ""
             ) && (
               <div className="mb-4">
-                <h3 className="font-medium mb-2">Opciones:</h3>
+                <h3 className="font-medium mb-2 text-[rgb(var(--foreground))]">
+                  Opciones:
+                </h3>
                 <OptionsManager options={options} onChange={setOptions} />
               </div>
             )}
+
           {/* Firma específica (solo cuando el tipo es Firma) */}
           {selectedType === "Firma" && parsedConfig?.type === "signature" && (
             <div className="mt-5 space-y-4">
-              {/* Checkbox principal */}
-              <label className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border hover:bg-gray-100 transition-colors">
-                <input
-                  type="checkbox"
-                  className="h-5 w-5 accent-blue-600"
+              {/* Toggle principal */}
+              <div
+                className={[
+                  "flex items-center gap-3 p-3 rounded-lg border transition-colors",
+                  "bg-[rgb(var(--surface))] !border-[rgb(var(--border))]",
+                  "hover:bg-[rgb(var(--surface-muted))]",
+                ].join(" ")}
+              >
+                <Toggle
                   checked={!!parsedConfig.signatureSpecific}
-                  onChange={(e) => {
+                  onCheckedChange={(val) => {
                     const updated = {
                       ...parsedConfig,
                       type: "signature" as const,
-                      signatureSpecific: e.target.checked,
-                      allowedRoles: e.target.checked
-                        ? parsedConfig.allowedRoles ?? []
-                        : [],
+                      signatureSpecific: val,
+                      allowedRoles: val ? parsedConfig.allowedRoles ?? [] : [],
                     };
                     setFormData((prev) => ({
                       ...prev,
                       config: JSON.stringify(updated, null, 2),
                     }));
                   }}
+                  disabled={!canEdit && !isEditing}
+                  aria-label="Firma específica por rol"
                 />
-                <span className="text-sm font-medium text-gray-800">
+                <span className="text-sm font-medium text-[rgb(var(--foreground))]">
                   Firma específica (por rol)
                 </span>
                 <InfoPopover
@@ -504,21 +531,26 @@ export default function NewActivity({
                     </>
                   }
                 />
-              </label>
+              </div>
 
               {/* Selección de roles */}
               {parsedConfig.signatureSpecific && (
-                <div className="border rounded-lg p-4 bg-white shadow-sm">
-                  <p className="text-sm font-semibold text-gray-700 mb-3">
+                <div
+                  className={[
+                    "border rounded-lg p-4 shadow-sm",
+                    "bg-[rgb(var(--surface))] !border-[rgb(var(--border))]",
+                  ].join(" ")}
+                >
+                  <p className="text-sm font-semibold text-[rgb(var(--foreground))] mb-3">
                     Selecciona los roles autorizados:
                   </p>
 
                   {loadingRoles ? (
-                    <p className="text-sm text-gray-500 italic">
+                    <p className="text-sm text-[rgb(var(--muted-foreground))] italic">
                       Cargando roles…
                     </p>
                   ) : roles.length === 0 ? (
-                    <p className="text-sm text-gray-500 italic">
+                    <p className="text-sm text-[rgb(var(--muted-foreground))] italic">
                       No hay roles disponibles.
                     </p>
                   ) : (
@@ -530,18 +562,15 @@ export default function NewActivity({
                         return (
                           <label
                             key={r.id}
-                            className="flex items-center gap-2 p-2 rounded-md hover:bg-gray-50 transition-colors"
+                            className="flex items-center gap-3 p-2 rounded-md hover:bg-[rgb(var(--surface-muted))] transition-colors"
                           >
-                            <input
-                              type="checkbox"
-                              className="h-4 w-4 accent-blue-600"
+                            <Toggle
                               checked={checked}
-                              onChange={(e) => {
+                              onCheckedChange={(val) => {
                                 const prev = parsedConfig.allowedRoles ?? [];
-                                const next = e.target.checked
+                                const next = val
                                   ? [...prev, r.id]
                                   : prev.filter((id) => id !== r.id);
-
                                 const updated = {
                                   ...parsedConfig,
                                   type: "signature" as const,
@@ -553,8 +582,11 @@ export default function NewActivity({
                                   config: JSON.stringify(updated, null, 2),
                                 }));
                               }}
+                              disabled={!canEdit && !isEditing}
+                              aria-label={`Rol ${r.name}`}
+                              size="sm"
                             />
-                            <span className="text-sm text-gray-800">
+                            <span className="text-sm text-[rgb(var(--foreground))]">
                               {r.name}
                             </span>
                           </label>
@@ -571,83 +603,77 @@ export default function NewActivity({
           <div className="mt-4 flex flex-wrap items-center justify-center gap-6">
             {/* Requerido */}
             <div className="flex items-center gap-2">
-              <label htmlFor="binding" className="text-sm text-black">
+              <span className="text-sm text-[rgb(var(--foreground))]">
                 Requerido
-              </label>
-              <input
-                id="binding"
-                type="checkbox"
+              </span>
+              <Toggle
                 checked={formData.binding}
-                onChange={(e) =>
-                  setFormData({ ...formData, binding: e.target.checked })
+                onCheckedChange={(v) =>
+                  setFormData({ ...formData, binding: v })
                 }
-                className="h-5 w-5 text-blue-500 rounded-md focus:ring-2 focus:ring-blue-500 border-gray-400"
                 disabled={!canEdit && !isEditing}
+                aria-label="Requerido"
               />
             </div>
 
             {/* Medir Tiempo */}
             <div className="flex items-center gap-2">
-              <label htmlFor="has_time" className="text-sm text-black">
+              <span className="text-sm text-[rgb(var(--foreground))]">
                 Medir Tiempo
-              </label>
-              <input
-                id="has_time"
-                type="checkbox"
+              </span>
+              <Toggle
                 checked={formData.has_time}
-                onChange={(e) =>
-                  setFormData({ ...formData, has_time: e.target.checked })
+                onCheckedChange={(v) =>
+                  setFormData({ ...formData, has_time: v })
                 }
-                className="h-5 w-5 text-blue-500 rounded-md focus:ring-2 focus:ring-blue-500 border-gray-400"
                 disabled={!canEdit && !isEditing}
+                aria-label="Medir Tiempo"
               />
             </div>
 
             {/* Duración */}
             {formData.has_time && (
               <div className="flex items-center gap-2">
-                <label
-                  htmlFor="duration"
-                  className="text-sm text-black flex items-center gap-1"
-                >
+                <label className="text-sm text-[rgb(var(--foreground))] flex items-center gap-1">
                   Duración
                   <InfoPopover
                     content={
                       <>
-                        Para establecer segundos en la duración, separa los
-                        minutos con una <strong>coma (,)</strong>.<br />
-                        Ejemplo: <code>1,25 ó ,12</code> representa 1 minuto y
-                        25 segundos ó 12 segundos.
+                        Usa coma para segundos. Ej: <code>1,25</code> = 1 min 25
+                        seg.
                       </>
                     }
                   />
                 </label>
                 <div className="relative flex items-center">
-                  <Clock className="absolute left-3 top-2.5 w-4 h-4 text-gray-500" />
-                  <input
+                  <Input
                     type="number"
-                    name="duration"
-                    min={0}
-                    step="any"
-                    placeholder="Minutos"
-                    value={
-                      formData.duration === undefined ? "" : formData.duration
+                    size="sm"
+                    tone="strong"
+                    className="pl-9 w-[160px] text-left"
+                    leftIcon={
+                      <Clock className="w-4 h-4 text-[rgb(var(--muted-foreground))]" />
                     }
+                    placeholder="Minutos"
+                    value={formData.duration ?? ""}
                     onChange={(e) => {
                       const raw = e.target.value.replace(",", ".");
                       const parsed = parseFloat(raw);
-
                       setFormData({
                         ...formData,
                         duration:
                           raw === "" || isNaN(parsed) ? undefined : parsed,
                       });
                     }}
-                    className="w-[140px] border p-2 pl-9 rounded-md text-black focus:ring-2 focus:ring-blue-500 border-gray-400"
                     disabled={!canEdit && !isEditing}
                   />
                 </div>
-                <span className="border border-gray-300 rounded-lg py-1.5 px-3 text-gray-800 bg-gray-50 text-sm h-[40px] flex items-center">
+                <span
+                  className={[
+                    "rounded-lg py-1.5 px-3 text-sm h-[40px] flex items-center",
+                    "border bg-[rgb(var(--surface))] text-[rgb(var(--foreground))] !border-[rgb(var(--border))]",
+                  ].join(" ")}
+                >
                   ({getFormattedDuration(Number(formData.duration))})
                 </span>
               </div>
@@ -656,28 +682,22 @@ export default function NewActivity({
             {/* Rango de temperatura */}
             {selectedType === "Rangos" && (
               <div className="flex items-center gap-2">
-                <label
-                  htmlFor="duration"
-                  className="text-sm text-black flex items-center gap-1"
-                >
+                <label className="text-sm text-[rgb(var(--foreground))] flex items-center gap-1">
                   Rangos de la temperatura a medir
                   <InfoPopover
                     content={
                       <>
-                        Establece un rango numerico permitido para esta
-                        actividad.
-                        <br />
-                        Puedes usar decimales (por ejemplo: <code>36.5</code>).
-                        <br />
-                        El valor mínimo debe ser menor que el máximo.
+                        Establece un rango numérico permitido. Mín debe ser &lt;
+                        Máx.
                       </>
                     }
                   />
                 </label>
 
-                <input
+                <Input
                   type="number"
                   step="0.1"
+                  size="sm"
                   value={parsedConfig?.min ?? ""}
                   onChange={(e) => {
                     const updatedConfig = {
@@ -690,11 +710,14 @@ export default function NewActivity({
                     });
                   }}
                   placeholder="Mín"
-                  className="w-[100px] border p-2 rounded-md text-black text-center border-gray-400"
+                  tone="strong"
+                  className="w-[100px] text-center"
+                  disabled={!canEdit && !isEditing}
                 />
-                <input
+                <Input
                   type="number"
                   step="0.1"
+                  size="sm"
                   value={parsedConfig?.max ?? ""}
                   onChange={(e) => {
                     const updatedConfig = {
@@ -707,24 +730,27 @@ export default function NewActivity({
                     });
                   }}
                   placeholder="Máx"
-                  className="w-[100px] border p-2 rounded-md text-black text-center border-gray-400"
+                  tone="strong"
+                  className="w-[100px] text-center"
+                  disabled={!canEdit && !isEditing}
                 />
               </div>
             )}
 
+            {/* Muestreo */}
             {selectedType === "Muestreo" && (
-              <div className="flex flex-col gap-4">
-                <label className="text-sm font-medium text-black text-center">
+              <div className="flex flex-col gap-4 w-full">
+                <label className="text-sm font-medium text-[rgb(var(--foreground))] text-center">
                   Clasificación de inspección
                 </label>
 
                 <div className="flex gap-4 justify-center">
                   <select
-                    className="border p-2 rounded-md text-black"
+                    className="p-2 rounded-md border bg-[rgb(var(--surface))] text-[rgb(var(--foreground))] !border-[rgb(var(--border))] focus:outline-none focus:ring-2 focus:ring-[rgb(var(--ring))]"
                     value={parsedConfig?.clase || ""}
                     onChange={(e) => {
                       const nuevaClase = e.target.value;
-                      const nuevoNivel = ""; // Resetear nivel al cambiar clase
+                      const nuevoNivel = "";
                       setFormData({
                         ...formData,
                         config: JSON.stringify(
@@ -745,16 +771,13 @@ export default function NewActivity({
                   </select>
 
                   <select
-                    className="border p-2 rounded-md text-black"
+                    className="p-2 rounded-md border bg-[rgb(var(--surface))] text-[rgb(var(--foreground))] !border-[rgb(var(--border))] focus:outline-none focus:ring-2 focus:ring-[rgb(var(--ring))]"
                     value={parsedConfig?.nivel || ""}
                     onChange={(e) => {
                       setFormData({
                         ...formData,
                         config: JSON.stringify(
-                          {
-                            ...parsedConfig,
-                            nivel: e.target.value,
-                          },
+                          { ...parsedConfig, nivel: e.target.value },
                           null,
                           2
                         ),
@@ -776,73 +799,55 @@ export default function NewActivity({
                         </option>
                       ))}
                   </select>
+
                   <select
-                    className="border p-2 rounded-md text-black"
+                    className="p-2 rounded-md border bg-[rgb(var(--surface))] text-[rgb(var(--foreground))] !border-[rgb(var(--border))] focus:outline-none focus:ring-2 focus:ring-[rgb(var(--ring))]"
                     value={parsedConfig?.subnivel || ""}
                     onChange={(e) => {
                       setFormData({
                         ...formData,
                         config: JSON.stringify(
-                          {
-                            ...parsedConfig,
-                            subnivel: e.target.value,
-                          },
+                          { ...parsedConfig, subnivel: e.target.value },
                           null,
                           2
                         ),
                       });
                     }}
-                    disabled={!parsedConfig?.clase} // o podrías quitar esto si querés que esté siempre activo
+                    disabled={!parsedConfig?.clase}
                   >
                     <option value="">Seleccionar subnivel</option>
-                    {[
-                      "A",
-                      "B",
-                      "C",
-                      "D",
-                      "E",
-                      "F",
-                      "G",
-                      "H",
-                      "I",
-                      "J",
-                      "K",
-                      "L",
-                      "M",
-                      "N",
-                      "O",
-                      "P",
-                      "Q",
-                      "R",
-                    ].map((nivel) => (
-                      <option key={nivel} value={nivel}>
-                        {nivel}
-                      </option>
-                    ))}
+                    {"ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+                      .split("")
+                      .slice(0, 18)
+                      .map((nivel) => (
+                        <option key={nivel} value={nivel}>
+                          {nivel}
+                        </option>
+                      ))}
                   </select>
                 </div>
 
-                {/* Texto informativo y inputs de muestreo */}
-                <label className="text-sm font-medium text-black text-center">
+                <label className="text-sm font-medium text-[rgb(var(--foreground))] text-center">
                   Rangos de muestreo con valor
                   <InfoPopover
                     content={
                       <>
-                        Puedes agregar varios rangos definidos por{" "}
-                        <code>min</code>, <code>max</code> y su{" "}
-                        <code>valor</code> correspondiente.
-                        <br />
-                        Útil para medir múltiples puntos o escenarios.
+                        Agrega rangos con <code>min</code>, <code>max</code> y
+                        su <code>valor</code>.
                       </>
                     }
                   />
                 </label>
 
                 {(parsedConfig?.items || []).map((item, index) => (
-                  <div key={index} className="flex items-center gap-2">
-                    <input
+                  <div
+                    key={index}
+                    className="flex items-center gap-2 justify-center"
+                  >
+                    <Input
                       type="number"
                       step="0.1"
+                      size="sm"
                       value={item.min ?? ""}
                       onChange={(e) => {
                         const items = [...(parsedConfig?.items ?? [])];
@@ -857,11 +862,13 @@ export default function NewActivity({
                         });
                       }}
                       placeholder="Min"
-                      className="w-[80px] border p-2 rounded-md text-black text-center border-gray-400"
+                      className="w-[80px] text-center"
+                      disabled={!canEdit && !isEditing}
                     />
-                    <input
+                    <Input
                       type="number"
                       step="0.1"
+                      size="sm"
                       value={item.max ?? ""}
                       onChange={(e) => {
                         const items = [...(parsedConfig?.items ?? [])];
@@ -876,11 +883,13 @@ export default function NewActivity({
                         });
                       }}
                       placeholder="Max"
-                      className="w-[80px] border p-2 rounded-md text-black text-center border-gray-400"
+                      className="w-[80px] text-center"
+                      disabled={!canEdit && !isEditing}
                     />
-                    <input
+                    <Input
                       type="number"
                       step="0.1"
+                      size="sm"
                       value={item.valor ?? ""}
                       onChange={(e) => {
                         const items = [...(parsedConfig?.items ?? [])];
@@ -895,7 +904,8 @@ export default function NewActivity({
                         });
                       }}
                       placeholder="Valor"
-                      className="w-[80px] border p-2 rounded-md text-black text-center border-gray-400"
+                      className="w-[80px] text-center"
+                      disabled={!canEdit && !isEditing}
                     />
                     <Button
                       onClick={() => {
@@ -940,7 +950,7 @@ export default function NewActivity({
           </div>
 
           {/* Botones */}
-          <hr className="my-4 border-t border-gray-600 w-full max-w-lg mx-auto opacity-60" />
+          <hr className="my-4 w-full max-w-lg mx-auto opacity-60 border-t border-[rgb(var(--border))]" />
           <div className="flex justify-center gap-4 mt-6">
             <Button
               onClick={handleModalClose}

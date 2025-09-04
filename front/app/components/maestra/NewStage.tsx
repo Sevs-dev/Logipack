@@ -24,6 +24,8 @@ import { getRole } from "../../services/userDash/rolesServices";
 import { Role } from "@/app/interfaces/CreateUser";
 import DateLoader from "@/app/components/loader/DateLoader";
 import SelectorDual from "../../components/SelectorDual/SelectorDual";
+import { Input } from "../inputs/Input";
+import { Toggle } from "../inputs/Toggle";
 
 // ---------- Tipos ----------
 const phases = [
@@ -32,7 +34,7 @@ const phases = [
   "Control",
   "Actividades",
   "Procesos",
-  "Testigo"
+  "Testigo",
 ] as const;
 
 type PhaseType = (typeof phases)[number];
@@ -277,7 +279,8 @@ function NewStage({ canEdit = false, canView = false }: CreateClientProps) {
     if (
       (phaseType === "Actividades" ||
         phaseType === "Control" ||
-        phaseType === "Procesos" || phaseType === "Testigo") &&
+        phaseType === "Procesos" ||
+        phaseType === "Testigo") &&
       selectedActivities.length === 0
     ) {
       showError("Debes seleccionar al menos una actividad.");
@@ -311,7 +314,8 @@ function NewStage({ canEdit = false, canView = false }: CreateClientProps) {
     const payload: Data =
       phaseType === "Actividades" ||
       phaseType === "Control" ||
-      phaseType === "Procesos" || phaseType === "Testigo"
+      phaseType === "Procesos" ||
+      phaseType === "Testigo"
         ? { ...base, activities: selectedActivities.map((a) => a.id) }
         : base;
 
@@ -383,7 +387,8 @@ function NewStage({ canEdit = false, canView = false }: CreateClientProps) {
     const activityIds =
       phaseType === "Actividades" ||
       phaseType === "Control" ||
-      phaseType === "Procesos" || phaseType === "Testigo"
+      phaseType === "Procesos" ||
+      phaseType === "Testigo"
         ? selectedActivities.map((a) => a.id)
         : [];
 
@@ -539,23 +544,22 @@ function NewStage({ canEdit = false, canView = false }: CreateClientProps) {
             resetForm();
           }}
         >
-          <Text type="title" color="text-[#000]">
+          <Text type="title" color="text-[rgb(var(--foreground))]">
             {editingStage ? "Editar Fase" : "Crear Fase"}
           </Text>
 
           <div className="space-y-4">
             {/* Descripción */}
             <div>
-              <Text type="subtitle" color="#000">
+              <Text type="subtitle" color="text-[rgb(var(--foreground))]">
                 Descripción
               </Text>
-              <input
-                type="text"
+
+              <Input
+                placeholder="Descripción"
+                tone="strong"
                 value={description}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                  setDescription(e.target.value)
-                }
-                className="mt-1 w-full text-center p-2 border border-gray-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 text-black"
+                onChange={(e) => setDescription(e.target.value)}
                 disabled={!canEdit}
               />
             </div>
@@ -563,27 +567,36 @@ function NewStage({ canEdit = false, canView = false }: CreateClientProps) {
             {/* Tipo de Fase */}
             <div className="flex flex-col md:flex-row gap-4">
               <div className="w-full md:w-1/2">
-                <Text type="subtitle" color="#000">
+                <Text type="subtitle" color="text-[rgb(var(--foreground))]">
                   Tipo de Fase
                 </Text>
                 <select
                   value={phaseType}
-                  onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
+                  onChange={(e) =>
                     setPhaseType(e.target.value as PhaseType | "")
                   }
-                  className="mt-1 w-full text-center p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 text-black"
+                  className={[
+                    "mt-1 w-full text-center p-2 rounded-lg",
+                    "border bg-[rgb(var(--surface))] text-[rgb(var(--foreground))] !border-[rgb(var(--border))]",
+                    "focus:outline-none focus:ring-2 focus:ring-[rgb(var(--ring))]",
+                  ].join(" ")}
                   disabled={!canEdit}
                 >
                   <option value="" disabled>
                     Seleccione un tipo de Fase
                   </option>
                   {phases.map((phase) => (
-                    <option key={phase} value={phase}>
+                    <option
+                      key={phase}
+                      value={phase}
+                      className="bg-[rgb(var(--surface))] text-[rgb(var(--foreground))]"
+                    >
                       {phase}
                     </option>
                   ))}
                 </select>
               </div>
+
               <div className="w-full md:w-1/2">
                 <SelectorDual
                   titulo="Rol"
@@ -601,38 +614,47 @@ function NewStage({ canEdit = false, canView = false }: CreateClientProps) {
               </div>
             </div>
 
-            {/* Actividades (solo si Tipo de Fase es Actividades / Control / Procesos) */}
+            {/* Actividades */}
             {(phaseType === "Actividades" ||
               phaseType === "Control" ||
-              phaseType === "Procesos" || phaseType === "Testigo") && (
+              phaseType === "Procesos" ||
+              phaseType === "Testigo") && (
               <div className="space-y-4">
-                <Text type="subtitle" color="#000">
+                <Text type="subtitle" color="text-[rgb(var(--foreground))]">
                   Actividades
                 </Text>
                 <div className="flex flex-col md:flex-row gap-4">
-                  {/* Lista de actividades disponibles */}
+                  {/* Disponibles */}
                   <div className="w-full md:w-1/2">
-                    <Text type="subtitle" color="#000">
+                    <Text type="subtitle" color="text-[rgb(var(--foreground))]">
                       Disponibles
                     </Text>
-                    <div className="relative mb-2">
-                      <Search className="absolute left-3 top-2.5 w-4 h-4 text-gray-500" />
-                      <input
-                        type="text"
+
+                    <div className="mb-2">
+                      <Input
+                        size="sm"
+                        className="text-left"
                         placeholder="Buscar actividad..."
-                        value={searchTerm}
-                        onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                          setSearchTerm(e.target.value)
+                        leftIcon={
+                          <Search className="w-4 h-4 text-[rgb(var(--muted-foreground))]" />
                         }
-                        className="w-full border border-gray-300 p-2 pl-9 rounded-md text-sm text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
                         disabled={!canEdit}
                       />
                     </div>
-                    <ul className="mt-1 border border-gray-300 p-2 rounded-lg max-h-48 overflow-y-auto">
+
+                    <ul
+                      className={[
+                        "mt-1 p-2 rounded-lg max-h-48 overflow-y-auto custom-scroll",
+                        "border !border-[rgb(var(--border))]",
+                        "bg-[rgb(var(--surface))] text-[rgb(var(--foreground))]",
+                      ].join(" ")}
+                    >
                       {availableActivities
-                        .filter((activity) => activity.binding === 1)
-                        .filter((activity) =>
-                          activity.description
+                        .filter((a) => a.binding === 1)
+                        .filter((a) =>
+                          a.description
                             .toLowerCase()
                             .includes(searchTerm.toLowerCase())
                         )
@@ -643,13 +665,11 @@ function NewStage({ canEdit = false, canView = false }: CreateClientProps) {
                           return (
                             <li
                               key={activity.id}
-                              className="py-1 border-b border-gray-200 last:border-0"
+                              className="py-1 border-b border-[rgb(var(--border))] last:border-0"
                             >
                               <button
                                 disabled={isAdded || !canEdit}
-                                onClick={(
-                                  e: React.MouseEvent<HTMLButtonElement>
-                                ) => {
+                                onClick={(e) => {
                                   e.preventDefault();
                                   if (isAdded) return;
                                   setSelectedActivities((prev) => [
@@ -661,11 +681,12 @@ function NewStage({ canEdit = false, canView = false }: CreateClientProps) {
                                     },
                                   ]);
                                 }}
-                                className={`w-full text-sm transition text-center ${
+                                className={[
+                                  "w-full text-sm transition text-center",
                                   isAdded
-                                    ? "text-gray-400 cursor-not-allowed"
-                                    : "text-blue-500 hover$text-blue-700"
-                                }`}
+                                    ? "text-[rgb(var(--foreground))]/40 cursor-not-allowed"
+                                    : "text-[rgb(var(--accent))] hover:brightness-110",
+                                ].join(" ")}
                               >
                                 {activity.description}
                               </button>
@@ -675,25 +696,29 @@ function NewStage({ canEdit = false, canView = false }: CreateClientProps) {
                     </ul>
                   </div>
 
-                  {/* Lista de actividades seleccionadas */}
+                  {/* Seleccionadas */}
                   <div className="w-full md:w-1/2">
-                    <Text type="subtitle" color="#000">
+                    <Text type="subtitle" color="text-[rgb(var(--foreground))]">
                       Seleccionadas
                     </Text>
-                    <ul className="mt-1 border border-gray-300 p-2 rounded-lg max-h-48 overflow-y-auto">
+                    <ul
+                      className={[
+                        "mt-1 p-2 rounded-lg max-h-48 overflow-y-auto custom-scroll",
+                        "border !border-[rgb(var(--border))]",
+                        "bg-[rgb(var(--surface))] text-[rgb(var(--foreground))]",
+                      ].join(" ")}
+                    >
                       {selectedActivities.map((activity) => (
                         <li
                           key={activity.id}
-                          className="flex items-center justify-between py-1 border-b border-gray-200 last:border-0"
+                          className="flex items-center justify-between py-1 border-b border-[rgb(var(--border))] last:border-0"
                         >
-                          <span className="text-sm text-black">
+                          <span className="text-sm text-[rgb(var(--foreground))]">
                             {activity.description}
                           </span>
                           <button
-                            className="text-red-500 hover:text-red-700 text-sm text-center"
-                            onClick={(
-                              e: React.MouseEvent<HTMLButtonElement>
-                            ) => {
+                            className="text-red-500 hover:text-red-600 text-sm text-center focus:outline-none focus:ring-2 focus:ring-red-400/50"
+                            onClick={(e) => {
                               e.preventDefault();
                               setSelectedActivities((prev) =>
                                 prev.filter((item) => item.id !== activity.id)
@@ -714,62 +739,62 @@ function NewStage({ canEdit = false, canView = false }: CreateClientProps) {
             {/* Total de duración */}
             <div className="flex flex-col md:flex-row gap-4">
               <div className="w-full md:w-1/2">
-                <Text type="subtitle" color="#000">
+                <Text type="subtitle" color="text-[rgb(var(--foreground))]">
                   Tiempo Estimado
                   <InfoPopover
                     content={
                       <>
-                        Este es el tiempo calculado automáticamente por el{" "}
-                        <strong>sistema</strong> según la duración proporcionada
-                        por el usuario y las actividades seleccionadas.
+                        Tiempo calculado automáticamente por el{" "}
+                        <strong>sistema</strong>.
                       </>
                     }
                   />
                 </Text>
                 <div className="mt-4 relative">
-                  <Clock className="absolute left-3 top-2.5 w-4 h-4 text-gray-500" />
-                  <input
-                    type="text"
+                  <Input
+                    size="sm"
                     readOnly
+                    className="pl-9 pr-24 cursor-default bg-[rgb(var(--surface-muted))]"
+                    tone="strong"
+                    leftIcon={
+                      <Clock className="w-4 h-4 text-[rgb(var(--muted-foreground))]" />
+                    }
                     value={`${duration || "0"} minutos`}
-                    placeholder="0 minutos"
-                    className="w-full border border-gray-300 p-2 pl-9 pr-24 rounded-md text-sm text-black bg-gray-100 cursor-default"
                     disabled={!canEdit}
                   />
-                  <span className="absolute right-7 top-2.5 text-sm text-gray-600">
+                  <span className="absolute right-7 top-2.5 text-sm text-[rgb(var(--foreground))]/70">
                     ({getFormattedDuration(Number(duration))})
                   </span>
                 </div>
               </div>
 
               <div className="w-full md:w-1/2">
-                <Text type="subtitle" color="#000">
+                <Text type="subtitle" color="text-[rgb(var(--foreground))]">
                   T. Estimado Por El Usuario
                   <InfoPopover
                     content={
                       <>
-                        Para establecer segundos en la duración, separa los
-                        minutos con una <strong>coma (,)</strong>.
-                        <br />
-                        Ejemplo: <code>1,25</code> representa 1 minuto y 25
-                        segundos.
+                        Para segundos usa coma. Ej: <code>1,25</code> = 1 min 25
+                        seg.
                       </>
                     }
                   />
                 </Text>
                 <div className="mt-4 relative">
-                  <Clock className="absolute left-3 top-2.5 w-4 h-4 text-gray-500" />
-                  <input
+                  <Input
+                    size="sm"
                     type="number"
-                    value={durationUser}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                      setDurationUser(e.target.value)
+                    className="pl-9 text-left"
+                    tone="strong"
+                    leftIcon={
+                      <Clock className="w-4 h-4 text-[rgb(var(--muted-foreground))]" />
                     }
-                    className="w-full border border-gray-300 p-2 pl-9 rounded-md text-sm text-black bg-white"
+                    value={durationUser}
+                    onChange={(e) => setDurationUser(e.target.value)}
                     disabled={!canEdit}
                   />
                   {durationUser && (
-                    <span className="absolute right-7 top-2.5 text-sm text-gray-600">
+                    <span className="absolute right-7 top-2.5 text-sm text-[rgb(var(--foreground))]/70">
                       ({getFormattedDuration(Number(durationUser))})
                     </span>
                   )}
@@ -778,121 +803,106 @@ function NewStage({ canEdit = false, canView = false }: CreateClientProps) {
             </div>
 
             {/* Opciones adicionales */}
-            <hr className="my-4 border-t border-gray-600 w-full max-w-lg mx-auto opacity-60" />
-            <div className="flex justify-center gap-4 mt-6">
-              <div className="flex items-center gap-3">
-                {phaseType === "Control" && (
-                  <>
-                    <input
-                      type="checkbox"
+            <hr className="my-4 w-full max-w-lg mx-auto opacity-60 border-t border-[rgb(var(--border))]" />
+            <div className="flex justify-center gap-4 mt-6 flex-wrap">
+              {phaseType === "Control" && (
+                <>
+                  <div className="flex items-center gap-3">
+                    <Toggle
                       checked={repeat}
-                      onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                        setRepeat(e.target.checked)
-                      }
-                      className="h-5 w-5 text-blue-600"
+                      onCheckedChange={setRepeat}
                       disabled={!canEdit}
+                      aria-label="Repetir"
                     />
-                    <span className="text-sm text.black">Repetir</span>
+                    <span className="text-sm text-[rgb(var(--foreground))]">
+                      Repetir
+                    </span>
+
                     {repeat && (
-                      <input
+                      <Input
                         type="number"
                         placeholder="Cada (min)"
                         value={repeatMinutes}
-                        onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                          setRepeatMinutes(e.target.value)
-                        }
-                        className="min-w-[120px] p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 text-black text-sm"
+                        onChange={(e) => setRepeatMinutes(e.target.value)}
+                        size="sm"
+                        className="min-w-[120px]"
                         disabled={!canEdit}
                       />
                     )}
-                  </>
-                )}
-              </div>
+                  </div>
 
-              <div className="flex.items-center gap-2">
-                {phaseType === "Control" && (
-                  <>
-                    <input
-                      type="checkbox"
+                  <div className="flex items-center gap-2">
+                    <Toggle
                       checked={alert}
-                      onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                        setAlert(e.target.checked)
-                      }
-                      className="h-5 w-5 text-blue-600"
+                      onCheckedChange={setAlert}
                       disabled={!canEdit}
+                      aria-label="Activar Alerta"
                     />
-                    <span className="text-sm text-black">Activar Alerta</span>
-                  </>
-                )}
-              </div>
+                    <span className="text-sm text-[rgb(var(--foreground))]">
+                      Activar Alerta
+                    </span>
+                  </div>
+                </>
+              )}
 
               <div className="flex items-center gap-2">
-                <input
-                  type="checkbox"
+                <Toggle
                   checked={status}
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                    setStatus(e.target.checked)
-                  }
-                  className="h-5 w-5 text-blue-600"
+                  onCheckedChange={setStatus}
                   disabled={!canEdit}
+                  aria-label="Activar Fase"
                 />
-                <span className="text-sm text-black">Activar Fase</span>
+                <span className="text-sm text-[rgb(var(--foreground))]">
+                  Activar Fase
+                </span>
               </div>
 
               <div className="flex items-center gap-2">
-                <input
-                  type="checkbox"
+                <Toggle
                   checked={multi}
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                    setMulti(e.target.checked)
-                  }
-                  className="h-5 w-5 text-blue-600"
+                  onCheckedChange={setMulti}
                   disabled={!canEdit}
+                  aria-label="¿Mult. por unidades?"
                 />
-                <span className="text-sm text-black">
+                <span className="text-sm text-[rgb(var(--foreground))]">
                   ¿Mult. por unidades?
                   <InfoPopover content="Si se activa, el sistema multiplica el tiempo según la cantidad de unidades. Ej: 3 unidades → 3x el tiempo." />
                 </span>
               </div>
 
               <div className="flex items-center gap-2">
-                <input
-                  type="checkbox"
+                <Toggle
                   checked={canPause}
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                    setCanPause(e.target.checked)
-                  }
-                  className="h-5 w-5 text-blue-600"
+                  onCheckedChange={setCanPause}
                   disabled={!canEdit}
+                  aria-label="¿Se puede pausar?"
                 />
-                <span className="text-sm text-black">¿Se puede pausar?</span>
+                <span className="text-sm text-[rgb(var(--foreground))]">
+                  ¿Se puede pausar?
+                </span>
               </div>
 
-              <div className="flex.items-center gap-2">
-                <input
-                  type="checkbox"
+              <div className="flex items-center gap-2">
+                <Toggle
                   checked={repeat_line}
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                    setrepeat_line(e.target.checked)
-                  }
-                  className="h-5 w-5 text-blue-600"
+                  onCheckedChange={setrepeat_line}
                   disabled={!canEdit}
+                  aria-label="Repetir Línea"
                 />
-                <span className="text-sm text-black">Repetir Línea</span>
+                <span className="text-sm text-[rgb(var(--foreground))]">
+                  Repetir Línea
+                </span>
               </div>
             </div>
           </div>
 
           {/* Botones de acción */}
-          <hr className="my-4 border-t border-gray-600 w-full max-w-lg mx-auto opacity-60" />
+          <hr className="my-4 w-full max-w-lg mx-auto opacity-60 border-t border-[rgb(var(--border))]" />
           <div className="flex justify-center gap-4 mt-6">
             <Button
               onClick={() => {
-                if (editingStage) {
-                  setIsEditOpen(false);
-                } else {
-                  setIsOpen(false);
-                }
+                if (editingStage) setIsEditOpen(false);
+                else setIsOpen(false);
                 resetForm();
               }}
               variant="cancel"
@@ -909,7 +919,8 @@ function NewStage({ canEdit = false, canView = false }: CreateClientProps) {
                   !description.trim() ||
                   ((phaseType === "Actividades" ||
                     phaseType === "Control" ||
-                    phaseType === "Procesos" || phaseType === "Testigo") &&
+                    phaseType === "Procesos" ||
+                    phaseType === "Testigo") &&
                     selectedActivities.length === 0)
                 }
                 label={
@@ -924,7 +935,6 @@ function NewStage({ canEdit = false, canView = false }: CreateClientProps) {
           </div>
         </ModalSection>
       )}
-
       {/* Tabla de fases */}
       <Table
         columns={["description", "phase_type", "status"]}

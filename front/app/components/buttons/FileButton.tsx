@@ -230,7 +230,7 @@ const AdvancedFileUploader = forwardRef<
     const validCount = files.filter((f) => !f.error).length;
 
     return (
-      <div className="w-full max-w-5xl mx-auto flex flex-col gap-2 p-1.5">
+      <div className="w-full max-w-5xl mx-auto flex flex-col gap-2 p-1.5 dark:[--surface:30_41_59] dark:[--surface-muted:51_65_85] dark:[--border:71_85_105] dark:[--foreground:241_245_249] dark:[--ring:56_189_248] dark:[--accent:56_189_248]">
         {/* Dropzone */}
         {files.length === 0 && (
           <label
@@ -238,14 +238,21 @@ const AdvancedFileUploader = forwardRef<
             onDrop={handleDrop}
             onDragOver={handleDragOver}
             onDragLeave={() => setDragOver(false)}
-            className={`flex flex-col items-center justify-center w-full flex-1 min-h-[80px] px-3 py-2 border-2 rounded-md cursor-pointer transition-all duration-200 text-center shadow-sm text-xs ${
+            className={[
+              "flex flex-col items-center justify-center w-full flex-1 min-h-[80px] px-3 py-2",
+              "border-2 rounded-md cursor-pointer transition-all duration-200 text-center shadow-sm text-xs",
+              "focus:outline-none focus:ring-2 focus:ring-[rgb(var(--ring))]",
               dragOver
-                ? "border-blue-600 bg-blue-50"
-                : "border-dashed border-gray-300 bg-white hover:bg-gray-50"
-            }`}
+                ? "border-[rgb(var(--accent))] bg-[rgb(var(--accent))]/10"
+                : "border-dashed border-[rgb(var(--border))] bg-[rgb(var(--surface))] hover:bg-[rgb(var(--surface-muted))]",
+              "dark:bg-slate-900 dark:border-slate-700",
+            ].join(" ")}
           >
-            <FaFilePdf className="text-red-500 mb-1" size={20} />
-            <p className="text-[11px] text-gray-700 mb-0.5">
+            <FaFilePdf
+              className="mb-1 text-red-500 dark:text-red-400"
+              size={20}
+            />
+            <p className="text-[11px] text-[rgb(var(--foreground))] mb-0.5">
               Subir archivo (solo PDF)
             </p>
             <input
@@ -265,14 +272,14 @@ const AdvancedFileUploader = forwardRef<
         {files.length > 0 && (
           <div className="flex items-center justify-between">
             {typeof maxFiles === "number" && (
-              <span className="text-[10px] text-gray-500">
+              <span className="text-[10px] text-[rgb(var(--foreground))]/60">
                 {validCount}/{maxFiles}
               </span>
             )}
             <button
               onClick={clearAllFiles}
               type="button"
-              className="ml-auto text-red-600 hover:text-red-700 text-[11px] underline"
+              className="ml-auto text-red-600 dark:text-red-400 hover:underline text-[11px]"
               title="Eliminar todos los archivos"
             >
               Limpiar todo
@@ -284,19 +291,23 @@ const AdvancedFileUploader = forwardRef<
         <div className="flex flex-col gap-1 w-full">
           <div className="overflow-y-auto max-h-[160px] grid gap-1 pr-0.5">
             {files.length === 0 ? (
-              <div className="text-center text-gray-400 text-[10px] mt-2">
+              <div className="text-center text-[rgb(var(--foreground))]/40 text-[10px] mt-2">
                 Sin archivos
               </div>
             ) : (
               files.map((f, index) => (
                 <div
                   key={`${f.file.name}-${f.file.size}-${index}`}
-                  className="relative flex items-start gap-2 p-1.5 border rounded bg-white shadow-sm text-[10px]"
+                  className={[
+                    "relative flex items-start gap-2 p-1.5 text-[10px] rounded border shadow-sm",
+                    "bg-[rgb(var(--surface))] border-[rgb(var(--border))]",
+                    "dark:bg-slate-900 dark:border-slate-700",
+                  ].join(" ")}
                 >
                   <button
                     onClick={() => removeFile(index)}
                     type="button"
-                    className="absolute top-1 right-1 text-red-500 hover:text-red-700 text-[10px] flex items-center gap-0.5"
+                    className="absolute top-1 right-1 text-red-500 dark:text-red-400 hover:underline text-[10px] flex items-center gap-0.5"
                     title="Eliminar"
                   >
                     <FaTimesCircle size={10} /> Limpiar
@@ -305,28 +316,35 @@ const AdvancedFileUploader = forwardRef<
                   {getIcon(f.file.name)}
 
                   <div className="flex-1 min-w-0">
-                    <p className="truncate font-medium" title={f.file.name}>
+                    <p
+                      className="truncate font-medium text-[rgb(var(--foreground))]"
+                      title={f.file.name}
+                    >
                       {f.file.name}
                     </p>
-                    <p className="text-gray-500">
+                    <p className="text-[rgb(var(--foreground))]/60">
                       {(f.file.size / 1024 / 1024).toFixed(2)} MB
                     </p>
 
                     {f.error && (
-                      <p className="text-red-600 font-medium">{f.error}</p>
+                      <p className="text-red-600 dark:text-red-400 font-medium">
+                        {f.error}
+                      </p>
                     )}
 
                     {!f.error && f.progress < 100 && (
-                      <div className="w-full bg-gray-200 rounded-full mt-0.5 h-1">
+                      <div className="w-full bg-[rgb(var(--surface-muted))] dark:bg-slate-800/70 rounded-full mt-0.5 h-1">
                         <div
-                          className="bg-blue-500 h-full transition-all duration-300"
+                          className="bg-[rgb(var(--accent))] h-full transition-all duration-300"
                           style={{ width: `${f.progress}%` }}
                         />
                       </div>
                     )}
 
                     {!f.error && f.progress >= 100 && (
-                      <p className="text-green-600">✓ Subido</p>
+                      <p className="text-green-600 dark:text-green-400">
+                        ✓ Subido
+                      </p>
                     )}
                   </div>
                 </div>

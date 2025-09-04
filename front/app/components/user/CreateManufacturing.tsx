@@ -22,6 +22,7 @@ import AuditModal from "../history/AuditModal";
 import { Audit } from "../../interfaces/Audit";
 import { getAuditsByModelAdmin } from "../../services/history/historyAuditServices";
 import DateLoader from "@/app/components/loader/DateLoader";
+import { Input } from "../inputs/Input";
 
 function CreateManufacturing({
   canEdit = false,
@@ -175,86 +176,115 @@ function CreateManufacturing({
       )}
       {isModalOpen && (
         <ModalSection isVisible={isModalOpen} onClose={closeModal}>
-          <Text type="title" color="text-[#000]">
-            {formData.id ? "Editar" : "Crear"} Línea
-          </Text>
-          <form onSubmit={handleSubmit}>
-            <div className="mb-4">
-              <Text type="subtitle" color="#000">
-                Nombre de Línea
-              </Text>
-              <input
-                type="text"
-                name="name"
-                value={formData.name}
-                onChange={handleChange}
-                placeholder="Nombre"
-                className="w-full text-black border p-2 mb-3"
-                disabled={!canEdit}
-              />
-            </div>
+          <div className="dark:[--surface:30_41_59] dark:[--surface-muted:51_65_85] dark:[--border:71_85_105] dark:[--foreground:241_245_249] dark:[--ring:56_189_248] dark:[--accent:56_189_248]">
+            <Text type="title" color="text-[rgb(var(--foreground))]">
+              {formData.id ? "Editar" : "Crear"} Línea
+            </Text>
 
-            <div className="mb-4">
-              <Text type="subtitle" color="#000">
-                Seleccionar Planta
-              </Text>
-              <select
-                name="factory_id"
-                value={formData.factory_id}
-                onChange={handleChange}
-                className="w-full text-black border p-2 mb-3"
-                disabled={!canEdit}
-              >
-                <option value="">Seleccionar...</option>
-                {factories.map((factory) => (
-                  <option key={factory.id} value={factory.id}>
-                    {factory.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <SelectorDual
-              titulo="Productos"
-              disponibles={products}
-              seleccionados={products.filter((p) =>
-                formData.products.includes(p.id)
-              )}
-              onAgregar={(item) => {
-                if (!formData.products.includes(item.id)) {
-                  setFormData((prev) => ({
-                    ...prev,
-                    products: [...prev.products, item.id],
-                  }));
-                }
-              }}
-              onQuitar={(id) => {
-                setFormData((prev) => ({
-                  ...prev,
-                  products: prev.products.filter((pid) => pid !== id),
-                }));
-              }}
-            />
-
-            <hr className="my-4 border-t border-gray-600 w-full max-w-lg mx-auto opacity-60" />
-            <div className="flex justify-center gap-4 mt-6">
-              <Button onClick={closeModal} variant="cancel" />
-              {canEdit && (
-                <Button
-                  type="submit"
-                  disabled={isSaving}
-                  label={
-                    isSaving
-                      ? "Guardando..."
-                      : formData.id
-                      ? "Actualizar"
-                      : "Crear"
-                  }
-                  variant="save"
+            <form onSubmit={handleSubmit} className="mt-4 space-y-5">
+              {/* Nombre de línea */}
+              <div>
+                <Text type="subtitle" color="text-[rgb(var(--foreground))]">
+                  Nombre de Línea
+                </Text>
+                <Input
+                  type="text"
+                  name="name"
+                  value={formData.name}
+                  onChange={handleChange}
+                  placeholder="Nombre"
+                  disabled={!canEdit}
+                  tone="strong"
+                  className="mt-1 text-center"
                 />
-              )}
-            </div>
-          </form>
+              </div>
+
+              {/* Seleccionar planta */}
+              <div>
+                <Text type="subtitle" color="text-[rgb(var(--foreground))]">
+                  Seleccionar Planta
+                </Text>
+                <select
+                  name="factory_id"
+                  value={formData.factory_id}
+                  onChange={handleChange}
+                  disabled={!canEdit}
+                  className={[
+                    "mt-1 w-full p-3 rounded-xl text-center transition",
+                    "bg-[rgb(var(--surface))] text-[rgb(var(--foreground))]",
+                    "border border-[rgb(var(--border))]",
+                    "focus:outline-none focus:ring-2 focus:ring-[rgb(var(--ring))] focus:ring-offset-2 focus:ring-offset-transparent",
+                    !canEdit
+                      ? "opacity-60 cursor-not-allowed"
+                      : "hover:shadow-sm",
+                    "dark:bg-slate-900 dark:text-slate-100 dark:border-slate-700",
+                  ].join(" ")}
+                >
+                  <option
+                    value=""
+                    className="bg-[rgb(var(--surface))] text-[rgb(var(--foreground))]"
+                  >
+                    Seleccionar...
+                  </option>
+                  {factories.map((factory) => (
+                    <option
+                      key={factory.id}
+                      value={factory.id}
+                      className="bg-[rgb(var(--surface))] text-[rgb(var(--foreground))]"
+                    >
+                      {factory.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Productos */}
+              <div>
+                <SelectorDual
+                  titulo="Productos"
+                  disponibles={products}
+                  seleccionados={products.filter((p) =>
+                    formData.products.includes(p.id)
+                  )}
+                  onAgregar={(item) => {
+                    if (!formData.products.includes(item.id)) {
+                      setFormData((prev) => ({
+                        ...prev,
+                        products: [...prev.products, item.id],
+                      }));
+                    }
+                  }}
+                  onQuitar={(id) => {
+                    setFormData((prev) => ({
+                      ...prev,
+                      products: prev.products.filter((pid) => pid !== id),
+                    }));
+                  }}
+                />
+              </div>
+
+              <hr className="my-2 border-t border-[rgb(var(--border))]/60 w-full max-w-lg mx-auto opacity-60 dark:border-slate-700" />
+
+              {/* Acciones */}
+              <div className="flex justify-center gap-4 pt-2">
+                <Button onClick={closeModal} variant="cancel" />
+                {canEdit && (
+                  <Button
+                    type="submit"
+                    disabled={isSaving}
+                    label={
+                      isSaving
+                        ? "Guardando..."
+                        : formData.id
+                        ? "Actualizar"
+                        : "Crear"
+                    }
+                    variant="save"
+                  />
+                )}
+              </div>
+            </form>
+          </div>
         </ModalSection>
       )}
 

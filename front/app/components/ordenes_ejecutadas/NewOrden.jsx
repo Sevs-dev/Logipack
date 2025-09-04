@@ -14,7 +14,7 @@ import {
   getStageId,
   controlStage,
 } from "../../services/maestras/stageServices";
-import { validateSecurityPassWithRole } from "../../services/userDash/securityPass";
+import { validateSignaturePass } from "../../services/userDash/securityPass";
 import Firma from "../ordenes_ejecutadas/Firma";
 import ModalBlock from "../modal/ModalBlock";
 
@@ -362,21 +362,22 @@ const App = () => {
     try {
       const pass = String(sigPassword || "").trim();
       if (!pass) return showError("Ingresa la contraseña.");
-      // 🔑 Usa el rol que existe en DB
-      const roleStr =
-        (local?.user?.role && String(local.user.role)) || getCookieRole();
-      if (!roleStr) return showError("No se detectó tu rol actual.");
 
-      const res = await validateSecurityPassWithRole(roleStr, pass);
-      if (!res?.valid) return showError("Contraseña o rol no autorizado.");
+      const signatureId = sigKey(sigModal.linea, sigModal.clave);
 
-      setSigUnlocked((prev) => ({
-        ...prev,
-        [sigKey(sigModal.linea, sigModal.clave)]: true,
-      }));
+      const res = await validateSignaturePass({
+        security_pass: pass,
+        signature_id: signatureId,
+      });
+
+      if (!res?.valid)
+        return showError("Contraseña no autorizada para esta firma.");
+
+      setSigUnlocked((prev) => ({ ...prev, [signatureId]: true }));
+      setSigPassword("");
       closeSigModal();
-    } catch (e) {
-      console.error("❌ Validación firma error:", e);
+    } catch {
+      console.error("❌ Validación firma error:");
       showError(e?.message ?? "Validación fallida. Intenta de nuevo.");
     }
   };

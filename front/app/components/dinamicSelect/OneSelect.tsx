@@ -25,40 +25,61 @@ const MaestrasSelect = <T extends MaestraBase>({
     return new Map(maestras.map((m) => [m.id.toString(), m]));
   }, [maestras]);
 
-  const handleSelect = useCallback((id: string) => {
-    setSelectedMaestra((prev) => (prev === id ? null : id));
-  }, [setSelectedMaestra]);
+  const handleSelect = useCallback(
+    (id: string) => {
+      setSelectedMaestra((prev) => (prev === id ? null : id));
+    },
+    [setSelectedMaestra]
+  );
 
   useEffect(() => {
     if (process.env.NODE_ENV !== "production") {
       if (selectedMaestra && !maestraMap.has(selectedMaestra)) {
-        console.warn(`MaestrasSelect: Selected maestra with ID ${selectedMaestra} not found`);
+        console.warn(
+          `MaestrasSelect: Selected maestra with ID ${selectedMaestra} not found`
+        );
       }
     }
   }, [selectedMaestra, maestraMap]);
 
-  const disponibles = maestras.filter((m) => m.id.toString() !== selectedMaestra);
+  const disponibles = maestras.filter(
+    (m) => m.id.toString() !== selectedMaestra
+  );
 
   return (
-    <div className="mb-6">
-      <Text type="subtitle" color="#000" >{label}</Text>
+    <div className="mb-6 dark:[--surface:30_41_59] dark:[--surface-muted:51_65_85] dark:[--border:71_85_105] dark:[--foreground:241_245_249] dark:[--ring:56_189_248] dark:[--accent:56_189_248]">
+      <Text type="subtitle" color="text-[rgb(var(--foreground))]">
+        {label}
+      </Text>
 
       {maestras.length === 0 ? (
-        <div className="p-4 bg-yellow-50 border border-yellow-300 rounded">
+        <div className="p-4 rounded border bg-[rgb(var(--accent))]/10 border-[rgb(var(--accent))]/40 dark:bg-slate-800/70 dark:border-slate-700">
           <Text type="alert">{noMaestraMessage}</Text>
         </div>
       ) : (
         <div className="flex gap-6 flex-col md:flex-row">
           {/* Lista de disponibles */}
           <div className="flex-1">
-            <Text type="subtitle" color="#000" >Disponibles:</Text>
-            <ul className="border border-gray-200 rounded-lg divide-y divide-gray-200 max-h-64 overflow-y-auto">
+            <Text type="subtitle" color="text-[rgb(var(--foreground))]">
+              Disponibles:
+            </Text>
+            <ul
+              className="max-h-64 overflow-y-auto rounded-lg border divide-y
+                     bg-[rgb(var(--surface))] text-[rgb(var(--foreground))]
+                     border-[rgb(var(--border))] divide-[rgb(var(--border))]
+                     dark:bg-slate-900 dark:text-slate-100 dark:border-slate-700 dark:divide-slate-700"
+              role="listbox"
+              aria-label="Maestras disponibles"
+            >
               {disponibles.map((maestra) => (
                 <li key={maestra.id}>
                   <button
                     type="button"
                     onClick={() => handleSelect(maestra.id.toString())}
-                    className="w-full text-left px-4 py-2 hover:bg-blue-50 focus:outline-none focus:bg-blue-100 transition-all duration-200 ease-in-out transform hover:scale-[1.02]"
+                    className="w-full text-left px-4 py-2 transition-all duration-150
+                           hover:bg-[rgb(var(--surface-muted))] focus:outline-none
+                           focus-visible:ring-2 focus-visible:ring-[rgb(var(--ring))]
+                           focus-visible:ring-offset-2 focus-visible:ring-offset-[rgb(var(--surface))]"
                   >
                     {maestra.descripcion}
                   </button>
@@ -69,15 +90,26 @@ const MaestrasSelect = <T extends MaestraBase>({
 
           {/* Lista seleccionada */}
           <div className="flex-1 mt-4 md:mt-0">
-            <Text type="subtitle" color="#000" >Seleccionada:</Text>
-            <ul className="border border-blue-200 rounded-lg divide-y divide-blue-200 max-h-64 overflow-y-auto">
+            <Text type="subtitle" color="text-[rgb(var(--foreground))]">
+              Seleccionada:
+            </Text>
+            <ul
+              className="max-h-64 overflow-y-auto rounded-lg border divide-y
+                     bg-[rgb(var(--surface))] text-[rgb(var(--foreground))]
+                     border-[rgb(var(--accent))]/40 divide-[rgb(var(--border))]
+                     dark:bg-slate-900 dark:text-slate-100 dark:border-slate-700 dark:divide-slate-700"
+              aria-live="polite"
+            >
               {selectedMaestra ? (
                 maestraMap.has(selectedMaestra) ? (
                   <li>
                     <button
                       type="button"
                       onClick={() => handleSelect(selectedMaestra)}
-                      className="w-full text-left px-4 py-2 bg-blue-100 hover:bg-blue-200 focus:outline-none focus:bg-blue-300 transition-all duration-200 ease-in-out transform hover:scale-[1.02]"
+                      className="w-full text-left px-4 py-2 transition-all duration-150
+                             bg-[rgb(var(--accent))]/15 hover:bg-[rgb(var(--accent))]/25
+                             focus:outline-none focus-visible:ring-2 focus-visible:ring-[rgb(var(--ring))]
+                             focus-visible:ring-offset-2 focus-visible:ring-offset-[rgb(var(--surface))]"
                     >
                       {maestraMap.get(selectedMaestra)!.descripcion}
                     </button>
@@ -88,13 +120,15 @@ const MaestrasSelect = <T extends MaestraBase>({
                   </li>
                 )
               ) : (
-                <li className="px-4 py-2 text-gray-500 italic">Ninguna seleccionada</li>
+                <li className="px-4 py-2 text-[rgb(var(--foreground))]/60 italic">
+                  Ninguna seleccionada
+                </li>
               )}
             </ul>
-          </div >
-        </div >
+          </div>
+        </div>
       )}
-    </div >
+    </div>
   );
 };
 

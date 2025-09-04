@@ -1,6 +1,6 @@
 import React from "react";
 import WindowManager from "../windowManager/WindowManager";
-import Gantt from "./CalendarGantt";
+import Gantt from "./index";
 import useUserData from '../../hooks/useUserData';
 
 function Calendar() {

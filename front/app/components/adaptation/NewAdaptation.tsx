@@ -43,6 +43,7 @@ import {
 } from "@/app/interfaces/NewAdaptation";
 import { Audit } from "../../interfaces/Audit";
 import DateLoader from "../loader/DateLoader";
+import { Input } from "../inputs/Input";
 
 function NewAdaptation({
   canEdit = false,
@@ -729,604 +730,658 @@ function NewAdaptation({
           isVisible={isOpen}
           onClose={() => (resetForm(), setIsOpen(false))}
         >
-          <Text type="title" color="text-[#000]">
-            {isEditMode ? "Editar" : "Crear"} Acondicionamiento
-          </Text>
+          {/* 👉 Aclarado “scoped” solo en este modal (opcional) */}
+          <div className="dark:[--surface:30_41_59] dark:[--surface-muted:51_65_85] dark:[--border:71_85_105] dark:[--foreground:241_245_249] dark:[--ring:56_189_248] dark:[--accent:56_189_248]">
+            <Text type="title" color="text-[rgb(var(--foreground))]">
+              {isEditMode ? "Editar" : "Crear"} Acondicionamiento
+            </Text>
 
-          {/* Loading spinner */}
-          {isLoading && (
-            <div className="flex justify-center py-4">
-              <div className="w-12 h-12 border-t-4 border-blue-500 rounded-full animate-spin"></div>
-            </div>
-          )}
+            {/* Loading spinner */}
+            {isLoading && (
+              <div className="flex justify-center py-4">
+                <div className="w-12 h-12 border-4 border-[rgb(var(--border))]/40 border-t-[rgb(var(--accent))] rounded-full animate-spin"></div>
+              </div>
+            )}
 
-          {/* Contenido responsivo */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {/* Cliente */}
-            <div className="col-span-full">
-              <div className="flex gap-4">
-                <div className="w-1/2">
-                  <Text type="subtitle" color="#000">
-                    Planta:
-                  </Text>
-                  <select
-                    className="w-full border p-3 rounded-lg text-gray-800 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500 text-center"
-                    value={planta}
-                    onChange={(e) => handlePlantaChange(e.target.value)}
-                    disabled={!canEdit}
-                  >
-                    <option value="">Seleccione...</option>
-                    {plantas.map((plant) => (
-                      <option key={plant.id} value={plant.id.toString()}>
-                        {plant.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="w-1/2">
-                  <Text type="subtitle" color="#000">
-                    Cliente:
-                  </Text>
-                  <select
-                    className="w-full border p-3 rounded-lg text-gray-800 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500 text-center"
-                    value={selectedClient}
-                    onChange={(e) => {
-                      setSelectedClient(Number(e.target.value));
-                      setIngredients([]);
-                    }}
-                    disabled={!canEdit}
-                  >
-                    <option value="">Seleccione...</option>
-                    {clients.map((client) => (
-                      <option key={client.id} value={client.id.toString()}>
-                        {client.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div className="w-1/2 max-w-md relative group space-y-2 mt-1">
-                  {/* Label */}
-                  <Text type="subtitle" color="#000">
-                    Orden:
-                  </Text>
-
-                  {/* Contenedor visual + botón */}
-                  <div className="relative bg-gray-50 border border-gray-300 rounded-lg px-4 py-3 mt-2 shadow-sm">
-                    {/* VisualOrder visible */}
-                    <p className="text-center font-mono text-sm text-gray-800 tracking-wide select-none">
-                      {isEditMode
-                        ? client_order || "No disponible"
-                        : visualOrder || "Cargando orden..."}
-                    </p>
-
-                    {/* Botón copiar */}
-                    <button
-                      type="button"
-                      onClick={copyToClipboard}
-                      className="absolute top-1/2 right-3 transform -translate-y-1/2 
-                                            text-gray-400 hover:text-blue-600 transition-colors duration-200 
-                                            focus:outline-none focus:ring-2 focus:ring-blue-500 rounded-full p-1"
-                      title="Copiar al portapapeles"
+            {/* Contenido responsivo */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {/* Cliente */}
+              <div className="col-span-full">
+                <div className="flex gap-4">
+                  <div className="w-1/2">
+                    <Text type="subtitle" color="text-[rgb(var(--foreground))]">
+                      Planta:
+                    </Text>
+                    {/* select SIN cambios */}
+                    <select
+                      className={[
+                        "w-full p-3 rounded-lg mt-1 text-center",
+                        "border bg-[rgb(var(--surface))] text-[rgb(var(--foreground))] border-[rgb(var(--border))]",
+                        "focus:outline-none focus:ring-2 focus:ring-[rgb(var(--ring))]",
+                        "dark:bg-slate-900 dark:text-slate-100 dark:border-slate-700",
+                      ].join(" ")}
+                      value={planta}
+                      onChange={(e) => handlePlantaChange(e.target.value)}
+                      disabled={!canEdit}
                     >
-                      <ClipboardCopy size={20} />
-                      {/* Tooltip flotante */}
-                      <span
-                        className="absolute hidden group-hover:block -top-8 right-0 
-                                             bg-gray-800 text-white text-xs rounded py-1 px-2 whitespace-nowrap z-50"
+                      <option value="">Seleccione...</option>
+                      {plantas.map((plant) => (
+                        <option
+                          key={plant.id}
+                          value={plant.id.toString()}
+                          className="bg-[rgb(var(--surface))] text-[rgb(var(--foreground))] dark:bg-slate-900 dark:text-slate-100"
+                        >
+                          {plant.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="w-1/2">
+                    <Text type="subtitle" color="text-[rgb(var(--foreground))]">
+                      Cliente:
+                    </Text>
+                    {/* select SIN cambios */}
+                    <select
+                      className={[
+                        "w-full p-3 rounded-lg mt-1 text-center",
+                        "border bg-[rgb(var(--surface))] text-[rgb(var(--foreground))] border-[rgb(var(--border))]",
+                        "focus:outline-none focus:ring-2 focus:ring-[rgb(var(--ring))]",
+                        "dark:bg-slate-900 dark:text-slate-100 dark:border-slate-700",
+                      ].join(" ")}
+                      value={selectedClient}
+                      onChange={(e) => {
+                        setSelectedClient(Number(e.target.value));
+                        setIngredients([]);
+                      }}
+                      disabled={!canEdit}
+                    >
+                      <option value="">Seleccione...</option>
+                      {clients.map((client) => (
+                        <option
+                          key={client.id}
+                          value={client.id.toString()}
+                          className="bg-[rgb(var(--surface))] text-[rgb(var(--foreground))] dark:bg-slate-900 dark:text-slate-100"
+                        >
+                          {client.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="w-1/2 max-w-md relative group space-y-2 mt-1">
+                    <Text type="subtitle" color="text-[rgb(var(--foreground))]">
+                      Orden:
+                    </Text>
+
+                    {/* Contenedor visual + botón (solo display) */}
+                    <div
+                      className={[
+                        "relative rounded-lg px-4 py-3 mt-2 shadow-sm",
+                        "bg-[rgb(var(--surface-muted))] border border-[rgb(var(--border))]",
+                        "dark:bg-slate-800/70 dark:border-slate-700",
+                      ].join(" ")}
+                    >
+                      <p className="text-center font-mono text-sm text-[rgb(var(--foreground))] tracking-wide select-none">
+                        {isEditMode
+                          ? client_order || "No disponible"
+                          : visualOrder || "Cargando orden..."}
+                      </p>
+
+                      {/* Botón copiar */}
+                      <button
+                        type="button"
+                        onClick={copyToClipboard}
+                        className="absolute top-1/2 right-3 -translate-y-1/2 text-[rgb(var(--foreground))]/50 hover:text-[rgb(var(--accent))] transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-[rgb(var(--ring))] rounded-full p-1"
+                        title="Copiar al portapapeles"
                       >
-                        Copiar
-                      </span>
-                    </button>
+                        <ClipboardCopy size={20} />
+                        <span className="absolute hidden group-hover:block -top-8 right-0 bg-[rgb(var(--foreground))] text-[rgb(var(--surface))] text-xs rounded py-1 px-2 whitespace-nowrap z-50">
+                          Copiar
+                        </span>
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
 
-            {/* Maestras y BOM*/}
-            <div>
-              <Text type="subtitle" color="#000">
-                Maestras:
-              </Text>
-              <select
-                className="w-full border p-3 rounded-lg text-gray-800 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500  text-center"
-                value={selectedMaestras.length > 0 ? selectedMaestras[0] : ""}
-                onChange={(e) => setSelectedMaestras([e.target.value])}
-                disabled={!canEdit}
+              {/* Maestras y BOM */}
+              <div>
+                <Text type="subtitle" color="text-[rgb(var(--foreground))]">
+                  Maestras:
+                </Text>
+                {/* select SIN cambios */}
+                <select
+                  className={[
+                    "w-full p-3 rounded-lg mt-1 text-center",
+                    "border bg-[rgb(var(--surface))] text-[rgb(var(--foreground))] border-[rgb(var(--border))]",
+                    "focus:outline-none focus:ring-2 focus:ring-[rgb(var(--ring))]",
+                    "dark:bg-slate-900 dark:text-slate-100 dark:border-slate-700",
+                  ].join(" ")}
+                  value={selectedMaestras.length > 0 ? selectedMaestras[0] : ""}
+                  onChange={(e) => setSelectedMaestras([e.target.value])}
+                  disabled={!canEdit}
+                >
+                  <option value="">Seleccione...</option>
+                  {maestra.map((master) => (
+                    <option
+                      key={master.id}
+                      value={master.id.toString()}
+                      disabled={Number(master.aprobado) === 0}
+                      className="bg-[rgb(var(--surface))] text-[rgb(var(--foreground))] dark:bg-slate-900 dark:text-slate-100"
+                    >
+                      {master.descripcion}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="flex flex-col justify-end">
+                <Text type="subtitle" color="text-[rgb(var(--foreground))]">
+                  Adjuntar:
+                </Text>
+                {canEdit && (
+                  <FileButton
+                    onChange={(fileList) => {
+                      const files = Array.isArray(fileList)
+                        ? fileList
+                        : [fileList];
+                      setAttachments(files.filter(Boolean) as File[]);
+                    }}
+                    maxSizeMB={5}
+                    allowMultiple={true}
+                  />
+                )}
+              </div>
+
+              <div
+                className={`col-span-full grid grid-cols-1 ${
+                  maestraRequiereBOM ? "sm:grid-cols-2" : "lg:grid-cols-1"
+                } gap-4`}
               >
-                <option value="">Seleccione...</option>
-                {maestra.map((master) => (
-                  <option
-                    key={master.id}
-                    value={master.id.toString()}
-                    disabled={Number(master.aprobado) === 0}
-                  >
-                    {master.descripcion}
-                  </option>
-                ))}
-              </select>
+                {/* Select de BOM solo si se requiere */}
+                {maestraRequiereBOM && (
+                  <div>
+                    <Text type="subtitle" color="text-[rgb(var(--foreground))]">
+                      BOM:
+                    </Text>
+                    {/* select SIN cambios */}
+                    <select
+                      className={[
+                        "w-full p-3 rounded-lg mt-1 text-center",
+                        "border bg-[rgb(var(--surface))] text-[rgb(var(--foreground))] border-[rgb(var(--border))]",
+                        "focus:outline-none focus:ring-2 focus:ring-[rgb(var(--ring))]",
+                        "dark:bg-slate-900 dark:text-slate-100 dark:border-slate-700",
+                      ].join(" ")}
+                      onChange={(e) => {
+                        const selectedBomId = Number(e.target.value);
+                        setSelectedBom(selectedBomId);
+                        const bom = boms.find((b) => b.id === selectedBomId);
+                        const codart = JSON.parse(
+                          bom?.code_details || "{}"
+                        )?.codart;
+                        if (codart) {
+                          const matchingArticle = articles.find(
+                            (a) => a.codart === codart
+                          );
+                          if (matchingArticle)
+                            setSelectedArticles([matchingArticle]);
+                          else {
+                            showError(
+                              "No se encontró un artículo que coincida con el BOM."
+                            );
+                            setSelectedArticles([]);
+                          }
+                        } else {
+                          setSelectedArticles([]);
+                        }
+                      }}
+                      disabled={!canEdit}
+                      value={selectedBom || ""}
+                    >
+                      <option value="">Seleccione un BOM...</option>
+                      {Array.isArray(boms) && boms.length > 0 ? (
+                        boms.map((bom) => (
+                          <option
+                            key={bom.id}
+                            value={bom.id}
+                            className="bg-[rgb(var(--surface))] text-[rgb(var(--foreground))] dark:bg-slate-900 dark:text-slate-100"
+                          >
+                            {JSON.parse(bom.code_details || "{}")?.codart ??
+                              "Sin código"}
+                          </option>
+                        ))
+                      ) : (
+                        <option disabled>No hay BOMs disponibles</option>
+                      )}
+                    </select>
+                  </div>
+                )}
+
+                {/* MultiSelect Artículos */}
+                <div>
+                  <Text type="subtitle" color="text-[rgb(var(--foreground))]">
+                    Artículos:
+                  </Text>
+
+                  {maestraRequiereBOM ? (
+                    // select SIN cambios
+                    <select
+                      className={[
+                        "w-full p-3 rounded-lg mt-1 text-center",
+                        "border bg-[rgb(var(--surface))] text-[rgb(var(--foreground))] border-[rgb(var(--border))]",
+                        "focus:outline-none focus:ring-2 focus:ring-[rgb(var(--ring))]",
+                        "dark:bg-slate-900 dark:text-slate-100 dark:border-slate-700",
+                      ].join(" ")}
+                      onChange={(e) => {
+                        const selectedBomId = Number(e.target.value);
+                        setSelectedBom(selectedBomId);
+                        const bom = boms.find((b) => b.id === selectedBomId);
+                        let codart = "";
+                        try {
+                          if (bom?.code_details) {
+                            const parsed = JSON.parse(bom.code_details);
+                            codart = parsed?.codart || "";
+                          }
+                        } catch {}
+                        if (codart) {
+                          const matchingArticle = articles.find(
+                            (a) => a.codart === codart
+                          );
+                          if (matchingArticle)
+                            setSelectedArticles([matchingArticle]);
+                        }
+                      }}
+                      disabled={!canEdit}
+                      value={selectedBom || ""}
+                    >
+                      <option value="">Seleccione un BOM...</option>
+                      {Array.isArray(boms) && boms.length > 0 ? (
+                        boms.map((bom) => {
+                          let label = "Sin código";
+                          try {
+                            const parsed = JSON.parse(bom.code_details || "{}");
+                            label = parsed?.codart || "Sin código";
+                          } catch {}
+                          return (
+                            <option
+                              key={bom.id}
+                              value={bom.id}
+                              className="bg-[rgb(var(--surface))] text-[rgb(var(--foreground))] dark:bg-slate-900 dark:text-slate-100"
+                            >
+                              {label}
+                            </option>
+                          );
+                        })
+                      ) : (
+                        <option disabled>No hay BOMs disponibles</option>
+                      )}
+                    </select>
+                  ) : articles.length > 0 ? (
+                    <MultiSelect
+                      options={articles}
+                      selected={selectedArticles}
+                      onChange={setSelectedArticles}
+                      getLabel={(article) => article.codart}
+                      getValue={(article) => article.codart}
+                    />
+                  ) : (
+                    <p className="text-sm italic text-[rgb(var(--foreground))]/60 mt-2 text-center">
+                      No hay artículos disponibles para este cliente.
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              {/* Campos en grid responsivo */}
+              {maestraRequiereBOM ? (
+                <div
+                  className={[
+                    "col-span-full grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 p-4 rounded-md transition-shadow",
+                    "border bg-[rgb(var(--surface))] border-[rgb(var(--border))] shadow-sm hover:shadow-md",
+                    "dark:bg-slate-900 dark:border-slate-700",
+                  ].join(" ")}
+                >
+                  {/* Número de Orden */}
+                  <div>
+                    <Text type="subtitle" color="text-[rgb(var(--foreground))]">
+                      N° Orden del Cliente Con:
+                    </Text>
+                    <Input
+                      type="text"
+                      className="mt-1 text-center"
+                      value={orderNumber}
+                      onChange={(e) => setOrderNumber(e.target.value)}
+                      disabled={!canEdit}
+                      tone="strong"
+                    />
+                  </div>
+
+                  {/* Fecha Entrega */}
+                  <div>
+                    <Text type="subtitle" color="text-[rgb(var(--foreground))]">
+                      Fecha Entrega:
+                    </Text>
+                    <Input
+                      type="date"
+                      className="mt-1 text-center"
+                      value={deliveryDate}
+                      onChange={(e) => setDeliveryDate(e.target.value)}
+                      disabled={!canEdit}
+                      tone="strong"
+                    />
+                  </div>
+
+                  {/* Cantidad a producir */}
+                  <div>
+                    <Text type="subtitle" color="text-[rgb(var(--foreground))]">
+                      Cantidad a Producir:
+                    </Text>
+                    <Input
+                      type="number"
+                      className="mt-1 text-center"
+                      value={quantityToProduce ?? ""}
+                      onChange={(e) => setQuantityToProduce(e.target.value)}
+                      min={1}
+                      disabled={!canEdit}
+                      tone="strong"
+                    />
+                  </div>
+
+                  {/* Lote */}
+                  <div>
+                    <Text type="subtitle" color="text-[rgb(var(--foreground))]">
+                      Lote:
+                    </Text>
+                    <Input
+                      type="text"
+                      className="mt-1 text-center"
+                      value={lot}
+                      onChange={(e) => setLot(e.target.value)}
+                      disabled={!canEdit}
+                      tone="strong"
+                    />
+                  </div>
+
+                  {/* Registro Sanitario */}
+                  <div>
+                    <Text type="subtitle" color="text-[rgb(var(--foreground))]">
+                      Registro Sanitario:
+                    </Text>
+                    <Input
+                      type="text"
+                      className="mt-1 text-center"
+                      value={healthRegistration}
+                      onChange={(e) => setHealthRegistration(e.target.value)}
+                      disabled={!canEdit}
+                      tone="strong"
+                    />
+                  </div>
+                </div>
+              ) : (
+                <div className="grid gap-4 col-span-full sm:grid-cols-2 rounded-xl p-4 border border-[rgb(var(--border))] bg-[rgb(var(--surface))] shadow-sm dark:bg-slate-900 dark:border-slate-700">
+                  {selectedArticles.map((article) => (
+                    <div
+                      key={article.codart}
+                      className="border border-[rgb(var(--border))] rounded-lg shadow-sm hover:shadow-md transition-shadow duration-200 p-5 flex flex-col gap-4 dark:border-slate-700"
+                    >
+                      <Text type="title" color="text-[rgb(var(--foreground))]">
+                        Artículo: {article.codart}
+                      </Text>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-3">
+                        {/* N° Orden del Cliente */}
+                        <div>
+                          <Text
+                            type="subtitle"
+                            color="text-[rgb(var(--foreground))]"
+                          >
+                            N° Orden del Cliente:
+                          </Text>
+                          <Input
+                            type="text"
+                            className="mt-1 text-center"
+                            value={
+                              articleFields[article.codart]?.orderNumber || ""
+                            }
+                            onChange={(e) =>
+                              handleFieldChange(
+                                article.codart,
+                                "orderNumber",
+                                e.target.value
+                              )
+                            }
+                            disabled={!canEdit}
+                            tone="strong"
+                          />
+                        </div>
+
+                        {/* Fecha Entrega */}
+                        <div>
+                          <Text
+                            type="subtitle"
+                            color="text-[rgb(var(--foreground))]"
+                          >
+                            Fecha Entrega:
+                          </Text>
+                          <Input
+                            type="date"
+                            className="mt-1 text-center"
+                            value={
+                              articleFields[article.codart]?.deliveryDate || ""
+                            }
+                            onChange={(e) =>
+                              handleFieldChange(
+                                article.codart,
+                                "deliveryDate",
+                                e.target.value
+                              )
+                            }
+                            disabled={!canEdit}
+                            tone="strong"
+                          />
+                        </div>
+
+                        {/* Cant. a Producir */}
+                        <div>
+                          <Text
+                            type="subtitle"
+                            color="text-[rgb(var(--foreground))]"
+                          >
+                            Cant. a Producir:
+                          </Text>
+                          <Input
+                            type="number"
+                            className="mt-1 text-center"
+                            value={
+                              articleFields[article.codart]
+                                ?.quantityToProduce || ""
+                            }
+                            onChange={(e) =>
+                              handleFieldChange(
+                                article.codart,
+                                "quantityToProduce",
+                                Number(e.target.value)
+                              )
+                            }
+                            disabled={!canEdit}
+                            tone="strong"
+                          />
+                        </div>
+
+                        {/* Lote */}
+                        <div>
+                          <Text
+                            type="subtitle"
+                            color="text-[rgb(var(--foreground))]"
+                          >
+                            Lote:
+                          </Text>
+                          <Input
+                            type="text"
+                            className="mt-1 text-center"
+                            value={articleFields[article.codart]?.lot || ""}
+                            onChange={(e) =>
+                              handleFieldChange(
+                                article.codart,
+                                "lot",
+                                e.target.value
+                              )
+                            }
+                            disabled={!canEdit}
+                            tone="strong"
+                          />
+                        </div>
+
+                        {/* R. Sanitario */}
+                        <div>
+                          <Text
+                            type="subtitle"
+                            color="text-[rgb(var(--foreground))]"
+                          >
+                            R. Sanitario:
+                          </Text>
+                          <Input
+                            type="text"
+                            className="mt-1 text-center"
+                            value={
+                              articleFields[article.codart]
+                                ?.healthRegistration || ""
+                            }
+                            onChange={(e) =>
+                              handleFieldChange(
+                                article.codart,
+                                "healthRegistration",
+                                e.target.value
+                              )
+                            }
+                            disabled={!canEdit}
+                            tone="strong"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Materiales */}
+              {maestraRequiereBOM ? (
+                <div className="col-span-full">
+                  <Text type="subtitle" color="text-[rgb(var(--foreground))]">
+                    Materiales:
+                  </Text>
+                  <div>
+                    <table className="w-full border-collapse text-[rgb(var(--foreground))] border border-[rgb(var(--border))] dark:border-slate-700">
+                      <thead className="bg-[rgb(var(--surface-muted))] dark:bg-slate-800/70">
+                        <tr>
+                          {[
+                            "Codart",
+                            "Desart",
+                            "Merma%",
+                            "Cantidad Teórica",
+                            "Validar",
+                          ].map((h) => (
+                            <th
+                              key={h}
+                              className="border border-[rgb(var(--border))] p-2 text-center text-xs font-medium uppercase tracking-wider"
+                            >
+                              {h}
+                            </th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {ingredients.map((ing, index) => (
+                          <tr
+                            key={index}
+                            className="even:bg-[rgb(var(--surface))] odd:bg-[rgb(var(--surface))]"
+                          >
+                            <td className="border border-[rgb(var(--border))] p-2 text-center">
+                              {ing.codart}
+                            </td>
+                            <td className="border border-[rgb(var(--border))] p-2 text-center">
+                              {ing.desart}
+                            </td>
+                            <td className="border border-[rgb(var(--border))] p-2 text-center">
+                              {ing.merma}%
+                            </td>
+                            <td className="border border-[rgb(var(--border))] p-2 text-center">
+                              <Input
+                                type="number"
+                                step="0.01"
+                                size="sm"
+                                className="p-1 text-center"
+                                value={
+                                  ing.teorica !== undefined &&
+                                  ing.teorica !== null &&
+                                  ing.teorica !== "" &&
+                                  !isNaN(Number(ing.teorica))
+                                    ? Number(ing.teorica)
+                                    : ""
+                                }
+                                onChange={(e) =>
+                                  handleChange(index, "teorica", e.target.value)
+                                }
+                                disabled={!canEdit}
+                                tone="strong"
+                              />
+                            </td>
+                            <td className="border border-[rgb(var(--border))] p-2 text-center">
+                              <Input
+                                type="number"
+                                step="0.01"
+                                size="sm"
+                                className="p-1 text-center"
+                                value={
+                                  ing.validar !== undefined &&
+                                  ing.validar !== null &&
+                                  !isNaN(Number(ing.validar))
+                                    ? Number(ing.validar)
+                                    : ""
+                                }
+                                onChange={(e) =>
+                                  handleChange(index, "validar", e.target.value)
+                                }
+                                disabled={!canEdit}
+                                tone="strong"
+                              />
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                    <br />
+                  </div>
+                </div>
+              ) : null}
             </div>
 
-            <div className="flex flex-col justify-end">
-              <Text type="subtitle" color="text-gray-700">
-                Adjuntar:
-              </Text>
+            {/* Botones */}
+            <hr className="my-4 border-t border-[rgb(var(--border))] w-full max-w-lg mx-auto opacity-60 dark:border-slate-700" />
+            <div className="flex justify-center gap-4 mt-6">
+              <Button
+                onClick={() => {
+                  resetForm();
+                  setIsOpen(false);
+                }}
+                variant="cancel"
+                label="Cancelar"
+              />
               {canEdit && (
-                <FileButton
-                  onChange={(fileList) => {
-                    const files = Array.isArray(fileList)
-                      ? fileList
-                      : [fileList];
-                    setAttachments(files.filter(Boolean) as File[]);
-                  }}
-                  maxSizeMB={5}
-                  allowMultiple={true}
+                <Button
+                  onClick={handleSubmit}
+                  variant="save"
+                  label={
+                    isSaving
+                      ? "Guardando..."
+                      : isEditMode
+                      ? "Actualizar"
+                      : "Crear"
+                  }
                 />
               )}
             </div>
-
-            <div
-              className={`col-span-full grid grid-cols-1 ${
-                maestraRequiereBOM ? "sm:grid-cols-2" : "lg:grid-cols-1"
-              } gap-4`}
-            >
-              {/* Select de BOM solo si se requiere */}
-              {maestraRequiereBOM && (
-                <div>
-                  <Text type="subtitle" color="#000">
-                    BOM:
-                  </Text>
-                  <select
-                    className="w-full border p-3 rounded-lg text-gray-800 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500 text-center"
-                    onChange={(e) => {
-                      const selectedBomId = Number(e.target.value);
-                      setSelectedBom(selectedBomId);
-
-                      const bom = boms.find((b) => b.id === selectedBomId);
-                      const codart = JSON.parse(
-                        bom?.code_details || "{}"
-                      )?.codart;
-
-                      if (codart) {
-                        const matchingArticle = articles.find(
-                          (a) => a.codart === codart
-                        );
-                        if (matchingArticle) {
-                          setSelectedArticles([matchingArticle]);
-                        } else {
-                          showError(
-                            "No se encontró un artículo que coincida con el BOM."
-                          );
-                          setSelectedArticles([]);
-                        }
-                      } else {
-                        setSelectedArticles([]);
-                      }
-                    }}
-                    disabled={!canEdit}
-                    value={selectedBom || ""}
-                  >
-                    <option value="">Seleccione un BOM...</option>
-                    {Array.isArray(boms) && boms.length > 0 ? (
-                      boms.map((bom) => (
-                        <option key={bom.id} value={bom.id}>
-                          {JSON.parse(bom.code_details || "{}")?.codart ??
-                            "Sin código"}
-                        </option>
-                      ))
-                    ) : (
-                      <option disabled>No hay BOMs disponibles</option>
-                    )}
-                  </select>
-                </div>
-              )}
-              {/* MultiSelect Articulos*/}
-              <div>
-                <Text type="subtitle" color="#000">
-                  Artículos:
-                </Text>
-
-                {maestraRequiereBOM ? (
-                  <select
-                    className="w-full border p-3 rounded-lg text-gray-800 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500 text-center"
-                    onChange={(e) => {
-                      const selectedBomId = Number(e.target.value);
-                      setSelectedBom(selectedBomId);
-                      const bom = boms.find((b) => b.id === selectedBomId);
-                      let codart = "";
-                      try {
-                        if (bom?.code_details) {
-                          const parsed = JSON.parse(bom.code_details);
-                          codart = parsed?.codart || "";
-                          console.log("🧩 code_details parseado:", parsed);
-                        } else {
-                          console.warn(
-                            "⚠️ BOM sin code_details o está vacío:",
-                            bom
-                          );
-                        }
-                      } catch (error) {
-                        console.error(
-                          "❌ Error al parsear code_details:",
-                          bom?.code_details,
-                          error
-                        );
-                      }
-
-                      if (codart) {
-                        const matchingArticle = articles.find(
-                          (a) => a.codart === codart
-                        );
-                        if (matchingArticle) {
-                          console.log(
-                            "✅ Artículo asociado al BOM:",
-                            matchingArticle
-                          );
-                          setSelectedArticles([matchingArticle]);
-                        } else {
-                          console.warn(
-                            "❗ codart no coincide con ningún artículo:",
-                            codart
-                          );
-                        }
-                      } else {
-                        console.warn("❌ codart vacío tras parsear el BOM");
-                      }
-                    }}
-                    disabled={!canEdit}
-                    value={selectedBom || ""}
-                  >
-                    <option value="">Seleccione un BOM...</option>
-                    {Array.isArray(boms) && boms.length > 0 ? (
-                      boms.map((bom) => {
-                        let label = "Sin código";
-                        try {
-                          const parsed = JSON.parse(bom.code_details || "{}");
-                          label = parsed?.codart || "Sin código";
-                        } catch {
-                          console.warn(
-                            "❌ BOM con code_details inválido:",
-                            bom.code_details
-                          );
-                        }
-
-                        return (
-                          <option key={bom.id} value={bom.id}>
-                            {label}
-                          </option>
-                        );
-                      })
-                    ) : (
-                      <option disabled>No hay BOMs disponibles</option>
-                    )}
-                  </select>
-                ) : articles.length > 0 ? (
-                  <MultiSelect
-                    options={articles}
-                    selected={selectedArticles}
-                    onChange={setSelectedArticles}
-                    getLabel={(article) => article.codart}
-                    getValue={(article) => article.codart}
-                  />
-                ) : (
-                  <p className="text-sm italic text-gray-500 mt-2 text-center">
-                    No hay artículos disponibles para este cliente.
-                  </p>
-                )}
-              </div>
-            </div>
-
-            {/* Campos en grid responsivo */}
-            {maestraRequiereBOM ? (
-              <div className="col-span-full grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 p-4 border border-gray-300 rounded-md bg-white shadow-sm hover:shadow-md transition-shadow">
-                {/* Número de Orden */}
-                <div>
-                  <Text type="subtitle" color="#000">
-                    N° Orden del Cliente Con:
-                  </Text>
-                  <input
-                    type="text"
-                    className="w-full border p-3 rounded-lg text-gray-800 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500 text-center"
-                    value={orderNumber}
-                    onChange={(e) => setOrderNumber(e.target.value)}
-                    disabled={!canEdit}
-                  />
-                </div>
-
-                {/* Fecha Entrega */}
-                <div>
-                  <Text type="subtitle" color="#000">
-                    Fecha Entrega:
-                  </Text>
-                  <input
-                    type="date"
-                    className="w-full border p-3 rounded-lg text-gray-800 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500 text-center"
-                    value={deliveryDate}
-                    onChange={(e) => setDeliveryDate(e.target.value)}
-                    disabled={!canEdit}
-                  />
-                </div>
-
-                {/* Cantidad a producir */}
-                <div>
-                  <Text type="subtitle" color="#000">
-                    Cantidad a Producir:
-                  </Text>
-                  <input
-                    type="number"
-                    className="w-full border p-3 rounded-lg text-gray-800 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500 text-center"
-                    value={quantityToProduce ?? ""} // Evita undefined
-                    onChange={(e) => setQuantityToProduce(e.target.value)}
-                    min={1}
-                    disabled={!canEdit}
-                  />
-                </div>
-
-                {/* Lote */}
-                <div>
-                  <Text type="subtitle" color="#000">
-                    Lote:
-                  </Text>
-                  <input
-                    type="text"
-                    className="w-full border p-3 rounded-lg text-gray-800 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500 text-center"
-                    value={lot}
-                    onChange={(e) => setLot(e.target.value)}
-                    disabled={!canEdit}
-                  />
-                </div>
-
-                {/* Registro Sanitario */}
-                <div>
-                  <Text type="subtitle" color="#000">
-                    Registro Sanitario:
-                  </Text>
-                  <input
-                    type="text"
-                    className="w-full border p-3 rounded-lg text-gray-800 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500 text-center"
-                    value={healthRegistration}
-                    onChange={(e) => setHealthRegistration(e.target.value)}
-                    disabled={!canEdit}
-                  />
-                </div>
-              </div>
-            ) : (
-              <div className="grid gap-4 col-span-full sm:grid-cols-2  rounded-xl p-4 bg-white shadow-sm">
-                {selectedArticles.map((article) => (
-                  <div
-                    key={article.codart}
-                    className="border rounded-lg shadow-sm hover:shadow-md transition-shadow duration-200 p-5 flex flex-col gap-4 "
-                  >
-                    <Text type="title" color="text-gray-800">
-                      Artículo: {article.codart}
-                    </Text>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-3">
-                      {/* N° Orden del Cliente */}
-                      <div>
-                        <Text type="subtitle" color="text-gray-700">
-                          N° Orden del Cliente:
-                        </Text>
-                        <input
-                          type="text"
-                          className="w-full border border-gray-300 p-2 rounded-md mt-1 focus:outline-none focus:ring-2 focus:ring-blue-400 text-center text-gray-800"
-                          value={
-                            articleFields[article.codart]?.orderNumber || ""
-                          }
-                          onChange={(e) =>
-                            handleFieldChange(
-                              article.codart,
-                              "orderNumber",
-                              e.target.value
-                            )
-                          }
-                          disabled={!canEdit}
-                        />
-                      </div>
-
-                      {/* Fecha Entrega */}
-                      <div>
-                        <Text type="subtitle" color="text-gray-700">
-                          Fecha Entrega:
-                        </Text>
-                        <input
-                          type="date"
-                          className="w-full border border-gray-300 p-2 rounded-md mt-1 focus:outline-none focus:ring-2 focus:ring-blue-400 text-center text-gray-800"
-                          value={
-                            articleFields[article.codart]?.deliveryDate || ""
-                          }
-                          onChange={(e) =>
-                            handleFieldChange(
-                              article.codart,
-                              "deliveryDate",
-                              e.target.value
-                            )
-                          }
-                          disabled={!canEdit}
-                        />
-                      </div>
-
-                      {/* Cant. Teórica */}
-                      <div>
-                        <Text type="subtitle" color="text-gray-700">
-                          Cant. a Producir:
-                        </Text>
-                        <input
-                          type="number"
-                          className="w-full border border-gray-300 p-2 rounded-md mt-1 focus:outline-none focus:ring-2 focus:ring-blue-400 text-center text-gray-800"
-                          value={
-                            articleFields[article.codart]?.quantityToProduce ||
-                            ""
-                          }
-                          onChange={(e) =>
-                            handleFieldChange(
-                              article.codart,
-                              "quantityToProduce",
-                              Number(e.target.value)
-                            )
-                          }
-                          disabled={!canEdit}
-                        />
-                      </div>
-
-                      {/* Lote */}
-                      <div>
-                        <Text type="subtitle" color="text-gray-700">
-                          Lote:
-                        </Text>
-                        <input
-                          type="text"
-                          className="w-full border border-gray-300 p-2 rounded-md mt-1 focus:outline-none focus:ring-2 focus:ring-blue-400 text-center text-gray-800"
-                          value={articleFields[article.codart]?.lot || ""}
-                          onChange={(e) =>
-                            handleFieldChange(
-                              article.codart,
-                              "lot",
-                              e.target.value
-                            )
-                          }
-                          disabled={!canEdit}
-                        />
-                      </div>
-
-                      {/* R. Sanitario */}
-                      <div>
-                        <Text type="subtitle" color="text-gray-700">
-                          R. Sanitario:
-                        </Text>
-                        <input
-                          type="text"
-                          className="w-full border border-gray-300 p-2 rounded-md mt-1 focus:outline-none focus:ring-2 focus:ring-blue-400 text-center text-gray-800"
-                          value={
-                            articleFields[article.codart]?.healthRegistration ||
-                            ""
-                          }
-                          onChange={(e) =>
-                            handleFieldChange(
-                              article.codart,
-                              "healthRegistration",
-                              e.target.value
-                            )
-                          }
-                          disabled={!canEdit}
-                        />
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {/* Materiales */}
-            {maestraRequiereBOM ? (
-              <div className="col-span-full">
-                <Text type="subtitle" color="#000">
-                  Materiales:
-                </Text>
-                <div>
-                  <table className="w-full border-collapse border border-black text-black">
-                    <thead>
-                      <tr className="bg-gray-200">
-                        <th className="border border-black p-2 text-center">
-                          Codart
-                        </th>
-                        <th className="border border-black p-2 text-center">
-                          Desart
-                        </th>
-                        <th className="border border-black p-2 text-center">
-                          Merma%
-                        </th>
-                        <th className="border border-black p-2 text-center">
-                          Cantidad Teórica
-                        </th>
-                        <th className="border border-black p-2 text-center">
-                          Validar
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {ingredients.map((ing, index) => (
-                        <tr key={index}>
-                          <td className="border border-black p-2 text-center">
-                            {ing.codart}
-                          </td>
-                          <td className="border border-black p-2 text-center">
-                            {ing.desart}
-                          </td>
-                          <td className="border border-black p-2 text-center">
-                            {ing.merma}%
-                          </td>
-                          <td className="border border-black p-2 text-center">
-                            <input
-                              type="number"
-                              step="0.01"
-                              className="text-black p-1 border border-gray-300 rounded text-center"
-                              value={
-                                ing.teorica !== undefined &&
-                                ing.teorica !== null &&
-                                ing.teorica !== "" &&
-                                !isNaN(Number(ing.teorica))
-                                  ? Number(ing.teorica)
-                                  : ""
-                              }
-                              onChange={(e) =>
-                                handleChange(index, "teorica", e.target.value)
-                              }
-                              disabled={!canEdit}
-                            />
-                          </td>
-                          <td className="border border-black p-2 text-center">
-                            <input
-                              type="number"
-                              step="0.01"
-                              className="text-black p-1 border border-gray-300 rounded text-center"
-                              value={
-                                ing.validar !== undefined &&
-                                ing.validar !== null &&
-                                !isNaN(Number(ing.validar))
-                                  ? Number(ing.validar)
-                                  : ""
-                              }
-                              onChange={(e) =>
-                                handleChange(index, "validar", e.target.value)
-                              }
-                              disabled={!canEdit}
-                            />
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                  <br />
-                </div>
-              </div>
-            ) : null}
-          </div>
-
-          {/* Botones */}
-          <hr className="my-4 border-t border-gray-600 w-full max-w-lg mx-auto opacity-60" />
-          <div className="flex justify-center gap-4 mt-6">
-            <Button
-              onClick={() => {
-                resetForm();
-                setIsOpen(false);
-              }}
-              variant="cancel"
-              label="Cancelar"
-            />
-            {canEdit && (
-              <Button
-                onClick={handleSubmit}
-                variant="save"
-                label={
-                  isSaving
-                    ? "Guardando..."
-                    : isEditMode
-                    ? "Actualizar"
-                    : "Crear"
-                }
-              />
-            )}
           </div>
         </ModalSection>
       )}

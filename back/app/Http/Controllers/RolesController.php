@@ -135,15 +135,13 @@ class RolesController extends Controller
         // Se busca el Role por el ID proporcionado
         $Role = Role::find($id);
 
-        // Si no se encuentra, se devuelve un mensaje de error con código 404
         if (!$Role) {
             return response()->json(['message' => 'Role no encontrada'], 404);
         }
 
-        // Se elimina el Role de la base de datos
-        $Role->delete();
+        $Role->active = false;
+        $Role->save();
 
-        // Se devuelve una respuesta JSON con un mensaje indicando que la eliminación fue exitosa
         return response()->json(['message' => 'Role eliminada correctamente']);
     }
 }
