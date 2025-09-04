@@ -8,6 +8,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { FiEye, FiEyeOff, FiMail, FiLock } from 'react-icons/fi';
 import { showError } from '../toastr/Toaster';
 import DateLoader from '@/app/components/loader/DateLoader';
+import { ENVIRONMENT } from '@/app/config/api';
 
 // Fondo animado Aurora + partículas
 const bgStyle: CSSProperties = {
@@ -25,7 +26,7 @@ const bgStyle: CSSProperties = {
 const cookieOptions = {
   maxAge: 60 * 60 * 2,
   path: '/',
-  secure: process.env.NODE_ENV === 'production',
+  secure: ENVIRONMENT === 'production',
   sameSite: 'lax' as const,
 };
 
