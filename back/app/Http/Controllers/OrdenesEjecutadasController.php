@@ -316,7 +316,7 @@ class OrdenesEjecutadasController extends Controller
             'linea_procesos' => $lineas,
             'linea_fases' => $fases,
             'estado' => 200,
-            'plan' =>$plan,
+            'plan' => $plan,
         ]);
     }
 
@@ -915,23 +915,74 @@ class OrdenesEjecutadasController extends Controller
         if ($orden && $actividad) {
             // 3. clona/crea las actividades de esa orden tipo hijo
             DB::table('adaptation_dates')->insertUsing([
-                'client_id', 'factory_id', 'master', 'bom', 'number_order',
-                'orderType', 'codart', 'orderNumber', 'deliveryDate', 'quantityToProduce',
-                'lot', 'healthRegistration', 'ingredients', 'adaptation_id', 'status_dates',
-                'factory', 'line', 'activities', 'resource', 'machine',
-                'users', 'color', 'icon', 'duration', 'duration_breakdown',
-                'start_date', 'end_date', 'clock', 'pause', 'finish_notificade',
-                'out', 'user', 'created_at', 'updated_at'
+                'client_id',
+                'factory_id',
+                'master',
+                'bom',
+                'number_order',
+                'orderType',
+                'codart',
+                'orderNumber',
+                'deliveryDate',
+                'quantityToProduce',
+                'lot',
+                'healthRegistration',
+                'ingredients',
+                'adaptation_id',
+                'status_dates',
+                'factory',
+                'line',
+                'activities',
+                'resource',
+                'machine',
+                'users',
+                'color',
+                'icon',
+                'duration',
+                'duration_breakdown',
+                'start_date',
+                'end_date',
+                'clock',
+                'pause',
+                'finish_notificade',
+                'out',
+                'user',
+                'created_at',
+                'updated_at'
             ], DB::table('adaptation_dates')
                 ->select(
-                    'client_id', 'factory_id', 'master', 'bom', 'number_order',
+                    'client_id',
+                    'factory_id',
+                    'master',
+                    'bom',
+                    'number_order',
                     DB::raw("'H' as orderType"),
-                    'codart', 'orderNumber', 'deliveryDate', 'quantityToProduce',
-                    'lot', 'healthRegistration', 'ingredients', 'adaptation_id', 'status_dates',
-                    'factory', 'line', 'activities', 'resource', 'machine',
-                    'users', 'color', 'icon', 'duration', 'duration_breakdown',
-                    'start_date', 'end_date', 'clock', 'pause', 'finish_notificade',
-                    'out', 'user',
+                    'codart',
+                    'orderNumber',
+                    'deliveryDate',
+                    'quantityToProduce',
+                    'lot',
+                    'healthRegistration',
+                    'ingredients',
+                    'adaptation_id',
+                    'status_dates',
+                    'factory',
+                    'line',
+                    'activities',
+                    'resource',
+                    'machine',
+                    'users',
+                    'color',
+                    'icon',
+                    'duration',
+                    'duration_breakdown',
+                    'start_date',
+                    'end_date',
+                    'clock',
+                    'pause',
+                    'finish_notificade',
+                    'out',
+                    'user',
                     DB::raw("'" . date('Y-m-d H:i:s') . "' as created_at"),
                     DB::raw("'" . date('Y-m-d H:i:s') . "' as updated_at")
                 )
@@ -963,7 +1014,7 @@ class OrdenesEjecutadasController extends Controller
         // Obtener Orden de acondicionamiento
         $acondicionamiento = DB::table('adaptations as ada')
             ->join('adaptation_dates as ada_date', 'ada.id', '=', 'ada_date.adaptation_id')
-            ->join('maestras as mae', 'mae.id', '=', 'ada.master') 
+            ->join('maestras as mae', 'mae.id', '=', 'ada.master')
             ->join('clients as cli', 'cli.id', '=', 'ada.client_id')
             ->join('factories as fac', 'fac.id', '=', 'ada.factory_id')
             ->where('ada_date.id', $id)
@@ -1143,27 +1194,28 @@ class OrdenesEjecutadasController extends Controller
                     // obtener lista si la actividades
                     $actividades = DB::table('stages as std')
                         ->join('activities as atc', function ($join) {
-                            $join->on(
-                                DB::raw(
-                                    "FIND_IN_SET(atc.id, REPLACE(REPLACE(REPLACE(REPLACE(COALESCE
-                                    (std.activities, ''), '[', ''), ']', ''), ' ', ''), '\"', ''))"
-                                ),
-                                '>',
-                                DB::raw('0')
-                            );
+                            $join->on(DB::raw("
+                            FIND_IN_SET(
+                                atc.id,
+                                REPLACE(REPLACE(REPLACE(REPLACE(COALESCE(std.activities, ''), '[', ''), ']', ''), ' ', ''), '\"', '')
+                            )
+                        "), '>', DB::raw('0'));
                         })
-                        ->where('std.id', $fase->id)
-                        ->where(DB::raw('LOWER(std.phase_type)'), '!=', DB::raw("LOWER('Control')"))
-                        ->where(DB::raw('LOWER(std.phase_type)'), '!=', DB::raw("LOWER('Planificación')"))
-                        ->where(DB::raw('LOWER(std.phase_type)'), '!=', DB::raw("LOWER('Conciliación')"))
-                        ->where(DB::raw('LOWER(std.phase_type)'), '!=', DB::raw("LOWER('Procesos')"))
-                        ->where('std.repeat_line', 1)
-                        ->select(
+                        ->select([
                             'atc.id as id_activitie',
                             'atc.description as descripcion_activitie',
                             'atc.config',
                             'atc.binding',
-                        )
+                        ])
+                        ->where('std.id', $fase->id)
+                        ->whereNotIn(DB::raw('LOWER(std.phase_type)'), [
+                            strtolower('Control'),
+                            strtolower('Planificación'),
+                            strtolower('Conciliación'),
+                            strtolower('Procesos'),
+                        ])
+                        ->where('std.repeat_line', 1)
+                        ->orderByRaw("FIND_IN_SET(atc.id, REPLACE(REPLACE(REPLACE(REPLACE(COALESCE(std.activities, ''), '[', ''), ']', ''), ' ', ''), '\"', ''))")
                         ->get();
                 }
                 $acom = $this->armar_actividades($actividades, $orden, $linea, $fase, $count, $acom);
