@@ -80,7 +80,7 @@ const NewDetalle = () => {
   const obtenerActividades = useCallback(async () => {
     if (!Number.isFinite(orderId)) return;
     try {
-      const data = await actividades_ejecutadas(orderId);
+      const data = await actividades_ejecutadas(orderId); 
       if (data?.actividades) {
         setOrden(data.orden as Orden);
         setActividades(data.actividades as ActividadItem[]);

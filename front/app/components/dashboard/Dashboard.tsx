@@ -24,12 +24,14 @@ import {
   actividades_ejecutadas,
 } from "@/app/services/planing/planingServices";
 import { showError, showSuccess } from "@/app/components/toastr/Toaster";
+import Intro from "../toastr/Intro";
 
 export default function Dashboard() {
   const { userName } = useUserData();
   const [emojiIndex, setEmojiIndex] = useState(0);
   const [planning, setPlanning] = useState<Planning[]>([]);
   const [estadoSeleccionado, setEstadoSeleccionado] = useState<string>("todos");
+  const [showIntro, setShowIntro] = useState(false); // 👈 Control del saludo
   const didFetch = useRef(false);
 
   // Rotación del emoji
@@ -55,6 +57,17 @@ export default function Dashboard() {
       }
     })();
   }, []);
+
+  // 👋 Mostrar Intro (saludo) una sola vez por sesión
+  useEffect(() => {
+    if (!userName) return;
+    const INTRO_KEY = "introShown";
+    const alreadyShown = sessionStorage.getItem(INTRO_KEY);
+    if (!alreadyShown) {
+      setShowIntro(true);
+      sessionStorage.setItem(INTRO_KEY, "1");
+    }
+  }, [userName]);
 
   // ==== TODOS LOS HOOKS ARRIBA, SIN RETURNS EN MEDIO ====
 
@@ -188,6 +201,13 @@ export default function Dashboard() {
   // ==== RENDER (SIN RETURNS ANTES DE LOS HOOKS) ====
   return (
     <div className="min-h-screen app-bg text-foreground px-4 sm:px-6 md:px-10 py-6">
+      {/* 👋 Intro en top-right (solo cuando hay user y showIntro = true) */}
+      {isLoggedIn && showIntro && (
+        <div className="fixed top-4 right-4 z-[9999]">
+          <Intro name={userName ?? "usuario"} />
+        </div>
+      )}
+
       {!isLoggedIn ? (
         <div className="min-h-[60vh] flex items-center justify-center">
           <p className="text-lg">

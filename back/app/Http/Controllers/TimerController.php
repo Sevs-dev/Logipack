@@ -56,80 +56,62 @@ class TimerController extends Controller
     {
         $request->validate([
             'ejecutada_id' => 'required|integer',
-            'pause_time'   => 'required|integer',
         ]);
 
         $timer = Timer::where('ejecutada_id', $request->ejecutada_id)
-            ->where('finish', 0)
-            ->first();
+            ->where('finish', 0)->first();
 
-        if (!$timer) {
-            return response()->json([
-                'message' => 'Timer no encontrado',
-            ], 404);
-        }
+        if (!$timer) return response()->json(['message' => 'Timer no encontrado'], 404);
 
         if ($timer->pause == 0) {
-            // Si está corriendo → lo pausamos
+            // Pausamos
             $timer->status = 'paused';
             $timer->pause = 1;
-            $timer->pause_time = $request->pause_time;
+            $timer->paused_at = now();
+
+            // Guarda también snapshot de restante en minutos (útil para UI heredada)
+            $timer->pause_time = (int) ceil($this->computeRemainingSeconds($timer) / 60);
             $message = 'Timer pausado correctamente';
         } else {
-            // Si está pausado → lo reanudamos
+            // Reanudamos
+            if ($timer->paused_at) {
+                $timer->accumulated_pause_secs += $timer->paused_at->diffInSeconds(now());
+            }
             $timer->status = 'running';
             $timer->pause = 0;
+            $timer->paused_at = null;
             $message = 'Timer reanudado correctamente';
         }
 
         $timer->save();
-
-        return response()->json([
-            'message' => $message,
-            'timer'   => $timer,
-        ]);
+        return response()->json(['message' => $message, 'timer' => $this->withComputed($timer)]);
     }
 
     // Finalizar un timer
     public function finish(Request $request)
     {
-       // Log::info('🔔 [Timer Finish] Petición recibida', $request->all());
-
-        $request->validate([
-            'ejecutada_id' => 'required|integer',
-        ]);
+        $request->validate(['ejecutada_id' => 'required|integer']);
 
         $timer = Timer::where('ejecutada_id', $request->ejecutada_id)
-            ->where('finish', 0)
-            ->first();
+            ->where('finish', 0)->first();
 
         if (!$timer) {
-            Log::warning('⚠️ [Timer Finish] No se encontró timer activo para ejecutada_id=' . $request->ejecutada_id);
-            return response()->json([
-                'message' => 'Timer no encontrado para esta ejecución',
-            ], 404);
+            Log::warning('No se encontró timer activo para ejecutada_id=' . $request->ejecutada_id);
+            return response()->json(['message' => 'Timer no encontrado para esta ejecución'], 404);
         }
 
-       // Log::info('✅ [Timer Finish] Timer encontrado', [
-        //     'id' => $timer->id,
-        //     'status_actual' => $timer->status,
-        //     'finish_actual' => $timer->finish,
-        // ]);
+        // Si estaba en pausa, suma esa pausa también
+        if ($timer->pause == 1 && $timer->paused_at) {
+            $timer->accumulated_pause_secs += $timer->paused_at->diffInSeconds(now());
+            $timer->paused_at = null;
+        }
 
         $timer->status = 'finished';
         $timer->finish = 1;
+        $timer->finished_at = now();
         $timer->save();
 
-       // Log::info('✅ [Timer Finish] Timer actualizado correctamente', [
-        //     'id' => $timer->id,
-        //     'nuevo_status' => $timer->status,
-        //     'nuevo_finish' => $timer->finish,
-        // ]);
-
-        return response()->json([
-            'message' => 'Timer finalizado correctamente',
-            'timer'   => $timer,
-        ]);
+        return response()->json(['message' => 'Timer finalizado correctamente', 'timer' => $this->withComputed($timer)]);
     }
 
     // Reiniciar un timer
@@ -137,62 +119,84 @@ class TimerController extends Controller
     {
         $request->validate([
             'ejecutada_id' => 'required|integer',
-            'time_reset'   => 'required|integer',
+            'time_reset'   => 'required|integer|min:0', // minutos
         ]);
 
-        $timer = Timer::where('ejecutada_id', $request->ejecutada_id)
-            ->first();
+        $timer = Timer::where('ejecutada_id', $request->ejecutada_id)->first();
 
-        if (!$timer) {
-            return response()->json([
-                'message' => 'Timer no encontrado para esta ejecución',
-            ], 404);
-        }
+        if (!$timer) return response()->json(['message' => 'Timer no encontrado para esta ejecución'], 404);
 
         $timer->status      = 'running';
         $timer->pause       = 0;
         $timer->pause_time  = 0;
         $timer->finish      = 0;
-        $timer->time        = $request->time_reset;
+        $timer->time        = (int)$request->time_reset; // minutos
+        $timer->started_at  = now();
+        $timer->paused_at   = null;
+        $timer->finished_at = null;
+        $timer->accumulated_pause_secs = 0;
         $timer->save();
 
-        return response()->json([
-            'message' => 'Timer reiniciado correctamente',
-            'timer'   => $timer,
-        ]);
+        return response()->json(['message' => 'Timer reiniciado correctamente', 'timer' => $this->withComputed($timer)]);
     }
 
-    // Obtener un timer por ID
+
     public function show($id)
     {
         $timer = Timer::findOrFail($id);
-
-        return response()->json($timer);
+        return response()->json($this->withComputed($timer));
     }
 
-    // Listar timers (puedes filtrar si quieres)
     public function index()
     {
-        $query = Timer::all();
-
-        return response()->json($query);
+        $timers = Timer::all()->map(fn($t) => $this->withComputed($t));
+        return response()->json($timers);
     }
 
-    // Obtener un timer por ejecutada_id
     public function getEjecutadaId($ejecutada_id)
     {
         $timer = Timer::where('ejecutada_id', $ejecutada_id)->first();
 
         if ($timer) {
-            return response()->json([
-                'exists' => true,
-                'timer'  => $timer
-            ]);
-        } else {
-            return response()->json([
-                'exists' => false,
-                'timer'  => null
-            ]);
+            return response()->json(['exists' => true, 'timer' => $this->withComputed($timer)]);
         }
+        return response()->json(['exists' => false, 'timer' => null]);
+    }
+
+    // App/Http/Controllers/TimerController.php (añade métodos privados)
+    private function computeRemainingSeconds(Timer $t): int
+    {
+        $duration = max(0, (int)$t->time * 60); // 'time' son minutos
+        if (!$t->started_at) return $duration;
+        if ((bool)$t->finish || $t->status === 'finished') return 0;
+
+        $now = now();
+        $elapsed = $t->started_at->diffInSeconds($now);
+        $pausedNow = ($t->pause == 1 && $t->paused_at) ? $t->paused_at->diffInSeconds($now) : 0;
+
+        $effective = max(0, $elapsed - (int)$t->accumulated_pause_secs - $pausedNow);
+        return max(0, $duration - $effective);
+    }
+
+    private function withComputed(Timer $t): array
+    {
+        return [
+            'id' => $t->id,
+            'ejecutada_id' => $t->ejecutada_id,
+            'stage_id' => $t->stage_id,
+            'control_id' => $t->control_id,
+            'orden_id' => $t->orden_id,
+            'time' => $t->time,
+            'status' => $t->status,
+            'pause' => (bool)$t->pause,
+            'pause_time' => (int)$t->pause_time,
+            'finish' => (bool)$t->finish,
+            'started_at' => optional($t->started_at)->toIso8601String(),
+            'paused_at' => optional($t->paused_at)->toIso8601String(),
+            'finished_at' => optional($t->finished_at)->toIso8601String(),
+            'accumulated_pause_secs' => (int)$t->accumulated_pause_secs,
+            'remaining_seconds' => $this->computeRemainingSeconds($t),
+            'server_epoch_ms' => (int) floor(microtime(true) * 1000),
+        ];
     }
 }

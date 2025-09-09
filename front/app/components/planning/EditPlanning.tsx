@@ -1552,6 +1552,7 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
         columns={[
           "client_name",
           "number_order",
+          "orderNumber",
           "orderType",
           "codart",
           "factory",
@@ -1561,6 +1562,7 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
         columnLabels={{
           client_name: "Cliente",
           number_order: "N° de orden",
+          orderNumber: "Orden del Cliente",
           orderType: "Tipo de orden",
           codart: "Artículo",
           factory: "Planta",
@@ -1580,9 +1582,10 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
         onOrdenHija={handleOrdenHija}
         onView={obtenerActividades}
         onPDF={handlePDF}
+        
         showTerciarioCondition={(row) =>
           row.status_dates === "Planificación" ||
-          row.status_dates === "En ejecución"
+          row.status_dates === "En ejecución" 
         }
         showViewCondition={(row) =>
           row.status_dates === "Ejecutado" ||

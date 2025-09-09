@@ -139,6 +139,8 @@ const App = () => {
   // Derivados seguros
   const orden = local?.orden;
   const linea = local?.linea;
+  const plan = local?.plan;
+  console.log(plan);
   const isProceso =
     typeof fase?.phase_type === "string" &&
     fase.phase_type.toLowerCase().includes("proceso");
@@ -559,6 +561,14 @@ const App = () => {
             </div>
             <div>
               <p className="text-[rgb(var(--foreground))]/60 text-center">
+                Orden del Cliente
+              </p>
+              <p className="font-medium text-[rgb(var(--foreground))] text-center">
+                {plan?.orderNumber}
+              </p>
+            </div>
+            <div>
+              <p className="text-[rgb(var(--foreground))]/60 text-center">
                 Cliente
               </p>
               <p className="font-medium text-[rgb(var(--foreground))] text-center">
@@ -965,6 +975,7 @@ const App = () => {
                               ? "border-[rgb(var(--warning))]"
                               : "border-[rgb(var(--border))]"
                           }`}
+                          required
                           value={
                             memoriaFase[linea]?.[`tipo_entrada_${clave}`] || ""
                           }

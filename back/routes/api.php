@@ -25,245 +25,633 @@ use App\Http\Controllers\TimerController;
 use App\Http\Controllers\FaseTimerController;
 use App\Http\Controllers\TimerControlController;
 
+/**
+ * ============================
+ *        AUTH / USUARIOS
+ * ============================
+ * Controla login, registro, sesión y utilidades de usuario.
+ * Notas:
+ * - JWT/cookies según tu implementación.
+ * - Algunos endpoints incluyen throttle.
+ */
 Route::controller(AuthController::class)->group(function () {
+    // POST /login — Iniciar sesión (email, password). Responde con token/usuario.
     Route::post('login', 'login');
+
+    // POST /register — Registrar usuario nuevo.
     Route::post('register', 'register');
+
+    // POST /logout — Cerrar sesión (invalidar token/refresh).
     Route::post('logout', 'logout');
+
+    // POST /refresh — Renovar token.
     Route::post('refresh', 'refresh');
+
+    // GET /user/{email} — Obtener usuario por email.
     Route::get('/user/{email}', 'getUserByEmail');
+
+    // POST /edit-image/{email} — Actualizar imagen de perfil por email.
     Route::post('/edit-image/{email}', 'EditImage');
+
+    // POST /users/upload-image — Subir imagen de usuario (multipart/form-data).
     Route::post('/users/upload-image',  'uploadUserImage');
 
+    // POST /users — Crear usuario (con rol, etc.).
     Route::post('/users', 'create');
+
+    // GET /role — Listar roles del usuario autenticado (o info de rol actual).
     Route::get('/role', 'role');
+
+    // GET /usersAll — Listar todos los usuarios.
     Route::get('/usersAll', 'getUsers');
+
+    // DELETE /delete/{id} — Eliminar usuario por id.
     Route::delete('/delete/{id}', 'getUserDelete');
+
+    // PUT /update/{id} — Actualizar usuario por id.
     Route::put('/update/{id}', 'getUserUpdate');
+
+    // GET /date/{id} — Obtener usuario por id (detalle).
     Route::get('/date/{id}', 'getuserById');
+
+    // POST /auth/validate-signature-pass — Validar pass de firma (rate limited).
     Route::post('/auth/validate-signature-pass', 'validateSignaturePass')
         ->name('auth.validate-signature-pass')
-        ->middleware('throttle:60,1'); // opcional: limitar intentos
+        ->middleware('throttle:60,1'); // limitar intentos
 
-    // ♻️ Legacy (si quieres mantener compat)
+    // ♻️ Legacy/Compat — Validar pass de seguridad por rol.
     Route::post('/users/validate-security-pass', 'validateSecurityPassByRole')
         ->name('users.validate-security-pass');
 });
 
-//Rutas Permissions
+/**
+ * ============================
+ *        PERMISOS (ACL)
+ * ============================
+ * Alta/baja/consulta de permisos y asignación a roles.
+ */
 Route::controller(PermissionController::class)->group(function () {
+    // POST /newPermission — Crear permiso.
     Route::post('/newPermission', 'createPermission');
+
+    // GET /permissions — Listar permisos.
     Route::get('/permissions', 'getPermisos');
+
+    // POST /permissionsUpdate — Asignar/actualizar permisos por rol.
     Route::post('/permissionsUpdate', 'updateRolePermissions');
+
+    // GET /role-permissions/{roleName} — Permisos por nombre de rol.
     Route::get('/role-permissions/{roleName}', 'getPermissionsByRoleName');
-    Route::delete('/deletePermission/{id}', 'deletePermission'); // Eliminar una lineas
-    Route::get('/PermissionId/{id}', 'permissionId'); // Obtener una fábrica específica
-    Route::put('/updatePermission/{id}', 'updatePermission'); // Actualizar una fábrica
+
+    // DELETE /deletePermission/{id} — Eliminar permiso por id.
+    Route::delete('/deletePermission/{id}', 'deletePermission');
+
+    // GET /PermissionId/{id} — Obtener permiso por id.
+    Route::get('/PermissionId/{id}', 'permissionId');
+
+    // PUT /updatePermission/{id} — Actualizar permiso por id.
+    Route::put('/updatePermission/{id}', 'updatePermission');
 });
 
-//Rutas Roles
+/**
+ * ============================
+ *             ROLES
+ * ============================
+ * CRUD de roles del sistema.
+ */
 Route::controller(RolesController::class)->group(function () {
-    Route::get('/getRole', 'getRole'); // Obtener todas las lineas
-    Route::post('/newRole', 'newRole'); // Crear una nueva lineas
-    Route::get('/RoleId/{id}', 'RoleId'); // Obtener una lineas específica
-    Route::put('/updateRole/{id}', 'updateRole'); // Actualizar una lineas
-    Route::delete('/deleteRole/{id}', 'deleteRole'); // Eliminar una lineas
+    // GET /getRole — Listar roles.
+    Route::get('/getRole', 'getRole');
+
+    // POST /newRole — Crear rol.
+    Route::post('/newRole', 'newRole');
+
+    // GET /RoleId/{id} — Obtener rol por id.
+    Route::get('/RoleId/{id}', 'RoleId');
+
+    // PUT /updateRole/{id} — Actualizar rol por id.
+    Route::put('/updateRole/{id}', 'updateRole');
+
+    // DELETE /deleteRole/{id} — Eliminar rol por id.
+    Route::delete('/deleteRole/{id}', 'deleteRole');
 });
 
-//Rutas Factories
+/**
+ * ============================
+ *           FÁBRICAS
+ * ============================
+ * CRUD de fábricas/plantas.
+ */
 Route::controller(FactoryController::class)->group(function () {
-    Route::get('/getFactories', 'getFactories'); // Obtener todas las fábricas
-    Route::post('/newFactory', 'newFactory'); // Crear una nueva fábrica
-    Route::get('/factoryId/{id}', 'factoryId'); // Obtener una fábrica específica
-    Route::put('/updateFactory/{id}', 'updateFactory'); // Actualizar una fábrica
-    Route::delete('/deleteFactory/{id}', 'deleteFactory'); // Eliminar una fábrica
+    // GET /getFactories — Listar fábricas.
+    Route::get('/getFactories', 'getFactories');
+
+    // POST /newFactory — Crear fábrica.
+    Route::post('/newFactory', 'newFactory');
+
+    // GET /factoryId/{id} — Detalle de fábrica por id.
+    Route::get('/factoryId/{id}', 'factoryId');
+
+    // PUT /updateFactory/{id} — Actualizar fábrica.
+    Route::put('/updateFactory/{id}', 'updateFactory');
+
+    // DELETE /deleteFactory/{id} — Eliminar fábrica.
+    Route::delete('/deleteFactory/{id}', 'deleteFactory');
 });
-//Rutas Lineas
+
+/**
+ * ============================
+ *            LÍNEAS
+ * ============================
+ * CRUD de líneas de manufactura.
+ */
 Route::controller(ManufacturingController::class)->group(function () {
-    Route::get('/getManu', 'getManu'); // Obtener todas las lineas
-    Route::post('/newManu', 'newManu'); // Crear una nueva lineas
-    Route::get('/ManuId/{id}', 'ManuId'); // Obtener una lineas específica
-    Route::put('/updateManu/{id}', 'updateManu'); // Actualizar una lineas
-    Route::delete('/deleteManu/{id}', 'deleteManu'); // Eliminar una lineas
+    // GET /getManu — Listar líneas.
+    Route::get('/getManu', 'getManu');
+
+    // POST /newManu — Crear línea.
+    Route::post('/newManu', 'newManu');
+
+    // GET /ManuId/{id} — Detalle de línea por id.
+    Route::get('/ManuId/{id}', 'ManuId');
+
+    // PUT /updateManu/{id} — Actualizar línea.
+    Route::put('/updateManu/{id}', 'updateManu');
+
+    // DELETE /deleteManu/{id} — Eliminar línea.
+    Route::delete('/deleteManu/{id}', 'deleteManu');
 });
 
-//Rutas Maquinaria
+/**
+ * ============================
+ *          MAQUINARIA
+ * ============================
+ * CRUD de equipos/maquinaria.
+ */
 Route::controller(MachineryController::class)->group(function () {
-    Route::get('/getMachin', 'getMachin'); // Obtener todas las lineas
-    Route::post('/newMachin', 'newMachin'); // Crear una nueva lineas
-    Route::get('/MachinId/{id}', 'MachinId'); // Obtener una lineas específica
-    Route::put('/updateMachin/{id}', 'updateMachin'); // Actualizar una lineas
-    Route::delete('/deleteMachin/{id}', 'deleteMachin'); // Eliminar una lineas
+    // GET /getMachin — Listar maquinaria.
+    Route::get('/getMachin', 'getMachin');
+
+    // POST /newMachin — Crear máquina/equipo.
+    Route::post('/newMachin', 'newMachin');
+
+    // GET /MachinId/{id} — Detalle de máquina por id.
+    Route::get('/MachinId/{id}', 'MachinId');
+
+    // PUT /updateMachin/{id} — Actualizar máquina.
+    Route::put('/updateMachin/{id}', 'updateMachin');
+
+    // DELETE /deleteMachin/{id} — Eliminar máquina.
+    Route::delete('/deleteMachin/{id}', 'deleteMachin');
 });
 
-//Rutas Clientes
+/**
+ * ============================
+ *           CLIENTES
+ * ============================
+ * CRUD y sincronización de clientes.
+ */
 Route::controller(ClientsController::class)->group(function () {
+    // GET /clients/sync — Sincronizar/traer clientes desde API externa.
     Route::get('/clients/sync', 'getClientDataApi');
-    Route::get('/getClients', 'getClients'); // Obtener todas las lineas
-    Route::post('/newClients', 'newClients'); // Crear una nueva lineas
-    Route::get('/ClientsId/{id}', 'ClientsId'); // Obtener una lineas específica
-    Route::put('/updateClients/{id}', 'updateClients'); // Actualizar una lineas
-    Route::delete('/deleteClients/{id}', 'deleteClients'); // Eliminar una lineas
+
+    // GET /getClients — Listar clientes.
+    Route::get('/getClients', 'getClients');
+
+    // POST /newClients — Crear cliente.
+    Route::post('/newClients', 'newClients');
+
+    // GET /ClientsId/{id} — Detalle de cliente por id.
+    Route::get('/ClientsId/{id}', 'ClientsId');
+
+    // PUT /updateClients/{id} — Actualizar cliente.
+    Route::put('/updateClients/{id}', 'updateClients');
+
+    // DELETE /deleteClients/{id} — Eliminar cliente.
+    Route::delete('/deleteClients/{id}', 'deleteClients');
 });
 
-//Rutas Productos
+/**
+ * ============================
+ *           PRODUCTOS
+ * ============================
+ * CRUD de productos/artículos base (catálogo).
+ */
 Route::controller(ProductController::class)->group(function () {
-    Route::get('/getProduct', 'getProduct'); // Obtener todas las lineas
-    Route::post('/newProduct', 'newProduct'); // Crear una nueva lineas
-    Route::get('/ProductId/{id}', 'ProductId'); // Obtener una lineas específica
-    Route::get('/ProductName/{name}', 'ProductName'); // Obtener una lineas específica
-    Route::put('/updateProduct/{id}', 'updateProduct'); // Actualizar una lineas
-    Route::delete('/deleteProduct/{id}', 'deleteProduct'); // Eliminar una lineas
+    // GET /getProduct — Listar productos.
+    Route::get('/getProduct', 'getProduct');
+
+    // POST /newProduct — Crear producto.
+    Route::post('/newProduct', 'newProduct');
+
+    // GET /ProductId/{id} — Detalle de producto por id.
+    Route::get('/ProductId/{id}', 'ProductId');
+
+    // GET /ProductName/{name} — Buscar producto por nombre.
+    Route::get('/ProductName/{name}', 'ProductName');
+
+    // PUT /updateProduct/{id} — Actualizar producto.
+    Route::put('/updateProduct/{id}', 'updateProduct');
+
+    // DELETE /deleteProduct/{id} — Eliminar producto.
+    Route::delete('/deleteProduct/{id}', 'deleteProduct');
 });
 
-//Rutas Maestras
+/**
+ * ============================
+ *            MAESTRAS
+ * ============================
+ * CRUD de “maestras” (plantillas/configuraciones) y tipos.
+ */
 Route::controller(MaestrasController::class)->group(function () {
-    Route::get('/getMaestra', 'getMaestra'); // Obtener todas las lineas
-    Route::get('/getMuestreo/{id}', 'getMuestreo'); // Obtener todas las lineas
-    Route::post('/newMaestra', 'newMaestra'); // Crear una nueva lineas
-    Route::get('/MaestraId/{id}', 'MaestraId'); // Obtener una lineas específica
-    Route::get('/MaestraName/{name}', 'MaestraName'); // Obtener una lineas específica
-    Route::put('/updateMaestra/{id}', 'updateMaestra'); // Actualizar una lineas
-    Route::delete('/deleteMaestra/{id}', 'deleteMaestra'); // Eliminar una lineas
+    // GET /getMaestra — Listar maestras.
+    Route::get('/getMaestra', 'getMaestra');
+
+    // GET /getMuestreo/{id} — Obtener configuración de muestreo por id de maestra.
+    Route::get('/getMuestreo/{id}', 'getMuestreo');
+
+    // POST /newMaestra — Crear maestra.
+    Route::post('/newMaestra', 'newMaestra');
+
+    // GET /MaestraId/{id} — Detalle de maestra por id.
+    Route::get('/MaestraId/{id}', 'MaestraId');
+
+    // GET /MaestraName/{name} — Buscar maestra por nombre.
+    Route::get('/MaestraName/{name}', 'MaestraName');
+
+    // PUT /updateMaestra/{id} — Actualizar maestra.
+    Route::put('/updateMaestra/{id}', 'updateMaestra');
+
+    // DELETE /deleteMaestra/{id} — Eliminar maestra.
+    Route::delete('/deleteMaestra/{id}', 'deleteMaestra');
+
+    // GET /getTipo — Listar tipos de maestra.
     Route::get('/getTipo', 'obtenerTipos');
 });
 
-//Rutas Fases
+/**
+ * ============================
+ *             FASES
+ * ============================
+ * CRUD de fases de proceso y controles asociados.
+ */
 Route::controller(StagesController::class)->group(function () {
-    Route::get('/getFase', 'getFase'); // Obtener todas las lineas
-    Route::post('/newFase', 'newFase'); // Crear una nueva lineas
-    Route::get('/FaseId/{id}', 'FaseId'); // Obtener una lineas específica
-    Route::get('/controlStages/{id}', 'controlStages'); // Obtener una lineas específica
-    Route::get('/FaseName/{name}', 'FaseName'); // Obtener una lineas específica
-    Route::put('/updateFase/{id}', 'updateFase'); // Actualizar una lineas
-    Route::delete('/deleteFase/{id}', 'deleteFase'); // Eliminar una lineas
+    // GET /getFase — Listar fases.
+    Route::get('/getFase', 'getFase');
+
+    // POST /newFase — Crear fase.
+    Route::post('/newFase', 'newFase');
+
+    // GET /FaseId/{id} — Detalle de fase por id.
+    Route::get('/FaseId/{id}', 'FaseId');
+
+    // GET /controlStages/{id} — Controles/config de fase por id.
+    Route::get('/controlStages/{id}', 'controlStages');
+
+    // GET /FaseName/{name} — Buscar fase por nombre.
+    Route::get('/FaseName/{name}', 'FaseName');
+
+    // PUT /updateFase/{id} — Actualizar fase.
+    Route::put('/updateFase/{id}', 'updateFase');
+
+    // DELETE /deleteFase/{id} — Eliminar fase.
+    Route::delete('/deleteFase/{id}', 'deleteFase');
 });
 
-//Rutas Actividades
+/**
+ * ============================
+ *          ACTIVIDADES
+ * ============================
+ * CRUD de actividades asociadas a fases/controles.
+ */
 Route::controller(ActivitiesController::class)->group(function () {
-    Route::get('/getActividad', 'getActividad'); // Obtener todas las lineas
-    Route::post('/newActividad', 'newActividad'); // Crear una nueva lineas
-    Route::get('/ActividadId/{id}', 'ActividadId'); // Obtener una lineas específica 
-    Route::put('/updateActividad/{id}', 'updateActividad'); // Actualizar una lineas
-    Route::delete('/deleteActividad/{id}', 'deleteActividad'); // Eliminar una lineas
+    // GET /getActividad — Listar actividades.
+    Route::get('/getActividad', 'getActividad');
+
+    // POST /newActividad — Crear actividad.
+    Route::post('/newActividad', 'newActividad');
+
+    // GET /ActividadId/{id} — Detalle de actividad por id.
+    Route::get('/ActividadId/{id}', 'ActividadId');
+
+    // PUT /updateActividad/{id} — Actualizar actividad.
+    Route::put('/updateActividad/{id}', 'updateActividad');
+
+    // DELETE /deleteActividad/{id} — Eliminar actividad.
+    Route::delete('/deleteActividad/{id}', 'deleteActividad');
 });
 
-//Rutas Articulos
+/**
+ * ============================
+ *           ARTÍCULOS
+ * ============================
+ * CRUD y consultas: artículos (con BOM), por código/cliente.
+ */
 Route::controller(ArticlesController::class)->group(function () {
-    Route::get('/getArticle', 'getArticle'); // Obtener todas las lineas
-    Route::get('/getBom', 'getAllBoms'); // Obtener todas las lineas
-    Route::post('/newArticle', 'newArticle'); // Crear una nueva lineas
-    Route::get('/getCode/{code}', 'getArticlesByCoddiv'); // Obtener una lineas específica 
-    Route::get('/getArticleId/{id}', 'getArticleById'); // Obtener una lineas específica 
-    Route::get('/getArticleByClientId/{id}', 'getArticleByClientId'); // Obtener una lineas específica 
-    Route::put('/updateArticle/{id}', 'updateArticle'); // Actualizar una lineas
-    Route::delete('/deleteArticle/{id}', 'deleteArticle'); // Eliminar una lineas
+    // GET /getArticle — Listar artículos.
+    Route::get('/getArticle', 'getArticle');
+
+    // GET /getBom — Listar todos los BOMs disponibles.
+    Route::get('/getBom', 'getAllBoms');
+
+    // POST /newArticle — Crear artículo.
+    Route::post('/newArticle', 'newArticle');
+
+    // GET /getCode/{code} — Buscar artículo por código.
+    Route::get('/getCode/{code}', 'getArticlesByCoddiv');
+
+    // GET /getArticleId/{id} — Detalle de artículo por id.
+    Route::get('/getArticleId/{id}', 'getArticleById');
+
+    // GET /getArticleByClientId/{id} — Listar artículos por id de cliente.
+    Route::get('/getArticleByClientId/{id}', 'getArticleByClientId');
+
+    // PUT /updateArticle/{id} — Actualizar artículo.
+    Route::put('/updateArticle/{id}', 'updateArticle');
+
+    // DELETE /deleteArticle/{id} — Eliminar artículo.
+    Route::delete('/deleteArticle/{id}', 'deleteArticle');
 });
 
-//Rutas Acondicionamiento
+/**
+ * ============================
+ *      ACONDICIONAMIENTOS
+ * ============================
+ * CRUD de Acondicionamientos y utilidades (adjuntos, debug BOM).
+ */
 Route::controller(AdaptationController::class)->group(function () {
-    Route::get('/getAdaptation', 'getAdaptation'); // Obtener todas las lineas 
-    Route::post('/newAdaptation', 'newAdaptation'); // Crear una nueva lineas 
-    Route::post('/newAttachment', 'uploadAttachment'); // Crear una nueva lineas 
-    Route::get('/getAdaptationId/{id}', 'getAdaptationById'); // Obtener una lineas específica 
-    Route::put('/updateAdaptation/{id}', 'updateAdaptation'); // Actualizar una lineas
-    Route::delete('/deleteAdaptation/{id}', 'deleteAdaptation'); // Eliminar una lineas
-    Route::get('/debug/adaptation/{id}', 'debugBomAndIngredients'); // Obtener una lineas específica 
+    // GET /getAdaptation — Listar acondicionamientos.
+    Route::get('/getAdaptation', 'getAdaptation');
+
+    // POST /newAdaptation — Crear acondicionamiento.
+    Route::post('/newAdaptation', 'newAdaptation');
+
+    // POST /newAttachment — Subir adjunto de acondicionamiento.
+    Route::post('/newAttachment', 'uploadAttachment');
+
+    // GET /getAdaptationId/{id} — Detalle por id.
+    Route::get('/getAdaptationId/{id}', 'getAdaptationById');
+
+    // PUT /updateAdaptation/{id} — Actualizar acondicionamiento.
+    Route::put('/updateAdaptation/{id}', 'updateAdaptation');
+
+    // DELETE /deleteAdaptation/{id} — Eliminar acondicionamiento.
+    Route::delete('/deleteAdaptation/{id}', 'deleteAdaptation');
+
+    // GET /debug/adaptation/{id} — Debug BOM/ingredientes para un acondicionamiento.
+    Route::get('/debug/adaptation/{id}', 'debugBomAndIngredients');
 });
 
-//Rutas Planificación
+/**
+ * ============================
+ *         PLANIFICACIÓN
+ * ============================
+ * CRUD/consultas de planes de producción y PDF.
+ */
 Route::controller(AdaptationDateController::class)->group(function () {
-    Route::get('/getPlan', 'getPlan'); // Obtener todas las lineas 
-    Route::get('/getPlanDash', 'getPlanDash'); // Obtener todas las lineas 
-    Route::post('/newPlan', 'newAPlan'); // Crear una nueva lineas 
-    Route::put('/updatePlan/{id}', 'update'); // Crear una nueva lineas 
-    Route::get('/getPlanId/{id}', 'getPlanById'); // Obtener una lineas específica  
-    Route::get('/getPlannId/{id}', 'getPlanUnic'); // Obtener una lineas específica  
-    Route::get('/getPlanByIdPDF/{id}', 'getPlanByIdPDF'); // Obtener una lineas específica  
-    Route::get('/pdf/plan/{id}', 'generatePDFView'); // Obtener una lineas específica  
-    Route::get('/consult-planning', 'getConsultPlanning'); // Obtener una lineas específica  
-    Route::delete('/deletePlan/{id}', 'destroy'); // Eliminar una lineas
+    // GET /getPlan — Listar planes (paginación/filtros según controller).
+    Route::get('/getPlan', 'getPlan');
+
+    // GET /getPlanDash — KPIs/agrupaciones para dashboard.
+    Route::get('/getPlanDash', 'getPlanDash');
+
+    // POST /newPlan — Crear planificación.
+    Route::post('/newPlan', 'newAPlan');
+
+    // PUT /updatePlan/{id} — Actualizar plan por id.
+    Route::put('/updatePlan/{id}', 'update');
+
+    // GET /getPlanId/{id} — Detalle de plan por id.
+    Route::get('/getPlanId/{id}', 'getPlanById');
+
+    // GET /getPlannId/{id} — Detalle único (variación/compat).
+    Route::get('/getPlannId/{id}', 'getPlanUnic');
+
+    // GET /getPlanByIdPDF/{id} — Datos listos para PDF (JSON).
+    Route::get('/getPlanByIdPDF/{id}', 'getPlanByIdPDF');
+
+    // GET /pdf/plan/{id} — Render de PDF (vista).
+    Route::get('/pdf/plan/{id}', 'generatePDFView');
+
+    // GET /consult-planning — Consulta compuesta (unifica varias fuentes).
+    Route::get('/consult-planning', 'getConsultPlanning');
+
+    // DELETE /deletePlan/{id} — Eliminar plan.
+    Route::delete('/deletePlan/{id}', 'destroy');
 });
 
-//Rutas consecutivo
+/**
+ * ============================
+ *         CONSECUTIVOS
+ * ============================
+ * Gestión de consecutivos y prefijos.
+ */
 Route::controller(ConsecutiveController::class)->group(function () {
+    // GET /getConsecutive — Listar consecutivos.
     Route::get('/getConsecutive', 'getAll');
+
+    // GET /getConsecutiveDate — Listar consecutivos por fecha (o fechas asociadas).
     Route::get('/getConsecutiveDate', 'getAllConsecutiveDates');
+
+    // GET /getPrefix/{prefix} — Consultar consecutivo por prefijo.
     Route::get('/getPrefix/{prefix}', 'getPrefix');
+
+    // PUT /updateConsecutive/{id} — Actualizar consecutivo.
     Route::put('/updateConsecutive/{id}', 'update');
 });
 
-//Rutas Tipo de Acondicionamiento
+/**
+ * =========================================
+ *     TIPOS DE ACONDICIONAMIENTO (Catálogo)
+ * =========================================
+ */
 Route::controller(TipoAcondicionamientoController::class)->group(function () {
-    Route::get('/getTipoAcondicionamiento', 'getAll'); // Obtener todas las lineas   
-    Route::get('/getTipoAcondicionamientoId/{id}', 'getTipoAcondicionamiento'); // Obtener una lineas específica
-    Route::post('/newTipoAcondicionamiento', 'newTipoAcondicionamiento'); // Crear una nueva lineas 
-    Route::put('/updateTipoAcondicionamiento/{id}', 'updateTipoAcondicionamiento'); // Actualizar una lineas
-    Route::delete('/deleteTipoAcondicionamiento/{id}', 'deleteTipoAcondicionamiento'); // Eliminar una lineas
+    // GET /getTipoAcondicionamiento — Listar tipos.
+    Route::get('/getTipoAcondicionamiento', 'getAll');
+
+    // GET /getTipoAcondicionamientoId/{id} — Detalle de tipo por id.
+    Route::get('/getTipoAcondicionamientoId/{id}', 'getTipoAcondicionamiento');
+
+    // POST /newTipoAcondicionamiento — Crear tipo.
+    Route::post('/newTipoAcondicionamiento', 'newTipoAcondicionamiento');
+
+    // PUT /updateTipoAcondicionamiento/{id} — Actualizar tipo.
+    Route::put('/updateTipoAcondicionamiento/{id}', 'updateTipoAcondicionamiento');
+
+    // DELETE /deleteTipoAcondicionamiento/{id} — Eliminar tipo.
+    Route::delete('/deleteTipoAcondicionamiento/{id}', 'deleteTipoAcondicionamiento');
 });
 
-//Rutas Lineas Tipo de Acondicionamiento
+/**
+ * ==============================================
+ *   LÍNEAS X TIPO DE ACONDIC. (Relación/Mapping)
+ * ==============================================
+ */
 Route::controller(LineaTipoAcondicionamientoController::class)->group(function () {
-    Route::get('/getLineaTipoAcondicionamiento', 'getAll'); // Obtener todas las lineas   
-    Route::post('/newLineaTipoAcondicionamiento', 'store'); // Crear una nueva lineas 
-    Route::put('/updateLineaTipoAcondicionamiento/{id}', 'update'); // Actualizar una lineas
-    Route::delete('/deleteLineaTipoAcondicionamiento/{id}', 'destroy'); // Eliminar una lineas
-    Route::get('/getLineaTipoAcondicionamiento/{id}', 'getByTipoAcondicionamiento'); // Obtener una lineas específica
-    Route::get('/getListTipoyLineas/{id}', 'getListTipoyLineas'); // Obtener una lineas específica
-    Route::get('/getSelectStages', 'getSelectStages'); // Obtener una lineas específica
+    // GET /getLineaTipoAcondicionamiento — Listar relaciones línea–tipo.
+    Route::get('/getLineaTipoAcondicionamiento', 'getAll');
+
+    // POST /newLineaTipoAcondicionamiento — Crear relación.
+    Route::post('/newLineaTipoAcondicionamiento', 'store');
+
+    // PUT /updateLineaTipoAcondicionamiento/{id} — Actualizar relación.
+    Route::put('/updateLineaTipoAcondicionamiento/{id}', 'update');
+
+    // DELETE /deleteLineaTipoAcondicionamiento/{id} — Eliminar relación.
+    Route::delete('/deleteLineaTipoAcondicionamiento/{id}', 'destroy');
+
+    // GET /getLineaTipoAcondicionamiento/{id} — Listar relaciones por id de tipo.
+    Route::get('/getLineaTipoAcondicionamiento/{id}', 'getByTipoAcondicionamiento');
+
+    // GET /getListTipoyLineas/{id} — Obtener lista combinada (tipo y líneas) por id de tipo.
+    Route::get('/getListTipoyLineas/{id}', 'getListTipoyLineas');
+
+    // GET /getSelectStages — Opciones de etapas para selects (catálogo).
+    Route::get('/getSelectStages', 'getSelectStages');
 });
 
-//Rutas Ordenes Ejecutadas
+/**
+ * ============================
+ *    ÓRDENES EJECUTADAS
+ * ============================
+ * Flujo de ejecución: validación, generación, avance de fases, formularios y conciliación.
+ */
 Route::controller(OrdenesEjecutadasController::class)->group(function () {
-    Route::get('/validar_estado/{id}', 'validar_estado'); // Crear una nueva lineas 
-    Route::get('/generar_orden/{id}', 'generar_orden'); // Crear una nueva lineas 
-    Route::get('/linea_procesos/{id}', 'linea_procesos'); // Listar linea procesos
-    Route::get('/siguiente_fase/{id}/{linea}/{tipo}', 'siguiente_fase'); // Listar linea procesos
+    // GET /validar_estado/{id} — Validar estado de una orden por id.
+    Route::get('/validar_estado/{id}', 'validar_estado');
+
+    // GET /generar_orden/{id} — Generar orden ejecutada a partir de plan/solicitud.
+    Route::get('/generar_orden/{id}', 'generar_orden');
+
+    // GET /linea_procesos/{id} — Listar procesos para línea (por id de línea o de orden, según controller).
+    Route::get('/linea_procesos/{id}', 'linea_procesos');
+
+    // GET /siguiente_fase/{id}/{linea}/{tipo} — Calcular/obtener siguiente fase.
+    Route::get('/siguiente_fase/{id}/{linea}/{tipo}', 'siguiente_fase');
+
+    // POST /guardar_actividades — Guardar formulario de actividades ejecutadas.
     Route::post('/guardar_actividades', 'guardar_formulario');
+
+    // GET /getFaseControl/{id} — Obtener controles de fase por id.
     Route::get('/getFaseControl/{id}', 'getFaseControl');
+
+    // GET /getActividadesControl/{id} — Obtener actividades de control por id.
     Route::get('/getActividadesControl/{id}', 'getActividadesControl');
+
+    // GET /validate_rol/{fase} — Validar rol requerido para fase.
     Route::get('/validate_rol/{fase}', 'validateRol');
+
+    // GET /condiciones_fase/{id}/{fase} — Validar condiciones de fase para orden/fase.
     Route::get('/condiciones_fase/{id}/{fase}', 'condicionesFase');
+
+    // GET /getActividadesEjecutadas/{id} — Listar actividades ya ejecutadas (por orden/fase).
     Route::get('/getActividadesEjecutadas/{id}', 'getActividadesEjecutadas');
+
+    // GET /eliminar_orden/{id} — Eliminar registro de orden ejecutada.
     Route::get('/eliminar_orden/{id}', 'eliminar_orden');
+
+    // GET /getConciliacion/{id} — Obtener conciliación por id de orden/plan.
     Route::get('/getConciliacion/{id}', 'getConciliacion');
+
+    // POST /guardar_conciliacion — Guardar conciliación (payload con totales/observaciones).
     Route::post('/guardar_conciliacion', 'guardar_conciliacion');
+
+    // GET /restablecer_orden/{id} — Restablecer/rollback de orden a estado anterior.
     Route::get('/restablecer_orden/{id}', 'restablecerOrden');
+
+    // POST /guardar_actividades_control — Guardar actividades de control (formulario).
     Route::post('/guardar_actividades_control', 'guardar_actividades_control');
+
+    // GET /getActividadesTestigo/{id} — Obtener actividades testigo por id.
     Route::get('/getActividadesTestigo/{id}', 'getActividadesTestigo');
+
+    // POST /guardar_actividades_testigos — Guardar actividades testigo.
     Route::post('/guardar_actividades_testigos', 'guardar_actividades_testigos');
+
+    // GET /relacionarOrden/{id} — Relacionar orden ejecutada con otra entidad/orden.
     Route::get('/relacionarOrden/{id}', 'relacionarOrden');
-    Route::get('/validate_conciliacion/{id}', 'validateConciliacion');    
+
+    // GET /validate_conciliacion/{id} — Validar si la conciliación está lista/consistente.
+    Route::get('/validate_conciliacion/{id}', 'validateConciliacion');
 });
 
-//Rutas Historial de Audits
+/**
+ * ============================
+ *        HISTORIAL (AUDIT)
+ * ============================
+ * Consultas de auditoría por modelo/ámbito.
+ */
 Route::controller(HistoryAuditController::class)->group(function () {
-    Route::get('/getAudit', 'index'); // Obtener todas las lineas   
-    Route::get('/getAuditAdaptation', 'indexAdaptation'); // Obtener todas las lineas   
-    Route::get('/getAuditAdmin', 'indexAdmin'); // Obtener todas las lineas   
-    Route::get('/{model}/{id}', 'byModel'); // Obtener una lineas específica
-    Route::get('/audit/{model}/{id}', 'byModelAdaptation'); // Obtener una lineas específica
-    Route::get('/audit/admin/{model}/{id}', 'byModelAdmin'); // Obtener una lineas específica
+    // GET /getAudit — Listar logs de auditoría (general).
+    Route::get('/getAudit', 'index');
+
+    // GET /getAuditAdaptation — Auditoría enfocada en Acondicionamientos.
+    Route::get('/getAuditAdaptation', 'indexAdaptation');
+
+    // GET /getAuditAdmin — Auditoría para admins (scope ampliado).
+    Route::get('/getAuditAdmin', 'indexAdmin');
+
+    // GET /{model}/{id} — Auditoría por modelo e id (ruta genérica).
+    Route::get('/{model}/{id}', 'byModel');
+
+    // GET /audit/{model}/{id} — Auditoría por modelo para Acondicionamientos.
+    Route::get('/audit/{model}/{id}', 'byModelAdaptation');
+
+    // GET /audit/admin/{model}/{id} — Auditoría por modelo en ámbito admin.
+    Route::get('/audit/admin/{model}/{id}', 'byModelAdmin');
 });
 
-//Rutas Timer
+/**
+ * ============================
+ *            TIMERS
+ * ============================
+ * Manejo de timers por orden/fase: crear, pausar, finalizar, reiniciar.
+ */
 Route::controller(TimerController::class)->group(function () {
-    Route::get('/getTimer', 'index');                         // Listar timers
-    Route::post('/newTimer', 'store');                        // Crear timer
-    Route::get('/getTimer/{id}', 'show');                     // Obtener uno
-    Route::get('/timers/by-ejecutada/{ejecutada_id}', 'getEjecutadaId'); // Obtener por ejecutada_id
+    // GET /getTimer — Listar timers.
+    Route::get('/getTimer', 'index');
 
-    Route::patch('/timers/pause', 'pause');                     // Pausar
-    Route::patch('/timers/finish', 'finish');                   // Finalizar
-    Route::patch('/timers/resetTimer', 'reset');                     // Reiniciar
+    // POST /newTimer — Crear timer.
+    Route::post('/newTimer', 'store');
+
+    // GET /getTimer/{id} — Detalle de timer por id.
+    Route::get('/getTimer/{id}', 'show');
+
+    // GET /timers/by-ejecutada/{ejecutada_id} — Timers por id de orden ejecutada.
+    Route::get('/timers/by-ejecutada/{ejecutada_id}', 'getEjecutadaId');
+
+    // PATCH /timers/pause — Pausar timer (payload con timer_id).
+    Route::patch('/timers/pause', 'pause');
+
+    // PATCH /timers/finish — Finalizar timer (payload con timer_id).
+    Route::patch('/timers/finish', 'finish');
+
+    // PATCH /timers/resetTimer — Reiniciar timer (payload con timer_id).
+    Route::patch('/timers/resetTimer', 'reset');
 });
 
-//Rutas FaseTimer
-Route::controller(FaseTimerController::class)->group(function () {
-    Route::get('/getFaseTimer', 'getAll');                         // Listar timers
-    Route::get('/getFaseTimer/control/{id}', 'getFaseTimerControl');   // Listar timers por id
-});
-
-//Rutas Timer Control
+/**
+ * ============================
+ *        TIMER CONTROL
+ * ============================
+ * Registro de controles de timer (eventos/acciones).
+ */
 Route::controller(TimerControlController::class)->group(function () {
-    Route::post('/newTcontrol', 'store');    
+    // POST /newTcontrol — Crear registro de control de timer.
+    Route::post('/newTcontrol', 'store');
+});
+
+
+/**
+ * ============================
+ *         FASE TIMER
+ * ============================
+ * Consultas de timers por fase/control.
+ */
+Route::controller(FaseTimerController::class)->group(function () {
+    // GET /getFaseTimer — Listar FaseTimer (asociaciones/config).
+    Route::get('/getFaseTimer', 'getAll');
+
+    // GET /getFaseTimer/control/{id} — Obtener FaseTimer por id de control.
+    Route::get('/getFaseTimer/control/{id}', 'getFaseTimerControl');
 });

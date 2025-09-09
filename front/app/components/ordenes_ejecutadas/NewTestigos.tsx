@@ -457,6 +457,7 @@ const NewTestigos = () => {
                       onMouseDown={(e) =>
                         onSigSelectMouseDown(e, cfg, fieldName)
                       }
+                      required
                       onKeyDown={(e) => onSigSelectKeyDown(e, cfg, fieldName)}
                       onChange={(e) => {
                         if (isProtected && !isUnlocked) {

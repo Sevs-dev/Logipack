@@ -1,32 +1,34 @@
-'use client';
+"use client";
 
-import React, { useState, useEffect } from 'react';
-import type { CSSProperties } from 'react';
-import { login } from '../../services/userDash/authservices';
-import nookies from 'nookies';
-import { motion, AnimatePresence } from 'framer-motion';
-import { FiEye, FiEyeOff, FiMail, FiLock } from 'react-icons/fi';
-import { showError } from '../toastr/Toaster';
-import DateLoader from '@/app/components/loader/DateLoader';
+import React, { useState, useEffect } from "react";
+import type { CSSProperties } from "react";
+import { login } from "../../services/userDash/authservices";
+import nookies from "nookies";
+import { motion, AnimatePresence } from "framer-motion";
+import { FiEye, FiEyeOff, FiMail, FiLock } from "react-icons/fi";
+import { showError } from "../toastr/Toaster";
+import DateLoader from "@/app/components/loader/DateLoader";
+import Image from "next/image";
 
 // Fondo animado Aurora + partículas
 const bgStyle: CSSProperties = {
-  background: 'linear-gradient(152deg,rgba(0, 0, 0, 1) 0%, rgba(36, 54, 158, 1) 51%, rgba(133, 0, 148, 1) 100%)',
-  minHeight: '100vh',
-  width: '100vw',
-  position: 'fixed',
+  background:
+    "linear-gradient(152deg,rgba(0, 0, 0, 1) 0%, rgba(36, 54, 158, 1) 51%, rgba(133, 0, 148, 1) 100%)",
+  minHeight: "100vh",
+  width: "100vw",
+  position: "fixed",
   top: 0,
   left: 0,
-  zIndex: 0,                // 🔁 antes era -1 → ponlo >= 0
-  overflow: 'hidden',
-  pointerEvents: 'none',    // 🛡️ no bloquea interacciones
+  zIndex: 0, // 🔁 antes era -1 → ponlo >= 0
+  overflow: "hidden",
+  pointerEvents: "none", // 🛡️ no bloquea interacciones
 };
 
 const cookieOptions = {
   maxAge: 60 * 60 * 2,
-  path: '/',
-  secure: process.env.NODE_ENV === 'production',
-  sameSite: 'lax' as const,
+  path: "/",
+  secure: process.env.NODE_ENV === "production",
+  sameSite: "lax" as const,
 };
 
 export default function Login() {
@@ -34,21 +36,21 @@ export default function Login() {
   useEffect(() => {
     const root = document.documentElement;
 
-    const hadDark = root.classList.contains('dark');
-    const prevDataTheme = root.getAttribute('data-theme');
+    const hadDark = root.classList.contains("dark");
+    const prevDataTheme = root.getAttribute("data-theme");
     const prevColorScheme = root.style.colorScheme;
 
     const enforceLight = () => {
       // Solo aplicar si hace falta (evita loops con MutationObserver)
       const needs =
-        root.classList.contains('dark') ||
-        root.getAttribute('data-theme') !== 'light' ||
-        root.style.colorScheme !== 'light';
+        root.classList.contains("dark") ||
+        root.getAttribute("data-theme") !== "light" ||
+        root.style.colorScheme !== "light";
 
       if (needs) {
-        root.classList.remove('dark');
-        root.setAttribute('data-theme', 'light');
-        root.style.colorScheme = 'light';
+        root.classList.remove("dark");
+        root.setAttribute("data-theme", "light");
+        root.style.colorScheme = "light";
       }
     };
 
@@ -57,26 +59,41 @@ export default function Login() {
 
     // Si algo intenta re-aplicar .dark u otro theme mientras está montado, lo neutralizamos
     const observer = new MutationObserver(() => enforceLight());
-    observer.observe(root, { attributes: true, attributeFilter: ['class', 'data-theme', 'style'] });
+    observer.observe(root, {
+      attributes: true,
+      attributeFilter: ["class", "data-theme", "style"],
+    });
 
     // Restaurar exactamente como estaba al desmontar
     return () => {
       observer.disconnect();
-      root.style.colorScheme = prevColorScheme || '';
-      if (prevDataTheme) root.setAttribute('data-theme', prevDataTheme);
-      else root.removeAttribute('data-theme');
-      if (hadDark) root.classList.add('dark');
-      else root.classList.remove('dark');
+      root.style.colorScheme = prevColorScheme || "";
+      if (prevDataTheme) root.setAttribute("data-theme", prevDataTheme);
+      else root.removeAttribute("data-theme");
+      if (hadDark) root.classList.add("dark");
+      else root.classList.remove("dark");
     };
   }, []);
 
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+
+    // helper para el sonido
+    const playNotify = async () => {
+      try {
+        const audio = new Audio("/sounds/drop-in.mp3"); // ponlo en /public/sounds/notify.mp3
+        audio.volume = 0.3;
+        await audio.play(); // permitido por la interacción del submit
+      } catch {
+        // Autoplay bloqueado o sin archivo: lo ignoramos silenciosamente
+      }
+    };
+
     try {
       const response = await login(email, password);
       if (response.success) {
@@ -87,17 +104,25 @@ export default function Login() {
         const { token } = data.autorización;
         const { email: userEmail, role, name } = data.usuario;
 
-        nookies.set(null, 'token', token, cookieOptions);
-        nookies.set(null, 'email', userEmail, cookieOptions);
-        nookies.set(null, 'role', role, cookieOptions);
-        nookies.set(null, 'name', name, cookieOptions);
+        nookies.set(null, "token", token, cookieOptions);
+        nookies.set(null, "email", userEmail, cookieOptions);
+        nookies.set(null, "role", role, cookieOptions);
+        nookies.set(null, "name", name, cookieOptions);
 
+        // 🔔 dispara el sonido ANTES de navegar
+        await playNotify();
+
+        // Pequeño delay para que se alcance a oír la notificación
         setTimeout(() => {
-          window.location.href = '/pages/dashboard';
-        }, 100);
+          window.location.href = "/pages/dashboard";
+        }, 150);
       }
     } catch (err) {
-      showError(err instanceof Error ? err.message : 'Error inesperado al iniciar sesión.');
+      showError(
+        err instanceof Error
+          ? err.message
+          : "Error inesperado al iniciar sesión."
+      );
     } finally {
       setLoading(false);
     }
@@ -106,7 +131,12 @@ export default function Login() {
   // Animación padre
   const parentFade = {
     hidden: { opacity: 0, scale: 0.98, y: 36 },
-    visible: { opacity: 1, scale: 1, y: 0, transition: { duration: 0.7, ease: 'easeOut' } },
+    visible: {
+      opacity: 1,
+      scale: 1,
+      y: 0,
+      transition: { duration: 0.7, ease: "easeOut" },
+    },
   };
 
   // Paneles stagger
@@ -124,9 +154,13 @@ export default function Login() {
       {loading && (
         <div
           className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm"
-          style={{ pointerEvents: 'all' }}
+          style={{ pointerEvents: "all" }}
         >
-          <DateLoader message="Iniciando sesión..." backgroundColor="transparent" color="#fff" />
+          <DateLoader
+            message="Iniciando sesión..."
+            backgroundColor="transparent"
+            color="#fff"
+          />
         </div>
       )}
       <div
@@ -136,7 +170,7 @@ export default function Login() {
         overflow-y-auto
         bg-none
       `}
-        style={{ background: 'none' }}
+        style={{ background: "none" }}
       >
         {/* Fondo animado */}
         <div style={bgStyle}>
@@ -150,11 +184,17 @@ export default function Login() {
             opacity: 1,
             scale: 1,
             y: 0,
-            transition: { type: 'spring', stiffness: 62, damping: 18, duration: 0.84 },
+            transition: {
+              type: "spring",
+              stiffness: 62,
+              damping: 18,
+              duration: 0.84,
+            },
           }}
           whileHover={{
             scale: 1.018,
-            boxShadow: '0 0 60px 0 rgba(128,64,255,0.15), 0 20px 90px 0 rgba(78,33,202,0.24)',
+            boxShadow:
+              "0 0 60px 0 rgba(128,64,255,0.15), 0 20px 90px 0 rgba(78,33,202,0.24)",
             transition: { duration: 0.34 },
           }}
           variants={parentFade}
@@ -168,7 +208,7 @@ export default function Login() {
           transition-all duration-300 group mt-10
         `}
           style={{
-            boxShadow: '0 20px 90px 0 rgba(78, 33, 202, 0.22)',
+            boxShadow: "0 20px 90px 0 rgba(78, 33, 202, 0.22)",
           }}
         >
           {/* Glow animado alrededor */}
@@ -183,16 +223,27 @@ export default function Login() {
             <motion.div
               initial={{ opacity: 0, scale: 0.93 }}
               animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.16, duration: 0.6, type: 'spring' }}
+              transition={{ delay: 0.16, duration: 0.6, type: "spring" }}
               className="relative z-10 text-left md:text-center"
             >
-              <h2 className="text-3xl xs:text-4xl md:text-5xl font-extrabold mb-6 drop-shadow-2xl tracking-tight text-white animate-fadein">
-                Bienvenido a Logismart
-              </h2>
-              <p className="text-lg md:text-xl text-gray-200/90 font-medium tracking-wide animate-fadein-slow">
-                Automatiza, controla, <span className="text-purple-300 font-semibold">optimiza</span>.<br />
-                Tu operación, más inteligente.
-              </p>
+              <div className="flex flex-col items-center">
+                <Image
+                  src="/logipack_2.png"
+                  alt="Logipack"
+                  width={240}
+                  height={280}
+                  priority
+                />
+                <p className="text-lg md:text-xl text-gray-200/90 font-medium tracking-wide animate-fadein-slow mt-2">
+                  Automatiza, controla,{" "}
+                  <span className="text-purple-300 font-semibold">
+                    optimiza
+                  </span>
+                  .
+                  <br />
+                  Tu operación, más inteligente.
+                </p>
+              </div>
             </motion.div>
           </motion.div>
           {/* FORMULARIO DE LOGIN */}
@@ -203,7 +254,9 @@ export default function Login() {
           >
             <div>
               <div className="text-center mb-4">
-                <h1 className="text-3xl font-bold text-white mb-2 drop-shadow-xl tracking-wide">Inicia sesión</h1>
+                <h1 className="text-3xl font-bold text-white mb-2 drop-shadow-xl tracking-wide">
+                  Inicia sesión
+                </h1>
               </div>
               <form onSubmit={handleSubmit} className="space-y-7">
                 <Input
@@ -240,7 +293,9 @@ export default function Login() {
                   active:scale-95
                   tracking-wider"
                 >
-                  <span className="flex items-center gap-2">Iniciar Sesión</span>
+                  <span className="flex items-center gap-2">
+                    Iniciar Sesión
+                  </span>
                 </motion.button>
 
                 <p className="text-sm text-gray-400 text-center mt-4">
@@ -310,13 +365,16 @@ export default function Login() {
           /* GLOW/SOMBRA animada en el contenedor */
           @keyframes glow {
             0% {
-              box-shadow: 0 0 40px 0 rgba(128, 64, 255, 0.08), 0 20px 90px 0 rgba(78, 33, 202, 0.19);
+              box-shadow: 0 0 40px 0 rgba(128, 64, 255, 0.08),
+                0 20px 90px 0 rgba(78, 33, 202, 0.19);
             }
             50% {
-              box-shadow: 0 0 80px 8px rgba(178, 98, 255, 0.19), 0 20px 90px 0 rgba(78, 33, 202, 0.27);
+              box-shadow: 0 0 80px 8px rgba(178, 98, 255, 0.19),
+                0 20px 90px 0 rgba(78, 33, 202, 0.27);
             }
             100% {
-              box-shadow: 0 0 40px 0 rgba(128, 64, 255, 0.08), 0 20px 90px 0 rgba(78, 33, 202, 0.19);
+              box-shadow: 0 0 40px 0 rgba(128, 64, 255, 0.08),
+                0 20px 90px 0 rgba(78, 33, 202, 0.19);
             }
           }
           .animate-glow {
@@ -362,38 +420,41 @@ const Input = ({
   Icon?: React.ElementType;
 }) => {
   const [showPassword, setShowPassword] = useState(false);
-  const isPassword = type === 'password';
+  const isPassword = type === "password";
   const hasValue = value && value.length > 0;
 
   return (
     <div className="space-y-2 relative">
-      <label htmlFor={id} className="block text-sm text-gray-200 font-medium tracking-wide mb-1">
+      <label
+        htmlFor={id}
+        className="block text-sm text-gray-200 font-medium tracking-wide mb-1"
+      >
         {label}
       </label>
       <div className="relative">
         {Icon && (
           <Icon
             className={`absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none transition-colors duration-200 ${
-              hasValue ? 'text-purple-700' : 'text-purple-300/70'
+              hasValue ? "text-purple-700" : "text-purple-300/70"
             }`}
             size={19}
           />
         )}
         <input
           id={id}
-          type={isPassword && showPassword ? 'text' : type}
+          type={isPassword && showPassword ? "text" : type}
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          autoComplete={isPassword ? 'current-password' : 'on'}
+          autoComplete={isPassword ? "current-password" : "on"}
           className={`
             w-full px-11 py-3.5 pr-12 rounded-lg
             border border-white/40
             transition duration-300 shadow-md shadow-purple-700/10 hover:shadow-purple-400/10 focus:shadow-purple-500/25
-            ${Icon ? 'pl-10' : ''}
+            ${Icon ? "pl-10" : ""}
             ${
               hasValue
-                ? 'bg-gray-100 text-black placeholder-gray-500 focus:bg-gray-100'
-                : 'bg-white/10 text-white placeholder-gray-400 focus:bg-gradient-to-l focus:from-purple-700/15 focus:to-indigo-900/15'
+                ? "bg-gray-100 text-black placeholder-gray-500 focus:bg-gray-100"
+                : "bg-white/10 text-white placeholder-gray-400 focus:bg-gradient-to-l focus:from-purple-700/15 focus:to-indigo-900/15"
             }
             focus:ring-2 focus:ring-purple-500/60 outline-none
           `}
@@ -411,7 +472,7 @@ const Input = ({
           >
             <AnimatePresence mode="wait" initial={false}>
               <motion.span
-                key={showPassword ? 'visible' : 'hidden'}
+                key={showPassword ? "visible" : "hidden"}
                 initial={{ opacity: 0, scale: 0.8, rotate: -90 }}
                 animate={{ opacity: 1, scale: 1, rotate: 0 }}
                 exit={{ opacity: 0, scale: 0.8, rotate: 90 }}
@@ -456,10 +517,10 @@ function Bubbles() {
             }}
             transition={{
               repeat: Infinity,
-              repeatType: 'mirror',
+              repeatType: "mirror",
               duration: 9 + Math.random() * 5,
               delay: Math.random() * 2,
-              ease: 'easeInOut',
+              ease: "easeInOut",
             }}
           />
         );

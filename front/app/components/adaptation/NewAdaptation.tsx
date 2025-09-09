@@ -1060,7 +1060,7 @@ function NewAdaptation({
                   {/* Fecha Entrega */}
                   <div>
                     <Text type="subtitle" color="text-[rgb(var(--foreground))]">
-                      Fecha Entrega:
+                      Fecha Vencimiento:
                     </Text>
                     <Input
                       type="date"
@@ -1162,7 +1162,7 @@ function NewAdaptation({
                             type="subtitle"
                             color="text-[rgb(var(--foreground))]"
                           >
-                            Fecha Entrega:
+                            Fecha Vencimiento:
                           </Text>
                           <Input
                             type="date"

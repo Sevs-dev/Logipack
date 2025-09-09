@@ -242,7 +242,7 @@
                     </tr>
                 </tbody>
             </table>
-        </div>
+        </div> 
 
         {{-- ===== Diagrama de Operaciones (snake) ===== --}}
         <h2 class="section-title keep-title-only">Diagrama de Operaciones</h2>
@@ -392,7 +392,51 @@
         {{-- ===== Operaciones Ejecutadas ===== --}}
         <h2 class="section-title op-h2">Operaciones Ejecutadas</h2>
         @php
-            $fmtTime = function ($ts) { try { return $ts ? \Carbon\Carbon::parse($ts)->format('H:i') : '—'; } catch (\Throwable $e) { return '—'; } };
+            $fmtTime = function ($ts) {
+                try { return $ts ? \Carbon\Carbon::parse($ts)->format('H:i') : '—'; }
+                catch (\Throwable $e) { return '—'; }
+            };
+
+            // ===== NUEVO: helpers para decidir visibilidad de columnas =====
+            $isEmptyish = function ($v) {
+                if ($v === null) return true;
+                if (is_bool($v)) return false; // bool es dato (Sí/No)
+                if (is_string($v)) {
+                    $t = trim($v);
+                    return ($t === '' || $t === '—' || $t === '0');
+                }
+                if (is_numeric($v)) return ((float)$v) == 0.0; // 0 cuenta como "vacío" para visibilidad
+                if (is_array($v)) return count($v) === 0;
+                return false;
+            };
+
+            $hasMeaningfulValor = function ($valor) use ($isEmptyish) {
+                if ($valor === null) return false;
+                if (is_bool($valor)) return true; // false también es dato válido
+                if (is_string($valor)) {
+                    $t = trim($valor);
+                    if ($t === '' || $t === '0') return false;
+                    if (str_starts_with($t, 'data:image')) return true;
+                    if (filter_var($t, FILTER_VALIDATE_URL)) return true;
+                    return true; // texto no vacío
+                }
+                if (is_numeric($valor)) return ((float)$valor) != 0.0;
+                if (is_array($valor)) {
+                    // Caso temperatura {min,max,valor}
+                    if (isset($valor['min']) || isset($valor['max']) || isset($valor['valor'])) {
+                        foreach (['min','max','valor'] as $k) {
+                            if (array_key_exists($k, $valor) && !$isEmptyish($valor[$k])) return true;
+                        }
+                        return false;
+                    }
+                    // Cualquier lista con al menos un elemento no vacío
+                    foreach ($valor as $v) if (!$isEmptyish(is_scalar($v)?$v:json_encode($v,JSON_UNESCAPED_UNICODE|JSON_UNESCAPED_SLASHES))) return true;
+                    return false;
+                }
+                return true;
+            };
+
+            // ===== Tu render previo intacto =====
             $renderValor = function ($valor) {
                 if ($valor === null || $valor === '') return '<span class="data-label">—</span>';
                 if (is_bool($valor))   return '<span class="data-label">'.($valor?'Sí':'No').'</span>';
@@ -427,13 +471,16 @@
                 }
                 return '<span class="data-label">'.e((string)$valor).'</span>';
             };
+
             $normalize = function ($v) {
                 $s = is_string($v) ? strip_tags($v) : ''; $s = trim(mb_strtolower($s));
                 $s = preg_replace('/\s+/u',' ',$s); $t = @iconv('UTF-8','ASCII//TRANSLIT',$s);
                 return $t !== false ? $t : $s;
             };
+
             $stageOrderById = collect($stages ?? [])->values()->mapWithKeys(fn($s,$i)=>[$s->id=>$i]);
             $stageOrderByLabel = collect($stages ?? [])->values()->mapWithKeys(function($s,$i) use($normalize){ $label = $s->description ?? 'Etapa '.$s->id; return [$normalize($label)=>$i]; });
+
             $acts = collect($actividadesEjecutadas ?? [])->unique('id')->values();
             $grouped = $acts->map(function($a) use($normalize){
                     $sid = $a['fases_fk'] ?? ($a['stage_id'] ?? ($a['id_stage'] ?? ($a['stage'] ?? null)));
@@ -460,6 +507,7 @@
                     if (empty($first['description_fase'])) $first['description_fase'] = '—';
                     return $first;
                 });
+
             $actsSorted = $grouped->sortBy(function($a) use($stageOrderById,$stageOrderByLabel,$normalize){
                     $sid = $a['fases_fk'] ?? ($a['stage_id'] ?? ($a['id_stage'] ?? ($a['stage'] ?? null)));
                     $rank = PHP_INT_MAX;
@@ -470,6 +518,7 @@
                     $minCreated = (int) ($a['_min_created'] ?? 0); $minId = (int) ($a['_min_id'] ?? 0);
                     return $rank * 1000000000 + $minCreated * 1000 + $minId;
                 })->values();
+
             $byVersion = $actsSorted->groupBy(function ($a) { $v = $a['version'] ?? null; return $v !== null && $v !== '' ? $v : 'Inicial'; });
             $orderedVersionKeys = $byVersion->map(function ($items) { $minCreated = collect($items)->min('_min_created') ?? 0; $minId = collect($items)->min('_min_id') ?? 0; return ['rank' => $minCreated * 1000 + $minId]; })->sortBy('rank')->keys()->values();
 
@@ -517,6 +566,27 @@
                 @foreach ($bucket as $localIndex => $actividad)
                     @php
                         $forms = $actividad['forms'] ?? [];
+
+                        // ===== NUEVO: decidir visibilidad de columnas por actividad =====
+                        $showResultado = false;
+                        $showLinea     = false;
+                        $showUser      = false;
+                        $showHora      = false;
+
+                        foreach ($forms as $f) {
+                            $val = $f['valor'] ?? null;
+                            if ($hasMeaningfulValor($val)) $showResultado = true;
+
+                            $lin = $f['linea'] ?? null;
+                            if (!$isEmptyish($lin)) $showLinea = true;
+
+                            $hrRaw = $f['created_at'] ?? ($actividad['created_at'] ?? null);
+                            if ($fmtTime($hrRaw) !== '—') $showHora = true;
+                        }
+                        $userRaw = isset($actividad['user']) ? urldecode($actividad['user']) : null;
+                        if (!$isEmptyish($userRaw)) $showUser = true;
+
+                        // chunking visual
                         $imgCount = collect($forms)->where(fn($f) => is_string($f['valor'] ?? null) && str_starts_with($f['valor'], 'data:image'))->count();
                         $chunkSize = $imgCount >= 4 ? 8 : ($imgCount >= 2 ? 10 : 12);
                         $formsChunks = array_chunk($forms, $chunkSize);
@@ -529,10 +599,10 @@
                             <thead>
                                 <tr>
                                     <th style="width:30%">Actividad</th>
-                                    <th style="width:25%">Resultado</th>
-                                    <th style="width:15%">Línea</th>
-                                    <th style="width:15%">Usuario</th>
-                                    <th style="width:15%">Hora</th>
+                                    @if($showResultado)<th style="width:25%">Resultado</th>@endif
+                                    @if($showLinea)    <th style="width:15%">Línea</th>@endif
+                                    @if($showUser)     <th style="width:15%">Usuario</th>@endif
+                                    @if($showHora)     <th style="width:15%">Hora</th>@endif
                                 </tr>
                             </thead>
                             <tbody>
@@ -541,17 +611,17 @@
                                         $desc = $form['descripcion_activitie'] ?? ($form['description'] ?? '—');
                                         $valor = $form['valor'] ?? null;
                                         $linea = $form['linea'] ?? '—';
-                                        $user = isset($actividad['user']) ? urldecode($actividad['user']) : '—';
-                                        $hora = $fmtTime($form['created_at'] ?? ($actividad['created_at'] ?? null));
+                                        $user  = isset($actividad['user']) ? urldecode($actividad['user']) : '—';
+                                        $hora  = $fmtTime($form['created_at'] ?? ($actividad['created_at'] ?? null));
                                         $frags = $splitValor($valor);
                                     @endphp
                                     @foreach ($frags as $i => $fragHtml)
                                     <tr>
                                         <td>{{ $i ? '↳ '.$desc.' (cont.)' : $desc }}</td>
-                                        <td>{!! $fragHtml !!}</td>
-                                        <td>{{ $i ? '—' : $linea }}</td>
-                                        <td>{{ $i ? '—' : $user }}</td>
-                                        <td>{{ $i ? '—' : $hora }}</td>
+                                        @if($showResultado)<td>{!! $fragHtml !!}</td>@endif
+                                        @if($showLinea)    <td>{{ $i ? '—' : $linea }}</td>@endif
+                                        @if($showUser)     <td>{{ $i ? '—' : $user }}</td>@endif
+                                        @if($showHora)     <td>{{ $i ? '—' : $hora }}</td>@endif
                                     </tr>
                                     @endforeach
                                 @endforeach
@@ -563,10 +633,10 @@
                                 <thead>
                                     <tr>
                                         <th style="width:30%">Actividad</th>
-                                        <th style="width:25%">Resultado</th>
-                                        <th style="width:15%">Línea</th>
-                                        <th style="width:15%">Usuario</th>
-                                        <th style="width:15%">Hora</th>
+                                        @if($showResultado)<th style="width:25%">Resultado</th>@endif
+                                        @if($showLinea)    <th style="width:15%">Línea</th>@endif
+                                        @if($showUser)     <th style="width:15%">Usuario</th>@endif
+                                        @if($showHora)     <th style="width:15%">Hora</th>@endif
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -575,17 +645,17 @@
                                             $desc = $form['descripcion_activitie'] ?? ($form['description'] ?? '—');
                                             $valor = $form['valor'] ?? null;
                                             $linea = $form['linea'] ?? '—';
-                                            $user = isset($actividad['user']) ? urldecode($actividad['user']) : '—';
-                                            $hora = $fmtTime($form['created_at'] ?? ($actividad['created_at'] ?? null));
+                                            $user  = isset($actividad['user']) ? urldecode($actividad['user']) : '—';
+                                            $hora  = $fmtTime($form['created_at'] ?? ($actividad['created_at'] ?? null));
                                             $frags = $splitValor($valor);
                                         @endphp
                                         @foreach ($frags as $i => $fragHtml)
                                         <tr>
                                             <td>{{ $i ? '↳ '.$desc.' (cont.)' : $desc }}</td>
-                                            <td>{!! $fragHtml !!}</td>
-                                            <td>{{ $i ? '—' : $linea }}</td>
-                                            <td>{{ $i ? '—' : $user }}</td>
-                                            <td>{{ $i ? '—' : $hora }}</td>
+                                            @if($showResultado)<td>{!! $fragHtml !!}</td>@endif
+                                            @if($showLinea)    <td>{{ $i ? '—' : $linea }}</td>@endif
+                                            @if($showUser)     <td>{{ $i ? '—' : $user }}</td>@endif
+                                            @if($showHora)     <td>{{ $i ? '—' : $hora }}</td>@endif
                                         </tr>
                                         @endforeach
                                     @endforeach
@@ -597,18 +667,81 @@
             </div>
         @endforeach
 
+
         {{-- ===== Controles de Proceso ===== --}}
         <h2 class="section-title controls-title keep-title-only">Controles de Proceso</h2>
         @php
+            use Carbon\Carbon;
             $controlTables = [];
-            foreach ($timers as $timer) {
-                foreach ($timer->timerControls as $control) {
-                    $rows = is_array($control->data) ? array_values($control->data) : [];
+            // 1) Preferir la lista unificada del backend (timers + actividades_controls normalizados)
+            if (isset($controlGroups) && is_iterable($controlGroups) && count($controlGroups)) {
+                foreach ($controlGroups as $group) {
+                    $rows = isset($group['registros']) && is_array($group['registros']) ? array_values($group['registros']) : [];
                     if (!count($rows)) continue;
-                    $chunks = array_chunk($rows, 12);
-                    $userNm = is_object($control->user ?? null) ? $control->user->name ?? '—' : $control->user ?? '—';
-                    $fecha = \Carbon\Carbon::parse($control->created_at)->format('Y-m-d H:i');
-                    foreach ($chunks as $chunk) $controlTables[] = ['rows' => $chunk, 'user' => $userNm, 'fecha' => $fecha];
+
+                    $chunks  = array_chunk($rows, 12);
+                    $userNm  = $group['user'] ?? '—';
+                    $fechaSrc = $group['updated_at'] ?? $group['created_at'] ?? null;
+                    $fecha   = $fechaSrc ? Carbon::parse($fechaSrc)->format('Y-m-d H:i') : '—';
+
+                    foreach ($chunks as $chunk) {
+                        $controlTables[] = [
+                            'rows'  => $chunk,
+                            'user'  => $userNm,
+                            'fecha' => $fecha,
+                        ];
+                    }
+                }
+            }
+
+            // 2) Fallback: legacy timers (por si aún no usas controlGroups)
+            if (!count($controlTables) && isset($timers) && is_iterable($timers)) {
+                foreach ($timers as $timer) {
+                    foreach ($timer->timerControls as $control) {
+                        // data puede venir como string JSON o como array
+                        $data = $control->data;
+                        if (is_string($data)) {
+                            $decoded = json_decode($data, true);
+                            $rows = is_array($decoded) ? array_values($decoded) : [];
+                        } else {
+                            $rows = is_array($data) ? array_values($data) : [];
+                        }
+
+                        if (!count($rows)) continue;
+
+                        $chunks = array_chunk($rows, 12);
+                        $userNm = is_object($control->user ?? null) ? ($control->user->name ?? '—') : ($control->user ?? '—');
+                        $fecha  = Carbon::parse($control->created_at)->format('Y-m-d H:i');
+
+                        foreach ($chunks as $chunk) {
+                            $controlTables[] = [
+                                'rows'  => $chunk,
+                                'user'  => $userNm,
+                                'fecha' => $fecha,
+                            ];
+                        }
+                    }
+                }
+            }
+
+            // 3) Fallback: ActividadesControls normalizados del backend (si no usaste controlGroups)
+            if (!count($controlTables) && isset($actividadesControls) && is_iterable($actividadesControls)) {
+                foreach ($actividadesControls as $ac) {
+                    $rows = isset($ac['registros']) && is_array($ac['registros']) ? array_values($ac['registros']) : [];
+                    if (!count($rows)) continue;
+
+                    $chunks  = array_chunk($rows, 12);
+                    $userNm  = $ac['user'] ?? '—';
+                    $fechaSrc = $ac['updated_at'] ?? $ac['created_at'] ?? null;
+                    $fecha   = $fechaSrc ? Carbon::parse($fechaSrc)->format('Y-m-d H:i') : '—';
+
+                    foreach ($chunks as $chunk) {
+                        $controlTables[] = [
+                            'rows'  => $chunk,
+                            'user'  => $userNm,
+                            'fecha' => $fecha,
+                        ];
+                    }
                 }
             }
         @endphp
@@ -629,10 +762,10 @@
                             <tbody>
                                 @foreach ($tbl['rows'] as $item)
                                     @php
-                                        $desc = $item['descripcion'] ?? ($item['description'] ?? '—');
+                                        $desc  = $item['descripcion'] ?? ($item['description'] ?? '—');
                                         $valor = $item['valor'] ?? null;
-                                        $isImg = is_string($valor) && str_starts_with($valor, 'data:image');
-                                        $isArr = is_array($valor);
+                                        $isImg  = is_string($valor) && str_starts_with($valor, 'data:image');
+                                        $isArr  = is_array($valor);
                                         $isTemp = $isArr && isset($valor['min'], $valor['max'], $valor['valor']);
                                     @endphp
                                     <tr>
@@ -641,7 +774,11 @@
                                             @if ($isImg)
                                                 <img src="{{ $valor }}" alt="Evidencia" class="evidence-img" />
                                             @elseif ($isTemp)
-                                                <div class="data-label">Min: {{ $valor['min'] }} | Máx: {{ $valor['max'] }} | Medido: <strong>{{ $valor['valor'] }}</strong></div>
+                                                <div class="data-label">
+                                                    Min: {{ $valor['min'] }} |
+                                                    Máx: {{ $valor['max'] }} |
+                                                    Medido: <strong>{{ $valor['valor'] }}</strong>
+                                                </div>
                                             @elseif ($isArr)
                                                 <span class="data-label">{{ json_encode($valor, JSON_UNESCAPED_UNICODE) }}</span>
                                             @else

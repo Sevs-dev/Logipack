@@ -309,11 +309,14 @@ class OrdenesEjecutadasController extends Controller
             }
         }
 
+        $plan = AdaptationDate::where("id", $id)->select("orderNumber")->first();
+
         return response()->json([
             'orden' => $orden,
             'linea_procesos' => $lineas,
             'linea_fases' => $fases,
             'estado' => 200,
+            'plan' =>$plan,
         ]);
     }
 
@@ -960,7 +963,7 @@ class OrdenesEjecutadasController extends Controller
         // Obtener Orden de acondicionamiento
         $acondicionamiento = DB::table('adaptations as ada')
             ->join('adaptation_dates as ada_date', 'ada.id', '=', 'ada_date.adaptation_id')
-            ->join('maestras as mae', 'mae.id', '=', 'ada.master')
+            ->join('maestras as mae', 'mae.id', '=', 'ada.master') 
             ->join('clients as cli', 'cli.id', '=', 'ada.client_id')
             ->join('factories as fac', 'fac.id', '=', 'ada.factory_id')
             ->where('ada_date.id', $id)

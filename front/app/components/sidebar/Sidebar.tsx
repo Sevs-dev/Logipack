@@ -2,9 +2,21 @@
 
 import React, { useState, useEffect } from "react";
 import {
-  FaHome, FaVials, FaCog, FaFileInvoice, FaAngleDown, FaSignOutAlt,
-  FaChartLine, FaArrowLeft, FaBars, FaIoxhost, FaBook, FaBorderAll,
-  FaDolly, FaCalendarAlt, FaBookmark
+  FaHome,
+  FaVials,
+  FaCog,
+  FaFileInvoice,
+  FaAngleDown,
+  FaSignOutAlt,
+  FaChartLine,
+  FaArrowLeft,
+  FaBars,
+  FaIoxhost,
+  FaBook,
+  FaBorderAll,
+  FaDolly,
+  FaCalendarAlt,
+  FaBookmark,
 } from "react-icons/fa";
 import nookies from "nookies";
 import { useRouter, usePathname } from "next/navigation";
@@ -42,34 +54,93 @@ interface MenuItem {
 
 // ---- Menu Data ----
 const menuItems: MenuItem[] = [
-  { key: "inicio", label: "Inicio", link: "/pages/dashboard", icon: <FaHome /> },
   {
-    key: "seteos", label: "Seteos", icon: <FaBook />, children: [
-      { key: "maestras", label: "Config. de Maestras", icon: <FaVials />, link: "/pages/maestra" },
-      { key: "bom", label: "Config. de BOM", icon: <FaIoxhost />, link: "/pages/bom" },
+    key: "inicio",
+    label: "Inicio",
+    link: "/pages/dashboard",
+    icon: <FaHome />,
+  },
+  {
+    key: "seteos",
+    label: "Seteos",
+    icon: <FaBook />,
+    children: [
+      {
+        key: "maestras",
+        label: "Config. de Maestras",
+        icon: <FaVials />,
+        link: "/pages/maestra",
+      },
+      {
+        key: "bom",
+        label: "Config. de BOM",
+        icon: <FaIoxhost />,
+        link: "/pages/bom",
+      },
     ],
   },
   {
-    key: "datos", label: "Datos", icon: <FaBorderAll />, children: [
-      { key: "ordenes", label: "Ordenes de Acon.", icon: <FaFileInvoice />, link: "/pages/adaptation" },
-      { key: "planing", label: "Gestión de Ordenes", icon: <FaBookmark />, link: "/pages/planificacion" },
+    key: "datos",
+    label: "Datos",
+    icon: <FaBorderAll />,
+    children: [
+      {
+        key: "ordenes",
+        label: "Ordenes de Acon.",
+        icon: <FaFileInvoice />,
+        link: "/pages/adaptation",
+      },
+      {
+        key: "planing",
+        label: "Gestión de Ordenes",
+        icon: <FaBookmark />,
+        link: "/pages/planificacion",
+      },
     ],
   },
   {
-    key: "analisis", label: "Analisis", icon: <FaChartLine />, children: [
-      { key: "inventario", label: "Inventario", icon: <FaDolly />, link: "/pages/inventory" },
-      { key: "calendario", label: "Calendario", icon: <FaCalendarAlt />, link: "/pages/calendar" },
+    key: "analisis",
+    label: "Analisis",
+    icon: <FaChartLine />,
+    children: [
+      {
+        key: "inventario",
+        label: "Inventario",
+        icon: <FaDolly />,
+        link: "/pages/inventory",
+      },
+      {
+        key: "calendario",
+        label: "Calendario",
+        icon: <FaCalendarAlt />,
+        link: "/pages/calendar",
+      },
     ],
   },
-  { key: "ajustes", label: "Ajustes", icon: <FaCog />, children: [
-    { key: "general", label: "General", icon: <FaCog />, link: "/pages/perfil" }, 
-  ]}, 
+  {
+    key: "ajustes",
+    label: "Ajustes",
+    icon: <FaCog />,
+    children: [
+      {
+        key: "general",
+        label: "General",
+        icon: <FaCog />,
+        link: "/pages/perfil",
+      },
+    ],
+  },
 ];
 
 const Sidebar: React.FC<SidebarProps> = ({ sidebarOpen, setSidebarOpen }) => {
-  const [openSubMenus, setOpenSubMenus] = useState<{ [k: string]: boolean }>({});
+  const [openSubMenus, setOpenSubMenus] = useState<{ [k: string]: boolean }>(
+    {}
+  );
   const [hoveredMenu, setHoveredMenu] = useState<string | null>(null);
-  const [flyoutPosition, setFlyoutPosition] = useState<{ top: number; left: number } | null>(null);
+  const [flyoutPosition, setFlyoutPosition] = useState<{
+    top: number;
+    left: number;
+  } | null>(null);
   const [userName, setUserName] = useState("");
   const router = useRouter();
   const pathname = usePathname();
@@ -85,7 +156,11 @@ const Sidebar: React.FC<SidebarProps> = ({ sidebarOpen, setSidebarOpen }) => {
         if (email) {
           const decodedEmail = decodeURIComponent(email);
           const user = await getUserByEmail(decodedEmail);
-          if (user.usuario && typeof user.usuario === "object" && "name" in user.usuario) {
+          if (
+            user.usuario &&
+            typeof user.usuario === "object" &&
+            "name" in user.usuario
+          ) {
             setUserName((user.usuario as { name?: string }).name || "");
           }
         }
@@ -115,7 +190,9 @@ const Sidebar: React.FC<SidebarProps> = ({ sidebarOpen, setSidebarOpen }) => {
     if (!isMobile) return;
     const original = document.body.style.overflow;
     document.body.style.overflow = sidebarOpen ? "hidden" : original || "";
-    return () => { document.body.style.overflow = original || ""; };
+    return () => {
+      document.body.style.overflow = original || "";
+    };
   }, [isMobile, sidebarOpen]);
 
   // Swipe-to-close (móvil)
@@ -153,9 +230,15 @@ const Sidebar: React.FC<SidebarProps> = ({ sidebarOpen, setSidebarOpen }) => {
 
   const handleLogout = () => {
     if (isMobile) setSidebarOpen(false);
+    // 🔻 Destruir cookies de sesión
     ["token", "userName", "userData", "email", "role"].forEach((c) =>
       nookies.destroy(null, c, { path: "/" })
     );
+    // 🔻 Limpiar storage local (por si guardaste algo extra)
+    localStorage.clear();
+    // 🔻 Limpiar storage de sesión (para el Intro, flags, etc.)
+    sessionStorage.clear();
+    // 🔻 Redirigir al login
     router.push("/");
   };
 
@@ -200,9 +283,13 @@ const Sidebar: React.FC<SidebarProps> = ({ sidebarOpen, setSidebarOpen }) => {
           "fixed lg:sticky inset-y-0 left-0",
           "w-72 max-w-[85vw] lg:w-auto",
           "transform transition-transform duration-300 ease-in-out",
-          isMobile ? (sidebarOpen ? "translate-x-0" : "-translate-x-full") : "translate-x-0",
+          isMobile
+            ? sidebarOpen
+              ? "translate-x-0"
+              : "-translate-x-full"
+            : "translate-x-0",
           "lg:top-0 lg:h-screen",
-          "border-r border-foreground/20"
+          "border-r border-foreground/20",
         ].join(" ")}
         role="dialog"
         aria-modal={isMobile ? true : false}
@@ -210,9 +297,28 @@ const Sidebar: React.FC<SidebarProps> = ({ sidebarOpen, setSidebarOpen }) => {
       >
         <div className="h-full w-full bg-background text-foreground flex flex-col">
           {/* Header */}
-          <div className={`flex items-center ${sidebarOpen ? "justify-between" : "justify-center"} p-4 border-b border-foreground/20`}>
+          <div
+            className={`flex items-center ${
+              sidebarOpen ? "justify-between" : "justify-center"
+            } p-4 border-b border-foreground/20`}
+          >
             {sidebarOpen && (
-              <Image src="/logipack_2.png" alt="Logipack" width={60} height={40} priority />
+              <div className="flex items-center space-x-2">
+                <Image
+                  src="/logipack.png"
+                  alt="Logipack"
+                  width={60}
+                  height={60}
+                  priority
+                />
+                <Image
+                  src="/logipack_name.png"
+                  alt="Logipack"
+                  width={100}
+                  height={60}
+                  priority
+                />
+              </div>
             )}
             <button
               onClick={() => setSidebarOpen((p) => !p)}
@@ -231,16 +337,27 @@ const Sidebar: React.FC<SidebarProps> = ({ sidebarOpen, setSidebarOpen }) => {
                   key={item.key}
                   onMouseEnter={(e) => {
                     if (!isMobile && sidebarOpen) {
-                      setOpenSubMenus((prev) => ({ ...prev, [item.key]: true }));
+                      setOpenSubMenus((prev) => ({
+                        ...prev,
+                        [item.key]: true,
+                      }));
                     } else if (!isMobile && !sidebarOpen) {
                       setHoveredMenu(item.key);
-                      const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-                      setFlyoutPosition({ top: rect.top, left: rect.right + 6 });
+                      const rect = (
+                        e.currentTarget as HTMLElement
+                      ).getBoundingClientRect();
+                      setFlyoutPosition({
+                        top: rect.top,
+                        left: rect.right + 6,
+                      });
                     }
                   }}
                   onMouseLeave={() => {
                     if (!isMobile && sidebarOpen) {
-                      setOpenSubMenus((prev) => ({ ...prev, [item.key]: false }));
+                      setOpenSubMenus((prev) => ({
+                        ...prev,
+                        [item.key]: false,
+                      }));
                     } else if (!isMobile) {
                       setHoveredMenu(null);
                       setFlyoutPosition(null);
@@ -255,13 +372,21 @@ const Sidebar: React.FC<SidebarProps> = ({ sidebarOpen, setSidebarOpen }) => {
                     aria-expanded={!!openSubMenus[item.key]}
                     onClick={() => {
                       if (!sidebarOpen) setSidebarOpen(true);
-                      else setOpenSubMenus((prev) => ({ ...prev, [item.key]: !prev[item.key] }));
+                      else
+                        setOpenSubMenus((prev) => ({
+                          ...prev,
+                          [item.key]: !prev[item.key],
+                        }));
                     }}
                     onKeyDown={(e) => {
                       if (e.key === "Enter" || e.key === " ") {
                         e.preventDefault();
                         if (!sidebarOpen) setSidebarOpen(true);
-                        else setOpenSubMenus((prev) => ({ ...prev, [item.key]: !prev[item.key] }));
+                        else
+                          setOpenSubMenus((prev) => ({
+                            ...prev,
+                            [item.key]: !prev[item.key],
+                          }));
                       }
                     }}
                     className={[
@@ -270,9 +395,13 @@ const Sidebar: React.FC<SidebarProps> = ({ sidebarOpen, setSidebarOpen }) => {
                       sidebarOpen ? "flex items-center" : "flex justify-center",
                     ].join(" ")}
                     style={{
-                      borderLeft: isMenuItemActive(item) ? "4px solid #eab308" : "4px solid transparent",
+                      borderLeft: isMenuItemActive(item)
+                        ? "4px solid #eab308"
+                        : "4px solid transparent",
                       // usa var para un highlight suave en ambos temas
-                      background: isMenuItemActive(item) ? "color-mix(in oklab, rgb(var(--foreground)) 10%, transparent)" : "transparent",
+                      background: isMenuItemActive(item)
+                        ? "color-mix(in oklab, rgb(var(--foreground)) 10%, transparent)"
+                        : "transparent",
                       transition: "border-color 0.2s, background 0.2s",
                     }}
                   >
@@ -281,7 +410,11 @@ const Sidebar: React.FC<SidebarProps> = ({ sidebarOpen, setSidebarOpen }) => {
                       <div className="flex items-center w-full">
                         <span className="mr-2">{item.label}</span>
                         <span className="ml-auto transition-transform duration-300 transform">
-                          <FaAngleDown className={`${openSubMenus[item.key] ? "rotate-180" : ""}`} />
+                          <FaAngleDown
+                            className={`${
+                              openSubMenus[item.key] ? "rotate-180" : ""
+                            }`}
+                          />
                         </span>
                       </div>
                     )}
@@ -289,55 +422,67 @@ const Sidebar: React.FC<SidebarProps> = ({ sidebarOpen, setSidebarOpen }) => {
 
                   {/* Flyout (solo desktop/hover) */}
                   <AnimatePresence>
-                    {!isMobile && !sidebarOpen && hoveredMenu === item.key && flyoutPosition && (
-                      <SidebarFlyoutPortal>
-                        <motion.div
-                          key={item.key}
-                          initial={{ opacity: 0, x: 10 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          exit={{ opacity: 0, x: 10 }}
-                          transition={{ duration: 0.18 }}
-                          className="fixed z-[9999] min-w-[180px] bg-background text-foreground rounded-xl shadow-xl border border-foreground/20 py-2"
-                          style={{ top: flyoutPosition.top, left: flyoutPosition.left, boxShadow: "0 2px 12px 0 #00000060" }}
-                          onMouseLeave={() => {
-                            setHoveredMenu(null);
-                            setFlyoutPosition(null);
-                          }}
-                          onMouseEnter={() => setHoveredMenu(item.key)}
-                        >
-                          {item.children.map((sub) => (
-                            <div
-                              key={sub.key}
-                              role="button"
-                              tabIndex={0}
-                              aria-current={isSubMenuItemActive(sub)}
-                              className="flex items-center cursor-pointer p-2 rounded transition-colors select-none hover:bg-foreground/10"
-                              onClick={() => {
-                                if (sub.link) router.push(sub.link);
-                                setHoveredMenu(null);
-                                setFlyoutPosition(null);
-                              }}
-                              onKeyDown={(e) => {
-                                if (e.key === "Enter" || e.key === " ") {
-                                  e.preventDefault();
+                    {!isMobile &&
+                      !sidebarOpen &&
+                      hoveredMenu === item.key &&
+                      flyoutPosition && (
+                        <SidebarFlyoutPortal>
+                          <motion.div
+                            key={item.key}
+                            initial={{ opacity: 0, x: 10 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            exit={{ opacity: 0, x: 10 }}
+                            transition={{ duration: 0.18 }}
+                            className="fixed z-[9999] min-w-[180px] bg-background text-foreground rounded-xl shadow-xl border border-foreground/20 py-2"
+                            style={{
+                              top: flyoutPosition.top,
+                              left: flyoutPosition.left,
+                              boxShadow: "0 2px 12px 0 #00000060",
+                            }}
+                            onMouseLeave={() => {
+                              setHoveredMenu(null);
+                              setFlyoutPosition(null);
+                            }}
+                            onMouseEnter={() => setHoveredMenu(item.key)}
+                          >
+                            {item.children.map((sub) => (
+                              <div
+                                key={sub.key}
+                                role="button"
+                                tabIndex={0}
+                                aria-current={isSubMenuItemActive(sub)}
+                                className="flex items-center cursor-pointer p-2 rounded transition-colors select-none hover:bg-foreground/10"
+                                onClick={() => {
                                   if (sub.link) router.push(sub.link);
                                   setHoveredMenu(null);
                                   setFlyoutPosition(null);
-                                }
-                              }}
-                              style={{
-                                borderLeft: isSubMenuItemActive(sub) ? "3px solid #22d3ee" : "3px solid transparent",
-                                background: isSubMenuItemActive(sub) ? "color-mix(in oklab, rgb(var(--foreground)) 8%, transparent)" : "transparent",
-                                transition: "border-color 0.2s, background 0.2s",
-                              }}
-                            >
-                              <span className="text-lg mr-2">{sub.icon}</span>
-                              <span>{sub.label}</span>
-                            </div>
-                          ))}
-                        </motion.div>
-                      </SidebarFlyoutPortal>
-                    )}
+                                }}
+                                onKeyDown={(e) => {
+                                  if (e.key === "Enter" || e.key === " ") {
+                                    e.preventDefault();
+                                    if (sub.link) router.push(sub.link);
+                                    setHoveredMenu(null);
+                                    setFlyoutPosition(null);
+                                  }
+                                }}
+                                style={{
+                                  borderLeft: isSubMenuItemActive(sub)
+                                    ? "3px solid #22d3ee"
+                                    : "3px solid transparent",
+                                  background: isSubMenuItemActive(sub)
+                                    ? "color-mix(in oklab, rgb(var(--foreground)) 8%, transparent)"
+                                    : "transparent",
+                                  transition:
+                                    "border-color 0.2s, background 0.2s",
+                                }}
+                              >
+                                <span className="text-lg mr-2">{sub.icon}</span>
+                                <span>{sub.label}</span>
+                              </div>
+                            ))}
+                          </motion.div>
+                        </SidebarFlyoutPortal>
+                      )}
                   </AnimatePresence>
 
                   {/* Submenú acordeón */}
@@ -365,8 +510,12 @@ const Sidebar: React.FC<SidebarProps> = ({ sidebarOpen, setSidebarOpen }) => {
                               }
                             }}
                             style={{
-                              borderLeft: isSubMenuItemActive(sub) ? "3px solid #22d3ee" : "3px solid transparent",
-                              background: isSubMenuItemActive(sub) ? "color-mix(in oklab, rgb(var(--foreground)) 8%, transparent)" : "transparent",
+                              borderLeft: isSubMenuItemActive(sub)
+                                ? "3px solid #22d3ee"
+                                : "3px solid transparent",
+                              background: isSubMenuItemActive(sub)
+                                ? "color-mix(in oklab, rgb(var(--foreground)) 8%, transparent)"
+                                : "transparent",
                               transition: "border-color 0.2s, background 0.2s",
                             }}
                           >
@@ -397,8 +546,12 @@ const Sidebar: React.FC<SidebarProps> = ({ sidebarOpen, setSidebarOpen }) => {
                       sidebarOpen ? "flex items-center" : "flex justify-center",
                     ].join(" ")}
                     style={{
-                      borderLeft: isMenuItemActive(item) ? "4px solid #eab308" : "4px solid transparent",
-                      background: isMenuItemActive(item) ? "color-mix(in oklab, rgb(var(--foreground)) 10%, transparent)" : "transparent",
+                      borderLeft: isMenuItemActive(item)
+                        ? "4px solid #eab308"
+                        : "4px solid transparent",
+                      background: isMenuItemActive(item)
+                        ? "color-mix(in oklab, rgb(var(--foreground)) 10%, transparent)"
+                        : "transparent",
                       transition: "border-color 0.2s, background 0.2s",
                     }}
                   >
@@ -415,7 +568,7 @@ const Sidebar: React.FC<SidebarProps> = ({ sidebarOpen, setSidebarOpen }) => {
             <ThemeToggle
               showLabel={sidebarOpen}
               className={[
-                "w-full", 
+                "w-full",
                 sidebarOpen ? "justify-center mb-2" : "justify-center mb-2 p-2",
               ].join(" ")}
             />
@@ -433,7 +586,9 @@ const Sidebar: React.FC<SidebarProps> = ({ sidebarOpen, setSidebarOpen }) => {
                 }}
               />
               {sidebarOpen && (
-                <span className="ml-2 font-medium truncate max-w-[120px]">{userName}</span>
+                <span className="ml-2 font-medium truncate max-w-[120px]">
+                  {userName}
+                </span>
               )}
             </div>
             <button
@@ -441,7 +596,9 @@ const Sidebar: React.FC<SidebarProps> = ({ sidebarOpen, setSidebarOpen }) => {
               className="w-full bg-red-600 hover:bg-red-500 text-white rounded-md transition-colors flex items-center justify-center p-2"
             >
               <FaSignOutAlt className="text-xl" />
-              {sidebarOpen && <span className="text-sm ml-2">Cerrar Sesión</span>}
+              {sidebarOpen && (
+                <span className="text-sm ml-2">Cerrar Sesión</span>
+              )}
             </button>
           </div>
         </div>

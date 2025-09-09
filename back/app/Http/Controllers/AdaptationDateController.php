@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\ActividadesControls;
 use App\Models\ActividadesEjecutadas;
+use App\Models\ActividadesTestigos;
 use App\Models\AdaptationDate;
 use App\Models\Clients;
 use App\Models\Conciliaciones;
@@ -398,14 +400,14 @@ class AdaptationDateController extends Controller
 
             // --- Cliente / artículo ---
             $clienteId = $plan->adaptation?->client_id;
-            $codart = $plan->codart;
-            $maestra = $plan->adaptation?->maestra;
+            $codart    = $plan->codart;
+            $maestra   = $plan->adaptation?->maestra;
 
             $cliente = $clienteId ? Clients::find($clienteId) : null;
-            $coddiv = $cliente->code ?? null;
-            $desart = $coddiv ? ArticleService::getDesartByCodart($coddiv, $codart) : null;
+            $coddiv  = $cliente->code ?? null;
+            $desart  = $coddiv ? ArticleService::getDesartByCodart($coddiv, $codart) : null;
 
-            // --- Conciliación (la más reciente si existe updated_at, si no por id) ---
+            // --- Conciliación (más reciente por updated_at si existe) ---
             $conciliacion = Conciliaciones::where('adaptation_date_id', $plan->id)
                 ->when(
                     Schema::hasColumn('conciliaciones', 'updated_at'),
@@ -414,23 +416,21 @@ class AdaptationDateController extends Controller
                 )
                 ->first();
 
-            if ($conciliacion) {
-                Log::info('ℹ️ Conciliación encontrada', [
+            $conciliacion
+                ? Log::info('ℹ️ Conciliación encontrada', [
                     'conciliacion_id' => $conciliacion->id,
                     'adaptation_date_id' => $plan->id,
                     'created_at' => $conciliacion->created_at,
                     'updated_at' => $conciliacion->updated_at,
-                ]);
-            } else {
-                Log::info('ℹ️ No hay conciliación para el plan', ['adaptation_date_id' => $plan->id]);
-            }
+                ])
+                : Log::info('ℹ️ No hay conciliación para el plan', ['adaptation_date_id' => $plan->id]);
 
             // --- Stages ordenados según type_stage de la maestra ---
             $stageIds = [];
             if ($maestra && isset($maestra->type_stage)) {
                 $stageRaw = $maestra->type_stage;
                 if (is_string($stageRaw)) {
-                    $decoded = json_decode($stageRaw, true);
+                    $decoded  = json_decode($stageRaw, true);
                     $stageIds = is_array($decoded) ? $decoded : [];
                 } elseif (is_array($stageRaw)) {
                     $stageIds = $stageRaw;
@@ -446,21 +446,21 @@ class AdaptationDateController extends Controller
             }
 
             // --- IDs del plan con casteo seguro a array ---
-            $masterIds = is_array($plan->master) ? $plan->master : (is_null($plan->master) ? [] : [$plan->master]);
-            $lineIds = is_array($plan->line) ? $plan->line : (is_null($plan->line) ? [] : [$plan->line]);
+            $masterIds  = is_array($plan->master)  ? $plan->master  : (is_null($plan->master)  ? [] : [$plan->master]);
+            $lineIds    = is_array($plan->line)    ? $plan->line    : (is_null($plan->line)    ? [] : [$plan->line]);
             $machineIds = is_array($plan->machine) ? $plan->machine : (is_null($plan->machine) ? [] : [$plan->machine]);
-            $userIds = is_array($plan->users) ? $plan->users : (is_null($plan->users) ? [] : [$plan->users]);
+            $userIds    = is_array($plan->users)   ? $plan->users   : (is_null($plan->users)   ? [] : [$plan->users]);
 
-            $lines = !empty($lineIds) ? Manufacturing::whereIn('id', $lineIds)->get() : collect();
-            $lineMap = $lines->pluck('name', 'id');
-            $machines = !empty($machineIds) ? Machinery::whereIn('id', $machineIds)->get() : collect();
-            $users = !empty($userIds) ? User::whereIn('id', $userIds)->get() : collect();
+            $lines        = !empty($lineIds) ? Manufacturing::whereIn('id', $lineIds)->get() : collect();
+            $lineMap      = $lines->pluck('name', 'id');
+            $machines     = !empty($machineIds) ? Machinery::whereIn('id', $machineIds)->get() : collect();
+            $users        = !empty($userIds) ? User::whereIn('id', $userIds)->get() : collect();
             $masterStages = !empty($masterIds) ? Stage::whereIn('id', $masterIds)->get() : collect();
 
             // --- Orden ejecutada (si existe) ---
             $ordenasEje = OrdenesEjecutadas::where('adaptation_date_id', $plan->id)->first();
 
-            // --- TODAS las actividades ejecutadas del plan (ordenadas: más reciente primero si hay updated_at) ---
+            // --- TODAS las actividades ejecutadas del plan ---
             $actividades = ActividadesEjecutadas::where('adaptation_date_id', $plan->id)
                 ->when(
                     Schema::hasColumn('actividades_ejecutadas', 'updated_at'),
@@ -480,8 +480,7 @@ class AdaptationDateController extends Controller
                 $actividadArr = $actividad->toArray();
                 try {
                     $forms = json_decode($actividadArr['forms'] ?? '[]', true);
-                    if (!is_array($forms))
-                        $forms = [];
+                    if (!is_array($forms)) $forms = [];
                     foreach ($forms as &$form) {
                         if (isset($form['linea']) && isset($lineMap[$form['linea']])) {
                             $form['linea'] = $lineMap[$form['linea']];
@@ -500,8 +499,12 @@ class AdaptationDateController extends Controller
 
             Log::info("📚 Actividades del plan", [$actividadesEjecutadas]);
 
-            // --- Timers para TODAS las actividades del plan ---
+            // =========================
+            //  Timers (fuente 1)
+            // =========================
             $timers = collect();
+            $controlGroups = collect(); // ← lista unificada para PDF
+
             if ($actividades->isEmpty()) {
                 Log::warning('⚠️ No hay actividades ejecutadas para el plan; no se buscarán timers', [
                     'adaptation_date_id' => $plan->id
@@ -527,11 +530,9 @@ class AdaptationDateController extends Controller
                         'adaptation_date_id' => $plan->id,
                     ]);
                 } else {
-                    // Resumen por actividad
                     $timersPorActividad = $timers->groupBy('ejecutada_id')->map->count();
                     Log::info('📊 Timers por actividad', $timersPorActividad->toArray());
 
-                    // Log detallado (con protección para blobs/imágenes)
                     foreach ($timers as $timer) {
                         $fase = $timer->ejecutada->description_fase ?? 'Sin fase';
                         $controlsCount = $timer->timerControls->count();
@@ -545,61 +546,284 @@ class AdaptationDateController extends Controller
                             'updated_at' => $timer->updated_at,
                         ]);
 
-                        if ($controlsCount === 0) {
-                            Log::info('🔎 Timer sin controles', ['timer_id' => $timer->id]);
-                            continue;
-                        }
-
                         foreach ($timer->timerControls as $control) {
+                            // Normalizar data → registros[]
                             $data = is_string($control->data) ? json_decode($control->data, true) : $control->data;
-                            if (!is_array($data)) {
-                                Log::warning('❌ Data inválida en control', [
-                                    'timer_id' => $timer->id,
-                                    'control_id' => $control->id,
-                                    'tipo_dato' => gettype($control->data),
-                                ]);
-                                continue;
-                            }
+                            if (!is_array($data)) $data = [];
 
-                            Log::info('📋 Control', [
-                                'control_id' => $control->id,
-                                'timer_id' => $timer->id,
-                                'registros' => count($data),
-                                'created_at' => $control->created_at,
-                                'updated_at' => $control->updated_at,
-                            ]);
-
-                            foreach ($data as $i => $registro) {
+                            $registros = [];
+                            foreach ($data as $registro) {
                                 $tipo = $registro['tipo'] ?? '—';
                                 $descripcion = $registro['descripcion'] ?? ($registro['description'] ?? '—');
-                                $valor = $registro['valor'] ?? '—';
+                                $valor = $registro['valor'] ?? null;
                                 $unidad = $registro['unidad'] ?? '';
 
-                                // Evitar loguear blobs/imágenes gigantes
                                 if (is_string($valor) && Str::startsWith($valor, 'data:image')) {
                                     $valor = '[imagen]';
                                 }
-                                // Si es un array (p.ej. temperatura), log resumido
                                 if (is_array($valor)) {
                                     $valor = array_intersect_key($valor, array_flip(['min', 'max', 'valor', 'value']));
                                 }
-                                // Limitar descripciones muy largas
                                 if (is_string($descripcion)) {
                                     $descripcion = Str::limit($descripcion, 120);
                                 }
-
-                                Log::info('   • Registro control', [
-                                    'idx' => $i,
+                                $registros[] = [
                                     'tipo' => $tipo,
                                     'descripcion' => $descripcion,
                                     'valor' => $valor,
                                     'unidad' => $unidad,
-                                ]);
+                                ];
                             }
+
+                            $controlGroups->push([
+                                'source' => 'timers',
+                                'timer_id' => $timer->id,
+                                'control_id' => $control->id,
+                                'fase' => $fase,
+                                'user' => $control->user,
+                                'registros' => $registros,
+                                'created_at' => $control->created_at,
+                                'updated_at' => $control->updated_at,
+                            ]);
+
+                            Log::info('📋 Control (timer)', [
+                                'control_id' => $control->id,
+                                'timer_id' => $timer->id,
+                                'registros' => count($registros),
+                            ]);
                         }
                     }
                 }
             }
+
+            // =========================
+            //  ActividadesControls (fuente 2, “hace lo mismo”)
+            // =========================
+            $acRows = ActividadesControls::where('adaptation_date_id', $plan->id)
+                ->when(
+                    Schema::hasColumn('actividades_controls', 'updated_at'),
+                    fn($q) => $q->orderByDesc('updated_at'),
+                    fn($q) => $q->orderByDesc('id')
+                )
+                ->get();
+
+            Log::info('🧾 ActividadesControls encontradas', [
+                'total' => $acRows->count(),
+                'ids' => $acRows->pluck('id'),
+            ]);
+
+            $actividadesControls = $acRows->map(function ($ac) use ($lineMap, $controlGroups) {
+                // Parsear forms (y su config) con tolerancia
+                $formsRaw = $ac->forms;
+                try {
+                    $forms = is_string($formsRaw) ? json_decode($formsRaw, true) : (is_array($formsRaw) ? $formsRaw : []);
+                    if (!is_array($forms)) $forms = [];
+                } catch (\Throwable $e) {
+                    Log::warning('⚠️ Error al decodificar forms de ActividadesControls', [
+                        'ac_id' => $ac->id,
+                        'error' => $e->getMessage(),
+                    ]);
+                    $forms = [];
+                }
+
+                $registros = [];
+                foreach ($forms as $f) {
+                    // Línea → nombre
+                    if (isset($f['linea']) && isset($lineMap[$f['linea']])) {
+                        $f['linea'] = $lineMap[$f['linea']];
+                    }
+
+                    // Config puede venir como string con comillas escapadas
+                    $cfgRaw = $f['config'] ?? null;
+                    $cfg = [];
+                    if (is_string($cfgRaw)) {
+                        $dec = json_decode($cfgRaw, true);
+                        if (is_string($dec)) {
+                            $dec = json_decode($dec, true);
+                        } // doblemente serializado
+                        if (!$dec && is_string($cfgRaw)) {
+                            $try = json_decode(stripslashes(trim($cfgRaw, '"')), true);
+                            $dec = is_array($try) ? $try : $dec;
+                        }
+                        $cfg = is_array($dec) ? $dec : [];
+                    } elseif (is_array($cfgRaw)) {
+                        $cfg = $cfgRaw;
+                    }
+
+                    $valor = $f['value'] ?? ($f['valor'] ?? null);
+                    if (is_string($valor) && Str::startsWith($valor, 'data:image')) {
+                        $valor = '[imagen]';
+                    }
+                    if (is_array($valor)) {
+                        $valor = array_intersect_key($valor, array_flip(['min', 'max', 'valor', 'value']));
+                    }
+
+                    $registros[] = [
+                        'tipo' => $cfg['type'] ?? ($f['type'] ?? '—'),
+                        'descripcion' => $f['description'] ?? ($f['descripcion'] ?? '—'),
+                        'valor' => $valor,
+                        'unidad' => $cfg['unit'] ?? ($f['unit'] ?? ''),
+                    ];
+                }
+
+                // Añadir a la lista unificada (como si fuera un “control” con sus registros)
+                $controlGroups->push([
+                    'source' => 'actividades_controls',
+                    'actividad_control_id' => $ac->id,
+                    'fase' => $ac->descripcion ?? 'Sin fase',
+                    'user' => isset($ac->user) ? urldecode($ac->user) : null,
+                    'registros' => $registros,
+                    'created_at' => $ac->created_at,
+                    'updated_at' => $ac->updated_at,
+                ]);
+
+                Log::info('📋 Control (actividades_controls)', [
+                    'actividad_control_id' => $ac->id,
+                    'registros' => count($registros),
+                ]);
+
+                // También devuelvo cada fila normalizada por si la quieres usar suelta
+                return [
+                    'id' => $ac->id,
+                    'adaptation_date_id' => $ac->adaptation_date_id,
+                    'fase_id' => $ac->fase_id,
+                    'descripcion' => $ac->descripcion,
+                    'phase_type' => $ac->phase_type,
+                    'user' => isset($ac->user) ? urldecode($ac->user) : null,
+                    'registros' => $registros,
+                    'created_at' => $ac->created_at,
+                    'updated_at' => $ac->updated_at,
+                ];
+            });
+
+            // =========================
+            //  ActividadesTestigos (firmas) 👇 NUEVO BLOQUE
+            // =========================
+            // 1) Recolectar firmas desde actividadesEjecutadas.forms (type === 'signature')
+            $signaturesByActivityId = [];
+            foreach ($actividadesEjecutadas as $act) {
+                $forms = $act['forms'] ?? [];
+                foreach ($forms as $f) {
+                    $cfgRaw = $f['config'] ?? null;
+                    $cfg = [];
+                    if (is_string($cfgRaw)) {
+                        $dec = json_decode($cfgRaw, true);
+                        if (is_string($dec)) {
+                            $dec = json_decode($dec, true);
+                        } // por si viene doblemente serializado
+                        if (!$dec) {
+                            $try = json_decode(stripslashes(trim($cfgRaw, '"')), true);
+                            $dec = is_array($try) ? $try : $dec;
+                        }
+                        $cfg = is_array($dec) ? $dec : [];
+                    } elseif (is_array($cfgRaw)) {
+                        $cfg = $cfgRaw;
+                    }
+
+                    $type = strtolower($cfg['type'] ?? ($f['type'] ?? ''));
+                    if ($type !== 'signature') continue;
+
+                    $actId = $f['actividad_fk'] ?? $f['id_activitie'] ?? $f['id'] ?? null;
+                    if ($actId === null) continue;
+
+                    $desc  = $f['description'] ?? ($f['descripcion'] ?? '—');
+                    $valor = $f['valor'] ?? ($f['value'] ?? null);
+
+                    $signaturesByActivityId[$actId][] = [
+                        'descripcion' => $desc,
+                        'valor' => $valor,
+                    ];
+                }
+            }
+
+            // 2) Buscar filas de Testigo y cruzar por activities[] contiene el id de la actividad firmada
+            $testigoRows = ActividadesTestigos::where('adaptation_date_id', $plan->id)
+                ->when(
+                    Schema::hasColumn('actividades_testigos', 'updated_at'),
+                    fn($q) => $q->orderByDesc('updated_at'),
+                    fn($q) => $q->orderByDesc('id')
+                )
+                ->get();
+
+            Log::info('🖊️ ActividadesTestigos encontradas', [
+                'total' => $testigoRows->count(),
+                'ids' => $testigoRows->pluck('id'),
+            ]);
+
+            $testigos = $testigoRows->map(function ($t) use ($signaturesByActivityId, $controlGroups) {
+                // Parsear forms
+                $formsRaw = $t->forms;
+                try {
+                    $forms = is_string($formsRaw) ? json_decode($formsRaw, true) : (is_array($formsRaw) ? $formsRaw : []);
+                    if (!is_array($forms)) $forms = [];
+                } catch (\Throwable $e) {
+                    Log::warning('⚠️ Error al decodificar forms de ActividadesTestigos', [
+                        'testigo_id' => $t->id,
+                        'error' => $e->getMessage(),
+                    ]);
+                    $forms = [];
+                }
+
+                $registros = [];
+                foreach ($forms as $tf) {
+                    $actId = $tf['id'] ?? $tf['actividad_id'] ?? $tf['actividad_fk'] ?? null;
+                    if ($actId === null) continue;
+
+                    $matches = $signaturesByActivityId[$actId] ?? [];
+                    if (empty($matches)) continue;
+
+                    foreach ($matches as $sig) {
+                        $registros[] = [
+                            'tipo' => 'signature',
+                            'descripcion' => $tf['description'] ?? ($sig['descripcion'] ?? '—'),
+                            'valor' => $sig['valor'] ?? '—',
+                            'unidad' => '',
+                        ];
+                    }
+                }
+
+                // Solo si hay algo que mostrar
+                if (!empty($registros)) {
+                    $controlGroups->push([
+                        'source' => 'testigos',
+                        'testigo_id' => $t->id,
+                        'fase' => $t->descripcion ?? 'TESTIGO',
+                        'user' => isset($t->user) ? urldecode($t->user) : null,
+                        'registros' => $registros,
+                        'created_at' => $t->created_at,
+                        'updated_at' => $t->updated_at,
+                    ]);
+
+                    Log::info('🧾 Grupo Testigo agregado', [
+                        'testigo_id' => $t->id,
+                        'registros' => count($registros),
+                    ]);
+                }
+
+                return [
+                    'id' => $t->id,
+                    'adaptation_date_id' => $t->adaptation_date_id,
+                    'fase_id' => $t->fase_id,
+                    'descripcion' => $t->descripcion,
+                    'phase_type' => $t->phase_type,
+                    'user' => isset($t->user) ? urldecode($t->user) : null,
+                    'registros' => $registros,
+                    'created_at' => $t->created_at,
+                    'updated_at' => $t->updated_at,
+                ];
+            });
+
+            // Orden unificado por updated_at desc (para el PDF)
+            $controlGroups = $controlGroups
+                ->sortByDesc(fn($g) => $g['updated_at'] ?? $g['created_at'])
+                ->values();
+
+            Log::info('🧮 Resumen unificado de controles', [
+                'total_groups' => $controlGroups->count(),
+                'timers_groups' => $controlGroups->where('source', 'timers')->count(),
+                'ac_groups' => $controlGroups->where('source', 'actividades_controls')->count(),
+                'testigos_groups' => $controlGroups->where('source', 'testigos')->count(), // 👈 NUEVO
+            ]);
 
             return [
                 'plan' => $plan,
@@ -612,7 +836,12 @@ class AdaptationDateController extends Controller
                 'machines' => $machines,
                 'users' => $users,
                 'desart' => $desart,
+
                 'timers' => $timers,
+                'actividadesControls' => $actividadesControls,
+                'testigos' => $testigos,          // 👈 opcional: data normalizada por si la quieres suelta
+                'controlGroups' => $controlGroups,
+
                 'conciliacion' => $conciliacion,
             ];
         } catch (\Throwable $e) {

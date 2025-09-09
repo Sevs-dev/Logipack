@@ -255,7 +255,7 @@ const NewConsolida = () => {
 
               <div>
                 <Text type="subtitle" color="text-[rgb(var(--foreground))]">
-                  Número de Orden
+                  Orden N°
                 </Text>
                 <p className="mt-1 text-base font-semibold text-center text-[rgb(var(--foreground))] bg-[rgb(var(--surface-muted))] rounded-md px-3 py-2 font-mono">
                   {data.number_order}

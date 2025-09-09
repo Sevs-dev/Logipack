@@ -123,9 +123,11 @@ const NewLineas = () => {
     }
 
     const orden = lista.orden;
+    const plan = lista.plan;
+   
     const lista_procesos = Array.isArray(lista.linea_procesos) ? lista.linea_procesos : [];
     const lista_fases = Array.isArray(lista.linea_fases) ? lista.linea_fases : [];
-
+    
     if (orden?.estado === 11500) {
         window.close();
     }
@@ -159,6 +161,7 @@ const NewLineas = () => {
         local.tipo = tipo;
         local.descripcion = descripcion;
         local.orden = orden;
+        local.plan = plan;
         localStorage.setItem("ejecutar", JSON.stringify(local));
 
         if (phase_type === "Conciliación") {
@@ -176,7 +179,6 @@ const NewLineas = () => {
             requestIdleCallback(() => window.close());
         }, 1000);
     };
-
     return (
        <div className="min-h-screen w-full bg-[rgb(var(--background))] text-[rgb(var(--foreground))] p-[10px] sm:p-[10px] flex flex-col rounded-2xl">
   <motion.section
@@ -192,7 +194,11 @@ const NewLineas = () => {
       <div className="px-[10px] py-[10px] grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 text-sm text-[rgb(var(--foreground))]/80">
         <div>
           <p className="text-[rgb(var(--foreground))]/60 text-center">Orden N°</p>
-          <p className="font-medium text-[rgb(var(--foreground))] text-center">{orden?.number_order}</p>
+          <p className="font-medium text-[rgb(var(--foreground))] text-center">{orden?.number_order}</p> 
+        </div>
+        <div>
+          <p className="text-[rgb(var(--foreground))]/60 text-center">Orden del Cliente</p>
+          <p className="font-medium text-[rgb(var(--foreground))] text-center">{plan?.orderNumber}</p>
         </div>
         <div>
           <p className="text-[rgb(var(--foreground))]/60 text-center">Descripción</p>
