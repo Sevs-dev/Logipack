@@ -1,13 +1,14 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import type { CSSProperties } from "react";
-import { login } from "../../services/userDash/authservices";
-import nookies from "nookies";
-import { motion, AnimatePresence } from "framer-motion";
-import { FiEye, FiEyeOff, FiMail, FiLock } from "react-icons/fi";
-import { showError } from "../toastr/Toaster";
-import DateLoader from "@/app/components/loader/DateLoader";
+import React, { useState, useEffect } from 'react';
+import type { CSSProperties } from 'react';
+import { login } from '../../services/userDash/authservices';
+import nookies from 'nookies';
+import { motion, AnimatePresence } from 'framer-motion';
+import { FiEye, FiEyeOff, FiMail, FiLock } from 'react-icons/fi';
+import { showError } from '../toastr/Toaster';
+import DateLoader from '@/app/components/loader/DateLoader';
+import { ENVIRONMENT } from '@/app/config/api';
 import Image from "next/image";
 
 // Fondo animado Aurora + partículas
@@ -26,9 +27,9 @@ const bgStyle: CSSProperties = {
 
 const cookieOptions = {
   maxAge: 60 * 60 * 2,
-  path: "/",
-  secure: process.env.NODE_ENV === "production",
-  sameSite: "lax" as const,
+  path: '/',
+  secure: ENVIRONMENT === 'production',
+  sameSite: 'lax' as const,
 };
 
 export default function Login() {
