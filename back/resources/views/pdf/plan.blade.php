@@ -236,7 +236,7 @@
                         <td>{{ $plan->codart }}</td>
                         <td>{{ $desart ?? 'No contiene Nombre' }}</td>
                         <td>{{ $plan->lot ?? '—' }}</td>
-                        <td>{{ \Carbon\Carbon::parse($plan->end_date)->format('Y-m-d') ?? '—' }}</td>
+                        <td>{{ \Carbon\Carbon::parse($plan->deliveryDate)->format('Y-m-d') ?? '—' }}</td>
                         <td>{{ $plan->quantityToProduce }} unidades</td>
                         <td>{{ $plan->orderNumber }}</td>
                     </tr>
@@ -667,6 +667,137 @@
             </div>
         @endforeach
 
+        {{-- ===== Testigos (Firmas) ===== --}}
+        @php 
+
+            $testigoTables = [];
+
+            if (isset($controlGroups) && is_iterable($controlGroups) && count($controlGroups)) {
+                $onlyTestigos = [];
+
+                foreach ($controlGroups as $g) {
+                    if (($g['source'] ?? null) !== 'testigos') continue;
+
+                    $rows     = isset($g['registros']) && is_array($g['registros']) ? array_values($g['registros']) : [];
+                    if (!count($rows)) continue;
+
+                    $fase     = $g['fase'] ?? 'TESTIGO';
+                    $userNm   = $g['user'] ?? '—';
+                    $fechaSrc = $g['updated_at'] ?? $g['created_at'] ?? null;
+                    $fecha    = $fechaSrc ? Carbon::parse($fechaSrc)->format('Y-m-d H:i') : '—';
+
+                    foreach ($rows as $r) {
+                        $onlyTestigos[] = [
+                            'fase'        => $fase,
+                            'descripcion' => $r['descripcion'] ?? '—',
+                            'valor'       => $r['valor'] ?? null,
+                            'user'        => $userNm,
+                            'fecha'       => $fecha,
+                        ];
+                    }
+                }
+
+                // Fallback: si aún no hay, usa $testigos normalizado del backend
+                if (!count($onlyTestigos) && isset($testigos) && is_iterable($testigos)) {
+                    foreach ($testigos as $t) {
+                        $fase     = $t['descripcion'] ?? 'TESTIGO';
+                        $userNm   = $t['user'] ?? '—';
+                        $fechaSrc = $t['updated_at'] ?? $t['created_at'] ?? null;
+                        $fecha    = $fechaSrc ? Carbon::parse($fechaSrc)->format('Y-m-d H:i') : '—';
+
+                        $regs = isset($t['registros']) && is_array($t['registros']) ? $t['registros'] : [];
+                        foreach ($regs as $r) {
+                            $onlyTestigos[] = [
+                                'fase'        => $fase,
+                                'descripcion' => $r['descripcion'] ?? '—',
+                                'valor'       => $r['valor'] ?? null,
+                                'user'        => $userNm,
+                                'fecha'       => $fecha,
+                            ];
+                        }
+                    }
+                }
+
+                // Chunk en tablas de 6 filas para mantener densidad visual
+                if (count($onlyTestigos)) {
+                    foreach (array_chunk($onlyTestigos, 6) as $chunk) {
+                        $testigoTables[] = ['rows' => $chunk];
+                    }
+                }
+            }
+        @endphp
+
+        {{-- ===== Usuarios ===== --}}
+        @php
+            $userNames = ($users instanceof \Illuminate\Support\Collection ? $users : collect($users ?? []))
+                ->map(fn($u) => is_array($u) ? ($u['name'] ?? null) : ($u->name ?? null))
+                ->filter()
+                ->map(fn($n) => urldecode(preg_replace('/[\r\n]+/','', $n)))
+                ->unique()
+                ->values();
+        @endphp
+
+        <h2 class="section-title keep-title-only">Personal Encargado</h2>
+        <div>
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th style="width:26%"></th>
+                        <th>Personal Asignados</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Personal</td>
+                        <td>{{ $userNames->implode(', ') ?: '—' }}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        @if (count($testigoTables))
+            <h2 class="section-title keep-title-only">Testigos (Firmas)</h2>
+            <div class="tabla-container">
+                @foreach ($testigoTables as $tbl)
+                    <div class="tabla-item">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th style="width:30%">Actividad</th>
+                                    <th style="width:34%">Firma</th>
+                                    <th style="width:18%">Usuario</th>
+                                    <th style="width:18%">Fecha y Hora</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach ($tbl['rows'] as $row)
+                                    @php
+                                        $desc  = $row['descripcion'] ?? '—';
+                                        $valor = $row['valor'] ?? null;
+                                        $user  = isset($row['user']) ? urldecode($row['user']) : '—';
+                                        $fecha = $row['fecha'] ?? '—';
+                                    @endphp
+                                    <tr>
+                                        <td>{{ $desc }}</td>
+                                        <td>
+                                            @if (is_string($valor) && str_starts_with($valor, 'data:image'))
+                                                <img src="{{ $valor }}" alt="Firma" class="evidence-img" />
+                                            @elseif (is_string($valor) && filter_var($valor, FILTER_VALIDATE_URL))
+                                                <a href="{{ $valor }}" target="_blank" rel="noopener" class="data-label">Abrir imagen</a>
+                                            @else
+                                                <span class="data-label">—</span>
+                                            @endif
+                                        </td>
+                                        <td>{{ $user }}</td>
+                                        <td>{{ $fecha }}</td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                @endforeach
+            </div>
+        @endif
 
         {{-- ===== Controles de Proceso ===== --}}
         <h2 class="section-title controls-title keep-title-only">Controles de Proceso</h2>
@@ -795,7 +926,7 @@
                 @endforeach
             </div>
         @endif
-    </div>
+    </div> 
 
     <!-- ===== FOOTER FIJO + PAGINADO ===== -->
     <script type="text/php">
