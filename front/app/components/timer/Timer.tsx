@@ -884,6 +884,7 @@ const Timer: React.FC<TimerProps> = ({
                                       type={tipo}
                                       className={commonInputClass}
                                       value={String(value ?? "")}
+                                      required
                                       onChange={(e) =>
                                         handleChange(
                                           actividad.id_activitie,
@@ -899,6 +900,7 @@ const Timer: React.FC<TimerProps> = ({
                                       type="number"
                                       className={commonInputClass}
                                       value={String(value ?? "")}
+                                      required
                                       onChange={(e) =>
                                         handleChange(
                                           actividad.id_activitie,
@@ -915,6 +917,7 @@ const Timer: React.FC<TimerProps> = ({
                                     <input
                                       type="checkbox"
                                       className="w-5 h-5 accent-[rgb(var(--accent))]"
+                                      required
                                       checked={
                                         value === true || value === "true"
                                       }
@@ -932,6 +935,7 @@ const Timer: React.FC<TimerProps> = ({
                                     <select
                                       className={commonInputClass}
                                       value={String(value ?? "")}
+                                      required
                                       onChange={(e) =>
                                         handleChange(
                                           actividad.id_activitie,
@@ -954,6 +958,7 @@ const Timer: React.FC<TimerProps> = ({
                                       className={`${commonInputClass} resize-none`}
                                       rows={3}
                                       value={String(value ?? "")}
+                                      required
                                       onChange={(e) =>
                                         handleChange(
                                           actividad.id_activitie,
@@ -983,6 +988,7 @@ const Timer: React.FC<TimerProps> = ({
                                               type="radio"
                                               name={`radio-${actividad.id_activitie}`}
                                               value={opt}
+                                              required
                                               checked={isSelected}
                                               onChange={() =>
                                                 handleChange(
@@ -1027,6 +1033,7 @@ const Timer: React.FC<TimerProps> = ({
                                     <input
                                       type={tipo}
                                       className={commonInputClass}
+                                      required
                                       value={String(value ?? "")}
                                       onChange={(e) =>
                                         handleChange(
@@ -1105,6 +1112,7 @@ const Timer: React.FC<TimerProps> = ({
                                       type="color"
                                       className="w-12 h-10 p-1 rounded border border-[rgb(var(--border))]"
                                       value={String(value || "#000000")}
+                                      required
                                       onChange={(e) =>
                                         handleChange(
                                           actividad.id_activitie,
@@ -1119,6 +1127,7 @@ const Timer: React.FC<TimerProps> = ({
                                   return (
                                     <input
                                       type="file"
+                                      required
                                       accept={
                                         (
                                           cfg as Extract<
@@ -1159,6 +1168,7 @@ const Timer: React.FC<TimerProps> = ({
                                             : ""
                                         }`}
                                         value={currentType}
+                                        required
                                         onMouseDown={(e) => {
                                           if (locked) {
                                             e.preventDefault();
