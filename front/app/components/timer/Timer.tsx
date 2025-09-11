@@ -173,6 +173,16 @@ type FirmaMem = Record<string, FirmaScopedMem>;
 const SIG_SCOPE = "control";
 
 /* =========================
+ *  Reglas de validación
+ * ========================= */
+// 🔒 Requerir TODOS los campos al guardar (true) o solo los que tengan `binding` (false)
+const REQUIRE_ALL_FIELDS = true;
+
+function isRequiredField(cfg: ParsedConfig | null): boolean {
+  return REQUIRE_ALL_FIELDS ? true : isBinding(cfg);
+}
+
+/* =========================
  *       Componente
  * ========================= */
 const Timer: React.FC<TimerProps> = ({
@@ -622,8 +632,6 @@ const Timer: React.FC<TimerProps> = ({
     const scoped = next[SIG_SCOPE] ?? {};
     // Reflejar cambios hacia controlData.valor
     Object.entries(scoped).forEach(([field, value]) => {
-      // field es la clave que espera tu Firma, ej: "field_123"
-      // buscamos la actividad por clave
       setControlData((prev) =>
         prev.map((a) =>
           (a.clave ?? `field_${a.id_activitie}`) === field
@@ -635,23 +643,26 @@ const Timer: React.FC<TimerProps> = ({
   };
 
   // ─────────────────────────────────────────────────────────────
-  // Validación de campos requeridos
-  const missingRequired = useMemo(() => {
+  // Validación de campos requeridos (sin any, con IDs inválidos)
+  const validation = useMemo((): {
+    missingList: string[];
+    invalidIds: Set<number>;
+  } => {
     const faltantes: string[] = [];
+    const invalidIds = new Set<number>();
+
+    const isEmptyString = (v: unknown) => String(v ?? "").trim() === "";
+    const isNumberInvalid = (v: unknown) => v === "" || Number.isNaN(Number(v));
 
     for (const act of controlData) {
       const cfg = parseConfig(act.config);
       const tipo = cfg?.type ?? "text";
-      const req = isBinding(cfg);
+      const req = isRequiredField(cfg);
       if (!req) continue;
 
       const label =
         act.descripcion_activitie || `Actividad ${act.id_activitie}`;
       const val = act.valor;
-
-      const isEmptyString = (v: unknown) => String(v ?? "").trim() === "";
-      const isNumberInvalid = (v: unknown) =>
-        v === "" || Number.isNaN(Number(v));
 
       switch (tipo) {
         case "text":
@@ -666,20 +677,32 @@ const Timer: React.FC<TimerProps> = ({
         case "color":
         case "select":
         case "radio": {
-          if (isEmptyString(val)) faltantes.push(label);
+          if (isEmptyString(val)) {
+            faltantes.push(label);
+            invalidIds.add(act.id_activitie);
+          }
           break;
         }
         case "number": {
-          if (isNumberInvalid(val)) faltantes.push(label);
+          if (isNumberInvalid(val)) {
+            faltantes.push(label);
+            invalidIds.add(act.id_activitie);
+          }
           break;
         }
         case "checkbox": {
-          if (val !== true && val !== "true") faltantes.push(label);
+          if (val !== true && val !== "true") {
+            faltantes.push(label);
+            invalidIds.add(act.id_activitie);
+          }
           break;
         }
         case "file":
         case "image": {
-          if (!(val instanceof File)) faltantes.push(label);
+          if (!(val instanceof File)) {
+            faltantes.push(label);
+            invalidIds.add(act.id_activitie);
+          }
           break;
         }
         case "temperature": {
@@ -689,45 +712,61 @@ const Timer: React.FC<TimerProps> = ({
             .min;
           const max = (cfg as Extract<ParsedConfig, { type: "temperature" }>)
             .max;
-          if (Number.isNaN(n)) {
-            faltantes.push(label);
-          } else {
-            if (
-              (min !== undefined && n < min) ||
-              (max !== undefined && n > max)
-            ) {
-              faltantes.push(`${label} (fuera de rango)`);
-            }
+          if (
+            Number.isNaN(n) ||
+            (min !== undefined && n < min) ||
+            (max !== undefined && n > max)
+          ) {
+            faltantes.push(
+              min !== undefined || max !== undefined
+                ? `${label} (fuera de rango)`
+                : label
+            );
+            invalidIds.add(act.id_activitie);
           }
           break;
         }
         case "signature": {
           const sType = sigTypeById[act.id_activitie] || "";
           const key = sigKey(act.clave, act.id_activitie);
-          if ((cfg as BaseCfgExtras).signatureSpecific && !sigUnlocked[key]) {
+          if (
+            (cfg as BaseCfgExtras | null)?.signatureSpecific &&
+            !sigUnlocked[key]
+          ) {
             faltantes.push(`${label} (firma bloqueada)`);
+            invalidIds.add(act.id_activitie);
             break;
           }
           if (sType === "") {
             faltantes.push(`${label} (elige texto o firma)`);
+            invalidIds.add(act.id_activitie);
           } else if (sType === "texto") {
-            if (isEmptyString(val)) faltantes.push(label);
+            if (isEmptyString(val)) {
+              faltantes.push(label);
+              invalidIds.add(act.id_activitie);
+            }
           } else if (sType === "firma") {
             const v = typeof val === "string" ? val : "";
-            if (!v.startsWith("data:image"))
+            if (!v.startsWith("data:image")) {
               faltantes.push(`${label} (falta firma)`);
+              invalidIds.add(act.id_activitie);
+            }
           }
           break;
         }
-        default:
-          if (isEmptyString(val)) faltantes.push(label);
+        default: {
+          if (isEmptyString(val)) {
+            faltantes.push(label);
+            invalidIds.add(act.id_activitie);
+          }
+        }
       }
     }
 
-    return faltantes;
+    return { missingList: faltantes, invalidIds };
   }, [controlData, sigTypeById, sigUnlocked]);
 
-  const allValid = missingRequired.length === 0;
+  const allValid = validation.missingList.length === 0;
 
   return (
     <>
@@ -861,11 +900,19 @@ const Timer: React.FC<TimerProps> = ({
                         const locked =
                           (cfg as BaseCfgExtras | null)?.signatureSpecific &&
                           !sigUnlocked[key];
+                        const invalid = validation.invalidIds.has(
+                          actividad.id_activitie
+                        );
 
                         return (
                           <div
                             key={actividad.id_activitie}
-                            className="flex flex-col gap-2"
+                            data-invalid={invalid ? "true" : undefined}
+                            className={`flex flex-col gap-2 ${
+                              invalid
+                                ? "rounded-md ring-1 ring-[rgb(var(--danger))] bg-[rgb(var(--danger))]/5 p-2"
+                                : ""
+                            }`}
                           >
                             <Text type="subtitle">
                               {actividad.descripcion_activitie}
@@ -883,6 +930,7 @@ const Timer: React.FC<TimerProps> = ({
                                     <input
                                       type={tipo}
                                       className={commonInputClass}
+                                      required
                                       value={String(value ?? "")}
                                       onChange={(e) =>
                                         handleChange(
@@ -898,6 +946,7 @@ const Timer: React.FC<TimerProps> = ({
                                     <input
                                       type="number"
                                       className={commonInputClass}
+                                      required
                                       value={String(value ?? "")}
                                       onChange={(e) =>
                                         handleChange(
@@ -915,6 +964,7 @@ const Timer: React.FC<TimerProps> = ({
                                     <input
                                       type="checkbox"
                                       className="w-5 h-5 accent-[rgb(var(--accent))]"
+                                      required
                                       checked={
                                         value === true || value === "true"
                                       }
@@ -931,6 +981,7 @@ const Timer: React.FC<TimerProps> = ({
                                   return (
                                     <select
                                       className={commonInputClass}
+                                      required
                                       value={String(value ?? "")}
                                       onChange={(e) =>
                                         handleChange(
@@ -952,6 +1003,7 @@ const Timer: React.FC<TimerProps> = ({
                                   return (
                                     <textarea
                                       className={`${commonInputClass} resize-none`}
+                                      required
                                       rows={3}
                                       value={String(value ?? "")}
                                       onChange={(e) =>
@@ -982,6 +1034,7 @@ const Timer: React.FC<TimerProps> = ({
                                               className="sr-only"
                                               type="radio"
                                               name={`radio-${actividad.id_activitie}`}
+                                              required
                                               value={opt}
                                               checked={isSelected}
                                               onChange={() =>
@@ -1028,6 +1081,7 @@ const Timer: React.FC<TimerProps> = ({
                                       type={tipo}
                                       className={commonInputClass}
                                       value={String(value ?? "")}
+                                      required
                                       onChange={(e) =>
                                         handleChange(
                                           actividad.id_activitie,
@@ -1070,6 +1124,7 @@ const Timer: React.FC<TimerProps> = ({
                                             ? `Entre ${rangoMin} y ${rangoMax}`
                                             : "Temperatura"
                                         }
+                                        required
                                         className={`${commonInputClass} ${
                                           fueraDeRango
                                             ? "border-[rgb(var(--danger))] ring-[rgb(var(--danger))]"
@@ -1105,6 +1160,7 @@ const Timer: React.FC<TimerProps> = ({
                                       type="color"
                                       className="w-12 h-10 p-1 rounded border border-[rgb(var(--border))]"
                                       value={String(value || "#000000")}
+                                      required
                                       onChange={(e) =>
                                         handleChange(
                                           actividad.id_activitie,
@@ -1119,6 +1175,7 @@ const Timer: React.FC<TimerProps> = ({
                                   return (
                                     <input
                                       type="file"
+                                      required
                                       accept={
                                         (
                                           cfg as Extract<
@@ -1159,6 +1216,7 @@ const Timer: React.FC<TimerProps> = ({
                                             : ""
                                         }`}
                                         value={currentType}
+                                        required
                                         onMouseDown={(e) => {
                                           if (locked) {
                                             e.preventDefault();
@@ -1215,6 +1273,7 @@ const Timer: React.FC<TimerProps> = ({
                                         <input
                                           type="text"
                                           className={commonInputClass}
+                                          required
                                           value={String(value ?? "")}
                                           onChange={(e) =>
                                             handleChange(
@@ -1301,6 +1360,7 @@ const Timer: React.FC<TimerProps> = ({
                                     <input
                                       type="text"
                                       className={commonInputClass}
+                                      required
                                       value={String(value ?? "")}
                                       onChange={(e) =>
                                         handleChange(
@@ -1325,16 +1385,31 @@ const Timer: React.FC<TimerProps> = ({
               </p>
             )}
 
+            {/* Resumen de faltantes */}
+
             <hr className="my-4 border-t border-[rgb(var(--border))] w-full max-w-lg mx-auto opacity-60" />
 
             <div className="flex flex-col items-center gap-3 mt-4">
               <button
-                className="px-4 py-2 rounded-lg bg-[rgb(var(--accent))] hover:bg-[rgb(var(--accent-hover))] text-[rgb(var(--accent-foreground))] shadow"
+                className={`px-4 py-2 rounded-lg bg-[rgb(var(--accent))] text-[rgb(var(--accent-foreground))] shadow
+    hover:bg-[rgb(var(--accent-hover))] transition
+    ${!allValid ? "opacity-50 cursor-not-allowed" : ""}`}
+                disabled={!allValid}
                 onClick={async () => {
                   if (!allValid) {
                     showError(
                       "Completa los campos obligatorios antes de guardar y reiniciar."
                     );
+                    // Llevar la vista al primer campo inválido
+                    requestAnimationFrame(() => {
+                      const firstInvalid = document.querySelector(
+                        '[data-invalid="true"]'
+                      ) as HTMLElement | null;
+                      firstInvalid?.scrollIntoView({
+                        behavior: "smooth",
+                        block: "center",
+                      });
+                    });
                     return;
                   }
 
