@@ -1,11 +1,5 @@
 "use client";
-import React, {
-  useState,
-  useEffect,
-  useRef,
-  useCallback,
-  useMemo,
-} from "react";
+import React, { useState, useEffect, useRef, useCallback, useMemo, } from "react";
 import { FaPlay, FaStop, FaRedo } from "react-icons/fa";
 import { motion } from "framer-motion";
 import { showSuccess, showConfirm, showError } from "../toastr/Toaster";
@@ -13,14 +7,7 @@ import Text from "../text/Text";
 import ModalSection from "../modal/ModalSection";
 import { TimerControlData } from "../../interfaces/TimerController";
 import { createTimerControl } from "../../services/timerControl/timerControlServices";
-import {
-  createTimer,
-  finishTimer,
-  getTimerEjecutadaById,
-  getcontrolTimer,
-  resetTimer,
-  TimerResponse,
-} from "../../services/timer/timerServices";
+import { createTimer, finishTimer, getTimerEjecutadaById, getcontrolTimer, resetTimer, TimerResponse, } from "../../services/timer/timerServices";
 import { validateSignaturePass } from "../../services/userDash/securityPass";
 import Firma from "../ordenes_ejecutadas/Firma";
 

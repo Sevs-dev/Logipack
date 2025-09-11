@@ -101,7 +101,6 @@ class AuthController extends Controller
     public function create(Request $request)
     {
         // Log::info('Datos recibidos para crear usuario:', $request->all());
-
         $request->validate([
             'name'          => 'required|string|max:255',
             'email'         => 'required|email|max:255|unique:users',
@@ -174,18 +173,23 @@ class AuthController extends Controller
         if ($request->has('security_pass')) {
             $incoming = trim((string) $request->input('security_pass', ''));
 
-            if ($incoming !== '') {
-                // Soporta almacenado hasheado o en texto plano
-                $sameHashed = Hash::check($incoming, (string) $user->security_pass); // coincide con hash?
-                $samePlain  = hash_equals((string) $user->security_pass, $incoming); // coincide texto plano?
+            // Ignorar vacíos o placeholders comunes
+            if ($incoming === '' || $incoming === '******' || $incoming === '********') {
+                // no tocar security_pass
+            } else {
+                $current = (string) ($user->security_pass ?? '');
 
-                if (!$sameHashed && !$samePlain) {
-                    // Cambió → guarda hasheado
-                    $newData['security_pass'] = Hash::make($incoming);
+                // Si el front devolvió exactamente lo que ya hay (sea plano o bcrypt), no actualizar
+                $looksBcrypt = fn(string $v) => preg_match('/^\$2[aby]\$/', $v) === 1;
+
+                $isSamePlain  = hash_equals($current, $incoming);
+                $isSameBcrypt = $looksBcrypt($current) && hash_equals($current, $incoming);
+
+                if (!$isSamePlain && !$isSameBcrypt) {
+                    // Guardar tal cual, SIN Hash::make
+                    $newData['security_pass'] = $incoming;
                 }
-                // Si es igual (hashed o plano), NO lo toques
             }
-            // Si llega vacío (''), ignorar: no sobreescribir con vacío
         }
 
         $user->update($newData);

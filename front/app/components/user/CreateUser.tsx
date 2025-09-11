@@ -49,7 +49,7 @@ function CreateUser({ canEdit = false, canView = false }: CreateClientProps) {
     factory: [] as number[],
   });
   const [isSaving, setIsSaving] = useState(false);
-
+  const [securityPassError, setSecurityPassError] = useState<string>("");
   // Carga inicial de roles, fábricas y usuarios
   useEffect(() => {
     if (!canView) return;
@@ -145,8 +145,26 @@ function CreateUser({ canEdit = false, canView = false }: CreateClientProps) {
     return true;
   };
 
+  const validateSecurityPass = (val: string) => {
+    const v = (val ?? "").trim();
+    if (v === "") {
+      setSecurityPassError("");
+      return true; // opcional: vacía es válida
+    }
+    if (v.length < 6) { 
+      return false;
+    }
+    setSecurityPassError("");
+    return true;
+  };
+
   // Crear usuario nuevo
   const handleCreateUser = async () => {
+    // Validar Contraseña de Seguridad (opcional pero si viene, min 6)
+    if (!validateSecurityPass(security_pass)) {
+      showError("La Contraseña de Seguridad debe tener al menos 6 caracteres.");
+      return false;
+    }
     if (isSaving) return;
     if (!validateFields()) return;
     setIsSaving(true);
@@ -178,6 +196,10 @@ function CreateUser({ canEdit = false, canView = false }: CreateClientProps) {
 
   // Editar usuario existente
   const handleEditUser = async () => {
+    if (!validateSecurityPass(security_pass)) {
+      showError("La Contraseña de Seguridad debe tener al menos 6 caracteres.");
+      return false;
+    }
     if (isSaving) return;
     if (!validateFields()) return;
     setIsSaving(true);
@@ -467,20 +489,41 @@ function CreateUser({ canEdit = false, canView = false }: CreateClientProps) {
               </div>
 
               {/* Contraseña de seguridad */}
+              {/* Contraseña de seguridad */}
               <div>
                 <Text type="subtitle" color="text-[rgb(var(--foreground))]">
                   Contraseña de Seguridad
-                  <InfoPopover content="Dependiendo del rol (p. ej., Calidad), se pedirá al firmar para validar la identidad." />
+                  <InfoPopover content="Dependiendo del rol, se pedirá para validar identidad. Si la escribes, debe tener mínimo 6 caracteres." />
                 </Text>
+
                 <Input
                   type="text"
-                  placeholder="Requerido según el Rol"
+                  placeholder="Opcional — mínimo 6 si la escribes"
                   value={security_pass}
-                  onChange={(e) => setSecurityPASS(e.target.value)}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setSecurityPASS(val);
+                    validateSecurityPass(val);
+                  }}
                   disabled={!canEdit}
                   className="text-center"
-                  tone="strong"
+                  tone={securityPassError ? "danger" : "strong"}
+                  minLength={6} // por si tu <Input> pasa props al <input/>
+                  aria-invalid={!!securityPassError}
+                  aria-describedby="security-pass-help"
                 />
+
+                <p
+                  id="security-pass-help"
+                  className={`mt-1 text-sm ${
+                    securityPassError
+                      ? "text-red-500"
+                      : "text-[rgb(var(--foreground))]/60"
+                  }`}
+                >
+                  {securityPassError ||
+                    "Déjala vacía si no aplica. Si la ingresas, mínimo 6 caracteres."}
+                </p>
               </div>
 
               {/* Rol (select se deja igual) */}
