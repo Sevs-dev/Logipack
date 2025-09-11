@@ -452,21 +452,21 @@ class OrdenesEjecutadasController extends Controller
         }
 
         // 2️⃣ Traer actividades de esa fase
-        $actividades = [];
-        if (!empty($fase->activities)) {
-            $actividadesIds = json_decode($fase->activities, true);
-
-            if (is_array($actividadesIds) && count($actividadesIds) > 0) {
-                $actividades = DB::table('activities as act')
-                    ->whereIn('act.id', $actividadesIds)
-                    ->select(
-                        'act.id',
-                        'act.description',
-                        'act.config',
-                        'act.binding'
-                    )
-                    ->get();
-            }
+        $actividadesIds = json_decode($fase->activities, true);
+        if (is_array($actividadesIds) && count($actividadesIds) > 0) {
+            $idsString = implode(',', $actividadesIds);
+            $placeholders = implode(',', array_fill(0, count($actividadesIds), '?'));
+            
+            $actividades = DB::select("
+                SELECT 
+                    act.id,
+                    act.description,
+                    act.config,
+                    act.binding
+                FROM activities as act
+                WHERE act.id IN ($placeholders)
+                ORDER BY FIELD(act.id, $idsString)
+            ", $actividadesIds);
         }
 
         return response()->json([
