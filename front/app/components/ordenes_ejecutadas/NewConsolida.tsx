@@ -1,3 +1,5 @@
+// NewConsolida.tsx
+"use client";
 import React, { useState, useEffect, useRef } from "react";
 import {
   getConciliacion,
@@ -8,313 +10,377 @@ import { showError, showSuccess } from "../toastr/Toaster";
 import Text from "../text/Text";
 import Button from "../buttons/buttons";
 
+/* =========================
+ *        Tipos
+ * ========================= */
+type StrNum = string; // valores numéricos en inputs controlados se manejan como string
 
 interface Orden {
   adaptation_date_id: string;
   descripcion_maestra: string;
   number_order: string;
   orden_ejecutada: string;
-  orderType: string;
+  orderType: "P" | "H" | string;
   requiere_bom: string;
 }
 
 interface Articulos {
-  codart: string;
-  desart: string;
-  quantityToProduce: string;
-  faltante: string;
-  adicionales: string;
-  rechazo: string;
-  danno_proceso: string;
-  devolucion: string;
-  sobrante: string;
-  total: string;
-  rendimiento: string;
+  codart: StrNum;
+  desart: StrNum;
+  quantityToProduce: StrNum;
+  faltante: StrNum;
+  adicionales: StrNum;
+  rechazo: StrNum;
+  danno_proceso: StrNum;
+  devolucion: StrNum;
+  sobrante: StrNum;
+  total: StrNum;
+  rendimiento: StrNum;
 }
 
 interface Conciliaciones {
-  padre: string;
-  hijo: string;
-  diferencia: string;
-  validate: string;
-  list: [];
+  padre: StrNum;
+  hijo: StrNum;
+  diferencia: StrNum;
+  validate: StrNum;
+  list: string[];
 }
 
-const NewConsolida = () => {
-  const params = useParams();
+interface Empaque {
+  unidades_caja: StrNum;
+  numero_caja: StrNum;
+  unidades_saldo: StrNum;
+  total_saldo: StrNum;
+}
+
+/** Estructura esperada del servicio getConciliacion */
+interface ApiConciliacion {
+  orden?: Partial<Orden> | null;
+  articulo_principal?: Partial<Articulos> | null;
+  articulo_segundario?: Array<Partial<Articulos>> | null;
+  conciliaciones?: Partial<Conciliaciones> | null;
+}
+
+/* =========================
+ *     Utilidades helper
+ * ========================= */
+const s = (v: unknown): string =>
+  v === undefined || v === null ? "" : String(v);
+
+const nz = (v: unknown): number => {
+  const num = Number(v);
+  return isFinite(num) ? num : 0;
+};
+
+const normalizeArticulo = (a?: Partial<Articulos>): Articulos => ({
+  codart: s(a?.codart),
+  desart: s(a?.desart),
+  quantityToProduce: s(a?.quantityToProduce),
+  faltante: s(a?.faltante),
+  adicionales: s(a?.adicionales),
+  rechazo: s(a?.rechazo),
+  danno_proceso: s(a?.danno_proceso),
+  devolucion: s(a?.devolucion),
+  sobrante: s(a?.sobrante),
+  total: s(a?.total),
+  rendimiento: s(a?.rendimiento),
+});
+
+const normalizeOrden = (o?: Partial<Orden>): Orden => ({
+  adaptation_date_id: s(o?.adaptation_date_id),
+  descripcion_maestra: s(o?.descripcion_maestra),
+  number_order: s(o?.number_order),
+  orden_ejecutada: s(o?.orden_ejecutada),
+  orderType: (o?.orderType as Orden["orderType"]) ?? "",
+  requiere_bom: s(o?.requiere_bom),
+});
+
+const normalizeConciliaciones = (
+  c?: Partial<Conciliaciones>
+): Conciliaciones => ({
+  padre: s(c?.padre),
+  hijo: s(c?.hijo),
+  diferencia: s(c?.diferencia),
+  validate: s(c?.validate),
+  list: Array.isArray(c?.list) ? c!.list : [],
+});
+
+const normalizeEmpaque = (e?: Partial<Empaque>): Empaque => ({
+  unidades_caja: s(e?.unidades_caja),
+  numero_caja: s(e?.numero_caja),
+  unidades_saldo: s(e?.unidades_saldo),
+  total_saldo: s(e?.total_saldo),
+});
+
+/* =========================
+ *   Input reutilizable
+ * ========================= */
+type NumberFieldProps = {
+  id?: string;
+  name: keyof Articulos | keyof Empaque;
+  label: string;
+  value: string;
+  hint?: string; // letras a,b,c...
+  required?: boolean;
+  disabled?: boolean;
+  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+};
+
+const NumberField: React.FC<NumberFieldProps> = ({
+  id,
+  name,
+  label,
+  value,
+  hint,
+  required,
+  disabled,
+  onChange,
+}) => (
+  <div>
+    <Text type="subtitle" color="text-[rgb(var(--foreground))]">
+      {label}
+      {hint && (
+        <span className="ml-2 font-mono text-xs bg-[rgb(var(--surface-muted))] text-[rgb(var(--foreground))]/70 px-1.5 py-0.5 rounded-full">
+          {hint}
+        </span>
+      )}
+    </Text>
+    <input
+      id={id ?? String(name)}
+      name={String(name)}
+      type="number"
+      step="any"
+      required={required}
+      disabled={disabled}
+      value={value ?? ""} // nunca undefined
+      onChange={onChange}
+      className="mt-2 block w-full text-center rounded-md bg-[rgb(var(--surface))] px-3.5 py-2 text-[rgb(var(--foreground))]
+                 shadow-sm ring-1 ring-inset ring-[rgb(var(--border))] border border-transparent
+                 placeholder:text-[rgb(var(--foreground))]/50
+                 focus:outline-none focus:ring-2 focus:ring-[rgb(var(--ring))] focus:border-[rgb(var(--ring))]"
+    />
+  </div>
+);
+
+/* =========================
+ *      Componente main
+ * ========================= */
+const NewConsolida: React.FC = () => {
+  const params = useParams<{ id: string }>();
   const refForm = useRef<HTMLFormElement>(null);
-  // Ordenes
-  const [orden, setOrden] = useState<Orden>({
-    adaptation_date_id: "",
-    descripcion_maestra: "",
-    number_order: "",
-    orden_ejecutada: "",
-    orderType: "",
-    requiere_bom: "",
-  });
 
-  // // Articulos
-  // const [articulo_principal, setArticulo_principal] = useState<Articulos>({
-  //   codart: "",
-  //   desart: "",
-  //   quantityToProduce: "",
-  // });
+  // Estados
+  const [loading, setLoading] = useState<boolean>(true);
 
-  // // Articulos secundarios
-  // const [articulo_secundario, setArticulo_secundario] = useState<Articulos[]>([]);
+  const [orden, setOrden] = useState<Orden>(() => normalizeOrden());
 
-  // Conciliaciones
-  const [conciliaciones, setConciliaciones] = useState<Conciliaciones>({
-    padre: "",
-    hijo: "",
-    diferencia: "",
-    validate: "",
-    list: [],
-  });
+  const [conciliaciones, setConciliaciones] = useState<Conciliaciones>(() =>
+    normalizeConciliaciones()
+  );
 
-  const [principal, setPrincipal] = useState<Articulos>({
-    codart: "",
-    desart: "",
-    quantityToProduce: "",
-    faltante: "",
-    adicionales: "",
-    rechazo: "",
-    danno_proceso: "",
-    devolucion: "",
-    sobrante: "",
-    total: "",
-    rendimiento: "",
-  });
+  const [principal, setPrincipal] = useState<Articulos>(() =>
+    normalizeArticulo()
+  );
 
   const [secundarios, setSecundarios] = useState<Articulos[]>([]);
 
-  const [empaque, setEmpaque] = useState({
-    // Empacado
-    unidades_caja: "",
-    numero_caja: "",
-    unidades_saldo: "",
-    total_saldo: "",
-  });
+  const [empaque, setEmpaque] = useState<Empaque>(() => normalizeEmpaque());
 
+  /* =========================
+   *      Carga de datos
+   * ========================= */
   useEffect(() => {
     const obtener_conciliacion = async () => {
       try {
-        const resp = await getConciliacion(Number(params.id));
-        setOrden((prev) => ({ ...prev, ...resp?.orden }));
-        setPrincipal({
-          ...principal,
-          desart: resp?.articulo_principal?.desart,
-          codart: resp?.articulo_principal?.codart,
-          quantityToProduce: resp?.orden?.orderType === "P" ? "800" : "",
-        });
-        setSecundarios(
-          resp?.articulo_segundario?.map((articulo: Articulos) => ({
-            ...articulo,
-            desart: articulo.desart,
-            codart: articulo.codart,
-            quantityToProduce: resp?.orden?.orderType === "P" ? Number(articulo.quantityToProduce).toFixed(2) : "",
-          })) || []
+        const resp = (await getConciliacion(
+          Number(params.id)
+        )) as ApiConciliacion;
+
+        // Orden
+        const o = normalizeOrden(resp?.orden ?? {});
+        setOrden(o);
+
+        // Artículo principal
+        setPrincipal((prev) =>
+          normalizeArticulo({
+            ...prev,
+            ...resp?.articulo_principal,
+            quantityToProduce:
+              o.orderType !== "P"
+                ? prev.quantityToProduce || ""
+                : s(resp?.articulo_principal?.quantityToProduce),
+          })
         );
-        setConciliaciones((prev) => ({ ...prev, ...resp?.conciliaciones }));
-      } catch (error: unknown) {
+
+        // Artículos secundarios
+        const secundariosNormalizados: Articulos[] = Array.isArray(
+          resp?.articulo_segundario
+        )
+          ? resp!.articulo_segundario!.map((a) =>
+              normalizeArticulo({
+                ...a,
+                quantityToProduce:
+                  o.orderType !== "P" ? "" : s(a?.quantityToProduce),
+              })
+            )
+          : [];
+        setSecundarios(secundariosNormalizados);
+
+        // Conciliaciones
+        setConciliaciones(normalizeConciliaciones(resp?.conciliaciones ?? {}));
+      } catch (error) {
         console.error("Error en obtener_conciliacion:", error);
-        throw error;
+        showError("No se pudo cargar la conciliación.");
+      } finally {
+        setLoading(false);
       }
     };
 
-    // Obtener conciliacion
     obtener_conciliacion();
   }, [params.id]);
 
-  const inputChange = (e: React.ChangeEvent<HTMLInputElement>, index?: number) => {
+  /* =========================
+   *   Handlers de cambios
+   * ========================= */
+
+  // Cálculo común de total y rendimiento
+  const calculateTotals = (
+    v: Articulos
+  ): Pick<Articulos, "total" | "rendimiento"> => {
+    const total =
+      nz(v.quantityToProduce) +
+      nz(v.adicionales) +
+      nz(v.sobrante) -
+      (nz(v.faltante) + nz(v.rechazo) + nz(v.danno_proceso) + nz(v.devolucion));
+
+    const denom =
+      nz(v.quantityToProduce) -
+      (nz(v.faltante) + nz(v.rechazo) + nz(v.danno_proceso) + nz(v.devolucion));
+
+    const rendimiento =
+      denom > 0 ? ((nz(v.total) - nz(v.danno_proceso)) / denom) * 100 : 0;
+
+    return {
+      total: total.toFixed(2),
+      rendimiento: rendimiento.toFixed(2),
+    };
+  };
+
+  const inputChange = (
+    e: React.ChangeEvent<HTMLInputElement>,
+    index?: number
+  ) => {
     const { name, value } = e.target;
 
     if (index === undefined) {
-      // Es el principal
-      setPrincipal(prev => {
-        let currentValues = { ...prev };
+      // principal
+      setPrincipal((prev) => {
+        const next: Articulos = { ...prev, [name]: value } as Articulos;
 
         if (orden.orderType === "P") {
-          currentValues = {
-            ...prev,
-            quantityToProduce: principal.quantityToProduce,
-          };
+          // Mantener la teórica en modo P (pre-cargada)
+          next.quantityToProduce = prev.quantityToProduce;
         }
 
-        const key = name as keyof typeof currentValues;
-        currentValues[key] = value;
-
-        // Calcular valores
-        const currentTotal =
-          (Number(currentValues.quantityToProduce) +
-            Number(currentValues.adicionales) +
-            Number(currentValues.sobrante)) -
-          (Number(currentValues.faltante) +
-            Number(currentValues.rechazo) +
-            Number(currentValues.danno_proceso) +
-            Number(currentValues.devolucion));
-
-        const denominador =
-          Number(currentValues.quantityToProduce) -
-          (Number(currentValues.faltante) +
-            Number(currentValues.rechazo) +
-            Number(currentValues.danno_proceso) +
-            Number(currentValues.devolucion));
-
-        const currentRendimiento =
-          denominador > 0
-            ? ((Number(currentValues.total) - Number(currentValues.danno_proceso)) /
-              denominador) *
-            100
-            : 0;
-
-        return {
-          ...currentValues,
-          total: Number(currentTotal).toFixed(2),
-          rendimiento: Number(currentRendimiento).toFixed(2),
-        };
+        const totals = calculateTotals(next);
+        return { ...next, ...totals };
       });
     } else {
-      // Es un secundario
-      setSecundarios(prev => {
+      // secundarios
+      setSecundarios((prev) => {
         const copy = [...prev];
+        if (!copy[index]) copy[index] = normalizeArticulo();
 
-        // si no existe, crearlo para evitar undefined
-        if (!copy[index]) {
-          copy[index] = {
-            ...prev[index],
-            quantityToProduce: "",
-            adicionales: "",
-            sobrante: "",
-            faltante: "",
-            rechazo: "",
-            danno_proceso: "",
-            devolucion: "",
-            total: "",
-            rendimiento: "",
-          };
-        }
-        let currentValues = { ...copy[index] };
-        const key = name as keyof typeof currentValues;
-        currentValues[key] = value;
+        const next: Articulos = { ...copy[index], [name]: value } as Articulos;
 
-        // Condición especial para tipo P
         if (orden.orderType === "P") {
-          currentValues = {
-            ...currentValues,
-            quantityToProduce: Number(secundarios[index]?.quantityToProduce).toFixed(2),
-          };
+          next.quantityToProduce = s(
+            Number(copy[index].quantityToProduce || 0).toFixed(2)
+          );
         }
 
-        // Calcular valores
-        const currentTotal =
-          (Number(currentValues.quantityToProduce) +
-            Number(currentValues.adicionales) +
-            Number(currentValues.sobrante)) -
-          (Number(currentValues.faltante) +
-            Number(currentValues.rechazo) +
-            Number(currentValues.danno_proceso) +
-            Number(currentValues.devolucion));
-
-        const denominador =
-          Number(currentValues.quantityToProduce) -
-          (Number(currentValues.faltante) +
-            Number(currentValues.rechazo) +
-            Number(currentValues.danno_proceso) +
-            Number(currentValues.devolucion));
-
-        const currentRendimiento =
-          denominador > 0
-            ? ((Number(currentValues.total) - Number(currentValues.danno_proceso)) /
-              denominador) *
-            100
-            : 0;
-
-        // Actualizo el secundario en esa posición
-        copy[index] = {
-          ...currentValues,
-          total: Number(currentTotal).toFixed(2),
-          rendimiento: Number(currentRendimiento).toFixed(2),
-        };
-
+        const totals = calculateTotals(next);
+        copy[index] = { ...next, ...totals };
         return copy;
       });
     }
   };
 
-
   const calculaEmpaque = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
 
     setEmpaque((prev) => {
-      let currentValues = { ...prev };
-      const key = name as keyof typeof currentValues;
-      currentValues[key] = value;
-
-      // Calcular saldo
-      const saldo = Number(currentValues.unidades_caja) * Number(currentValues.numero_caja) + Number(currentValues.unidades_saldo);
-      return {
-        ...currentValues,
-        total_saldo: saldo.toFixed(2),
-      }
+      const current = { ...prev, [name]: value } as Empaque;
+      const saldo =
+        nz(current.unidades_caja) * nz(current.numero_caja) +
+        nz(current.unidades_saldo);
+      return { ...current, total_saldo: saldo.toFixed(2) };
     });
   };
 
+  /* =========================
+   *        Submit
+   * ========================= */
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    const result = {
+    const name = document.cookie
+      .split("; ")
+      .find((row) => row.startsWith("name="))
+      ?.split("=")[1];
+    const payload = {
       orden,
       principal,
       secundarios,
       empaque,
-    }
-    console.log(result);
+      user: name,
+    };
 
-    const response = await guardar_conciliacion(result);
-    if (response.message === "ok") {
-      showSuccess("Conciliación guardada correctamente");
-      console.log(response);
-      setTimeout(() => {
-        window.close();
-      }, 2000);
-    } else {
-      showError("Error al guardar la conciliación o datos existentes.");
+    try {
+      const response = await guardar_conciliacion(payload);
+      if ((response as { message?: string })?.message === "ok") {
+        showSuccess("Conciliación guardada correctamente");
+        setTimeout(() => {
+          window.close();
+        }, 1500);
+      } else {
+        showError("Error al guardar la conciliación o datos existentes.");
+      }
+    } catch {
+      showError("Error inesperado al guardar la conciliación.");
     }
   };
 
-
-  if (orden?.orden_ejecutada === "") {
+  /* =========================
+   *       Loading/Empty
+   * ========================= */
+  if (loading) {
     return (
-      <div>
+      <div className="min-h-[40vh] flex items-center justify-center">
         <h1>Cargando...</h1>
       </div>
     );
   }
 
-  if (orden?.orden_ejecutada === undefined || orden?.orden_ejecutada === null || orden?.orden_ejecutada === "") {
+  if (!orden.orden_ejecutada) {
     return (
-      <div>
+      <div className="min-h-[40vh] flex items-center justify-center">
         <h1>Sin datos de conciliación</h1>
       </div>
     );
   }
 
-  // --- COPIA Y PEGA ESTE CÓDIGO ---
-
+  /* =========================
+   *          JSX
+   * ========================= */
   return (
-    // Contenedor principal con un fondo sutil para que el formulario resalte
     <div className="min-h-screen py-12 bg-[rgb(var(--background))]">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-
         <form
-          // id="formConciliacion"
           ref={refForm}
           onSubmit={handleSubmit}
-          className="bg-[rgb(var(--surface))] rounded-2xl shadow-xl 
-            p-8 space-y-10 border border-[rgb(var(--border))]">
-
-          {/* --- Encabezado del Formulario --- */}
+          className="bg-[rgb(var(--surface))] rounded-2xl shadow-xl p-8 space-y-10 border border-[rgb(var(--border))]"
+        >
+          {/* Header */}
           <div className="text-center">
             <Text type="title" color="text-[rgb(var(--foreground))]">
               Formulario de Conciliación
@@ -324,7 +390,7 @@ const NewConsolida = () => {
             </p>
           </div>
 
-          {/* --- Sección de Información de la Orden (Solo lectura) --- */}
+          {/* Info Orden */}
           <fieldset className="border border-[rgb(var(--border))] p-6 rounded-xl">
             <legend className="-ml-1 px-2 text-lg font-semibold text-[rgb(var(--accent))]">
               Información de la Orden
@@ -336,7 +402,7 @@ const NewConsolida = () => {
                   Orden Ejecutada
                 </Text>
                 <p className="mt-1 text-base font-semibold text-center text-[rgb(var(--foreground))] bg-[rgb(var(--surface-muted))] rounded-md px-3 py-2">
-                  {orden?.orden_ejecutada}
+                  {orden.orden_ejecutada}
                 </p>
               </div>
 
@@ -345,7 +411,7 @@ const NewConsolida = () => {
                   Orden N°
                 </Text>
                 <p className="mt-1 text-base font-semibold text-center text-[rgb(var(--foreground))] bg-[rgb(var(--surface-muted))] rounded-md px-3 py-2 font-mono">
-                  {orden?.number_order}
+                  {orden.number_order}
                 </p>
               </div>
 
@@ -354,7 +420,7 @@ const NewConsolida = () => {
                   Tipo de Orden
                 </Text>
                 <p className="mt-1 text-base font-semibold text-center text-[rgb(var(--foreground))] bg-[rgb(var(--surface-muted))] rounded-md px-3 py-2 font-mono">
-                  {orden?.orderType}
+                  {orden.orderType}
                 </p>
               </div>
 
@@ -363,7 +429,7 @@ const NewConsolida = () => {
                   Descripción Maestra
                 </Text>
                 <p className="mt-1 text-base font-semibold text-center text-[rgb(var(--foreground))] bg-[rgb(var(--surface-muted))] rounded-md px-3 py-2">
-                  {orden?.descripcion_maestra}
+                  {orden.descripcion_maestra}
                 </p>
               </div>
 
@@ -372,7 +438,7 @@ const NewConsolida = () => {
                   Código Artículo
                 </Text>
                 <p className="mt-1 text-base font-semibold text-center text-[rgb(var(--foreground))] bg-[rgb(var(--surface-muted))] rounded-md px-3 py-2 font-mono">
-                  {principal?.codart}
+                  {principal.codart}
                 </p>
               </div>
 
@@ -381,7 +447,7 @@ const NewConsolida = () => {
                   Total
                 </Text>
                 <p className="mt-1 text-base font-semibold text-center text-[rgb(var(--foreground))] bg-[rgb(var(--surface-muted))] rounded-md px-3 py-2 font-mono">
-                  {conciliaciones?.padre}
+                  {conciliaciones.padre}
                 </p>
               </div>
 
@@ -390,7 +456,7 @@ const NewConsolida = () => {
                   Total Parciales
                 </Text>
                 <p className="mt-1 text-base font-semibold text-center text-[rgb(var(--foreground))] bg-[rgb(var(--surface-muted))] rounded-md px-3 py-2 font-mono">
-                  {conciliaciones?.hijo}
+                  {conciliaciones.hijo}
                 </p>
               </div>
 
@@ -399,16 +465,16 @@ const NewConsolida = () => {
                   Diferencia
                 </Text>
                 <p className="mt-1 text-base font-semibold text-center text-[rgb(var(--foreground))] bg-[rgb(var(--surface-muted))] rounded-md px-3 py-2 font-mono">
-                  {conciliaciones?.diferencia}
+                  {conciliaciones.diferencia}
                 </p>
               </div>
             </div>
           </fieldset>
 
-          {/* --- Sección de Producción y Desperdicio artículo principal --- */}
+          {/* Principal */}
           <fieldset className="border border-[rgb(var(--border))] p-6 rounded-xl">
             <legend className="-ml-1 px-2 text-lg font-semibold text-[rgb(var(--accent))]">
-              Producción y Desperdicio
+              Producción y Desperdicio (Artículo Principal)
             </legend>
 
             <div>
@@ -416,12 +482,11 @@ const NewConsolida = () => {
                 Código Artículo
               </Text>
               <p className="mt-1 text-base font-semibold text-center text-[rgb(var(--foreground))] bg-[rgb(var(--surface-muted))] rounded-md px-3 py-2 font-mono">
-                {principal?.codart}
+                {principal.codart}
               </p>
             </div>
 
             <div className="grid grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-4 mt-4">
-              {/* Cantidad Teórica */}
               <div className="sm:col-span-2">
                 <Text type="subtitle" color="text-[rgb(var(--foreground))]">
                   Cantidad Teórica
@@ -430,169 +495,74 @@ const NewConsolida = () => {
                   </span>
                 </Text>
 
-                {orden?.orderType === "H" ? (
-                  <input
-                    type="number"
-                    step="any"
-                    id="quantityToProduce"
+                {orden.orderType === "H" ? (
+                  <NumberField
                     name="quantityToProduce"
-                    required
-                    value={principal?.quantityToProduce}
+                    label=""
+                    value={principal.quantityToProduce}
                     onChange={inputChange}
-                    className="mt-2 block w-full text-center rounded-md bg-[rgb(var(--surface))] px-3.5 py-2 text-[rgb(var(--foreground))]
-                         shadow-sm ring-1 ring-inset ring-[rgb(var(--border))] border border-transparent
-                         placeholder:text-[rgb(var(--foreground))]/50
-                         focus:outline-none focus:ring-2 focus:ring-[rgb(var(--ring))] focus:border-[rgb(var(--ring))]"
+                    required
                   />
                 ) : (
-                  <p id="teorica"
+                  <p
                     className="mt-2 block w-full text-center rounded-md py-2 px-3.5 text-[rgb(var(--foreground))]/60
                            bg-[rgb(var(--surface-muted))] shadow-sm ring-1 ring-inset ring-[rgb(var(--border))]
-                           cursor-not-allowed">
-                    {Number(principal?.quantityToProduce).toFixed(2)}
+                           cursor-not-allowed"
+                  >
+                    {Number(principal.quantityToProduce || 0).toFixed(2)}
                   </p>
                 )}
               </div>
 
-              {/* Faltante */}
-              <div>
-                <Text type="subtitle" color="text-[rgb(var(--foreground))]">
-                  Faltante
-                  <span className="ml-2 font-mono text-xs bg-[rgb(var(--surface-muted))] text-[rgb(var(--foreground))]/70 px-1.5 py-0.5 rounded-full">
-                    b
-                  </span>
-                </Text>
-                <input
-                  type="number"
-                  step="any"
-                  id="faltante"
-                  name="faltante"
-                  required
-                  value={principal?.faltante}
-                  onChange={inputChange}
-                  className="mt-2 block w-full text-center rounded-md bg-[rgb(var(--surface))] px-3.5 py-2 text-[rgb(var(--foreground))]
-                         shadow-sm ring-1 ring-inset ring-[rgb(var(--border))] border border-transparent
-                         placeholder:text-[rgb(var(--foreground))]/50
-                         focus:outline-none focus:ring-2 focus:ring-[rgb(var(--ring))] focus:border-[rgb(var(--ring))]"
-                />
-              </div>
+              <NumberField
+                name="faltante"
+                label="Faltante"
+                hint="b"
+                value={principal.faltante}
+                onChange={inputChange}
+                required
+              />
+              <NumberField
+                name="adicionales"
+                label="Adicionales"
+                hint="c"
+                value={principal.adicionales}
+                onChange={inputChange}
+                required
+              />
+              <NumberField
+                name="rechazo"
+                label="Rechazo"
+                hint="d"
+                value={principal.rechazo}
+                onChange={inputChange}
+                required
+              />
+              <NumberField
+                name="danno_proceso"
+                label="Daño en Proceso"
+                hint="e"
+                value={principal.danno_proceso}
+                onChange={inputChange}
+                required
+              />
+              <NumberField
+                name="devolucion"
+                label="Devolución"
+                hint="f"
+                value={principal.devolucion}
+                onChange={inputChange}
+                required
+              />
+              <NumberField
+                name="sobrante"
+                label="Sobrante"
+                hint="g"
+                value={principal.sobrante}
+                onChange={inputChange}
+                required
+              />
 
-              {/* Adicionales */}
-              <div>
-                <Text type="subtitle" color="text-[rgb(var(--foreground))]">
-                  Adicionales
-                  <span className="ml-2 font-mono text-xs bg-[rgb(var(--surface-muted))] text-[rgb(var(--foreground))]/70 px-1.5 py-0.5 rounded-full">
-                    c
-                  </span>
-                </Text>
-                <input
-                  type="number"
-                  step="any"
-                  id="adicionales"
-                  name="adicionales"
-                  required
-                  value={principal?.adicionales}
-                  onChange={inputChange}
-                  className="mt-2 block w-full text-center rounded-md bg-[rgb(var(--surface))] px-3.5 py-2 text-[rgb(var(--foreground))]
-                         shadow-sm ring-1 ring-inset ring-[rgb(var(--border))] border border-transparent
-                         placeholder:text-[rgb(var(--foreground))]/50
-                         focus:outline-none focus:ring-2 focus:ring-[rgb(var(--ring))] focus:border-[rgb(var(--ring))]"
-                />
-              </div>
-
-              {/* Rechazo */}
-              <div>
-                <Text type="subtitle" color="text-[rgb(var(--foreground))]">
-                  Rechazo
-                  <span className="ml-2 font-mono text-xs bg-[rgb(var(--surface-muted))] text-[rgb(var(--foreground))]/70 px-1.5 py-0.5 rounded-full">
-                    d
-                  </span>
-                </Text>
-                <input
-                  type="number"
-                  step="any"
-                  id="rechazo"
-                  name="rechazo"
-                  required
-                  value={principal?.rechazo}
-                  onChange={inputChange}
-                  className="mt-2 block w-full text-center rounded-md bg-[rgb(var(--surface))] px-3.5 py-2 text-[rgb(var(--foreground))]
-                         shadow-sm ring-1 ring-inset ring-[rgb(var(--border))] border border-transparent
-                         placeholder:text-[rgb(var(--foreground))]/50
-                         focus:outline-none focus:ring-2 focus:ring-[rgb(var(--ring))] focus:border-[rgb(var(--ring))]"
-                />
-              </div>
-
-              {/* Daño en Proceso */}
-              <div>
-                <Text type="subtitle" color="text-[rgb(var(--foreground))]">
-                  Daño en Proceso
-                  <span className="ml-2 font-mono text-xs bg-[rgb(var(--surface-muted))] text-[rgb(var(--foreground))]/70 px-1.5 py-0.5 rounded-full">
-                    e
-                  </span>
-                </Text>
-                <input
-                  type="number"
-                  step="any"
-                  id="danno_proceso"
-                  name="danno_proceso"
-                  required
-                  value={principal?.danno_proceso}
-                  onChange={inputChange}
-                  className="mt-2 block w-full text-center rounded-md bg-[rgb(var(--surface))] px-3.5 py-2 text-[rgb(var(--foreground))]
-                         shadow-sm ring-1 ring-inset ring-[rgb(var(--border))] border border-transparent
-                         placeholder:text-[rgb(var(--foreground))]/50
-                         focus:outline-none focus:ring-2 focus:ring-[rgb(var(--ring))] focus:border-[rgb(var(--ring))]"
-                />
-              </div>
-
-              {/* Devolución */}
-              <div>
-                <Text type="subtitle" color="text-[rgb(var(--foreground))]">
-                  Devolución
-                  <span className="ml-2 font-mono text-xs bg-[rgb(var(--surface-muted))] text-[rgb(var(--foreground))]/70 px-1.5 py-0.5 rounded-full">
-                    f
-                  </span>
-                </Text>
-                <input
-                  type="number"
-                  step="any"
-                  id="devolucion"
-                  name="devolucion"
-                  required
-                  value={principal?.devolucion}
-                  onChange={inputChange}
-                  className="mt-2 block w-full text-center rounded-md bg-[rgb(var(--surface))] px-3.5 py-2 text-[rgb(var(--foreground))]
-                         shadow-sm ring-1 ring-inset ring-[rgb(var(--border))] border border-transparent
-                         placeholder:text-[rgb(var(--foreground))]/50
-                         focus:outline-none focus:ring-2 focus:ring-[rgb(var(--ring))] focus:border-[rgb(var(--ring))]"
-                />
-              </div>
-
-              {/* Sobrante */}
-              <div>
-                <Text type="subtitle" color="text-[rgb(var(--foreground))]">
-                  Sobrante
-                  <span className="ml-2 font-mono text-xs bg-[rgb(var(--surface-muted))] text-[rgb(var(--foreground))]/70 px-1.5 py-0.5 rounded-full">
-                    g
-                  </span>
-                </Text>
-                <input
-                  type="number"
-                  step="any"
-                  id="sobrante"
-                  name="sobrante"
-                  required
-                  value={principal?.sobrante}
-                  onChange={inputChange}
-                  className="mt-2 block w-full text-center rounded-md bg-[rgb(var(--surface))] px-3.5 py-2 text-[rgb(var(--foreground))]
-                         shadow-sm ring-1 ring-inset ring-[rgb(var(--border))] border border-transparent
-                         placeholder:text-[rgb(var(--foreground))]/50
-                         focus:outline-none focus:ring-2 focus:ring-[rgb(var(--ring))] focus:border-[rgb(var(--ring))]"
-                />
-              </div>
-
-              {/* Total Producido */}
               <div>
                 <Text type="subtitle" color="text-[rgb(var(--foreground))]">
                   Total Producido
@@ -600,17 +570,14 @@ const NewConsolida = () => {
                     h
                   </span>
                 </Text>
-                <p className="mt-1 text-base font-semibold text-center text-[rgb(var(--foreground))]
-                   bg-[rgb(var(--surface-muted))] rounded-md px-3 py-2 font-mono">
-                  {principal?.total}
-                  {/* {((Number(principal?.quantityToProduce) + Number(principal?.adicionales) + Number(principal?.sobrante)) - (Number(principal?.faltante) + Number(principal?.rechazo) + Number(principal?.danno_proceso) + Number(principal?.devolucion))).toString()} */}
+                <p className="mt-1 text-base font-semibold text-center text-[rgb(var(--foreground))] bg-[rgb(var(--surface-muted))] rounded-md px-3 py-2 font-mono">
+                  {principal.total}
                 </p>
                 <p className="mt-1 text-xs text-[rgb(var(--foreground))]/60">
                   Cálculo: a + c + g - (b + d + e + f)
                 </p>
               </div>
 
-              {/* Rendimiento */}
               <div>
                 <Text type="subtitle" color="text-[rgb(var(--foreground))]">
                   Rendimiento (%)
@@ -618,26 +585,24 @@ const NewConsolida = () => {
                     i
                   </span>
                 </Text>
-                <p className="mt-1 text-base font-semibold text-center text-[rgb(var(--foreground))]
-                   bg-[rgb(var(--surface-muted))] rounded-md px-3 py-2 font-mono">
-                  {principal?.rendimiento}
-                  {
-                    // ((Number(principal?.total) - Number(principal?.danno_proceso)) / (Number(principal?.quantityToProduce) - (Number(principal?.faltante) + Number(principal?.rechazo) + Number(principal?.danno_proceso) + Number(principal?.devolucion))) * 100).toString()
-                  }
+                <p className="mt-1 text-base font-semibold text-center text-[rgb(var(--foreground))] bg-[rgb(var(--surface-muted))] rounded-md px-3 py-2 font-mono">
+                  {principal.rendimiento}
                 </p>
                 <p className="mt-1 text-xs text-[rgb(var(--foreground))]/60">
                   Cálculo: (h - e) / (a - (d + b)) × 100
                 </p>
               </div>
-
             </div>
           </fieldset>
 
-          {/* --- Sección de Producción y Desperdicio artículo secundario --- */}
+          {/* Secundarios */}
           {secundarios.map((item, i) => (
-            <fieldset key={i} className="border border-[rgb(var(--border))] p-6 rounded-xl">
+            <fieldset
+              key={`${item.codart}-${i}`}
+              className="border border-[rgb(var(--border))] p-6 rounded-xl"
+            >
               <legend className="-ml-1 px-2 text-lg font-semibold text-[rgb(var(--accent))]">
-                Producción y Desperdicio
+                Producción y Desperdicio (Artículo Secundario)
               </legend>
 
               <div>
@@ -645,185 +610,86 @@ const NewConsolida = () => {
                   Código Artículo
                 </Text>
                 <p className="mt-1 text-base font-semibold text-center text-[rgb(var(--foreground))] bg-[rgb(var(--surface-muted))] rounded-md px-3 py-2 font-mono">
-                  {item?.codart}
+                  {item.codart}
                 </p>
               </div>
 
               <div className="grid grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-4 mt-4">
-                {/* Cantidad Teórica */}
                 <div className="sm:col-span-2">
                   <Text type="subtitle" color="text-[rgb(var(--foreground))]">
                     Cantidad Teórica
-                    <span className="ml-2 font-mono text-xs bg-[rgb(var(--surface-muted))]
-                      text-[rgb(var(--foreground))]/70 px-1.5 py-0.5 rounded-full">
+                    <span className="ml-2 font-mono text-xs bg-[rgb(var(--surface-muted))] text-[rgb(var(--foreground))]/70 px-1.5 py-0.5 rounded-full">
                       a
                     </span>
                   </Text>
 
-                  {orden?.orderType === "H" ? (
-                    <input
-                      type="number"
-                      step="any"
-                      id={`quantityToProduce`}
-                      name={`quantityToProduce`}
-                      required
-                      value={secundarios[i]?.quantityToProduce}
+                  {orden.orderType === "H" ? (
+                    <NumberField
+                      name="quantityToProduce"
+                      label=""
+                      value={secundarios[i]?.quantityToProduce ?? ""}
                       onChange={(e) => inputChange(e, i)}
-                      className="mt-2 block w-full text-center rounded-md bg-[rgb(var(--surface))] px-3.5 py-2 text-[rgb(var(--foreground))]
-                        shadow-sm ring-1 ring-inset ring-[rgb(var(--border))] border border-transparent
-                        placeholder:text-[rgb(var(--foreground))]/50
-                        focus:outline-none focus:ring-2 focus:ring-[rgb(var(--ring))] focus:border-[rgb(var(--ring))]"
+                      required
                     />
                   ) : (
                     <p
                       className="mt-2 block w-full text-center rounded-md py-2 px-3.5 text-[rgb(var(--foreground))]/60
-                        bg-[rgb(var(--surface-muted))] shadow-sm ring-1 ring-inset ring-[rgb(var(--border))]
-                        cursor-not-allowed">
-                      {Number(item?.quantityToProduce).toFixed(2)}
+                        bg-[rgb(var(--surface-muted))] shadow-sm ring-1 ring-inset ring-[rgb(var(--border))] cursor-not-allowed"
+                    >
+                      {Number(item.quantityToProduce || 0).toFixed(2)}
                     </p>
                   )}
                 </div>
 
-                {/* Faltante */}
-                <div>
-                  <Text type="subtitle" color="text-[rgb(var(--foreground))]">
-                    Faltante
-                    <span className="ml-2 font-mono text-xs 
-                     bg-[rgb(var(--surface-muted))] text-[rgb(var(--foreground))]/70 px-1.5 py-0.5 rounded-full">
-                      b
-                    </span>
-                  </Text>
-                  <input
-                    type="number"
-                    step="any"
-                    id={`faltante`}
-                    name={`faltante`}
-                    required
-                    value={secundarios[i]?.faltante}
-                    onChange={(e) => inputChange(e, i)}
-                    className="mt-2 block w-full text-center rounded-md bg-[rgb(var(--surface))] px-3.5 py-2 text-[rgb(var(--foreground))]
-                      shadow-sm ring-1 ring-inset ring-[rgb(var(--border))] border border-transparent
-                      placeholder:text-[rgb(var(--foreground))]/50
-                      focus:outline-none focus:ring-2 focus:ring-[rgb(var(--ring))] focus:border-[rgb(var(--ring))]"
-                  />
-                </div>
+                <NumberField
+                  name="faltante"
+                  label="Faltante"
+                  hint="b"
+                  value={secundarios[i]?.faltante ?? ""}
+                  onChange={(e) => inputChange(e, i)}
+                  required
+                />
+                <NumberField
+                  name="adicionales"
+                  label="Adicionales"
+                  hint="c"
+                  value={secundarios[i]?.adicionales ?? ""}
+                  onChange={(e) => inputChange(e, i)}
+                  required
+                />
+                <NumberField
+                  name="rechazo"
+                  label="Rechazo"
+                  hint="d"
+                  value={secundarios[i]?.rechazo ?? ""}
+                  onChange={(e) => inputChange(e, i)}
+                  required
+                />
+                <NumberField
+                  name="danno_proceso"
+                  label="Daño en Proceso"
+                  hint="e"
+                  value={secundarios[i]?.danno_proceso ?? ""}
+                  onChange={(e) => inputChange(e, i)}
+                  required
+                />
+                <NumberField
+                  name="devolucion"
+                  label="Devolución"
+                  hint="f"
+                  value={secundarios[i]?.devolucion ?? ""}
+                  onChange={(e) => inputChange(e, i)}
+                  required
+                />
+                <NumberField
+                  name="sobrante"
+                  label="Sobrante"
+                  hint="g"
+                  value={secundarios[i]?.sobrante ?? ""}
+                  onChange={(e) => inputChange(e, i)}
+                  required
+                />
 
-                {/* Adicionales */}
-                <div>
-                  <Text type="subtitle" color="text-[rgb(var(--foreground))]">
-                    Adicionales
-                    <span className="ml-2 font-mono text-xs bg-[rgb(var(--surface-muted))] text-[rgb(var(--foreground))]/70 px-1.5 py-0.5 rounded-full">
-                      c
-                    </span>
-                  </Text>
-                  <input
-                    type="number"
-                    step="any"
-                    id={`adicionales`}
-                    name={`adicionales`}
-                    required
-                    value={secundarios[i]?.adicionales}
-                    onChange={(e) => inputChange(e, i)}
-                    className="mt-2 block w-full text-center rounded-md bg-[rgb(var(--surface))] px-3.5 py-2 text-[rgb(var(--foreground))]
-                      shadow-sm ring-1 ring-inset ring-[rgb(var(--border))] border border-transparent
-                      placeholder:text-[rgb(var(--foreground))]/50
-                      focus:outline-none focus:ring-2 focus:ring-[rgb(var(--ring))] focus:border-[rgb(var(--ring))]"
-                  />
-                </div>
-
-                {/* Rechazo */}
-                <div>
-                  <Text type="subtitle" color="text-[rgb(var(--foreground))]">
-                    Rechazo
-                    <span className="ml-2 font-mono text-xs bg-[rgb(var(--surface-muted))] text-[rgb(var(--foreground))]/70 px-1.5 py-0.5 rounded-full">
-                      d
-                    </span>
-                  </Text>
-                  <input
-                    type="number"
-                    step="any"
-                    id={`rechazo`}
-                    name={`rechazo`}
-                    required
-                    value={secundarios[i]?.rechazo}
-                    onChange={(e) => inputChange(e, i)}
-                    className="mt-2 block w-full text-center rounded-md bg-[rgb(var(--surface))] px-3.5 py-2 text-[rgb(var(--foreground))]
-                      shadow-sm ring-1 ring-inset ring-[rgb(var(--border))] border border-transparent
-                      placeholder:text-[rgb(var(--foreground))]/50
-                      focus:outline-none focus:ring-2 focus:ring-[rgb(var(--ring))] focus:border-[rgb(var(--ring))]"
-                  />
-                </div>
-
-                {/* Daño en Proceso */}
-                <div>
-                  <Text type="subtitle" color="text-[rgb(var(--foreground))]">
-                    Daño en Proceso
-                    <span className="ml-2 font-mono text-xs bg-[rgb(var(--surface-muted))] text-[rgb(var(--foreground))]/70 px-1.5 py-0.5 rounded-full">
-                      e
-                    </span>
-                  </Text>
-                  <input
-                    type="number"
-                    step="any"
-                    id={`danno_proceso`}
-                    name={`danno_proceso`}
-                    required
-                    value={secundarios[i]?.danno_proceso}
-                    onChange={(e) => inputChange(e, i)}
-                    className="mt-2 block w-full text-center rounded-md bg-[rgb(var(--surface))] px-3.5 py-2 text-[rgb(var(--foreground))]
-                      shadow-sm ring-1 ring-inset ring-[rgb(var(--border))] border border-transparent
-                      placeholder:text-[rgb(var(--foreground))]/50
-                      focus:outline-none focus:ring-2 focus:ring-[rgb(var(--ring))] focus:border-[rgb(var(--ring))]"
-                  />
-                </div>
-
-                {/* Devolución */}
-                <div>
-                  <Text type="subtitle" color="text-[rgb(var(--foreground))]">
-                    Devolución
-                    <span className="ml-2 font-mono text-xs bg-[rgb(var(--surface-muted))] text-[rgb(var(--foreground))]/70 px-1.5 py-0.5 rounded-full">
-                      f
-                    </span>
-                  </Text>
-                  <input
-                    type="number"
-                    step="any"
-                    id={`devolucion`}
-                    name={`devolucion`}
-                    required
-                    value={secundarios[i]?.devolucion}
-                    onChange={(e) => inputChange(e, i)}
-                    className="mt-2 block w-full text-center rounded-md bg-[rgb(var(--surface))] px-3.5 py-2 text-[rgb(var(--foreground))]
-                      shadow-sm ring-1 ring-inset ring-[rgb(var(--border))] border border-transparent
-                      placeholder:text-[rgb(var(--foreground))]/50
-                      focus:outline-none focus:ring-2 focus:ring-[rgb(var(--ring))] focus:border-[rgb(var(--ring))]"
-                  />
-                </div>
-
-                {/* Sobrante */}
-                <div>
-                  <Text type="subtitle" color="text-[rgb(var(--foreground))]">
-                    Sobrante
-                    <span className="ml-2 font-mono text-xs bg-[rgb(var(--surface-muted))] text-[rgb(var(--foreground))]/70 px-1.5 py-0.5 rounded-full">
-                      g
-                    </span>
-                  </Text>
-                  <input
-                    type="number"
-                    step="any"
-                    id={`sobrante`}
-                    name={`sobrante`}
-                    required
-                    value={secundarios[i]?.sobrante}
-                    onChange={(e) => inputChange(e, i)}
-                    className="mt-2 block w-full text-center rounded-md bg-[rgb(var(--surface))] px-3.5 py-2 text-[rgb(var(--foreground))]
-                      shadow-sm ring-1 ring-inset ring-[rgb(var(--border))] border border-transparent
-                      placeholder:text-[rgb(var(--foreground))]/50
-                      focus:outline-none focus:ring-2 focus:ring-[rgb(var(--ring))] focus:border-[rgb(var(--ring))]"
-                  />
-                </div>
-
-                {/* Total Producido */}
                 <div>
                   <Text type="subtitle" color="text-[rgb(var(--foreground))]">
                     Total Producido
@@ -831,111 +697,64 @@ const NewConsolida = () => {
                       h
                     </span>
                   </Text>
-                  <p className="mt-1 text-base font-semibold text-center text-[rgb(var(--foreground))]
-                   bg-[rgb(var(--surface-muted))] rounded-md px-3 py-2 font-mono">
-                    {secundarios[i]?.total}
+                  <p className="mt-1 text-base font-semibold text-center text-[rgb(var(--foreground))] bg-[rgb(var(--surface-muted))] rounded-md px-3 py-2 font-mono">
+                    {secundarios[i]?.total ?? ""}
                   </p>
                   <p className="mt-1 text-xs text-[rgb(var(--foreground))]/60">
                     Cálculo: a + c + g - (b + d + e + f)
                   </p>
                 </div>
 
-                {/* Rendimiento */}
-                <div key={i}>
+                <div>
                   <Text type="subtitle" color="text-[rgb(var(--foreground))]">
                     Rendimiento (%)
                     <span className="ml-2 font-mono text-xs bg-[rgb(var(--surface-muted))] text-[rgb(var(--foreground))]/70 px-1.5 py-0.5 rounded-full">
                       i
                     </span>
                   </Text>
-                  <p className="mt-1 text-base font-semibold text-center text-[rgb(var(--foreground))]
-                   bg-[rgb(var(--surface-muted))] rounded-md px-3 py-2 font-mono">
-                    {secundarios[i]?.rendimiento}
+                  <p className="mt-1 text-base font-semibold text-center text-[rgb(var(--foreground))] bg-[rgb(var(--surface-muted))] rounded-md px-3 py-2 font-mono">
+                    {secundarios[i]?.rendimiento ?? ""}
                   </p>
                   <p className="mt-1 text-xs text-[rgb(var(--foreground))]/60">
                     Cálculo: (h - e) / (a - (d + b)) × 100
                   </p>
                 </div>
-
               </div>
             </fieldset>
-
           ))}
 
-          {/* --- Sección de Totales y Cajas --- */}
+          {/* Empaque */}
           <fieldset className="border border-[rgb(var(--border))] p-6 rounded-xl">
             <legend className="-ml-1 px-2 text-lg font-semibold text-[rgb(var(--accent))]">
               Totales y Empacado
             </legend>
 
             <div className="grid grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-3 mt-8 pt-8 border-t border-[rgb(var(--border))]">
-              {/* Unidades por Caja */}
-              <div>
-                <Text type="subtitle" color="text-[rgb(var(--foreground))]">
-                  Unidades por Caja
-                  <span className="ml-2 font-mono text-xs bg-[rgb(var(--surface-muted))] text-[rgb(var(--foreground))]/70 px-1.5 py-0.5 rounded-full">
-                    j
-                  </span>
-                </Text>
-                <input
-                  type="number"
-                  id="unidades_caja"
-                  name="unidades_caja"
-                  required
-                  value={empaque?.unidades_caja}
-                  onChange={calculaEmpaque}
-                  className="mt-2 block w-full text-center rounded-md bg-[rgb(var(--surface))] px-3.5 py-2 text-[rgb(var(--foreground))]
-                         shadow-sm ring-1 ring-inset ring-[rgb(var(--border))] border border-transparent
-                         placeholder:text-[rgb(var(--foreground))]/50
-                         focus:outline-none focus:ring-2 focus:ring-[rgb(var(--ring))] focus:border-[rgb(var(--ring))] sm:text-sm sm:leading-6"
-                />
-              </div>
+              <NumberField
+                name="unidades_caja"
+                label="Unidades por Caja"
+                hint="j"
+                value={empaque.unidades_caja}
+                onChange={calculaEmpaque}
+                required
+              />
+              <NumberField
+                name="numero_caja"
+                label="Número de Cajas"
+                hint="k"
+                value={empaque.numero_caja}
+                onChange={calculaEmpaque}
+                required
+              />
+              <NumberField
+                name="unidades_saldo"
+                label="Unidades de Saldo"
+                hint="l"
+                value={empaque.unidades_saldo}
+                onChange={calculaEmpaque}
+                required
+              />
 
-              {/* Número de Cajas */}
-              <div>
-                <Text type="subtitle" color="text-[rgb(var(--foreground))]">
-                  Número de Cajas
-                  <span className="ml-2 font-mono text-xs bg-[rgb(var(--surface-muted))] text-[rgb(var(--foreground))]/70 px-1.5 py-0.5 rounded-full">
-                    k
-                  </span>
-                </Text>
-                <input
-                  type="number"
-                  id="numero_caja"
-                  name="numero_caja"
-                  required
-                  value={empaque?.numero_caja}
-                  onChange={calculaEmpaque}
-                  className="mt-2 block w-full text-center rounded-md bg-[rgb(var(--surface))] px-3.5 py-2 text-[rgb(var(--foreground))]
-                         shadow-sm ring-1 ring-inset ring-[rgb(var(--border))] border border-transparent
-                         placeholder:text-[rgb(var(--foreground))]/50
-                         focus:outline-none focus:ring-2 focus:ring-[rgb(var(--ring))] focus:border-[rgb(var(--ring))] sm:text-sm sm:leading-6"
-                />
-              </div>
-
-              {/* Unidades de Saldo */}
-              <div>
-                <Text type="subtitle" color="text-[rgb(var(--foreground))]">
-                  Unidades de Saldo
-                  <span className="ml-2 font-mono text-xs bg-[rgb(var(--surface-muted))] text-[rgb(var(--foreground))]/70 px-1.5 py-0.5 rounded-full">
-                    l
-                  </span>
-                </Text>
-                <input
-                  type="number"
-                  id="unidades_saldo"
-                  name="unidades_saldo"
-                  required
-                  value={empaque?.unidades_saldo}
-                  onChange={calculaEmpaque}
-                  className="mt-2 block w-full text-center rounded-md bg-[rgb(var(--surface))] px-3.5 py-2 text-[rgb(var(--foreground))]
-                         shadow-sm ring-1 ring-inset ring-[rgb(var(--border))] border border-transparent
-                         placeholder:text-[rgb(var(--foreground))]/50
-                         focus:outline-none focus:ring-2 focus:ring-[rgb(var(--ring))] focus:border-[rgb(var(--ring))] sm:text-sm sm:leading-6"
-                />
-              </div>
-
-              {/* Total Saldo */}
               <div className="sm:col-span-3">
                 <Text type="subtitle" color="text-[rgb(var(--foreground))]">
                   Total Saldo
@@ -943,10 +762,8 @@ const NewConsolida = () => {
                     L
                   </span>
                 </Text>
-                <p className="mt-1 text-base font-semibold text-center text-[rgb(var(--foreground))]
-                   bg-[rgb(var(--surface-muted))] rounded-md px-3 py-2 font-mono">
-                  {empaque?.total_saldo}
-                  {/* {(Number(principal?.unidades_caja) * Number(principal?.numero_caja)) + Number(principal?.unidades_saldo)} */}
+                <p className="mt-1 text-base font-semibold text-center text-[rgb(var(--foreground))] bg-[rgb(var(--surface-muted))] rounded-md px-3 py-2 font-mono">
+                  {empaque.total_saldo}
                 </p>
                 <p className="mt-1 text-xs text-center text-[rgb(var(--foreground))]/60">
                   Cálculo: (j * k) + l
@@ -955,7 +772,7 @@ const NewConsolida = () => {
             </div>
           </fieldset>
 
-          {/* --- Botón de Envío --- */}
+          {/* Submit */}
           <hr className="border-t border-[rgb(var(--border))] my-6" />
           <div className="flex justify-center">
             <Button
