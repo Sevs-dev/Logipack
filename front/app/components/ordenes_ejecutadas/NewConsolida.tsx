@@ -376,9 +376,9 @@ const NewConsolida: React.FC = () => {
       const response = await guardar_conciliacion(payload);
       if ((response as { message?: string })?.message === "ok") {
         showSuccess("Conciliación guardada correctamente");
-        // setTimeout(() => {
-        //   window.close();
-        // }, 1500);
+        setTimeout(() => {
+          window.close();
+        }, 1500);
       } else {
         showError("Error al guardar la conciliación o datos existentes.");
       }
@@ -525,29 +525,38 @@ const NewConsolida: React.FC = () => {
 
             <div className="grid grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-4 mt-4">
               <div className="sm:col-span-2">
-                <Text type="subtitle" color="text-[rgb(var(--foreground))]">
-                  Cantidad Teórica
-                  <span className="ml-2 font-mono text-xs bg-[rgb(var(--surface-muted))] text-[rgb(var(--foreground))]/70 px-1.5 py-0.5 rounded-full">
-                    a
-                  </span>
-                </Text>
 
                 {orden.orderType === "H" ? (
-                  <NumberField
-                    name="quantityToProduce"
-                    label=""
-                    value={principal.quantityToProduce}
-                    onChange={inputChange}
-                    required
-                  />
+                  <>
+                    <NumberField
+                      name="quantityToProduce"
+                      label="Cantidad Teórica"
+                      value={principal.quantityToProduce}
+                      onChange={inputChange}
+                      required
+                    />
+                    <Text type="subtitle" color="text-[rgb(var(--foreground))]">
+                      Parcial total
+                      <span className="ml-2 font-mono text-xs bg-[rgb(var(--surface-muted))] text-[rgb(var(--foreground))]/70 px-1.5 py-0.5 rounded-full">
+                        {Number(conciliaciones.validate_articulo_principal.diferencia).toFixed(2)}
+                      </span>
+                    </Text>
+                  </>
                 ) : (
-                  <p
-                    className="mt-2 block w-full text-center rounded-md py-2 px-3.5 text-[rgb(var(--foreground))]/60
+                  <>
+                    <Text type="subtitle" color="text-[rgb(var(--foreground))]">
+                      Cantidad Teórica
+                      <span className="ml-2 font-mono text-xs bg-[rgb(var(--surface-muted))] text-[rgb(var(--foreground))]/70 px-1.5 py-0.5 rounded-full">
+                        a
+                      </span>
+                    </Text>
+                    <p
+                      className="mt-2 block w-full text-center rounded-md py-2 px-3.5 text-[rgb(var(--foreground))]/60
                            bg-[rgb(var(--surface-muted))] shadow-sm ring-1 ring-inset ring-[rgb(var(--border))]
-                           cursor-not-allowed"
-                  >
-                    {Number(principal.quantityToProduce || 0).toFixed(2)}
-                  </p>
+                           cursor-not-allowed">
+                      {Number(principal.quantityToProduce || 0).toFixed(2)}
+                    </p>
+                  </>
                 )}
               </div>
 
@@ -653,28 +662,38 @@ const NewConsolida: React.FC = () => {
 
               <div className="grid grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-4 mt-4">
                 <div className="sm:col-span-2">
-                  <Text type="subtitle" color="text-[rgb(var(--foreground))]">
-                    Cantidad Teórica
-                    <span className="ml-2 font-mono text-xs bg-[rgb(var(--surface-muted))] text-[rgb(var(--foreground))]/70 px-1.5 py-0.5 rounded-full">
-                      a
-                    </span>
-                  </Text>
-
                   {orden.orderType === "H" ? (
-                    <NumberField
-                      name="quantityToProduce"
-                      label=""
-                      value={secundarios[i]?.quantityToProduce ?? ""}
-                      onChange={(e) => inputChange(e, i)}
-                      required
-                    />
+                    <>
+                      <NumberField
+                        name="quantityToProduce"
+                        label="Cantidad Teórica"
+                        value={secundarios[i]?.quantityToProduce ?? ""}
+                        onChange={(e) => inputChange(e, i)}
+                        required
+                      />
+                      <Text type="subtitle" color="text-[rgb(var(--foreground))]">
+                        Parcial total
+                        <span className="ml-2 font-mono text-xs bg-[rgb(var(--surface-muted))] text-[rgb(var(--foreground))]/70 px-1.5 py-0.5 rounded-full">
+                          {Number(conciliaciones.validate_articulo_secundarios[i].diferencia).toFixed(2)}
+                        </span>
+                      </Text>
+                    </>
                   ) : (
-                    <p
-                      className="mt-2 block w-full text-center rounded-md py-2 px-3.5 text-[rgb(var(--foreground))]/60
+                    <>
+                      <Text type="subtitle" color="text-[rgb(var(--foreground))]">
+                        Cantidad Teórica
+                        <span className="ml-2 font-mono text-xs bg-[rgb(var(--surface-muted))] text-[rgb(var(--foreground))]/70 px-1.5 py-0.5 rounded-full">
+                          a
+                        </span>
+                      </Text>
+
+                      <p
+                        className="mt-2 block w-full text-center rounded-md py-2 px-3.5 text-[rgb(var(--foreground))]/60
                         bg-[rgb(var(--surface-muted))] shadow-sm ring-1 ring-inset ring-[rgb(var(--border))] cursor-not-allowed"
-                    >
-                      {Number(item.quantityToProduce || 0).toFixed(2)}
-                    </p>
+                      >
+                        {Number(item.quantityToProduce || 0).toFixed(2)}
+                      </p>
+                    </>
                   )}
                 </div>
 
