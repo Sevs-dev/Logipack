@@ -7,6 +7,7 @@ use App\Models\Bom;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use Illuminate\Http\JsonResponse;
 
 class ArticlesController extends Controller
 {
@@ -50,14 +51,32 @@ class ArticlesController extends Controller
         }
     }
 
-    public function getAllBoms()
+    // public function getAllBoms()
+    // {
+    //     $boms = Bom::where('active', true)
+    //         ->whereIn('version', function ($query) {
+    //             $query->selectRaw('MAX(version)')
+    //                 ->from('boms as a2')
+    //                 ->whereColumn('a2.reference_id', 'boms.reference_id');
+    //         })
+    //         ->get();
+
+    //     return response()->json($boms, 200);
+    // }
+
+    public function getAllBoms(): JsonResponse
     {
-        $boms = Bom::where('active', true)
-            ->whereIn('version', function ($query) {
-                $query->selectRaw('MAX(version)')
-                    ->from('boms as a2')
-                    ->whereColumn('a2.reference_id', 'boms.reference_id');
+        $latestActive = Bom::query()
+            ->selectRaw('reference_id, MAX(version) as max_version')
+            ->where('active', true)
+            ->groupBy('reference_id');
+
+        $boms = Bom::query()
+            ->joinSub($latestActive, 'l', function ($join) {
+                $join->on('boms.reference_id', '=', 'l.reference_id')
+                    ->on('boms.version', '=', 'l.max_version');
             })
+            ->where('boms.active', true)
             ->get();
 
         return response()->json($boms, 200);
@@ -172,12 +191,24 @@ class ArticlesController extends Controller
     public function getArticleByClientId($clientId)
     {
         try {
-            $boms = Bom::where('client_id', $clientId)->get();
+            // Subconsulta: para cada reference_id del cliente, tomar la versión activa más alta
+            $latestActive = Bom::query()
+                ->selectRaw('reference_id, MAX(version) AS max_version')
+                ->where('client_id', $clientId)
+                ->where('active', true)
+                ->groupBy('reference_id');
 
-            return response()->json([
-                'boms' => $boms
-            ], 200);
-        } catch (\Exception $e) {
+            // Join contra la subconsulta para traer solo esas filas
+            $boms = Bom::query()
+                ->where('client_id', $clientId) // seguridad por si hay referencias repetidas entre clientes
+                ->joinSub($latestActive, 'l', function ($join) {
+                    $join->on('boms.reference_id', '=', 'l.reference_id')
+                        ->on('boms.version', '=', 'l.max_version');
+                })
+                ->get(['boms.*']); // evita mezclar columnas de la subconsulta
+
+            return response()->json(['boms' => $boms], 200);
+        } catch (\Throwable $e) {
             return response()->json([
                 'error' => 'Error al obtener los BOMs',
                 'details' => $e->getMessage()

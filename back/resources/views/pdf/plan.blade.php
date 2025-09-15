@@ -6,12 +6,13 @@
     <meta name="author" content="Logismart">
     <meta name="subject" content="Orden de producción">
     <style>
+        @charset "UTF-8";
         /* ===== PÁGINA / TIPOGRAFÍA / RESETEOS ===== */
         @page { margin: 60px 48px 64px 48px; }
         * { box-sizing: border-box; }
 
         body {
-            font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+            font-family: 'DejaVu Sans', 'Noto Sans', sans-serif;
             font-size: 12px;
             line-height: 1.35;
             color: #111827;
@@ -219,6 +220,7 @@
 
         {{-- ===== Producto a Obtener ===== --}}
         <h2 class="section-title keep-title-only">Producto a Obtener</h2>
+        {{-- @dd($desart) --}}
         <div>
             <table class="table">
                 <thead>
@@ -342,49 +344,52 @@
             <h2 class="section-title keep-title-only">Resumen de Conciliación</h2>
             <div style="margin-bottom:6px;">
                 <table class="table">
-                    <thead>
-                        <tr>
-                            <th style="width:12%">Cod. Artículo</th>
-                            <th style="width:20%">Lote</th>
-                            <th style="width:12%">Descripción</th>
-                            <th>Valores</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td>{{ $c->codart ?? $plan->codart }}</td>
-                            <td>{{ $plan->lot }}</td>
-                            <td>{{ $desart }}</td>
-                            <td class="nowrap">
-                                Cant. Teórica: {{ isset($c->quantityToProduce) ? number_format($c->quantityToProduce, 0, ',', '.') : '' }}
-                                &nbsp;|&nbsp; Faltantes: {{ isset($c->faltante) ? number_format($c->faltante, 0, ',', '.') : '' }}
-                                &nbsp;|&nbsp; Adicionales: {{ isset($c->adicionales) ? number_format($c->adicionales, 0, ',', '.') : '' }}
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
-
+                    <tr>
+                        <th style="width:12%">Cod. Artículo</th>
+                        <td style="width:20%">{{ $c->codart ?? $plan->codart }}</td>
+                        <th style="width:10%">Lote</th>
+                        <td style="width:18%">{{ $plan->lot }}</td>
+                        <th style="width:12%">Descripción</th>
+                        <td>{{ $desart }}</td>
+                    </tr> 
+                    <tr>
+                        <th style="width:12%">Cant. Teórica</th>
+                        <td style="width:18%">{{ isset($c->quantityToProduce) ? number_format($c->quantityToProduce,0,',','.') : '' }}</td>
+                        <th style="width:10%">Faltantes</th>
+                        <td style="width:18%">{{ isset($c->faltante) ? number_format($c->faltante,0,',','.') : '' }}</td>
+                        <th style="width:12%">Adicionales</th>
+                        <td style="width:18%">{{ isset($c->adicionales) ? number_format($c->adicionales,0,',','.') : '' }}</td>
+                    </tr> 
+                    <tr>
+                        <th style="width:12%">Rechazo</th>
+                        <td style="width:18%">{{ isset($c->rechazo) ? number_format($c->rechazo,0,',','.') : '' }}</td>
+                        <th style="width:14%">Daño Proceso</th>
+                        <td style="width:18%">{{ isset($c->danno_proceso) ? number_format($c->danno_proceso,0,',','.') : '' }}</td>
+                        <th style="width:12%">Devoluciones</th>
+                        <td style="width:18%">{{ isset($c->devolucion) ? number_format($c->devolucion,0,',','.') : '' }}</td>
+                    </tr>
+                </table> 
                 <table class="table">
-                    <thead>
-                        <tr>
-                            <th style="width:18%">Unidades por caja</th>
-                            <th style="width:12%">N° cajas</th>
-                            <th style="width:18%">Unidades saldo</th>
-                            <th style="width:12%">Total unidades</th>
-                            <th style="width:15%">Total Entregado</th>
-                            <th style="width:25%">Rendimiento</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td>{{ isset($c->unidades_caja) ? number_format($c->unidades_caja, 0, ',', '.') : '' }}</td>
-                            <td>{{ isset($c->numero_caja) ? number_format($c->numero_caja, 0, ',', '.') : '' }}</td>
-                            <td>{{ isset($c->unidades_saldo) ? number_format($c->unidades_saldo, 0, ',', '.') : '' }}</td>
-                            <td>{{ isset($c->total_saldo) ? number_format($c->total_saldo, 0, ',', '.') : '' }}</td>
-                            <td>{{ isset($c->total) ? number_format($c->total, 0, ',', '.') : '' }}</td>
-                            <td><span class="conc-badge {{ $rendClass }}">Rendimiento: {{ $pf($rend) }}</span></td>
-                        </tr>
-                    </tbody>
+                    <tr>
+                        <th style="width:18%">Unidades por caja</th>
+                        <td style="width:14%">{{ isset($c->unidades_caja) ? number_format($c->unidades_caja,0,',','.') : '' }}</td>
+                        <th style="width:12%">N° cajas</th>
+                        <td style="width:14%">{{ isset($c->numero_caja) ? number_format($c->numero_caja,0,',','.') : '' }}</td>
+                        <th style="width:18%">Unidades saldo</th>
+                        <td style="width:14%">{{ isset($c->unidades_saldo) ? number_format($c->unidades_saldo,0,',','.') : '' }}</td>
+                        <th style="width:12%">Total unidades</th>
+                        <td style="width:14%">{{ isset($c->total_saldo) ? number_format($c->total_saldo,0,',','.') : '' }}</td>
+                    </tr>
+                </table>
+                <table class="table">
+                    <tr>
+                        <th style="width:15%">Total Entregado</th>
+                        <td style="width:15%">{{ isset($c->total) ? number_format($c->total,0,',','.') : '' }}</td>
+                        <th style="width:15%">Rendimiento</th>
+                        <td style="width:55%">
+                        <span class="conc-badge {{ $rendClass }}">Rendimiento: {{ $pf($rend) }}</span>
+                        </td>
+                    </tr>
                 </table>
             </div>
         @endif

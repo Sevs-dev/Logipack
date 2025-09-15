@@ -21,6 +21,7 @@ export interface BOM {
   ingredients: string;
   code_ingredients: string;
   code_details: string;
+  version?: string
 }
 
 export interface BOMResponse {

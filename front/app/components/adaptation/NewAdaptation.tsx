@@ -941,16 +941,26 @@ function NewAdaptation({
                     >
                       <option value="">Seleccione un BOM...</option>
                       {Array.isArray(boms) && boms.length > 0 ? (
-                        boms.map((bom) => (
-                          <option
-                            key={bom.id}
-                            value={bom.id}
-                            className="bg-[rgb(var(--surface))] text-[rgb(var(--foreground))] dark:bg-slate-900 dark:text-slate-100"
-                          >
-                            {JSON.parse(bom.code_details || "{}")?.codart ??
-                              "Sin código"}
-                          </option>
-                        ))
+                        boms.map((bom) => {
+                          let codart = "Sin código";
+                          try {
+                            const details = JSON.parse(
+                              bom.code_details ?? "{}"
+                            );
+                            codart = details?.codart ?? "Sin código";
+                          } catch  { 
+                          }
+                          const ver = bom?.version ?? "?"; 
+                          return (
+                            <option
+                              key={bom.id}
+                              value={bom.id}
+                              className="bg-[rgb(var(--surface))] text-[rgb(var(--foreground))] dark:bg-slate-900 dark:text-slate-100"
+                            >
+                              {`${codart} · (v${ver})`}
+                            </option>
+                          );
+                        })
                       ) : (
                         <option disabled>No hay BOMs disponibles</option>
                       )}
