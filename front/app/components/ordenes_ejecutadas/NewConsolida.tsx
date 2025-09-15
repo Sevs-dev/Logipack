@@ -101,21 +101,18 @@ const NewConsolida = () => {
       try {
         const resp = await getConciliacion(Number(params.id));
         setOrden((prev) => ({ ...prev, ...resp?.orden }));
-        // setArticulo_principal((prev) => ({ ...prev, ...resp?.articulo_principal }));
-        // setArticulo_secundario(resp?.articulo_segundario || []);
-
         setPrincipal({
           ...principal,
           desart: resp?.articulo_principal?.desart,
           codart: resp?.articulo_principal?.codart,
-          quantityToProduce: resp?.articulo_principal?.quantityToProduce,
+          quantityToProduce: resp?.orden?.orderType === "P" ? "800" : "",
         });
         setSecundarios(
           resp?.articulo_segundario?.map((articulo: Articulos) => ({
             ...articulo,
             desart: articulo.desart,
             codart: articulo.codart,
-            quantityToProduce: orden.orderType === "P" ? articulo.quantityToProduce : "",
+            quantityToProduce: resp?.orden?.orderType === "P" ? Number(articulo.quantityToProduce).toFixed(2) : "",
           })) || []
         );
         setConciliaciones((prev) => ({ ...prev, ...resp?.conciliaciones }));
@@ -844,7 +841,7 @@ const NewConsolida = () => {
                 </div>
 
                 {/* Rendimiento */}
-                <div>
+                <div key={i}>
                   <Text type="subtitle" color="text-[rgb(var(--foreground))]">
                     Rendimiento (%)
                     <span className="ml-2 font-mono text-xs bg-[rgb(var(--surface-muted))] text-[rgb(var(--foreground))]/70 px-1.5 py-0.5 rounded-full">
