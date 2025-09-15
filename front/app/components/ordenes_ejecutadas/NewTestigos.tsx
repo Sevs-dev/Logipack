@@ -1,3 +1,5 @@
+"use client";
+
 import React, { useRef, useState, useEffect, FormEvent } from "react";
 import { useParams } from "next/navigation";
 import { showSuccess, showError } from "../toastr/Toaster";
@@ -8,12 +10,26 @@ import FirmaB64 from "./FirmaB64";
 import axios from "axios";
 import { API_URL } from "@/app/config/api";
 
-// ⬇️ IMPORTA el servicio de seguridad (rol + pass)
-import {
-  validateSecurityPassWithRole,
-  // Si algún día necesitas por ID:
-  // validateSecurityPassWithRoleId,
-} from "@/app/services/userDash/securityPass";
+// ⬇️ Servicio importado (JS), lo tipamos localmente SIN any
+import { validateSignaturePass as _validateSignaturePass } from "@/app/services/userDash/securityPass";
+
+type ValidateSignaturePassPayload = {
+  security_pass: string;
+  signature_id: string;
+};
+
+type ValidateSignaturePassResponse = {
+  valid: boolean;
+  migrated?: boolean;
+  [k: string]: unknown;
+};
+
+// Cast seguro (unknown → firma tipada)
+const validateSignaturePass: (
+  payload: ValidateSignaturePassPayload
+) => Promise<ValidateSignaturePassResponse> = _validateSignaturePass as unknown as (
+  payload: ValidateSignaturePassPayload
+) => Promise<ValidateSignaturePassResponse>;
 
 type MemValue =
   | string
@@ -37,7 +53,7 @@ function serializeMemValue(v: MemValue): string {
   return String(v);
 }
 
-// Se crea una instancia de axios con la configuración base de la API.
+// Axios base
 const Planning = axios.create({
   baseURL: API_URL,
   headers: { "Content-Type": "application/json" },
@@ -66,7 +82,6 @@ type BaseConfig =
   | { type: "file" | "image"; accept?: string; multiple?: boolean }
   | { type: "signature" };
 
-// 👇 Extendemos para soportar firma protegida
 type ActividadConfig = BaseConfig & {
   signatureSpecific?: boolean;
   allowedRoles?: Array<string | number>;
@@ -123,8 +138,7 @@ export const guardar_actividades_testigos = async (
 ) => {
   try {
     const response = await Planning.post(`/guardar_actividades_testigos`, data);
-    console.log(response.data);
-    return response.data;
+    return response.data as GuardarActividadesResponse;
   } catch (error: unknown) {
     showError("Error en guardar actividades testigos");
     throw error;
@@ -132,25 +146,15 @@ export const guardar_actividades_testigos = async (
 };
 
 // ───────────────────────────── Helpers firma protegida ──────────────────────
-const getCookieRole = (): string => {
-  const raw = document.cookie
-    .split("; ")
-    .find((row) => row.startsWith("role="))
-    ?.split("=")[1];
-  return raw ? decodeURIComponent(raw).replace(/"/g, "").trim() : "";
-};
-
-const includesCI = (arr: Array<string | number> | undefined, val: string) =>
-  Array.isArray(arr) &&
-  arr.some(
-    (x) => String(x).trim().toLowerCase() === String(val).trim().toLowerCase()
-  );
+const sigKey = (fieldName: string, faseId?: string | number): string =>
+  `testigos::${faseId ?? "NA"}::${fieldName}`;
 
 // ────────────────────────────────────────────────────────────────────────────
 
 const NewTestigos = () => {
   const params = useParams();
   const ref = useRef<HTMLFormElement>(null);
+  const fileInputsRef = useRef<Record<string, HTMLInputElement | null>>({});
 
   const [local, setLocal] = useState<LocalSession>(null);
   const [controlData, setControlData] = useState<Actividad[]>([]);
@@ -187,9 +191,12 @@ const NewTestigos = () => {
 
   // Cargar datos fase + actividades
   useEffect(() => {
-    if (!params.id) return;
+    const rawId = (params as unknown as Record<string, string | string[]>).id;
+    const idStr = Array.isArray(rawId) ? rawId[0] : rawId;
+    if (!idStr) return;
+
     (getActividadesTestigos as (id: number) => Promise<ApiActividadesResponse>)(
-      Number(params.id)
+      Number(idStr)
     ).then((data) => {
       if (data && Array.isArray(data.actividades)) {
         setMemoriaFase((prev) => ({
@@ -201,13 +208,14 @@ const NewTestigos = () => {
         setControlData([]);
       }
     });
-  }, [params.id]);
+  }, [params]);
 
   // ─────────────── Firma protegida: abrir/cerrar modal + validar ────────────
   const openSigModal = (
     fieldName: string,
     allowedRoles: Array<string | number> = []
   ) => setSigModal({ open: true, fieldName, allowedRoles });
+
   const closeSigModal = () => {
     setSigModal({ open: false, fieldName: null, allowedRoles: [] });
     setSigPassword("");
@@ -220,65 +228,36 @@ const NewTestigos = () => {
         showError("Ingresa la contraseña.");
         return;
       }
-
-      const roleStr =
-        // si algún día guardas rol en local, úsalo primero
-        (local && typeof local.role === "string" && String(local.role)) ||
-        getCookieRole();
-
-      if (!roleStr) {
-        showError("No se detectó tu rol actual.");
-        return;
-      }
-
-      // Si allowedRoles viene como nombres, validamos aquí también
-      const allowed = sigModal.allowedRoles || [];
-      const allNumeric = allowed.every((r) => Number.isFinite(Number(r)));
-      if (allowed.length > 0 && !allNumeric) {
-        if (!includesCI(allowed, roleStr)) {
-          showError(`Tu rol (${roleStr}) no está autorizado para esta firma.`);
-          return;
-        }
-      } else if (allowed.length > 0 && allNumeric) {
-        console.warn(
-          "⚠️ allowedRoles viene como IDs. El backend debe validar el mapeo ID→rol. (Recomendado: migrar a nombres)"
-        );
-      }
-
-      // Validación en backend por ROL TEXTO + PASSWORD
-      const res = await validateSecurityPassWithRole(roleStr, pass);
-      console.log("✅ Validación firma (role string):", { roleStr, res });
-
-      if (!res?.valid) {
-        showError("Contraseña o rol no autorizado.");
-        return;
-      }
-
       if (!sigModal.fieldName) {
         showError("Campo de firma no identificado.");
         return;
       }
 
-      // Desbloquear select para este campo
+      // ✅ Validación EXACTA como en tu snippet 1:
+      //    validateSignaturePass({ security_pass, signature_id })
+      const signature_id = sigKey(
+        sigModal.fieldName,
+        memoriaFase.fase_testigo?.fase_id
+      );
+
+      const res = await validateSignaturePass({
+        security_pass: pass,
+        signature_id,
+      });
+
+      if (!res?.valid) {
+        showError("Contraseña no autorizada para esta firma.");
+        return;
+      }
+
       setSigUnlocked((prev) => ({
         ...prev,
         [sigModal.fieldName as string]: true,
       }));
       closeSigModal();
-
-      if (res?.migrated) {
-        console.log("ℹ️ security_pass migrado a hash de forma segura.");
-      }
     } catch (err: unknown) {
       console.error("❌ Validación firma error:", err);
-      if (err && typeof err === "object" && "message" in err) {
-        showError(
-          (err as { message?: string }).message ??
-          "Validación fallida. Intenta de nuevo."
-        );
-      } else {
-        showError("Validación fallida. Intenta de nuevo.");
-      }
+      showError("Validación fallida. Intenta de nuevo.");
     }
   };
 
@@ -288,11 +267,7 @@ const NewTestigos = () => {
     cfg: ActividadConfig | null,
     fieldName: string
   ) => {
-    if (
-      cfg?.type === "signature" &&
-      cfg?.signatureSpecific &&
-      !sigUnlocked[fieldName]
-    ) {
+    if (cfg?.type === "signature" && cfg?.signatureSpecific && !sigUnlocked[fieldName]) {
       e.preventDefault();
       e.stopPropagation();
       openSigModal(fieldName, cfg.allowedRoles ?? []);
@@ -304,11 +279,7 @@ const NewTestigos = () => {
     cfg: ActividadConfig | null,
     fieldName: string
   ) => {
-    if (
-      cfg?.type === "signature" &&
-      cfg?.signatureSpecific &&
-      !sigUnlocked[fieldName]
-    ) {
+    if (cfg?.type === "signature" && cfg?.signatureSpecific && !sigUnlocked[fieldName]) {
       if (["Enter", " ", "ArrowDown", "ArrowUp"].includes(e.key)) {
         e.preventDefault();
         openSigModal(fieldName, cfg.allowedRoles ?? []);
@@ -344,18 +315,20 @@ const NewTestigos = () => {
       user: local?.user ?? "",
     };
 
-    const guardar = guardar_actividades_testigos as (
-      payload: GuardarActividadesPayload
-    ) => Promise<GuardarActividadesResponse>;
-
-    const data = await guardar(resultado);
+    const data = await guardar_actividades_testigos(resultado);
 
     if (data.estado !== 200) {
       showError("Error al guardar el control");
       return;
     }
 
+    // Reset DOM + estado (incluye file inputs y desbloqueos)
     ref.current?.reset();
+    Object.values(fileInputsRef.current).forEach((inp) => {
+      if (inp) inp.value = "";
+    });
+    setMemoriaActividades({});
+    setSigUnlocked({});
     showSuccess("Control guardado correctamente");
     setTimeout(() => {
       window.close();
@@ -411,29 +384,33 @@ const NewTestigos = () => {
                 {cfg?.type === "image" && (
                   <input
                     type="file"
-                    accept="image/*"
+                    accept={cfg?.accept ?? "image/*"}
                     id={fieldName}
                     name={fieldName}
-                    value={(memoriaActividades[fieldName] as string) ?? ""}
+                    ref={(el) => {
+                      fileInputsRef.current[fieldName] = el;
+                    }}
                     onChange={(e) => {
                       const file = e.target.files?.[0];
                       if (file) {
                         const reader = new FileReader();
                         reader.onloadend = () => {
-                          const base64 = reader.result;
-                          setValue(fieldName, base64 as string);
+                          const base64 = reader.result as string;
+                          setValue(fieldName, base64);
                         };
                         reader.readAsDataURL(file);
+                      } else {
+                        setValue(fieldName, "");
                       }
                     }}
-                    className="block w-full px-3 py-2 bg-[#1a1d23] border 
-                    border-gray-600 rounded-md shadow-sm focus:outline-none
-                    focus:ring-2 focus:ring-blue-500 focus:border-blue-500 
-                    text-white placeholder-gray-400 text-center"
+                    className="block w-full px-3 py-2 bg-[rgb(var(--surface))] border 
+               border-[rgb(var(--border))] rounded-md shadow-sm 
+               focus:outline-none focus:ring-2 focus:ring-[rgb(var(--ring))] 
+               focus:border-[rgb(var(--ring))] text-[rgb(var(--foreground))] 
+               placeholder-[rgb(var(--foreground))]/50 text-center"
                     required={item.binding}
                   />
                 )}
-
 
                 {/* SIGNATURE */}
                 {cfg?.type === "signature" && (
@@ -457,7 +434,6 @@ const NewTestigos = () => {
                       onMouseDown={(e) =>
                         onSigSelectMouseDown(e, cfg, fieldName)
                       }
-                      required
                       onKeyDown={(e) => onSigSelectKeyDown(e, cfg, fieldName)}
                       onChange={(e) => {
                         if (isProtected && !isUnlocked) {
@@ -469,13 +445,13 @@ const NewTestigos = () => {
                           [modeName]: e.target.value,
                         }));
                       }}
+                      required
                     >
                       <option value="">-- Selecciona --</option>
                       <option value="texto">Texto</option>
                       <option value="firma">Firma</option>
                     </select>
 
-                    {/* Mostrar Input si selecciona "texto" */}
                     {memoriaActividades[modeName] === "texto" && (
                       <input
                         type="text"
@@ -489,7 +465,6 @@ const NewTestigos = () => {
                       />
                     )}
 
-                    {/* Mostrar Firma si selecciona "firma" */}
                     {memoriaActividades[modeName] === "firma" && (
                       <FirmaB64
                         onSave={(base64: string) => setValue(fieldName, base64)}
@@ -519,7 +494,7 @@ const NewTestigos = () => {
                   onChange={(e) => setSigPassword(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && submitSigValidation()}
                   className="block w-full px-3 py-2 bg-[rgb(var(--surface))] border border-[rgb(var(--border))] rounded-md shadow-sm
-                         focus:outline-none focus:ring-2 focus:ring-[rgb(var(--ring))] focus:border-[rgb(var(--ring))]
+                         focus:outline-none focus:ring-2 focus:ring-[rgb(var(--ring))] focus:border-[rgb(var(--ring))] 
                          text-[rgb(var(--foreground))] placeholder-[rgb(var(--foreground))]/50"
                   placeholder="Contraseña"
                 />

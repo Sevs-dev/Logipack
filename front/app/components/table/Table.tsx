@@ -387,7 +387,7 @@ function Table<T extends { id: number }>({
                           "En ejecución" && (
                           <Button
                             onClick={() => onOrdenHija(row.id)}
-                            variant="control"
+                            variant="relacionada"
                           />
                         )}
                     </td>

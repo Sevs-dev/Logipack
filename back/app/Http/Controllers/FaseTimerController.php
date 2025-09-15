@@ -42,7 +42,7 @@ class FaseTimerController extends Controller
 
         //  Consultar orden generada y su fase
         $ordenes = OrdenesEjecutadas::where('id', $response->orden_id)
-            ->where('proceso', 'eject')
+            ->where('proceso', 'eject') 
             ->first();
         $maestra_fases_fk = $this->getActividades(DB::table('ordenes_ejecutadas as orden')
             ->crossJoin('stages as std')

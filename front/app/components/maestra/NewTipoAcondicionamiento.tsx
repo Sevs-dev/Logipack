@@ -1,25 +1,29 @@
+// NewTipoAcondicionamiento.tsx
 "use client";
-// importaciones de react y framer motion
-import React, { useEffect, useState, useCallback } from "react";
-// importaciones de componentes
+
+import React, { useEffect, useState, useCallback, useMemo } from "react";
+
+// UI
 import Table from "../table/Table";
 import Button from "../buttons/buttons";
 import Text from "../text/Text";
 import ModalSection from "../modal/ModalSection";
 import { showSuccess, showError, showConfirm } from "../toastr/Toaster";
-import { CreateClientProps } from "../../interfaces/CreateClientProps";
 import { InfoPopover } from "../buttons/InfoPopover";
 
-// importaciones de interfaces
+// Props
+import { CreateClientProps } from "../../interfaces/CreateClientProps";
+
+// Tipos de dominio
 import {
   TipoAcondicionamiento,
   DataTipoAcondicionamiento,
   LineaTipoAcondicionamiento,
   DataLineaTipoAcondicionamiento,
 } from "@/app/interfaces/NewTipoAcondicionamiento";
-// importaciones de interfaces
 import { Stage } from "@/app/interfaces/NewStage";
-// importaciones de servicios
+
+// Servicios (respuestas tipadas aquí, sin any)
 import {
   createStage as createTipoAcom,
   getStage as listTipoAcondicionamiento,
@@ -34,27 +38,64 @@ import {
   getSelectStagesControls as getSelectStagesControls,
 } from "@/app/services/maestras/LineaTipoAcondicionamientoService";
 
-// función principal del componente
+// ==== Tipos auxiliares para respuestas de servicios (evitan any) ====
+interface CreateTipoResponse {
+  status: number;
+  id: number;
+}
+interface CreateLineaResponse {
+  status: number;
+}
+interface ListTipoYLineasResponse {
+  tipos: TipoAcondicionamiento;
+  lineas: DataLineaTipoAcondicionamiento[];
+}
+interface StagesControlsResponse {
+  fases: Stage[];
+  controles: Stage[];
+}
+
+// ==== Helpers fuertemente tipados ====
+
+// Obtiene la fase por id desde la lista en memoria
+const getStageById = (list: Stage[], id: string | number): Stage | undefined =>
+  list.find((item) => item.id === Number(id));
+
+// Siguiente número de orden sugerido (máximo actual + 1)
+const getNextOrden = (arr: DataLineaTipoAcondicionamiento[]): number => {
+  const max = arr.reduce<number>((m, x) => {
+    const v = Number(x.orden) || 0;
+    return v > m ? v : m;
+  }, 0);
+  return max + 1;
+};
+
+// Valida que el orden sea entero >= 1
+const isValidOrden = (value: number): boolean =>
+  Number.isFinite(value) && Number.isInteger(value) && value >= 1;
+
+// ==== Componente principal ====
 export default function NewTipoAcondicionamiento({
   canEdit = false,
   canView = false,
-}: CreateClientProps) {
-  // variables de estado
-  const [isOpen, setIsOpen] = useState(false);
-  const [isOpenEdit, setIsOpenEdit] = useState(false);
-  const [btnAplicar, setBtnAplicar] = useState(false);
+}: CreateClientProps): JSX.Element {
+  // Estado de UI (modales / botones)
+  const [isOpen, setIsOpen] = useState<boolean>(false);
+  const [isOpenEdit, setIsOpenEdit] = useState<boolean>(false);
+  const [btnAplicar, setBtnAplicar] = useState<boolean>(false);
 
+  // Tipo de acondicionamiento (cabecera)
   const [objectTipoAcom, setObjectTipoAcom] = useState<TipoAcondicionamiento>({
     id: 0,
     descripcion: "",
     status: false,
   });
 
-  // ⬇️ Renombrado de "unknown" a algo que se entiende
+  // Formulario de línea en edición/creación
   const [lineaForm, setLineaForm] = useState<LineaTipoAcondicionamiento>({
     id: 0,
     tipo_acondicionamiento_id: 0,
-    orden: 0,
+    orden: 0, // ⚠️ es number, nunca string vacío
     descripcion: "",
     fase: "",
     descripcion_fase: "",
@@ -64,7 +105,7 @@ export default function NewTipoAcondicionamiento({
     descripcion_fase_control: "",
   });
 
-  // ✅ Una sola fuente de verdad para las líneas
+  // Listas maestras en memoria
   const [lineas, setLineas] = useState<DataLineaTipoAcondicionamiento[]>([]);
   const [listTipoAcom, setListTipoAcom] = useState<DataTipoAcondicionamiento[]>(
     []
@@ -72,84 +113,117 @@ export default function NewTipoAcondicionamiento({
   const [listStages, setListStages] = useState<Stage[]>([]);
   const [listStagesControls, setListStagesControls] = useState<Stage[]>([]);
 
-  // Helpers
-  const getStageId = (id: string | number) =>
-    listStages.find((item) => item.id === Number(id));
+  // ==== Handlers de inputs ====
 
-  // Captura de los datos del tipo de acondicionamiento
+  // Cambios en cabecera (tipo de acondicionamiento)
   const inputChangeObjectTipoAcom = (
     e: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    setObjectTipoAcom(
-      (prev) =>
-        ({
-          ...prev,
-          status: true,
-          [e.target.name]: e.target.value,
-        } as TipoAcondicionamiento)
-    );
+  ): void => {
+    const { name, value } = e.target;
+    setObjectTipoAcom((prev) => ({
+      ...prev,
+      status: true,
+      [name]: value,
+    }));
   };
 
-  // captura de los datos de la línea (text/number)
+  // Cambios en línea (inputs text/number): nunca guardamos "" en un number
   const inputChangeObjectLineaTipoAcom = (
     e: React.ChangeEvent<HTMLInputElement>
-  ) => {
+  ): void => {
     const { name, value, type } = e.target;
+
     setLineaForm(
       (prev) =>
         ({
           ...prev,
-          [name]: type === "number" && value !== "" ? Number(value) : value,
+          [name]:
+            type === "number"
+              ? value === ""
+                ? 0
+                : Number(value) // ⬅️ normalización numérica
+              : value,
         } as LineaTipoAcondicionamiento)
     );
   };
 
-  // captura de los datos de la línea (checkbox)
-  const inputCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Cambios en switches/checkbox
+  const inputCheckboxChange = (
+    e: React.ChangeEvent<HTMLInputElement>
+  ): void => {
     const { name, checked } = e.target;
     setLineaForm((prev) => ({ ...prev, [name]: checked }));
   };
 
-  // función para crear un tipo de acondicionamiento
-  const handleBtnAplicar = async () => {
-    const response = await createTipoAcom(objectTipoAcom);
+  // Si se desmarca "control", vaciamos fase_control (coherencia)
+  useEffect(() => {
+    setLineaForm((prev) => ({
+      ...prev,
+      fase_control: prev.control ? prev.fase_control : "",
+    }));
+  }, [lineaForm.control]);
+
+  // ==== Acciones (CRUD) ====
+
+  // Crear tipo de acondicionamiento base
+  const handleBtnAplicar = async (): Promise<void> => {
+    const response = (await createTipoAcom(
+      objectTipoAcom
+    )) as CreateTipoResponse;
+
     if (response.status === 201) {
-      // Vincula el nuevo ID al form de línea
+      // Vinculamos ID devuelto al formulario de línea
       setLineaForm((prev) => ({
         ...prev,
         tipo_acondicionamiento_id: Number(response.id),
       }));
       setBtnAplicar(true);
       await getListTipoAcom();
+      showSuccess("Tipo de Acondicionamiento creado");
     }
   };
 
-  // función para crear una línea
-  const handleBtnAgregarLinea = async () => {
-    // Validar orden duplicado en memoria
-    if (
-      lineas.some(
-        (l) =>
-          Number(l.orden) === Number(lineaForm.orden) && l.id !== lineaForm.id
-      )
-    ) {
-      alert(`Ya existe una línea con orden ${lineaForm.orden}`);
+  // Crear línea (validando recién aquí para no bloquear la escritura)
+  const handleBtnAgregarLinea = async (): Promise<void> => {
+    const normalizedOrden = Number(lineaForm.orden);
+
+    // 1) Validación de orden
+    if (!isValidOrden(normalizedOrden)) {
+      showError("El orden debe ser un entero ≥ 1.");
       return;
     }
 
-    const response = await createLineaTipoAcom(lineaForm);
+    // 2) Validación de duplicado real (ya con número completo)
+    const isDuplicate = lineas.some(
+      (l) => Number(l.orden) === normalizedOrden && l.id !== lineaForm.id
+    );
+    if (isDuplicate) {
+      showError(`Ya existe una línea con orden ${normalizedOrden}`);
+      return;
+    }
+
+    // 3) Guardar en backend
+    const response = (await createLineaTipoAcom({
+      ...lineaForm,
+      orden: normalizedOrden, // guardamos normalizado
+    })) as CreateLineaResponse;
+
     if (response.status === 201) {
-      // Refrescar desde backend
-      const updated = await getLineaTipoAcomById(
+      // 4) Refrescamos desde backend para mantener consistencia
+      const updated = (await getLineaTipoAcomById(
         lineaForm.tipo_acondicionamiento_id
-      );
+      )) as DataLineaTipoAcondicionamiento[];
+
       setLineas(updated);
 
-      // Reset del formulario
+      // 5) UX: sugerir siguiente orden disponible
+      const nextOrden = getNextOrden(updated);
+
+      // 6) Reset del form de línea
       setLineaForm((prev) => ({
         ...prev,
         id: 0,
-        orden: 0,
+        orden: nextOrden,
         descripcion: "",
         fase: "",
         editable: false,
@@ -157,75 +231,81 @@ export default function NewTipoAcondicionamiento({
         fase_control: "",
         descripcion_fase_control: "",
       }));
+
+      showSuccess("Línea creada correctamente");
     }
   };
 
-  // función para eliminar un tipo de acondicionamiento
-  const handleDelete = async (id: number) => {
+  // Eliminar tipo de acondicionamiento
+  const handleDelete = async (id: number): Promise<void> => {
     showConfirm("¿Seguro que quieres eliminar esta fase?", async () => {
       try {
         await deleteTipoAcom(id);
-        await getListTipoAcom(); // refresca solo después de borrar
-      } catch (error) {
+        await getListTipoAcom();
+        showSuccess("Fase eliminada");
+      } catch (error: unknown) {
         console.error("Error al eliminar fase:", error);
         showError("Error al eliminar fase");
       }
     });
   };
 
-  // función para eliminar una línea
-  const handleDeleteLinea = async (id: number) => {
+  // Eliminar línea
+  const handleDeleteLinea = async (id: number): Promise<void> => {
     try {
-      // ✅ Sin eliminación optimista: eliminamos primero en backend
       await deleteLineaTipoAcom(Number(id));
     } catch {
-      const was404 = "404";
-      if (!was404) {
-        showError(`No se pudo eliminar la línea`);
-        return; // no sigas si el error es real
-      }
-      // Si fue 404, continuamos y refrescamos (tratamos como "ya estaba borrada")
+      showError("No se pudo eliminar la línea");
+      return;
     }
 
-    // ✅ Refresco defensivo desde backend (asegura consistencia y reordenamientos)
     if (lineaForm.tipo_acondicionamiento_id) {
       try {
-        const updated = await getLineaTipoAcomById(
+        const updated = (await getLineaTipoAcomById(
           lineaForm.tipo_acondicionamiento_id
-        );
+        )) as DataLineaTipoAcondicionamiento[];
         setLineas(updated);
+        showSuccess("Línea eliminada");
       } catch {
-        showError(`No se pudieron recargar las líneas`);
+        showError("No se pudieron recargar las líneas");
       }
     }
   };
 
-  const handleBtnAplicarEdit = async () => {
+  // Actualizar cabecera
+  const handleBtnAplicarEdit = async (): Promise<void> => {
     await updateTipoAcom(objectTipoAcom.id, objectTipoAcom);
     await getListTipoAcom();
-    showSuccess("Tipo de Acondiciopnamiento Actualizado Correctamente");
+    showSuccess("Tipo de Acondicionamiento actualizado correctamente");
   };
 
-  // función para abrir el modal de edición+líneas
-  const handleOpenEdit = async (id: number) => {
+  // Abrir modal de edición: carga tipos + líneas
+  const handleOpenEdit = async (id: number): Promise<void> => {
     await getListTipoAcomyLineas(id);
   };
 
-  // lista de tipos
-  const getListTipoAcom = useCallback(async () => {
-    const response = await listTipoAcondicionamiento();
+  // ==== Cargas de listas ====
+
+  // Tipos (lista principal)
+  const getListTipoAcom = useCallback(async (): Promise<void> => {
+    const response =
+      (await listTipoAcondicionamiento()) as DataTipoAcondicionamiento[];
     setListTipoAcom(response);
   }, []);
 
-  // tipos + líneas (para edición)
-  const getListTipoAcomyLineas = async (id: number) => {
-    const response = await getListTipoyLineas(id);
+  // Tipo + líneas para edición
+  const getListTipoAcomyLineas = async (id: number): Promise<void> => {
+    const response = (await getListTipoyLineas(id)) as ListTipoYLineasResponse;
+
     setObjectTipoAcom(response.tipos);
+
+    // Prepara el form de línea en blanco, con el tipo ya asociado
+    const nextOrden = getNextOrden(response.lineas);
     setLineaForm((prev) => ({
       ...prev,
       id: 0,
       tipo_acondicionamiento_id: response.tipos.id,
-      orden: 0,
+      orden: nextOrden,
       descripcion: "",
       fase: "",
       editable: false,
@@ -233,19 +313,21 @@ export default function NewTipoAcondicionamiento({
       fase_control: "",
       descripcion_fase_control: "",
     }));
-    setLineas(response.lineas); // ✅ una sola lista
+
+    setLineas(response.lineas);
     setIsOpenEdit(true);
   };
 
-  // fases y controles
-  const getSelectStages = useCallback(async () => {
-    const response = await getSelectStagesControls();
+  // Fases y fases de control
+  const getSelectStages = useCallback(async (): Promise<void> => {
+    const response =
+      (await getSelectStagesControls()) as StagesControlsResponse;
     setListStages(response.fases);
     setListStagesControls(response.controles);
   }, []);
 
-  // reset general
-  const handleReset = () => {
+  // ==== Reset general ====
+  const handleReset = (): void => {
     setIsOpen(false);
     setIsOpenEdit(false);
     setBtnAplicar(false);
@@ -272,26 +354,81 @@ export default function NewTipoAcondicionamiento({
     setLineas([]);
   };
 
-  // Instancia del componente
+  // ==== Efectos de montaje ====
   useEffect(() => {
     if (canView) {
-      getListTipoAcom();
-      getSelectStages();
+      void getListTipoAcom();
+      void getSelectStages();
     }
   }, [canView, getListTipoAcom, getSelectStages]);
 
-  // Si desmarcas "control", vacía fase_control
-  useEffect(() => {
-    setLineaForm((prev) => ({
-      ...prev,
-      fase_control: prev.control ? prev.fase_control : "",
-    }));
-  }, [lineaForm.control]);
+  // ==== VALIDACIÓN PARA HABILITAR/DESHABILITAR EL BOTÓN “+” ====
 
-  // Renderización del componente
+  // ¿Existe duplicado de orden con lo que hay escrito? (no bloquea, solo deshabilita)
+  const isDuplicateOrden = useMemo(
+    () =>
+      lineas.some(
+        (l) =>
+          Number(l.orden) === Number(lineaForm.orden) && l.id !== lineaForm.id
+      ),
+    [lineas, lineaForm.orden, lineaForm.id]
+  );
+
+  // Campos mínimos completos
+  const hasTipo = lineaForm.tipo_acondicionamiento_id > 0;
+  const hasOrdenValido = isValidOrden(Number(lineaForm.orden));
+  const hasDescripcion = lineaForm.descripcion.trim().length > 0;
+  const hasFase = String(lineaForm.fase).trim().length > 0;
+  const hasFaseControl =
+    !lineaForm.control || String(lineaForm.fase_control).trim().length > 0;
+
+  // ¿Se puede crear la línea?
+  const canAddLinea = useMemo(
+    () =>
+      canEdit &&
+      hasTipo &&
+      hasOrdenValido &&
+      !isDuplicateOrden &&
+      hasDescripcion &&
+      hasFase &&
+      hasFaseControl,
+    [
+      canEdit,
+      hasTipo,
+      hasOrdenValido,
+      isDuplicateOrden,
+      hasDescripcion,
+      hasFase,
+      hasFaseControl,
+    ]
+  );
+
+  // Motivo (tooltip) cuando está deshabilitado (primer bloqueo que encuentre)
+  const addDisabledReason: string | undefined = useMemo(() => {
+    if (!canEdit) return "No tienes permisos para editar.";
+    if (!hasTipo) return "Aplica o edita un tipo primero.";
+    if (!hasOrdenValido) return "El orden debe ser un entero ≥ 1.";
+    if (isDuplicateOrden)
+      return `Ya existe una línea con orden ${lineaForm.orden}.`;
+    if (!hasDescripcion) return "Falta la descripción de la línea.";
+    if (!hasFase) return "Selecciona una fase.";
+    if (!hasFaseControl) return "Selecciona una fase de control.";
+    return undefined;
+  }, [
+    canEdit,
+    hasTipo,
+    hasOrdenValido,
+    isDuplicateOrden,
+    lineaForm.orden,
+    hasDescripcion,
+    hasFase,
+    hasFaseControl,
+  ]);
+
+  // ==== Render ====
   return (
     <>
-      {/* Bloque del componente 1 */}
+      {/* Acciones superiores */}
       <div className="flex justify-center space-x-2 mb-2">
         {canEdit && (
           <Button
@@ -302,197 +439,175 @@ export default function NewTipoAcondicionamiento({
         )}
       </div>
 
+      {/* Tabla de tipos (lista) */}
       <div>
-        {/* Tabla de tipos de acondicionamiento */}
         <Table
           columns={["descripcion", "status"]}
           rows={listTipoAcom}
-          columnLabels={{
-            descripcion: "Descripción",
-            status: "Estado",
-          }}
+          columnLabels={{ descripcion: "Descripción", status: "Estado" }}
           onDelete={canEdit ? handleDelete : undefined}
           onEdit={handleOpenEdit}
         />
       </div>
 
-      {/* Bloque del componente 2 */}
-      <div>
-        {/* Modal de creación y edición */}
-        {(isOpen || isOpenEdit) && (
-          <ModalSection
-            isVisible={isOpen || isOpenEdit}
-            onClose={() => {
-              if (isOpenEdit) {
-                handleReset();
-              } else {
-                setIsOpen(false);
-              }
-              setIsOpenEdit(false);
-            }}
-          >
-            {/* Título */}
-            <Text type="title" color="text-[rgb(var(--foreground))]">
-              {isOpenEdit
-                ? "Editar Tipo de Orden de Acondicionamiento"
-                : "Crear Nuevo Tipo de Acondicionamiento"}
+      {/* Modal de creación/edición */}
+      {(isOpen || isOpenEdit) && (
+        <ModalSection
+          isVisible={isOpen || isOpenEdit}
+          onClose={() => {
+            if (isOpenEdit) {
+              handleReset();
+            } else {
+              setIsOpen(false);
+            }
+            setIsOpenEdit(false);
+          }}
+        >
+          {/* Título */}
+          <Text type="title" color="text-[rgb(var(--foreground))]">
+            {isOpenEdit
+              ? "Editar Tipo de Orden de Acondicionamiento"
+              : "Crear Nuevo Tipo de Acondicionamiento"}
+          </Text>
+
+          {/* Cabecera / descripción */}
+          <div className="mb-8">
+            <Text type="subtitle" color="text-[rgb(var(--foreground))]">
+              Descripción{" "}
+              {isOpenEdit ? (
+                ""
+              ) : (
+                <InfoPopover
+                  content={
+                    <>
+                      Al crear la descripción deberás editarla para poder
+                      guardar los datos necesarios.
+                    </>
+                  }
+                />
+              )}
             </Text>
 
-            {/* Formulario principal */}
-            <div className="mb-8">
-              <Text type="subtitle" color="text-[rgb(var(--foreground))]">
-                Descripción{" "}
-                {isOpenEdit ? (
-                  ""
-                ) : (
-                  <InfoPopover
-                    content={
-                      <>
-                        Al crear la descripción deberas editarla para poder
-                        guardar los datos necesarios.
-                      </>
-                    }
-                  />
-                )}
+            <input
+              id="descripcion"
+              type="text"
+              name="descripcion"
+              value={objectTipoAcom.descripcion}
+              onChange={inputChangeObjectTipoAcom}
+              disabled={btnAplicar || !canEdit}
+              className={[
+                "w-full px-4 py-2 rounded-md text-center",
+                "border bg-[rgb(var(--surface))] text-[rgb(var(--foreground))] border-[rgb(var(--border))]",
+                "placeholder:text-[rgb(var(--foreground))]/50",
+                "focus:outline-none focus:ring-2 focus:ring-[rgb(var(--ring))]",
+                "disabled:opacity-50 disabled:cursor-not-allowed",
+                "dark:bg-slate-900 dark:text-slate-100 dark:border-slate-700",
+              ].join(" ")}
+              placeholder="Ejemplo: Revisión técnica"
+            />
+          </div>
+
+          {/* Líneas (solo cuando ya existe el tipo o estamos en edición) */}
+          {(btnAplicar || isOpenEdit) && (
+            <>
+              <Text type="title" color="text-[rgb(var(--foreground))]">
+                Líneas de Acondicionamiento{" "}
+                <InfoPopover
+                  content={
+                    <>Los datos se guardan automáticamente al crearlos.</>
+                  }
+                />
               </Text>
-              <input
-                id="descripcion"
-                type="text"
-                name="descripcion"
-                value={objectTipoAcom.descripcion}
-                onChange={inputChangeObjectTipoAcom}
-                disabled={btnAplicar || !canEdit}
-                className={[
-                  "w-full px-4 py-2 rounded-md text-center",
-                  "border bg-[rgb(var(--surface))] text-[rgb(var(--foreground))] border-[rgb(var(--border))]",
-                  "placeholder:text-[rgb(var(--foreground))]/50",
-                  "focus:outline-none focus:ring-2 focus:ring-[rgb(var(--ring))]",
-                  "disabled:opacity-50 disabled:cursor-not-allowed",
-                  "dark:bg-slate-900 dark:text-slate-100 dark:border-slate-700",
-                ].join(" ")}
-                placeholder="Ejemplo: Revisión técnica"
-              />
-            </div>
 
-            {/* Tabla y formulario dinámico (solo si se aplicó el tipo base o estás editando) */}
-            {(btnAplicar || isOpenEdit) && (
-              <>
-                <Text type="title" color="text-[rgb(var(--foreground))]">
-                  Líneas de Acondicionamiento{" "}
-                  <InfoPopover
-                    content={
-                      <>Los datos se guardan automaticamente al crearlos</>
-                    }
-                  />
-                </Text>
-
-                <div className="overflow-x-auto rounded-lg border border-[rgb(var(--border))] shadow-sm dark:border-slate-700">
-                  <table className="min-w-full text-center border border-[rgb(var(--border))] text-[rgb(var(--foreground))] dark:border-slate-700">
-                    <thead className="bg-[rgb(var(--surface-muted))] border-b border-[rgb(var(--border))] dark:bg-slate-800/70 dark:border-slate-700">
-                      <tr className="border-b border-[rgb(var(--border))]">
-                        {[
-                          "Orden",
-                          "Descripción",
-                          "Fase",
-                          "Actividades en Proceso",
-                          "Control",
-                          "Fase Control",
-                          "Acciones",
-                        ].map((th) => (
-                          <th
-                            key={th}
-                            className="px-4 py-3 text-xs font-medium uppercase tracking-wider text-[rgb(var(--foreground))]/70 border-r last:border-r-0 border-[rgb(var(--border))]"
-                          >
-                            {th}
-                          </th>
-                        ))}
-                      </tr>
-                    </thead>
-
-                    <tbody className="divide-y divide-[rgb(var(--border))]">
-                      {lineas.map((item) => (
-                        <tr
-                          key={item.id}
-                          className="hover:bg-[rgb(var(--surface-muted))] transition-colors border-b border-[rgb(var(--border))] dark:hover:bg-slate-800/60"
+              <div className="overflow-x-auto rounded-lg border border-[rgb(var(--border))] shadow-sm dark:border-slate-700">
+                <table className="min-w-full text-center border border-[rgb(var(--border))] text-[rgb(var(--foreground))] dark:border-slate-700">
+                  <thead className="bg-[rgb(var(--surface-muted))] border-b border-[rgb(var(--border))] dark:bg-slate-800/70 dark:border-slate-700">
+                    <tr className="border-b border-[rgb(var(--border))]">
+                      {[
+                        "Orden",
+                        "Descripción",
+                        "Fase",
+                        "Actividades en Proceso",
+                        "Control",
+                        "Fase Control",
+                        "Acciones",
+                      ].map((th) => (
+                        <th
+                          key={th}
+                          className="px-4 py-3 text-xs font-medium uppercase tracking-wider text-[rgb(var(--foreground))]/70 border-r last:border-r-0 border-[rgb(var(--border))]"
                         >
-                          <td className="px-4 py-3 border-r border-[rgb(var(--border))]">
-                            {item.orden}
-                          </td>
-                          <td className="px-4 py-3 border-r border-[rgb(var(--border))]">
-                            {item.descripcion}
-                          </td>
-                          <td className="px-4 py-3 border-r border-[rgb(var(--border))]">
-                            {item.descripcion_fase}
-                          </td>
-                          <td className="px-4 py-3 border-r border-[rgb(var(--border))]">
-                            {item.editable ? "Sí" : "No"}
-                          </td>
-                          <td className="px-4 py-3 border-r border-[rgb(var(--border))]">
-                            {item.control ? "Sí" : "No"}
-                          </td>
-                          <td className="px-4 py-3 border-r border-[rgb(var(--border))]">
-                            {item.descripcion_fase_control || "-"}
-                          </td>
-                          <td className="px-4 py-3">
-                            <button
-                              onClick={() => handleDeleteLinea(item.id)}
-                              className="text-red-500 hover:text-red-600 focus:outline-none focus:ring-2 focus:ring-red-400/50"
-                              title="Eliminar línea"
-                              disabled={!canEdit}
-                            >
-                              Eliminar
-                            </button>
-                          </td>
-                        </tr>
+                          {th}
+                        </th>
                       ))}
+                    </tr>
+                  </thead>
 
-                      {/* Fila de formulario */}
-                      <tr className="bg-[rgb(var(--surface))] border-t border-[rgb(var(--border))] dark:bg-slate-900">
-                        {/* Orden */}
+                  <tbody className="divide-y divide-[rgb(var(--border))]">
+                    {/* Filas existentes */}
+                    {lineas.map((item) => (
+                      <tr
+                        key={item.id}
+                        className="hover:bg-[rgb(var(--surface-muted))] transition-colors border-b border-[rgb(var(--border))] dark:hover:bg-slate-800/60"
+                      >
                         <td className="px-4 py-3 border-r border-[rgb(var(--border))]">
-                          <div className="flex justify-center items-center">
-                            <input
-                              type="number"
-                              name="orden"
-                              min={1}
-                              value={
-                                lineaForm.orden === 0 ? "" : lineaForm.orden
-                              }
-                              onChange={(e) => {
-                                const newOrden = Number(e.target.value);
-                                const isDuplicate = lineas.some(
-                                  (item) =>
-                                    Number(item.orden) === newOrden &&
-                                    item.id !== lineaForm.id
-                                );
-                                if (isDuplicate) {
-                                  alert(
-                                    `Ya existe una línea con orden ${newOrden}`
-                                  );
-                                  return;
-                                }
-                                inputChangeObjectLineaTipoAcom(e);
-                              }}
-                              placeholder="N°"
-                              className={[
-                                "w-full px-3 py-2 rounded-md text-center",
-                                "border bg-[rgb(var(--surface))] text-[rgb(var(--foreground))] border-[rgb(var(--border))]",
-                                "focus:outline-none focus:ring-2 focus:ring-[rgb(var(--ring))]",
-                                "dark:bg-slate-900 dark:text-slate-100 dark:border-slate-700",
-                              ].join(" ")}
-                              disabled={!canEdit}
-                            />
-                          </div>
+                          {item.orden}
                         </td>
-
-                        {/* Descripción línea */}
                         <td className="px-4 py-3 border-r border-[rgb(var(--border))]">
+                          {item.descripcion}
+                        </td>
+                        <td className="px-4 py-3 border-r border-[rgb(var(--border))]">
+                          {item.descripcion_fase}
+                        </td>
+                        <td className="px-4 py-3 border-r border-[rgb(var(--border))]">
+                          {item.editable ? "Sí" : "No"}
+                        </td>
+                        <td className="px-4 py-3 border-r border-[rgb(var(--border))]">
+                          {item.control ? "Sí" : "No"}
+                        </td>
+                        <td className="px-4 py-3 border-r border-[rgb(var(--border))]">
+                          {item.descripcion_fase_control || "-"}
+                        </td>
+                        <td className="px-4 py-3">
+                          <Button
+                            onClick={() => void handleDeleteLinea(item.id)}
+                            variant="cancel"
+                            label={"Eliminar"}
+                          />
+                        </td>
+                      </tr>
+                    ))}
+
+                    {/* Fila de creación */}
+                    <tr className="bg-[rgb(var(--surface))] border-t border-[rgb(var(--border))] dark:bg-slate-900">
+                      {/* Orden */}
+                      <td className="px-4 py-3 border-r border-[rgb(var(--border))]">
+                        <div className="flex justify-center items-center">
                           <input
-                            type="text"
-                            name="descripcion"
-                            placeholder="Descripción"
-                            value={lineaForm.descripcion}
-                            onChange={inputChangeObjectLineaTipoAcom}
+                            type="number"
+                            name="orden"
+                            min={1}
+                            // UX: si es 0 mostramos vacío, pero guardamos 0 en estado
+                            value={lineaForm.orden === 0 ? "" : lineaForm.orden}
+                            onChange={(e) => {
+                              // 👇 No validamos aquí duplicados para no bloquear mientras escribe (1 -> 10)
+                              inputChangeObjectLineaTipoAcom(e);
+                            }}
+                            onBlur={(e) => {
+                              // (Opcional) Feedback suave al salir del input
+                              const v = Number(e.target.value);
+                              if (!isValidOrden(v)) {
+                                showError("El orden debe ser un entero ≥ 1.");
+                                return;
+                              }
+                              const dup = lineas.some(
+                                (item) =>
+                                  Number(item.orden) === v &&
+                                  item.id !== lineaForm.id
+                              );
+                              if (dup)
+                                showError(`Ya existe una línea con orden ${v}`);
+                            }}
+                            placeholder="N°"
                             className={[
                               "w-full px-3 py-2 rounded-md text-center",
                               "border bg-[rgb(var(--surface))] text-[rgb(var(--foreground))] border-[rgb(var(--border))]",
@@ -501,226 +616,260 @@ export default function NewTipoAcondicionamiento({
                             ].join(" ")}
                             disabled={!canEdit}
                           />
-                        </td>
+                        </div>
+                      </td>
 
-                        {/* Fase */}
-                        <td className="px-4 py-3 border-r border-[rgb(var(--border))]">
-                          <div className="flex justify-center items-center">
+                      {/* Descripción */}
+                      <td className="px-4 py-3 border-r border-[rgb(var(--border))]">
+                        <input
+                          type="text"
+                          name="descripcion"
+                          placeholder="Descripción"
+                          value={lineaForm.descripcion}
+                          onChange={inputChangeObjectLineaTipoAcom}
+                          className={[
+                            "w-full px-3 py-2 rounded-md text-center",
+                            "border bg-[rgb(var(--surface))] text-[rgb(var(--foreground))] border-[rgb(var(--border))]",
+                            "focus:outline-none focus:ring-2 focus:ring-[rgb(var(--ring))]",
+                            "dark:bg-slate-900 dark:text-slate-100 dark:border-slate-700",
+                          ].join(" ")}
+                          disabled={!canEdit}
+                        />
+                      </td>
+
+                      {/* Fase */}
+                      <td className="px-4 py-3 border-r border-[rgb(var(--border))]">
+                        <div className="flex justify-center items-center">
+                          <select
+                            name="fase"
+                            value={lineaForm.fase}
+                            onChange={(e) =>
+                              setLineaForm((prev) => ({
+                                ...prev,
+                                fase: e.target.value,
+                              }))
+                            }
+                            className={[
+                              "w-full px-3 py-2 rounded-md text-center",
+                              "border bg-[rgb(var(--surface))] text-[rgb(var(--foreground))] border-[rgb(var(--border))]",
+                              "focus:outline-none focus:ring-2 focus:ring-[rgb(var(--ring))]",
+                              "dark:bg-slate-900 dark:text-slate-100 dark:border-slate-700",
+                            ].join(" ")}
+                            disabled={!canEdit}
+                          >
+                            <option value="">Seleccione una fase</option>
+
+                            {/* Si hay fase previamente seleccionada pero no existe en la lista actual */}
+                            {lineaForm.fase &&
+                              !listStages.some(
+                                (item) => item.id === Number(lineaForm.fase)
+                              ) && (
+                                <option value={lineaForm.fase}>
+                                  {getStageById(listStages, lineaForm.fase)
+                                    ?.description || "Fase desconocida"}
+                                </option>
+                              )}
+
+                            {/* Solo última versión por descripción, excluyendo controles */}
+                            {listStages
+                              .reduce<Stage[]>((acc, current) => {
+                                const existing = acc.find(
+                                  (item) =>
+                                    item.description === current.description
+                                );
+                                if (
+                                  !existing ||
+                                  Number(current.version) >
+                                    Number(existing.version)
+                                ) {
+                                  return [
+                                    ...acc.filter(
+                                      (i) =>
+                                        i.description !== current.description
+                                    ),
+                                    current,
+                                  ];
+                                }
+                                return acc;
+                              }, [])
+                              .filter((item) => item.phase_type !== "Control")
+                              .sort((a, b) =>
+                                a.description.localeCompare(b.description)
+                              )
+                              .map((item) => (
+                                <option
+                                  key={item.id}
+                                  value={item.id}
+                                  className="bg-[rgb(var(--surface))] text-[rgb(var(--foreground))] dark:bg-slate-900 dark:text-slate-100"
+                                >
+                                  {item.description}
+                                  {Number(item.version) > 1
+                                    ? ` (v${item.version})`
+                                    : ""}
+                                </option>
+                              ))}
+                          </select>
+                        </div>
+                      </td>
+
+                      {/* Editable (switch) */}
+                      <td className="px-4 py-3 border-r border-[rgb(var(--border))]">
+                        <div className="flex justify-center items-center">
+                          <label className="inline-flex items-center justify-center cursor-pointer">
+                            <input
+                              type="checkbox"
+                              name="editable"
+                              checked={lineaForm.editable}
+                              onChange={inputCheckboxChange}
+                              className="sr-only peer"
+                              disabled={!canEdit}
+                            />
+                            <div
+                              className={[
+                                "relative w-11 h-6 rounded-full transition-colors",
+                                "bg-[rgb(var(--surface-muted))] peer-checked:bg-[rgb(var(--accent))]",
+                                "peer-focus-visible:outline-none peer-focus-visible:ring-2 peer-focus-visible:ring-[rgb(var(--ring))]",
+                                "peer-disabled:opacity-50 peer-disabled:cursor-not-allowed",
+                                "after:content-[''] after:absolute after:top-0.5 after:left-[2px]",
+                                "after:h-5 after:w-5 after:rounded-full after:transition-transform",
+                                "after:bg-[rgb(var(--surface))] after:border after:border-[rgb(var(--border))]",
+                                "peer-checked:after:translate-x-full",
+                              ].join(" ")}
+                            />
+                          </label>
+                        </div>
+                      </td>
+
+                      {/* Control (switch) */}
+                      <td className="px-4 py-3 border-r border-[rgb(var(--border))]">
+                        <div className="flex justify-center items-center">
+                          <label className="inline-flex items-center justify-center cursor-pointer">
+                            <input
+                              type="checkbox"
+                              name="control"
+                              checked={lineaForm.control}
+                              onChange={inputCheckboxChange}
+                              className="sr-only peer"
+                              disabled={!canEdit}
+                            />
+                            <div
+                              className={[
+                                "relative w-11 h-6 rounded-full transition-colors",
+                                "bg-[rgb(var(--surface-muted))] peer-checked:bg-[rgb(var(--accent))]",
+                                "peer-focus-visible:outline-none peer-focus-visible:ring-2 peer-focus-visible:ring-[rgb(var(--ring))]",
+                                "peer-disabled:opacity-50 peer-disabled:cursor-not-allowed",
+                                "after:content-[''] after:absolute after:top-0.5 after:left-[2px]",
+                                "after:h-5 after:w-5 after:rounded-full after:transition-transform",
+                                "after:bg-[rgb(var(--surface))] after:border after:border-[rgb(var(--border))]",
+                                "peer-checked:after:translate-x-full",
+                              ].join(" ")}
+                            />
+                          </label>
+                        </div>
+                      </td>
+
+                      {/* Fase Control (solo si control=true) */}
+                      <td className="px-4 py-3 border-r border-[rgb(var(--border))]">
+                        <div className="flex justify-center items-center">
+                          {lineaForm.control && (
                             <select
-                              name="fase"
-                              value={lineaForm.fase}
+                              name="fase_control"
+                              value={String(lineaForm.fase_control ?? "")} // <- normalizamos a string
                               onChange={(e) =>
-                                setLineaForm({
-                                  ...lineaForm,
-                                  fase: e.target.value,
-                                })
+                                setLineaForm((prev) => ({
+                                  ...prev,
+                                  // si necesitas number en el estado, usa Number(e.target.value)
+                                  fase_control: e.target.value,
+                                }))
                               }
+                              disabled={!canEdit}
                               className={[
                                 "w-full px-3 py-2 rounded-md text-center",
                                 "border bg-[rgb(var(--surface))] text-[rgb(var(--foreground))] border-[rgb(var(--border))]",
                                 "focus:outline-none focus:ring-2 focus:ring-[rgb(var(--ring))]",
                                 "dark:bg-slate-900 dark:text-slate-100 dark:border-slate-700",
                               ].join(" ")}
-                              disabled={!canEdit}
                             >
-                              <option value="">Seleccione una fase</option>
+                              <option value="">
+                                Seleccione una fase control
+                              </option>
 
-                              {/* Fase seleccionada pero no encontrada en la lista actual */}
-                              {lineaForm.fase &&
-                                !listStages.some(
-                                  (item) => item.id === Number(lineaForm.fase)
-                                ) && (
-                                  <option value={lineaForm.fase}>
-                                    {getStageId(lineaForm.fase)?.description ||
-                                      "Fase desconocida"}
-                                  </option>
-                                )}
-
-                              {/* Solo última versión por descripción */}
-                              {listStages
-                                .reduce((acc: Stage[], current: Stage) => {
-                                  const existing = acc.find(
-                                    (item) =>
-                                      item.description === current.description
-                                  );
-                                  if (
-                                    !existing ||
-                                    Number(current.version) >
-                                      Number(existing.version)
-                                  ) {
-                                    return [
-                                      ...acc.filter(
-                                        (item) =>
-                                          item.description !==
-                                          current.description
-                                      ),
-                                      current,
-                                    ];
-                                  }
-                                  return acc;
-                                }, [])
-                                .filter((item) => item.phase_type !== "Control")
+                              {(Array.isArray(listStagesControls)
+                                ? [...listStagesControls]
+                                : []
+                              )
                                 .sort((a, b) =>
-                                  a.description.localeCompare(b.description)
-                                )
-                                .map((item) => (
-                                  <option
-                                    key={item.id}
-                                    value={item.id}
-                                    className="bg-[rgb(var(--surface))] text-[rgb(var(--foreground))] dark:bg-slate-900 dark:text-slate-100"
-                                  >
-                                    {item.description}
-                                    {Number(item.version) > 1
-                                      ? ` (v${item.version})`
-                                      : ""}
-                                  </option>
-                                ))}
-                            </select>
-                          </div>
-                        </td>
-
-                        {/* Editable (switch) */}
-                        <td className="px-4 py-3 border-r border-[rgb(var(--border))]">
-                          <div className="flex justify-center items-center">
-                            <label className="inline-flex items-center justify-center cursor-pointer">
-                              <input
-                                type="checkbox"
-                                name="editable"
-                                checked={lineaForm.editable}
-                                onChange={inputCheckboxChange}
-                                className="sr-only peer"
-                                disabled={!canEdit}
-                              />
-                              <div
-                                className={[
-                                  // track
-                                  "relative w-11 h-6 rounded-full transition-colors",
-                                  "bg-[rgb(var(--surface-muted))] peer-checked:bg-[rgb(var(--accent))]",
-                                  // focus y disabled via peer
-                                  "peer-focus-visible:outline-none peer-focus-visible:ring-2 peer-focus-visible:ring-[rgb(var(--ring))]",
-                                  "peer-disabled:opacity-50 peer-disabled:cursor-not-allowed",
-                                  // knob (usa ::after)
-                                  "after:content-[''] after:absolute after:top-0.5 after:left-[2px]",
-                                  "after:h-5 after:w-5 after:rounded-full after:transition-transform",
-                                  "after:bg-[rgb(var(--surface))] after:border after:border-[rgb(var(--border))]",
-                                  "peer-checked:after:translate-x-full",
-                                ].join(" ")}
-                              />
-                            </label>
-                          </div>
-                        </td>
-
-                        {/* Control (switch) */}
-                        <td className="px-4 py-3 border-r border-[rgb(var(--border))]">
-                          <div className="flex justify-center items-center">
-                            <label className="inline-flex items-center justify-center cursor-pointer">
-                              <input
-                                type="checkbox"
-                                name="control"
-                                checked={lineaForm.control}
-                                onChange={inputCheckboxChange}
-                                className="sr-only peer"
-                                disabled={!canEdit}
-                              />
-                              <div
-                                className={[
-                                  "relative w-11 h-6 rounded-full transition-colors",
-                                  "bg-[rgb(var(--surface-muted))] peer-checked:bg-[rgb(var(--accent))]",
-                                  "peer-focus-visible:outline-none peer-focus-visible:ring-2 peer-focus-visible:ring-[rgb(var(--ring))]",
-                                  "peer-disabled:opacity-50 peer-disabled:cursor-not-allowed",
-                                  "after:content-[''] after:absolute after:top-0.5 after:left-[2px]",
-                                  "after:h-5 after:w-5 after:rounded-full after:transition-transform",
-                                  "after:bg-[rgb(var(--surface))] after:border after:border-[rgb(var(--border))]",
-                                  "peer-checked:after:translate-x-full",
-                                ].join(" ")}
-                              />
-                            </label>
-                          </div>
-                        </td>
-
-                        {/* Fase Control */}
-                        <td className="px-4 py-3 border-r border-[rgb(var(--border))]">
-                          <div className="flex justify-center items-center">
-                            {lineaForm.control && (
-                              <select
-                                name="fase_control"
-                                value={lineaForm.fase_control}
-                                onChange={(e) =>
-                                  setLineaForm({
-                                    ...lineaForm,
-                                    fase_control: e.target.value,
-                                  })
-                                }
-                                disabled={!canEdit}
-                                className={[
-                                  "w-full px-3 py-2 rounded-md text-center",
-                                  "border bg-[rgb(var(--surface))] text-[rgb(var(--foreground))] border-[rgb(var(--border))]",
-                                  "focus:outline-none focus:ring-2 focus:ring-[rgb(var(--ring))]",
-                                  "dark:bg-slate-900 dark:text-slate-100 dark:border-slate-700",
-                                ].join(" ")}
-                              >
-                                <option value="">
-                                  Seleccione una fase control
-                                </option>
-                                {listStagesControls
-                                  .sort((a, b) =>
-                                    a.description.localeCompare(b.description)
+                                  (a?.description ?? "").localeCompare(
+                                    b?.description ?? ""
                                   )
-                                  .map((item) => (
+                                )
+                                .map((item) => {
+                                  const label =
+                                    `${
+                                      item?.description ?? "Sin descripción"
+                                    } · v${item?.version ?? "?"}`  
+
+                                  return (
                                     <option
                                       key={item.id}
-                                      value={item.id}
+                                      value={String(item.id)}  
                                       className="bg-[rgb(var(--surface))] text-[rgb(var(--foreground))] dark:bg-slate-900 dark:text-slate-100"
                                     >
-                                      {item.description}
+                                      {label}
                                     </option>
-                                  ))}
-                              </select>
-                            )}
-                          </div>
-                        </td>
+                                  );
+                                })}
+                            </select>
+                          )}
+                        </div>
+                      </td>
 
-                        {/* Acción agregar */}
-                        <td className="px-4 py-3">
-                          <div className="flex justify-center items-center">
-                            <Button
-                              onClick={handleBtnAgregarLinea}
-                              variant="create"
-                              label=""
-                              disabled={!canEdit}
-                            />
-                          </div>
-                        </td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-              </>
+                      {/* Acción agregar */}
+                      <td className="px-4 py-3">
+                        <div
+                          className="flex justify-center items-center"
+                          // Tooltip nativo con la razón si está deshabilitado
+                          title={addDisabledReason}
+                        >
+                          <Button
+                            onClick={() => void handleBtnAgregarLinea()}
+                            variant="create"
+                            label="" // tu botón de “+”
+                            disabled={!canAddLinea} // ⬅️ DESHABILITADO si faltan datos / duplicado / sin permisos
+                            // Si tu Button soporta aria-*, esto ayuda a accesibilidad:
+                            aria-disabled={!canAddLinea}
+                          />
+                        </div>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </>
+          )}
+
+          {/* Acciones finales del modal */}
+          <hr className="my-4 w-full max-w-lg mx-auto opacity-60 border-t border-[rgb(var(--border))] dark:border-slate-700" />
+          <div className="flex justify-center gap-4 mt-6">
+            <Button onClick={handleReset} variant="cancel" label={"Cerrar"} />
+            {canEdit && (
+              <Button
+                onClick={() => {
+                  if (isOpenEdit) {
+                    void handleBtnAplicarEdit();
+                    handleReset();
+                  } else {
+                    void handleBtnAplicar();
+                    handleReset();
+                  }
+                }}
+                variant="create"
+                label={isOpenEdit ? "Actualizar" : "Guardar"}
+              />
             )}
-
-            {/* Acciones finales */}
-            <hr className="my-4 w-full max-w-lg mx-auto opacity-60 border-t border-[rgb(var(--border))] dark:border-slate-700" />
-            <div className="flex justify-center gap-4 mt-6">
-              <Button onClick={handleReset} variant="cancel" label={"Cerrar"} />
-              {canEdit && (
-                <Button
-                  onClick={() => {
-                    if (isOpenEdit) {
-                      handleBtnAplicarEdit();
-                      handleReset();
-                    } else {
-                      handleBtnAplicar();
-                      handleReset();
-                    }
-                  }}
-                  variant="create"
-                  label={isOpenEdit ? "Actualizar" : "Guardar"}
-                />
-              )}
-            </div>
-          </ModalSection>
-        )}
-      </div>
+          </div>
+        </ModalSection>
+      )}
     </>
   );
 }

@@ -1,11 +1,11 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 
 interface MultiSelectProps<T> {
-  options: T[];
-  selected: T[];
+  options: T[] | null | undefined;
+  selected: T[] | null | undefined;
   onChange: (selected: T[]) => void;
-  getLabel: (item: T) => string;
-  getValue: (item: T) => string;
+  getLabel: (item: T) => unknown; // puede venir string/number/null
+  getValue: (item: T) => unknown; // idem
 }
 
 function MultiSelect<T>({
@@ -17,28 +17,54 @@ function MultiSelect<T>({
 }: MultiSelectProps<T>) {
   const [searchTerm, setSearchTerm] = useState("");
 
-  const filteredOptions = options.filter(
-    (item) =>
-      getLabel(item).toLowerCase().includes(searchTerm.toLowerCase()) &&
-      !selected.some((sel) => getValue(sel) === getValue(item))
+  // Helpers seguros
+  const toStr = (x: unknown) => (x == null ? "" : String(x));
+  const norm = (s: string) =>
+    s.normalize("NFD").replace(/\p{Diacritic}/gu, "").toLowerCase();
+
+  // Normalizamos entradas
+  const opts = useMemo(() => (options ?? []).filter(Boolean) as T[], [options]);
+  const sel = (selected ?? []).filter(Boolean) as T[];
+
+  // Set de seleccionados por valor (si llega number en un lado y string en otro, no truena)
+  const selectedSet = useMemo(
+    () => new Set(sel.map((i) => toStr(getValue(i)))),
+    [sel, getValue]
   );
 
-  const handleSelect = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const selectedValue = e.target.value;
-    const selectedItem = options.find(
-      (item) => getValue(item) === selectedValue
-    );
+  // Filtro robusto (nunca llama .toLowerCase sobre undefined)
+  const filteredOptions = useMemo(() => {
+    const q = norm(toStr(searchTerm));
+    return opts.filter((item) => {
+      const label = toStr(getLabel(item));
+      const value = toStr(getValue(item));
+      return !selectedSet.has(value) && norm(label).includes(q);
+    });
+  }, [opts, selectedSet, searchTerm, getLabel, getValue]);
 
-    if (
-      selectedItem &&
-      !selected.some((item) => getValue(item) === selectedValue)
-    ) {
-      onChange([...selected, selectedItem]);
+  // Soporte real de <select multiple>: agrega TODAS las opciones seleccionadas
+  const handleSelect = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const values = Array.from(e.target.selectedOptions).map((o) => o.value);
+    if (!values.length) return;
+
+    const toAdd = opts.filter((it) => values.includes(toStr(getValue(it))));
+    if (!toAdd.length) return;
+
+    const merged = [...sel];
+    const seen = new Set(selectedSet);
+    for (const it of toAdd) {
+      const v = toStr(getValue(it));
+      if (!seen.has(v)) {
+        merged.push(it);
+        seen.add(v);
+      }
     }
+    onChange(merged);
   };
 
-  const handleRemove = (value: string) => {
-    onChange(selected.filter((item) => getValue(item) !== value));
+  const handleRemove = (value: unknown) => {
+    const v = toStr(value);
+    onChange(sel.filter((item) => toStr(getValue(item)) !== v));
   };
 
   return (
@@ -53,13 +79,15 @@ function MultiSelect<T>({
               className="w-full px-4 py-2 rounded-lg border bg-[rgb(var(--surface))] text-[rgb(var(--foreground))] border-[rgb(var(--border))] focus:outline-none focus:ring-2 focus:ring-[rgb(var(--ring))] placeholder:text-[rgb(var(--foreground))]/50 dark:bg-slate-900 dark:text-slate-100 dark:border-slate-700"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
+              aria-label="Buscar opción"
             />
             <svg
-              className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[rgb(var(--foreground))]/60"
+              className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[rgb(var(--foreground))]/60 pointer-events-none"
               xmlns="http://www.w3.org/2000/svg"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
+              aria-hidden="true"
             >
               <path
                 strokeLinecap="round"
@@ -75,17 +103,21 @@ function MultiSelect<T>({
             size={10}
             className="w-full px-3 py-2 rounded-lg border overflow-y-auto max-h-64 bg-[rgb(var(--surface))] text-[rgb(var(--foreground))] border-[rgb(var(--border))] focus:outline-none focus:ring-2 focus:ring-[rgb(var(--ring))] dark:bg-slate-900 dark:text-slate-100 dark:border-slate-700"
             onChange={handleSelect}
+            aria-label="Opciones disponibles"
           >
             {filteredOptions.length > 0 ? (
-              filteredOptions.map((item) => (
-                <option
-                  key={getValue(item)}
-                  value={getValue(item)}
-                  className="bg-[rgb(var(--surface))] text-[rgb(var(--foreground))]"
-                >
-                  {getLabel(item)}
-                </option>
-              ))
+              filteredOptions.map((item) => {
+                const val = toStr(getValue(item));
+                return (
+                  <option
+                    key={val}
+                    value={val}
+                    className="bg-[rgb(var(--surface))] text-[rgb(var(--foreground))]"
+                  >
+                    {toStr(getLabel(item)) || "(sin etiqueta)"}
+                  </option>
+                );
+              })
             ) : (
               <option
                 disabled
@@ -104,43 +136,51 @@ function MultiSelect<T>({
               Seleccionados
             </h3>
             <button
-              className="text-sm text-[rgb(var(--accent))] hover:brightness-110 focus:outline-none focus:ring-2 focus:ring-[rgb(var(--ring))] rounded-lg px-3 py-1 transition-all duration-200 border border-[rgb(var(--accent))]/60 hover:border-[rgb(var(--accent))] shadow-sm hover:shadow-md font-medium"
+              className="text-sm text-[rgb(var(--accent))] hover:brightness-110 focus:outline-none focus:ring-2 focus:ring-[rgb(var(--ring))] rounded-lg px-3 py-1 transition-all duration-200 border border-[rgb(var(--accent))]/60 hover:border-[rgb(var(--accent))] shadow-sm hover:shadow-md font-medium disabled:opacity-50 disabled:cursor-not-allowed"
               onClick={() => onChange([])}
+              disabled={!sel.length}
             >
               Limpiar todos
             </button>
           </div>
 
           <div className="border border-[rgb(var(--border))] rounded-lg p-2 max-h-64 overflow-y-auto dark:border-slate-700">
-            {selected.length > 0 ? (
-              selected.map((item) => (
-                <div
-                  key={getValue(item)}
-                  className="flex justify-between items-center p-2 rounded transition-colors bg-[rgb(var(--surface))] hover:bg-[rgb(var(--surface-muted))] text-[rgb(var(--foreground))]"
-                >
-                  <span className="truncate">{getLabel(item)}</span>
-                  <button
-                    className="text-red-500 hover:text-white hover:bg-red-600 ml-4 focus:outline-none focus:ring-2 focus:ring-red-300 rounded-full p-1 transition-all duration-200 shadow-sm hover:shadow-md border border-transparent hover:border-red-700"
-                    onClick={() => handleRemove(getValue(item))}
-                    title="Quitar"
+            {sel.length > 0 ? (
+              sel.map((item) => {
+                const val = toStr(getValue(item));
+                return (
+                  <div
+                    key={val}
+                    className="flex justify-between items-center p-2 rounded transition-colors bg-[rgb(var(--surface))] hover:bg-[rgb(var(--surface-muted))] text-[rgb(var(--foreground))]"
                   >
-                    <svg
-                      className="w-4 h-4"
-                      xmlns="http://www.w3.org/2000/svg"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
+                    <span className="truncate">
+                      {toStr(getLabel(item)) || "(sin etiqueta)"}
+                    </span>
+                    <button
+                      className="text-red-500 hover:text-white hover:bg-red-600 ml-4 focus:outline-none focus:ring-2 focus:ring-red-300 rounded-full p-1 transition-all duration-200 shadow-sm hover:shadow-md border border-transparent hover:border-red-700"
+                      onClick={() => handleRemove(val)}
+                      title="Quitar"
+                      aria-label={`Quitar ${toStr(getLabel(item)) || "elemento"}`}
                     >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M6 18L18 6M6 6l12 12"
-                      />
-                    </svg>
-                  </button>
-                </div>
-              ))
+                      <svg
+                        className="w-4 h-4"
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                        aria-hidden="true"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M6 18L18 6M6 6l12 12"
+                        />
+                      </svg>
+                    </button>
+                  </div>
+                );
+              })
             ) : (
               <p className="text-center text-[rgb(var(--foreground))]/60 py-4">
                 No hay selecciones
