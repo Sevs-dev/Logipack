@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   getConciliacion,
   guardar_conciliacion,
@@ -8,19 +8,71 @@ import { showError, showSuccess } from "../toastr/Toaster";
 import Text from "../text/Text";
 import Button from "../buttons/buttons";
 
+
+interface Orden {
+  adaptation_date_id: string;
+  descripcion_maestra: string;
+  number_order: string;
+  orden_ejecutada: string;
+  orderType: string;
+  requiere_bom: string;
+}
+
+interface Articulos {
+  codart: string;
+  desart: string;
+  quantityToProduce: string;
+  faltante: string;
+  adicionales: string;
+  rechazo: string;
+  danno_proceso: string;
+  devolucion: string;
+  sobrante: string;
+  total: string;
+  rendimiento: string;
+}
+
+interface Conciliaciones {
+  padre: string;
+  hijo: string;
+  diferencia: string;
+  validate: string;
+  list: [];
+}
+
 const NewConsolida = () => {
   const params = useParams();
-  const [teorica, setTeorica] = useState({
+  const refForm = useRef<HTMLFormElement>(null);
+  // Ordenes
+  const [orden, setOrden] = useState<Orden>({
+    adaptation_date_id: "",
+    descripcion_maestra: "",
+    number_order: "",
+    orden_ejecutada: "",
+    orderType: "",
+    requiere_bom: "",
+  });
+
+  // // Articulos
+  // const [articulo_principal, setArticulo_principal] = useState<Articulos>({
+  //   codart: "",
+  //   desart: "",
+  //   quantityToProduce: "",
+  // });
+
+  // // Articulos secundarios
+  // const [articulo_secundario, setArticulo_secundario] = useState<Articulos[]>([]);
+
+  // Conciliaciones
+  const [conciliaciones, setConciliaciones] = useState<Conciliaciones>({
     padre: "",
     hijo: "",
     diferencia: "",
+    validate: "",
+    list: [],
   });
-  const [data, setData] = useState({
-    orden_ejecutada: "",
-    adaptation_date_id: "",
-    number_order: "",
-    orderType: "",
-    descripcion_maestra: "",
+
+  const [principal, setPrincipal] = useState<Articulos>({
     codart: "",
     desart: "",
     quantityToProduce: "",
@@ -32,140 +84,200 @@ const NewConsolida = () => {
     sobrante: "",
     total: "",
     rendimiento: "",
+  });
+
+  const [secundarios, setSecundarios] = useState<Articulos[]>([]);
+
+  const [empaque, setEmpaque] = useState({
+    // Empacado
     unidades_caja: "",
     numero_caja: "",
     unidades_saldo: "",
     total_saldo: "",
-    user: "",
   });
 
   useEffect(() => {
     const obtener_conciliacion = async () => {
       try {
-        const response = await getConciliacion(Number(params.id));
-        console.log(response);
-        setData((prev) => ({
-          ...prev,
-          orden_ejecutada: response?.orden?.orden_ejecutada,
-          adaptation_date_id: response?.orden?.adaptation_date_id,
-          number_order: response?.orden?.number_order,
-          orderType: response?.orden?.orderType,
-          descripcion_maestra: response?.orden?.descripcion_maestra,
-          codart: response?.conciliacion?.codart,
-          desart: response?.conciliacion?.desart,
-          quantityToProduce:
-            response?.orden?.orderType === "H" ? "" : response?.diferencia,
-        }));
-        setTeorica((prev) => ({
-          ...prev,
-          padre: response?.padre,
-          hijo: response?.hijos,
-          diferencia: response?.diferencia,
-        }));
+        const resp = await getConciliacion(Number(params.id));
+        setOrden((prev) => ({ ...prev, ...resp?.orden }));
+        // setArticulo_principal((prev) => ({ ...prev, ...resp?.articulo_principal }));
+        // setArticulo_secundario(resp?.articulo_segundario || []);
+
+        setPrincipal({
+          ...principal,
+          desart: resp?.articulo_principal?.desart,
+          codart: resp?.articulo_principal?.codart,
+          quantityToProduce: resp?.articulo_principal?.quantityToProduce,
+        });
+        setSecundarios(
+          resp?.articulo_segundario?.map((articulo: Articulos) => ({
+            ...articulo,
+            desart: articulo.desart,
+            codart: articulo.codart,
+            quantityToProduce: orden.orderType === "P" ? articulo.quantityToProduce : "",
+          })) || []
+        );
+        setConciliaciones((prev) => ({ ...prev, ...resp?.conciliaciones }));
       } catch (error: unknown) {
-        console.error("Error en getConciliacion:", error);
+        console.error("Error en obtener_conciliacion:", error);
         throw error;
       }
     };
 
+    // Obtener conciliacion
     obtener_conciliacion();
   }, [params.id]);
 
-  // Obtener los datos del formulario
-  const inputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const inputChange = (e: React.ChangeEvent<HTMLInputElement>, index?: number) => {
     const { name, value } = e.target;
 
-    const usuario = document.cookie
-      .split("; ")
-      .find((row) => row.startsWith("role="))
-      ?.split("=")[1];
+    if (index === undefined) {
+      // Es el principal
+      setPrincipal(prev => {
+        let currentValues = { ...prev };
 
-    setData((prev) => ({
-      ...prev,
-      [name]: value,
-      user: usuario || prev.user,
-    }));
+        if (orden.orderType === "P") {
+          currentValues = {
+            ...prev,
+            quantityToProduce: principal.quantityToProduce,
+          };
+        }
+
+        const key = name as keyof typeof currentValues;
+        currentValues[key] = value;
+
+        // Calcular valores
+        const currentTotal =
+          (Number(currentValues.quantityToProduce) +
+            Number(currentValues.adicionales) +
+            Number(currentValues.sobrante)) -
+          (Number(currentValues.faltante) +
+            Number(currentValues.rechazo) +
+            Number(currentValues.danno_proceso) +
+            Number(currentValues.devolucion));
+
+        const denominador =
+          Number(currentValues.quantityToProduce) -
+          (Number(currentValues.faltante) +
+            Number(currentValues.rechazo) +
+            Number(currentValues.danno_proceso) +
+            Number(currentValues.devolucion));
+
+        const currentRendimiento =
+          denominador > 0
+            ? ((Number(currentValues.total) - Number(currentValues.danno_proceso)) /
+              denominador) *
+            100
+            : 0;
+
+        return {
+          ...currentValues,
+          total: Number(currentTotal).toFixed(2),
+          rendimiento: Number(currentRendimiento).toFixed(2),
+        };
+      });
+    } else {
+      // Es un secundario
+      setSecundarios(prev => {
+        const copy = [...prev];
+
+        // si no existe, crearlo para evitar undefined
+        if (!copy[index]) {
+          copy[index] = {
+            ...prev[index],
+            quantityToProduce: "",
+            adicionales: "",
+            sobrante: "",
+            faltante: "",
+            rechazo: "",
+            danno_proceso: "",
+            devolucion: "",
+            total: "",
+            rendimiento: "",
+          };
+        }
+        let currentValues = { ...copy[index] };
+        const key = name as keyof typeof currentValues;
+        currentValues[key] = value;
+
+        // Condición especial para tipo P
+        if (orden.orderType === "P") {
+          currentValues = {
+            ...currentValues,
+            quantityToProduce: Number(secundarios[index]?.quantityToProduce).toFixed(2),
+          };
+        }
+
+        // Calcular valores
+        const currentTotal =
+          (Number(currentValues.quantityToProduce) +
+            Number(currentValues.adicionales) +
+            Number(currentValues.sobrante)) -
+          (Number(currentValues.faltante) +
+            Number(currentValues.rechazo) +
+            Number(currentValues.danno_proceso) +
+            Number(currentValues.devolucion));
+
+        const denominador =
+          Number(currentValues.quantityToProduce) -
+          (Number(currentValues.faltante) +
+            Number(currentValues.rechazo) +
+            Number(currentValues.danno_proceso) +
+            Number(currentValues.devolucion));
+
+        const currentRendimiento =
+          denominador > 0
+            ? ((Number(currentValues.total) - Number(currentValues.danno_proceso)) /
+              denominador) *
+            100
+            : 0;
+
+        // Actualizo el secundario en esa posición
+        copy[index] = {
+          ...currentValues,
+          total: Number(currentTotal).toFixed(2),
+          rendimiento: Number(currentRendimiento).toFixed(2),
+        };
+
+        return copy;
+      });
+    }
   };
 
-  // Calcular los valores, según la fórmula de la conciliación al capturar los datos
-  useEffect(() => {
-    const calculateValues = () => {
-      const quantityToProduce = parseFloat(data.quantityToProduce) || 0;
-      const faltante = parseFloat(data.faltante) || 0;
-      const adicionales = parseFloat(data.adicionales) || 0;
-      const rechazo = parseFloat(data.rechazo) || 0;
-      const danno_proceso = parseFloat(data.danno_proceso) || 0;
-      const devolucion = parseFloat(data.devolucion) || 0;
-      const sobrante = parseFloat(data.sobrante) || 0;
-      const unidades_caja = parseFloat(data.unidades_caja) || 0;
-      const numero_caja = parseFloat(data.numero_caja) || 0;
-      const unidades_saldo = parseFloat(data.unidades_saldo) || 0;
 
-      /*
-          Calculo de la conciliación donde:
-          (a) Cantidad a Producir
-          (b) Faltante
-          (c) Adicionales
-          (d) Rechazo
-          (e) Daño en Proceso
-          (f) Devolución
-          (g) Sobrante
-          (h) Total
-          (i) unidades_caja
-          (j) numero_caja
-          (k) unidades_saldo
-          (l) total_saldo
+  const calculaEmpaque = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
 
-          total = a + c + g - (b + d + e + f)
-          rendimiento = (h - e) / (a - (d + b)) * 100
-      */
+    setEmpaque((prev) => {
+      let currentValues = { ...prev };
+      const key = name as keyof typeof currentValues;
+      currentValues[key] = value;
 
-      // Calcular total
-      const total =
-        quantityToProduce +
-        adicionales +
-        sobrante -
-        (faltante + rechazo + danno_proceso + devolucion);
-
-      // Calcular rendimiento
-      let rendimiento = 0;
-      const denominador = quantityToProduce - (rechazo + faltante);
-      if (denominador !== 0) {
-        rendimiento = ((total - danno_proceso) / denominador) * 100;
-      }
-
-      // Calcula unidades_caja
-      const saldo = unidades_caja * numero_caja + unidades_saldo;
-
-      // Actualizar estado, redondeando a 2 decimales
-      setData((prev) => ({
-        ...prev,
-        total: total.toFixed(2),
-        rendimiento: rendimiento.toFixed(2),
+      // Calcular saldo
+      const saldo = Number(currentValues.unidades_caja) * Number(currentValues.numero_caja) + Number(currentValues.unidades_saldo);
+      return {
+        ...currentValues,
         total_saldo: saldo.toFixed(2),
-      }));
-    };
-
-    calculateValues();
-  }, [
-    data.quantityToProduce,
-    data.faltante,
-    data.adicionales,
-    data.rechazo,
-    data.danno_proceso,
-    data.devolucion,
-    data.sobrante,
-    data.unidades_caja,
-    data.numero_caja,
-    data.unidades_saldo,
-  ]);
+      }
+    });
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    const response = await guardar_conciliacion(data);
+    const result = {
+      orden,
+      principal,
+      secundarios,
+      empaque,
+    }
+    console.log(result);
+
+    const response = await guardar_conciliacion(result);
     if (response.message === "ok") {
       showSuccess("Conciliación guardada correctamente");
+      console.log(response);
       setTimeout(() => {
         window.close();
       }, 2000);
@@ -174,29 +286,8 @@ const NewConsolida = () => {
     }
   };
 
-  const validaCantidad = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (data.quantityToProduce === "") {
-      showError("Debe ingresar una cantidad.");
-      return false;
-    }
 
-    if (Number(data.quantityToProduce) < 0) {
-      showError("La cantidad debe ser mayor a 0.");
-      setData({ ...data, quantityToProduce: "" });
-      return false;
-    }
-
-    if (Number(data.quantityToProduce) > Number(teorica.diferencia)) {
-      showError("La cantidad debe ser menor o igual a la diferencia.");
-      setData({ ...data, quantityToProduce: "" });
-      return false;
-    }
-
-    return true;
-  };
-
-  if (data?.orden_ejecutada === "") {
+  if (orden?.orden_ejecutada === "") {
     return (
       <div>
         <h1>Cargando...</h1>
@@ -204,11 +295,7 @@ const NewConsolida = () => {
     );
   }
 
-  if (
-    data?.orden_ejecutada === undefined ||
-    data?.orden_ejecutada === null ||
-    data?.orden_ejecutada === ""
-  ) {
+  if (orden?.orden_ejecutada === undefined || orden?.orden_ejecutada === null || orden?.orden_ejecutada === "") {
     return (
       <div>
         <h1>Sin datos de conciliación</h1>
@@ -222,11 +309,14 @@ const NewConsolida = () => {
     // Contenedor principal con un fondo sutil para que el formulario resalte
     <div className="min-h-screen py-12 bg-[rgb(var(--background))]">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+
         <form
-          id="formConciliacion"
+          // id="formConciliacion"
+          ref={refForm}
           onSubmit={handleSubmit}
-          className="bg-[rgb(var(--surface))] rounded-2xl shadow-xl p-8 space-y-10 border border-[rgb(var(--border))]"
-        >
+          className="bg-[rgb(var(--surface))] rounded-2xl shadow-xl 
+            p-8 space-y-10 border border-[rgb(var(--border))]">
+
           {/* --- Encabezado del Formulario --- */}
           <div className="text-center">
             <Text type="title" color="text-[rgb(var(--foreground))]">
@@ -249,7 +339,7 @@ const NewConsolida = () => {
                   Orden Ejecutada
                 </Text>
                 <p className="mt-1 text-base font-semibold text-center text-[rgb(var(--foreground))] bg-[rgb(var(--surface-muted))] rounded-md px-3 py-2">
-                  {data.orden_ejecutada}
+                  {orden?.orden_ejecutada}
                 </p>
               </div>
 
@@ -258,7 +348,7 @@ const NewConsolida = () => {
                   Orden N°
                 </Text>
                 <p className="mt-1 text-base font-semibold text-center text-[rgb(var(--foreground))] bg-[rgb(var(--surface-muted))] rounded-md px-3 py-2 font-mono">
-                  {data.number_order}
+                  {orden?.number_order}
                 </p>
               </div>
 
@@ -267,7 +357,7 @@ const NewConsolida = () => {
                   Tipo de Orden
                 </Text>
                 <p className="mt-1 text-base font-semibold text-center text-[rgb(var(--foreground))] bg-[rgb(var(--surface-muted))] rounded-md px-3 py-2 font-mono">
-                  {data.orderType}
+                  {orden?.orderType}
                 </p>
               </div>
 
@@ -276,7 +366,7 @@ const NewConsolida = () => {
                   Descripción Maestra
                 </Text>
                 <p className="mt-1 text-base font-semibold text-center text-[rgb(var(--foreground))] bg-[rgb(var(--surface-muted))] rounded-md px-3 py-2">
-                  {data.descripcion_maestra}
+                  {orden?.descripcion_maestra}
                 </p>
               </div>
 
@@ -285,7 +375,7 @@ const NewConsolida = () => {
                   Código Artículo
                 </Text>
                 <p className="mt-1 text-base font-semibold text-center text-[rgb(var(--foreground))] bg-[rgb(var(--surface-muted))] rounded-md px-3 py-2 font-mono">
-                  {data.codart}
+                  {principal?.codart}
                 </p>
               </div>
 
@@ -294,7 +384,7 @@ const NewConsolida = () => {
                   Total
                 </Text>
                 <p className="mt-1 text-base font-semibold text-center text-[rgb(var(--foreground))] bg-[rgb(var(--surface-muted))] rounded-md px-3 py-2 font-mono">
-                  {teorica?.padre}
+                  {conciliaciones?.padre}
                 </p>
               </div>
 
@@ -303,7 +393,7 @@ const NewConsolida = () => {
                   Total Parciales
                 </Text>
                 <p className="mt-1 text-base font-semibold text-center text-[rgb(var(--foreground))] bg-[rgb(var(--surface-muted))] rounded-md px-3 py-2 font-mono">
-                  {teorica?.hijo}
+                  {conciliaciones?.hijo}
                 </p>
               </div>
 
@@ -312,17 +402,26 @@ const NewConsolida = () => {
                   Diferencia
                 </Text>
                 <p className="mt-1 text-base font-semibold text-center text-[rgb(var(--foreground))] bg-[rgb(var(--surface-muted))] rounded-md px-3 py-2 font-mono">
-                  {teorica?.diferencia}
+                  {conciliaciones?.diferencia}
                 </p>
               </div>
             </div>
           </fieldset>
 
-          {/* --- Sección de Producción y Desperdicio --- */}
+          {/* --- Sección de Producción y Desperdicio artículo principal --- */}
           <fieldset className="border border-[rgb(var(--border))] p-6 rounded-xl">
             <legend className="-ml-1 px-2 text-lg font-semibold text-[rgb(var(--accent))]">
               Producción y Desperdicio
             </legend>
+
+            <div>
+              <Text type="subtitle" color="text-[rgb(var(--foreground))]">
+                Código Artículo
+              </Text>
+              <p className="mt-1 text-base font-semibold text-center text-[rgb(var(--foreground))] bg-[rgb(var(--surface-muted))] rounded-md px-3 py-2 font-mono">
+                {principal?.codart}
+              </p>
+            </div>
 
             <div className="grid grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-4 mt-4">
               {/* Cantidad Teórica */}
@@ -334,28 +433,26 @@ const NewConsolida = () => {
                   </span>
                 </Text>
 
-                {data?.orderType === "H" ? (
+                {orden?.orderType === "H" ? (
                   <input
                     type="number"
                     step="any"
                     id="quantityToProduce"
                     name="quantityToProduce"
                     required
-                    value={data.quantityToProduce}
+                    value={principal?.quantityToProduce}
                     onChange={inputChange}
-                    onBlur={validaCantidad}
-                    className="mt-2 w-full rounded-md bg-[rgb(var(--surface))] px-3.5 py-2 text-[rgb(var(--foreground))]
-                           shadow-sm ring-1 ring-inset ring-[rgb(var(--border))] border border-transparent
-                           placeholder:text-[rgb(var(--foreground))]/50
-                           focus:outline-none focus:ring-2 focus:ring-[rgb(var(--ring))] focus:border-[rgb(var(--ring))]"
+                    className="mt-2 block w-full text-center rounded-md bg-[rgb(var(--surface))] px-3.5 py-2 text-[rgb(var(--foreground))]
+                         shadow-sm ring-1 ring-inset ring-[rgb(var(--border))] border border-transparent
+                         placeholder:text-[rgb(var(--foreground))]/50
+                         focus:outline-none focus:ring-2 focus:ring-[rgb(var(--ring))] focus:border-[rgb(var(--ring))]"
                   />
                 ) : (
-                  <p
+                  <p id="teorica"
                     className="mt-2 block w-full text-center rounded-md py-2 px-3.5 text-[rgb(var(--foreground))]/60
                            bg-[rgb(var(--surface-muted))] shadow-sm ring-1 ring-inset ring-[rgb(var(--border))]
-                           cursor-not-allowed"
-                  >
-                    {data.quantityToProduce}
+                           cursor-not-allowed">
+                    {Number(principal?.quantityToProduce).toFixed(2)}
                   </p>
                 )}
               </div>
@@ -374,7 +471,7 @@ const NewConsolida = () => {
                   id="faltante"
                   name="faltante"
                   required
-                  value={data.faltante}
+                  value={principal?.faltante}
                   onChange={inputChange}
                   className="mt-2 block w-full text-center rounded-md bg-[rgb(var(--surface))] px-3.5 py-2 text-[rgb(var(--foreground))]
                          shadow-sm ring-1 ring-inset ring-[rgb(var(--border))] border border-transparent
@@ -397,7 +494,7 @@ const NewConsolida = () => {
                   id="adicionales"
                   name="adicionales"
                   required
-                  value={data.adicionales}
+                  value={principal?.adicionales}
                   onChange={inputChange}
                   className="mt-2 block w-full text-center rounded-md bg-[rgb(var(--surface))] px-3.5 py-2 text-[rgb(var(--foreground))]
                          shadow-sm ring-1 ring-inset ring-[rgb(var(--border))] border border-transparent
@@ -420,7 +517,7 @@ const NewConsolida = () => {
                   id="rechazo"
                   name="rechazo"
                   required
-                  value={data.rechazo}
+                  value={principal?.rechazo}
                   onChange={inputChange}
                   className="mt-2 block w-full text-center rounded-md bg-[rgb(var(--surface))] px-3.5 py-2 text-[rgb(var(--foreground))]
                          shadow-sm ring-1 ring-inset ring-[rgb(var(--border))] border border-transparent
@@ -443,7 +540,7 @@ const NewConsolida = () => {
                   id="danno_proceso"
                   name="danno_proceso"
                   required
-                  value={data.danno_proceso}
+                  value={principal?.danno_proceso}
                   onChange={inputChange}
                   className="mt-2 block w-full text-center rounded-md bg-[rgb(var(--surface))] px-3.5 py-2 text-[rgb(var(--foreground))]
                          shadow-sm ring-1 ring-inset ring-[rgb(var(--border))] border border-transparent
@@ -466,7 +563,7 @@ const NewConsolida = () => {
                   id="devolucion"
                   name="devolucion"
                   required
-                  value={data.devolucion}
+                  value={principal?.devolucion}
                   onChange={inputChange}
                   className="mt-2 block w-full text-center rounded-md bg-[rgb(var(--surface))] px-3.5 py-2 text-[rgb(var(--foreground))]
                          shadow-sm ring-1 ring-inset ring-[rgb(var(--border))] border border-transparent
@@ -489,7 +586,7 @@ const NewConsolida = () => {
                   id="sobrante"
                   name="sobrante"
                   required
-                  value={data.sobrante}
+                  value={principal?.sobrante}
                   onChange={inputChange}
                   className="mt-2 block w-full text-center rounded-md bg-[rgb(var(--surface))] px-3.5 py-2 text-[rgb(var(--foreground))]
                          shadow-sm ring-1 ring-inset ring-[rgb(var(--border))] border border-transparent
@@ -497,16 +594,7 @@ const NewConsolida = () => {
                          focus:outline-none focus:ring-2 focus:ring-[rgb(var(--ring))] focus:border-[rgb(var(--ring))]"
                 />
               </div>
-            </div>
-          </fieldset>
 
-          {/* --- Sección de Totales y Cajas --- */}
-          <fieldset className="border border-[rgb(var(--border))] p-6 rounded-xl">
-            <legend className="-ml-1 px-2 text-lg font-semibold text-[rgb(var(--accent))]">
-              Totales y Empacado
-            </legend>
-
-            <div className="grid grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-2 mt-4">
               {/* Total Producido */}
               <div>
                 <Text type="subtitle" color="text-[rgb(var(--foreground))]">
@@ -515,14 +603,11 @@ const NewConsolida = () => {
                     h
                   </span>
                 </Text>
-                <input
-                  type="number"
-                  readOnly
-                  value={data.total}
-                  className="mt-2 block w-full text-center rounded-md py-2 px-3.5
-                         text-[rgb(var(--foreground))]/60 bg-[rgb(var(--surface-muted))]
-                         shadow-sm ring-1 ring-inset ring-[rgb(var(--border))] cursor-not-allowed"
-                />
+                <p className="mt-1 text-base font-semibold text-center text-[rgb(var(--foreground))]
+                   bg-[rgb(var(--surface-muted))] rounded-md px-3 py-2 font-mono">
+                  {principal?.total}
+                  {/* {((Number(principal?.quantityToProduce) + Number(principal?.adicionales) + Number(principal?.sobrante)) - (Number(principal?.faltante) + Number(principal?.rechazo) + Number(principal?.danno_proceso) + Number(principal?.devolucion))).toString()} */}
+                </p>
                 <p className="mt-1 text-xs text-[rgb(var(--foreground))]/60">
                   Cálculo: a + c + g - (b + d + e + f)
                 </p>
@@ -536,19 +621,255 @@ const NewConsolida = () => {
                     i
                   </span>
                 </Text>
-                <input
-                  type="number"
-                  readOnly
-                  value={data.rendimiento}
-                  className="mt-2 block w-full text-center rounded-md py-2 px-3.5
-                         text-[rgb(var(--foreground))]/60 bg-[rgb(var(--surface-muted))]
-                         shadow-sm ring-1 ring-inset ring-[rgb(var(--border))] cursor-not-allowed"
-                />
+                <p className="mt-1 text-base font-semibold text-center text-[rgb(var(--foreground))]
+                   bg-[rgb(var(--surface-muted))] rounded-md px-3 py-2 font-mono">
+                  {principal?.rendimiento}
+                  {
+                    // ((Number(principal?.total) - Number(principal?.danno_proceso)) / (Number(principal?.quantityToProduce) - (Number(principal?.faltante) + Number(principal?.rechazo) + Number(principal?.danno_proceso) + Number(principal?.devolucion))) * 100).toString()
+                  }
+                </p>
                 <p className="mt-1 text-xs text-[rgb(var(--foreground))]/60">
                   Cálculo: (h - e) / (a - (d + b)) × 100
                 </p>
               </div>
+
             </div>
+          </fieldset>
+
+          {/* --- Sección de Producción y Desperdicio artículo secundario --- */}
+          {secundarios.map((item, i) => (
+            <fieldset key={i} className="border border-[rgb(var(--border))] p-6 rounded-xl">
+              <legend className="-ml-1 px-2 text-lg font-semibold text-[rgb(var(--accent))]">
+                Producción y Desperdicio
+              </legend>
+
+              <div>
+                <Text type="subtitle" color="text-[rgb(var(--foreground))]">
+                  Código Artículo
+                </Text>
+                <p className="mt-1 text-base font-semibold text-center text-[rgb(var(--foreground))] bg-[rgb(var(--surface-muted))] rounded-md px-3 py-2 font-mono">
+                  {item?.codart}
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-4 mt-4">
+                {/* Cantidad Teórica */}
+                <div className="sm:col-span-2">
+                  <Text type="subtitle" color="text-[rgb(var(--foreground))]">
+                    Cantidad Teórica
+                    <span className="ml-2 font-mono text-xs bg-[rgb(var(--surface-muted))]
+                      text-[rgb(var(--foreground))]/70 px-1.5 py-0.5 rounded-full">
+                      a
+                    </span>
+                  </Text>
+
+                  {orden?.orderType === "H" ? (
+                    <input
+                      type="number"
+                      step="any"
+                      id={`quantityToProduce`}
+                      name={`quantityToProduce`}
+                      required
+                      value={secundarios[i]?.quantityToProduce}
+                      onChange={(e) => inputChange(e, i)}
+                      className="mt-2 block w-full text-center rounded-md bg-[rgb(var(--surface))] px-3.5 py-2 text-[rgb(var(--foreground))]
+                        shadow-sm ring-1 ring-inset ring-[rgb(var(--border))] border border-transparent
+                        placeholder:text-[rgb(var(--foreground))]/50
+                        focus:outline-none focus:ring-2 focus:ring-[rgb(var(--ring))] focus:border-[rgb(var(--ring))]"
+                    />
+                  ) : (
+                    <p
+                      className="mt-2 block w-full text-center rounded-md py-2 px-3.5 text-[rgb(var(--foreground))]/60
+                        bg-[rgb(var(--surface-muted))] shadow-sm ring-1 ring-inset ring-[rgb(var(--border))]
+                        cursor-not-allowed">
+                      {Number(item?.quantityToProduce).toFixed(2)}
+                    </p>
+                  )}
+                </div>
+
+                {/* Faltante */}
+                <div>
+                  <Text type="subtitle" color="text-[rgb(var(--foreground))]">
+                    Faltante
+                    <span className="ml-2 font-mono text-xs 
+                     bg-[rgb(var(--surface-muted))] text-[rgb(var(--foreground))]/70 px-1.5 py-0.5 rounded-full">
+                      b
+                    </span>
+                  </Text>
+                  <input
+                    type="number"
+                    step="any"
+                    id={`faltante`}
+                    name={`faltante`}
+                    required
+                    value={secundarios[i]?.faltante}
+                    onChange={(e) => inputChange(e, i)}
+                    className="mt-2 block w-full text-center rounded-md bg-[rgb(var(--surface))] px-3.5 py-2 text-[rgb(var(--foreground))]
+                      shadow-sm ring-1 ring-inset ring-[rgb(var(--border))] border border-transparent
+                      placeholder:text-[rgb(var(--foreground))]/50
+                      focus:outline-none focus:ring-2 focus:ring-[rgb(var(--ring))] focus:border-[rgb(var(--ring))]"
+                  />
+                </div>
+
+                {/* Adicionales */}
+                <div>
+                  <Text type="subtitle" color="text-[rgb(var(--foreground))]">
+                    Adicionales
+                    <span className="ml-2 font-mono text-xs bg-[rgb(var(--surface-muted))] text-[rgb(var(--foreground))]/70 px-1.5 py-0.5 rounded-full">
+                      c
+                    </span>
+                  </Text>
+                  <input
+                    type="number"
+                    step="any"
+                    id={`adicionales`}
+                    name={`adicionales`}
+                    required
+                    value={secundarios[i]?.adicionales}
+                    onChange={(e) => inputChange(e, i)}
+                    className="mt-2 block w-full text-center rounded-md bg-[rgb(var(--surface))] px-3.5 py-2 text-[rgb(var(--foreground))]
+                      shadow-sm ring-1 ring-inset ring-[rgb(var(--border))] border border-transparent
+                      placeholder:text-[rgb(var(--foreground))]/50
+                      focus:outline-none focus:ring-2 focus:ring-[rgb(var(--ring))] focus:border-[rgb(var(--ring))]"
+                  />
+                </div>
+
+                {/* Rechazo */}
+                <div>
+                  <Text type="subtitle" color="text-[rgb(var(--foreground))]">
+                    Rechazo
+                    <span className="ml-2 font-mono text-xs bg-[rgb(var(--surface-muted))] text-[rgb(var(--foreground))]/70 px-1.5 py-0.5 rounded-full">
+                      d
+                    </span>
+                  </Text>
+                  <input
+                    type="number"
+                    step="any"
+                    id={`rechazo`}
+                    name={`rechazo`}
+                    required
+                    value={secundarios[i]?.rechazo}
+                    onChange={(e) => inputChange(e, i)}
+                    className="mt-2 block w-full text-center rounded-md bg-[rgb(var(--surface))] px-3.5 py-2 text-[rgb(var(--foreground))]
+                      shadow-sm ring-1 ring-inset ring-[rgb(var(--border))] border border-transparent
+                      placeholder:text-[rgb(var(--foreground))]/50
+                      focus:outline-none focus:ring-2 focus:ring-[rgb(var(--ring))] focus:border-[rgb(var(--ring))]"
+                  />
+                </div>
+
+                {/* Daño en Proceso */}
+                <div>
+                  <Text type="subtitle" color="text-[rgb(var(--foreground))]">
+                    Daño en Proceso
+                    <span className="ml-2 font-mono text-xs bg-[rgb(var(--surface-muted))] text-[rgb(var(--foreground))]/70 px-1.5 py-0.5 rounded-full">
+                      e
+                    </span>
+                  </Text>
+                  <input
+                    type="number"
+                    step="any"
+                    id={`danno_proceso`}
+                    name={`danno_proceso`}
+                    required
+                    value={secundarios[i]?.danno_proceso}
+                    onChange={(e) => inputChange(e, i)}
+                    className="mt-2 block w-full text-center rounded-md bg-[rgb(var(--surface))] px-3.5 py-2 text-[rgb(var(--foreground))]
+                      shadow-sm ring-1 ring-inset ring-[rgb(var(--border))] border border-transparent
+                      placeholder:text-[rgb(var(--foreground))]/50
+                      focus:outline-none focus:ring-2 focus:ring-[rgb(var(--ring))] focus:border-[rgb(var(--ring))]"
+                  />
+                </div>
+
+                {/* Devolución */}
+                <div>
+                  <Text type="subtitle" color="text-[rgb(var(--foreground))]">
+                    Devolución
+                    <span className="ml-2 font-mono text-xs bg-[rgb(var(--surface-muted))] text-[rgb(var(--foreground))]/70 px-1.5 py-0.5 rounded-full">
+                      f
+                    </span>
+                  </Text>
+                  <input
+                    type="number"
+                    step="any"
+                    id={`devolucion`}
+                    name={`devolucion`}
+                    required
+                    value={secundarios[i]?.devolucion}
+                    onChange={(e) => inputChange(e, i)}
+                    className="mt-2 block w-full text-center rounded-md bg-[rgb(var(--surface))] px-3.5 py-2 text-[rgb(var(--foreground))]
+                      shadow-sm ring-1 ring-inset ring-[rgb(var(--border))] border border-transparent
+                      placeholder:text-[rgb(var(--foreground))]/50
+                      focus:outline-none focus:ring-2 focus:ring-[rgb(var(--ring))] focus:border-[rgb(var(--ring))]"
+                  />
+                </div>
+
+                {/* Sobrante */}
+                <div>
+                  <Text type="subtitle" color="text-[rgb(var(--foreground))]">
+                    Sobrante
+                    <span className="ml-2 font-mono text-xs bg-[rgb(var(--surface-muted))] text-[rgb(var(--foreground))]/70 px-1.5 py-0.5 rounded-full">
+                      g
+                    </span>
+                  </Text>
+                  <input
+                    type="number"
+                    step="any"
+                    id={`sobrante`}
+                    name={`sobrante`}
+                    required
+                    value={secundarios[i]?.sobrante}
+                    onChange={(e) => inputChange(e, i)}
+                    className="mt-2 block w-full text-center rounded-md bg-[rgb(var(--surface))] px-3.5 py-2 text-[rgb(var(--foreground))]
+                      shadow-sm ring-1 ring-inset ring-[rgb(var(--border))] border border-transparent
+                      placeholder:text-[rgb(var(--foreground))]/50
+                      focus:outline-none focus:ring-2 focus:ring-[rgb(var(--ring))] focus:border-[rgb(var(--ring))]"
+                  />
+                </div>
+
+                {/* Total Producido */}
+                <div>
+                  <Text type="subtitle" color="text-[rgb(var(--foreground))]">
+                    Total Producido
+                    <span className="ml-2 font-mono text-xs bg-[rgb(var(--surface-muted))] text-[rgb(var(--foreground))]/70 px-1.5 py-0.5 rounded-full">
+                      h
+                    </span>
+                  </Text>
+                  <p className="mt-1 text-base font-semibold text-center text-[rgb(var(--foreground))]
+                   bg-[rgb(var(--surface-muted))] rounded-md px-3 py-2 font-mono">
+                    {secundarios[i]?.total}
+                  </p>
+                  <p className="mt-1 text-xs text-[rgb(var(--foreground))]/60">
+                    Cálculo: a + c + g - (b + d + e + f)
+                  </p>
+                </div>
+
+                {/* Rendimiento */}
+                <div>
+                  <Text type="subtitle" color="text-[rgb(var(--foreground))]">
+                    Rendimiento (%)
+                    <span className="ml-2 font-mono text-xs bg-[rgb(var(--surface-muted))] text-[rgb(var(--foreground))]/70 px-1.5 py-0.5 rounded-full">
+                      i
+                    </span>
+                  </Text>
+                  <p className="mt-1 text-base font-semibold text-center text-[rgb(var(--foreground))]
+                   bg-[rgb(var(--surface-muted))] rounded-md px-3 py-2 font-mono">
+                    {secundarios[i]?.rendimiento}
+                  </p>
+                  <p className="mt-1 text-xs text-[rgb(var(--foreground))]/60">
+                    Cálculo: (h - e) / (a - (d + b)) × 100
+                  </p>
+                </div>
+
+              </div>
+            </fieldset>
+
+          ))}
+
+          {/* --- Sección de Totales y Cajas --- */}
+          <fieldset className="border border-[rgb(var(--border))] p-6 rounded-xl">
+            <legend className="-ml-1 px-2 text-lg font-semibold text-[rgb(var(--accent))]">
+              Totales y Empacado
+            </legend>
 
             <div className="grid grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-3 mt-8 pt-8 border-t border-[rgb(var(--border))]">
               {/* Unidades por Caja */}
@@ -564,8 +885,8 @@ const NewConsolida = () => {
                   id="unidades_caja"
                   name="unidades_caja"
                   required
-                  value={data.unidades_caja}
-                  onChange={inputChange}
+                  value={empaque?.unidades_caja}
+                  onChange={calculaEmpaque}
                   className="mt-2 block w-full text-center rounded-md bg-[rgb(var(--surface))] px-3.5 py-2 text-[rgb(var(--foreground))]
                          shadow-sm ring-1 ring-inset ring-[rgb(var(--border))] border border-transparent
                          placeholder:text-[rgb(var(--foreground))]/50
@@ -586,8 +907,8 @@ const NewConsolida = () => {
                   id="numero_caja"
                   name="numero_caja"
                   required
-                  value={data.numero_caja}
-                  onChange={inputChange}
+                  value={empaque?.numero_caja}
+                  onChange={calculaEmpaque}
                   className="mt-2 block w-full text-center rounded-md bg-[rgb(var(--surface))] px-3.5 py-2 text-[rgb(var(--foreground))]
                          shadow-sm ring-1 ring-inset ring-[rgb(var(--border))] border border-transparent
                          placeholder:text-[rgb(var(--foreground))]/50
@@ -608,8 +929,8 @@ const NewConsolida = () => {
                   id="unidades_saldo"
                   name="unidades_saldo"
                   required
-                  value={data.unidades_saldo}
-                  onChange={inputChange}
+                  value={empaque?.unidades_saldo}
+                  onChange={calculaEmpaque}
                   className="mt-2 block w-full text-center rounded-md bg-[rgb(var(--surface))] px-3.5 py-2 text-[rgb(var(--foreground))]
                          shadow-sm ring-1 ring-inset ring-[rgb(var(--border))] border border-transparent
                          placeholder:text-[rgb(var(--foreground))]/50
@@ -625,14 +946,11 @@ const NewConsolida = () => {
                     L
                   </span>
                 </Text>
-                <input
-                  type="number"
-                  readOnly
-                  value={data.total_saldo}
-                  className="mt-2 block w-full text-center rounded-md py-2 px-3.5
-                         text-[rgb(var(--foreground))]/60 bg-[rgb(var(--surface-muted))]
-                         shadow-sm ring-1 ring-inset ring-[rgb(var(--border))] cursor-not-allowed"
-                />
+                <p className="mt-1 text-base font-semibold text-center text-[rgb(var(--foreground))]
+                   bg-[rgb(var(--surface-muted))] rounded-md px-3 py-2 font-mono">
+                  {empaque?.total_saldo}
+                  {/* {(Number(principal?.unidades_caja) * Number(principal?.numero_caja)) + Number(principal?.unidades_saldo)} */}
+                </p>
                 <p className="mt-1 text-xs text-center text-[rgb(var(--foreground))]/60">
                   Cálculo: (j * k) + l
                 </p>

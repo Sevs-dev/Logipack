@@ -309,7 +309,7 @@ class OrdenesEjecutadasController extends Controller
             }
         }
 
-        $plan = AdaptationDate::where("id", $id)->select("orderNumber")->first();
+        $plan = AdaptationDate::where('id', $id)->select('orderNumber')->first();
 
         return response()->json([
             'orden' => $orden,
@@ -456,7 +456,7 @@ class OrdenesEjecutadasController extends Controller
         if (is_array($actividadesIds) && count($actividadesIds) > 0) {
             $idsString = implode(',', $actividadesIds);
             $placeholders = implode(',', array_fill(0, count($actividadesIds), '?'));
-            
+
             $actividades = DB::select("
                 SELECT 
                     act.id,
@@ -661,32 +661,38 @@ class OrdenesEjecutadasController extends Controller
                 'number_order' => $orden->number_order,
                 'orderType' => $ada_date->orderType,
                 'descripcion_maestra' => $orden->descripcion_maestra,
+                'requiere_bom' => $orden->requiere_bom,
             ];
 
-            // maestra sin bom
-            if (strtolower($orden->requiere_bom) == '0') {
-                return response()->json([
-                    'orden' => $data_orden,
-                    'conciliacion' => [
-                        'codart' => $ada_date->codart,
-                        'desart' => '',  // no existe el campo desart, en la base de datos
-                        'quantityToProduce' => $ada_date->quantityToProduce,
-                    ],
-                    ...$validateConciliacion,
-                    'estado' => 200,
-                ]);
-            }
+            // conciliaciones
+            $conciliaciones = [
+                'padre' => $validateConciliacion['padre'],
+                'hijo' => $validateConciliacion['hijos'],
+                'diferencia' => $validateConciliacion['diferencia'],
+                'validate' => $validateConciliacion['validate'],
+                'list' => $validateConciliacion['conciliaciones'],
+            ];
 
-            // maestra con bom
-            $ingredientes = json_decode(json_decode($ada_date->ingredients))[0];
+            $ingredientes = json_decode(json_decode($ada_date->ingredients));
+            $ingredientes_aux = [];
+            foreach ($ingredientes as $ingrediente) {
+                $ingredientes_aux[] = [
+                    'codart' => $ingrediente->codart,
+                    'desart' => $ingrediente->desart,
+                    'quantityToProduce' => $ingrediente->teorica,
+                ];
+            }
+            $ingredientes = $ingredientes_aux;
+
             return response()->json([
                 'orden' => $data_orden,
-                'conciliacion' => [
-                    'codart' => $ingredientes->codart,
-                    'desart' => $ingredientes->desart,
-                    'quantityToProduce' => $ingredientes->teorica,
+                'articulo_principal' => [
+                    'codart' => $ada_date->codart,
+                    'desart' => '',  // no existe el campo desart, en la base de datos
+                    'quantityToProduce' => $ada_date->quantityToProduce,
                 ],
-                ...$validateConciliacion,
+                'articulo_segundario' => $ingredientes,
+                'conciliaciones' => $conciliaciones,
                 'estado' => 200,
             ]);
         }
@@ -747,12 +753,77 @@ class OrdenesEjecutadasController extends Controller
      * @param Request $request
      * @return JsonResponse
      */
-    public function guardar_conciliacion(
-        Request $request
-    ): JsonResponse {
+    public function guardar_conciliacion(Request $request): JsonResponse
+    {
         try {
-            $data = $request->all();
-            Conciliaciones::create($data);
+            // Convertir arrays a objetos
+            $orden = (object) $request->get('orden');
+            $articulo_principal = (object) $request->get('principal');
+            $articulo_secundario = $request->get('secundarios');  // array
+            $empaque = (object) $request->get('empaque');
+
+            // si existe articulo principal
+            if ($articulo_principal) {
+                Conciliaciones::create([
+                    // datos de la orden
+                    'orden_ejecutada' => $orden->orden_ejecutada,
+                    'adaptation_date_id' => $orden->adaptation_date_id,
+                    'number_order' => $orden->number_order,
+                    'descripcion_maestra' => $orden->descripcion_maestra,
+                    'orderType' => $orden->orderType,
+
+                    // datos del articulo principal
+                    'codart' => $articulo_principal->codart ?? null,
+                    'desart' => $articulo_principal->desart ?? null,
+                    'quantityToProduce' => $articulo_principal->quantityToProduce,
+                    'faltante' => $articulo_principal->faltante,
+                    'adicionales' => $articulo_principal->adicionales,
+                    'rechazo' => $articulo_principal->rechazo,
+                    'danno_proceso' => $articulo_principal->danno_proceso,
+                    'devolucion' => $articulo_principal->devolucion,
+                    'sobrante' => $articulo_principal->sobrante,
+                    'total' => $articulo_principal->total,
+                    'rendimiento' => $articulo_principal->rendimiento,
+                    // datos del empaque
+                    'unidades_caja' => $empaque->unidades_caja,
+                    'numero_caja' => $empaque->numero_caja,
+                    'unidades_saldo' => $empaque->unidades_saldo,
+                    'total_saldo' => $empaque->total_saldo,
+                ]);
+            }
+
+            // si existe articulo secundario
+            if (is_array($articulo_secundario) && count($articulo_secundario) > 0) {
+                foreach ($articulo_secundario as $articulo) {
+                    $articulo = (object) $articulo;
+
+                    Conciliaciones::create([
+                        // datos de la orden
+                        'orden_ejecutada' => $orden->orden_ejecutada,
+                        'adaptation_date_id' => $orden->adaptation_date_id,
+                        'number_order' => $orden->number_order,
+                        'descripcion_maestra' => $orden->descripcion_maestra,
+                        'orderType' => $orden->orderType,
+                        // datos del articulo secundario
+                        'codart' => $articulo->codart,
+                        'desart' => $articulo->desart,
+                        'quantityToProduce' => $articulo->quantityToProduce,
+                        'faltante' => $articulo->faltante,
+                        'adicionales' => $articulo->adicionales,
+                        'rechazo' => $articulo->rechazo,
+                        'danno_proceso' => $articulo->danno_proceso,
+                        'devolucion' => $articulo->devolucion,
+                        'sobrante' => $articulo->sobrante,
+                        'total' => $articulo->total,
+                        'rendimiento' => $articulo->rendimiento,
+                        // datos del empaque
+                        'unidades_caja' => $empaque->unidades_caja,
+                        'numero_caja' => $empaque->numero_caja,
+                        'unidades_saldo' => $empaque->unidades_saldo,
+                        'total_saldo' => $empaque->total_saldo,
+                    ]);
+                }
+            }
 
             return response()->json([
                 'message' => 'ok',
@@ -1101,7 +1172,7 @@ class OrdenesEjecutadasController extends Controller
             ->orderByRaw('posicion ASC')
             ->get(), $orden);
 
-        $version = 'v-' . date("Y_m_d_H_i_s");
+        $version = 'v-' . date('Y_m_d_H_i_s');
         // crear actividades de la orden ejecutada
         foreach ($fases as $fase) {
             ActividadesEjecutadas::create([
