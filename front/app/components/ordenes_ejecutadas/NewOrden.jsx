@@ -142,10 +142,41 @@ const App = () => {
   const orden = local?.orden;
   const linea = local?.linea;
   const plan = local?.plan;
-  console.log(plan);
   const isProceso =
     typeof fase?.phase_type === "string" &&
     fase.phase_type.toLowerCase().includes("proceso");
+
+  // Helper
+
+  const norm = (s) =>
+    (s || "")
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .trim()
+      .toLowerCase();
+
+  const parseUserRoles = (raw) => {
+    if (!raw) return [];
+    const decoded = decodeURIComponent(raw).trim();
+
+    // Caso cookie estilo JSON: ["Master","Coordinador"]
+    try {
+      const maybeJson = JSON.parse(decoded);
+      if (Array.isArray(maybeJson)) {
+        return maybeJson.map((r) => norm(String(r)));
+      }
+    } catch (_) {
+      // no es JSON, seguimos
+    }
+
+    // Fallback: CSV "Master,Coordinador" (o con corchetes rezagados)
+    return decoded
+      .replace(/^[\[\(]+|[\]\)]+$/g, "") // quita [] o ()
+      .replace(/["']/g, "") // quita comillas
+      .split(/[,;|]/)
+      .map((r) => norm(r))
+      .filter(Boolean);
+  };
 
   // ─── Cargar datos iniciales (localStorage) ────────────────────────────────
   useEffect(() => {
@@ -232,46 +263,35 @@ const App = () => {
           fase.fases_fk
         );
 
-        const rawEntry = (
-          typeof document !== "undefined" ? document.cookie : ""
-        )
-          .split("; ")
-          .find((row) => row.startsWith("role="));
-        const rawPerfil = rawEntry?.split("=")[1] ?? "";
-        const decoded = decodeURIComponent(rawPerfil).replace(/"/g, "").trim();
+        const rawEntry =
+          (typeof document !== "undefined" ? document.cookie : "")
+            .split("; ")
+            .find((row) => row.startsWith("role=")) || "";
+        const rawPerfil = rawEntry.split("=")[1] || "";
 
-        const norm = (s) =>
-          (s || "")
-            .normalize("NFD")
-            .replace(/[\u0300-\u036f]/g, "")
-            .trim()
-            .toLowerCase();
-
-        // 👇 Soporta múltiples roles en la cookie: "Master,Coordinador"
-        const userRoles = decoded
-          .split(/[,;|]/)
-          .map((r) => norm(r))
-          .filter(Boolean);
-
-        // Bypass por rol privilegiado
+        const userRoles = parseUserRoles(rawPerfil);
         const privileged = new Set(["administrador", "master"]);
-        if (userRoles.some((r) => privileged.has(r))) {
+        const isPrivileged = userRoles.some((r) => privileged.has(r));
+
+        // ✅ master/administrador saltan TODO bloqueo
+        if (isPrivileged) {
           setShowModal_rol(false);
-          setShowModal_fase(resp?.condicion_1 > 0);
+          setShowModal_fase(false);
           return;
         }
 
-        // Validación contra roles permitidos por la fase
+        // No privilegiado: validar contra roles permitidos por la fase
         const { roles } = await validate_rol(fase.fases_fk);
-        const allowed = (roles?.role ?? "")
-          .toString()
+        const allowed = String(roles?.role ?? "")
           .split(/[,;|]/)
           .map((r) => norm(r))
           .filter(Boolean);
 
         const tienePermiso = userRoles.some((r) => allowed.includes(r));
         setShowModal_rol(!tienePermiso);
-        setShowModal_fase(resp?.condicion_1 > 0);
+
+        const lockedByCond = !!(resp?.condicion_1 > 0);
+        setShowModal_fase(lockedByCond && !isPrivileged);
       } catch {
         // silencioso como pediste
       }

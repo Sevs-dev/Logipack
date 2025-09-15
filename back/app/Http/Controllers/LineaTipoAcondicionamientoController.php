@@ -122,60 +122,60 @@ class LineaTipoAcondicionamientoController extends Controller
     public function getByTipoAcondicionamiento($tipoAcondicionamientoId): JsonResponse
     {
         $lineas  = DB::table('linea_tipo_acondicionamientos as lta')
-        ->leftJoin('stages as std', 'std.id', '=', 'lta.fase')
-        ->leftJoin('stages as cnt', 'cnt.id', '=', 'lta.fase_control')
-        ->leftJoin('tipo_acondicionamientos as ta', 'ta.id', '=', 'lta.tipo_acondicionamiento_id')
-        ->select([
-            'lta.id',
-            'lta.orden',
-            'lta.descripcion',
-            'lta.tipo_acondicionamiento_id',
-            'ta.descripcion as descripcion_tipo',
-            'lta.fase',
-            'std.description as descripcion_fase',
-            'std.status',
-            'lta.editable',
-            'lta.control',
-            'lta.fase_control',
-            'cnt.description as descripcion_fase_control',
-            'lta.created_at',
-            'lta.updated_at'
-        ])
-        ->where('lta.tipo_acondicionamiento_id', $tipoAcondicionamientoId)
-        ->get();
+            ->leftJoin('stages as std', 'std.id', '=', 'lta.fase')
+            ->leftJoin('stages as cnt', 'cnt.id', '=', 'lta.fase_control')
+            ->leftJoin('tipo_acondicionamientos as ta', 'ta.id', '=', 'lta.tipo_acondicionamiento_id')
+            ->select([
+                'lta.id',
+                'lta.orden',
+                'lta.descripcion',
+                'lta.tipo_acondicionamiento_id',
+                'ta.descripcion as descripcion_tipo',
+                'lta.fase',
+                'std.description as descripcion_fase',
+                'std.status',
+                'lta.editable',
+                'lta.control',
+                'lta.fase_control',
+                'cnt.description as descripcion_fase_control',
+                'lta.created_at',
+                'lta.updated_at'
+            ])
+            ->where('lta.tipo_acondicionamiento_id', $tipoAcondicionamientoId)
+            ->get();
 
         return response()->json($lineas);
     }
 
     // funcion que obtenga las dos listas tipo de acondicionamiento y linea tipo de acondicionamiento
-     // funcion que obtenga las dos listas tipo de acondicionamiento y linea tipo de acondicionamiento
+    // funcion que obtenga las dos listas tipo de acondicionamiento y linea tipo de acondicionamiento
     public function getListTipoyLineas($id): JsonResponse
     {
         $tipos = TipoAcondicionamiento::find($id);
         // $lineas = LineaTipoAcondicionamiento::where('tipo_acondicionamiento_id', $id)->get();
         $lineas = DB::table('linea_tipo_acondicionamientos as lta')
-        ->leftJoin('stages as std', 'std.id', '=', 'lta.fase')
-        ->leftJoin('stages as cnt', 'cnt.id', '=', 'lta.fase_control')
-        ->leftJoin('tipo_acondicionamientos as ta', 'ta.id', '=', 'lta.tipo_acondicionamiento_id')
-        ->select([
-            'lta.id',
-            'lta.orden',
-            'lta.descripcion',
-            'lta.tipo_acondicionamiento_id',
-            'ta.descripcion as descripcion_tipo',
-            'lta.fase',
-            'std.description as descripcion_fase',
-            'std.status',
-            'lta.editable',
-            'lta.control',
-            'lta.fase_control',
-            'cnt.description as descripcion_fase_control',
-            'lta.created_at',
-            'lta.updated_at'
-        ])
-        ->where('lta.tipo_acondicionamiento_id', $id)
-        ->get();
- 
+            ->leftJoin('stages as std', 'std.id', '=', 'lta.fase')
+            ->leftJoin('stages as cnt', 'cnt.id', '=', 'lta.fase_control')
+            ->leftJoin('tipo_acondicionamientos as ta', 'ta.id', '=', 'lta.tipo_acondicionamiento_id')
+            ->select([
+                'lta.id',
+                'lta.orden',
+                'lta.descripcion',
+                'lta.tipo_acondicionamiento_id',
+                'ta.descripcion as descripcion_tipo',
+                'lta.fase',
+                'std.description as descripcion_fase',
+                'std.status',
+                'lta.editable',
+                'lta.control',
+                'lta.fase_control',
+                'cnt.description as descripcion_fase_control',
+                'lta.created_at',
+                'lta.updated_at'
+            ])
+            ->where('lta.tipo_acondicionamiento_id', $id)
+            ->get();
+
         return response()->json([
             'tipos' => $tipos,
             'lineas' => $lineas
@@ -185,12 +185,44 @@ class LineaTipoAcondicionamientoController extends Controller
 
     public function getSelectStages(): JsonResponse
     {
-        $fases = Stage::all();
-        $controles = Stage::where('phase_type', 'Control')->get();
+        try {
+            // Para cada reference_id, tomar la versión activa más alta
+            $latestActive = Stage::query()
+                ->selectRaw('reference_id, MAX(version) AS max_version')
+                ->where('active', true)
+                ->groupBy('reference_id');
 
-        return response()->json([
-            'fases' => $fases,
-            'controles' => $controles
-        ]);
+            // Fases: última versión ACTIVA por reference_id
+            $fases = Stage::query()
+                ->joinSub($latestActive, 'l', function ($join) {
+                    $join->on('stages.reference_id', '=', 'l.reference_id')
+                        ->on('stages.version', '=', 'l.max_version');
+                })
+                ->where('stages.active', true) // redundante pero explícito
+                ->orderBy('stages.phase_type')
+                ->orderBy('stages.reference_id')
+                ->get(['stages.*']);
+
+            // Controles: mismas reglas, filtrando por phase_type = 'Control'
+            $controles = Stage::query()
+                ->joinSub($latestActive, 'l', function ($join) {
+                    $join->on('stages.reference_id', '=', 'l.reference_id')
+                        ->on('stages.version', '=', 'l.max_version');
+                })
+                ->where('stages.active', true)
+                ->where('stages.phase_type', 'Control')
+                ->orderBy('stages.reference_id')
+                ->get(['stages.*']);
+
+            return response()->json([
+                'fases'     => $fases,
+                'controles' => $controles,
+            ], 200);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'error'   => 'Error al obtener Stages',
+                'details' => $e->getMessage(),
+            ], 500);
+        }
     }
 }

@@ -1,14 +1,23 @@
 import React, { useState } from "react";
 import {
-  FaEdit, FaTrash, FaCheck, FaTimes, FaPlus, FaHistory, FaAngleLeft,
-  FaAngleRight, FaRegFilePdf, FaRegPlusSquare, FaVoteYea, FaListUl, FaCreativeCommonsNd,
+  FaEdit,
+  FaTrash,
+  FaCheck,
+  FaTimes,
+  FaPlus,
+  FaHistory,
+  FaAngleLeft,
+  FaAngleRight,
+  FaRegFilePdf,
+  FaRegPlusSquare,
+  FaVoteYea,
+  FaListUl,
+  FaCreativeCommonsNd,
+  FaPenNib ,
 } from "react-icons/fa";
 import { motion } from "framer-motion";
 
-type Variant =
-  | "save" | "cancel" | "edit" | "delete" | "create" | "create2" | "terciario"
-  | "history" | "after" | "after2" | "before" | "pdf" | "add" | "view"
-  | "restablecer" | "control";
+type Variant = | "save" | "cancel" | "edit" | "delete" | "create" | "create2" | "terciario" | "history" | "after" | "after2" | "before" | "pdf" | "add" | "view" | "restablecer" | "control" | "relacionada";
 
 interface ButtonProps {
   type?: "button" | "submit" | "reset";
@@ -26,22 +35,29 @@ interface ButtonProps {
 }
 
 const variantStyles: Record<Variant, string> = {
-  save: "bg-green-600 hover:bg-green-700 text-white",
-  cancel: "bg-red-600 hover:bg-red-700 text-white",
-  create2: "bg-yellow-500 hover:bg-yellow-600 focus:ring-yellow-400 shadow-lg shadow-yellow-500/40 text-gray-900 font-semibold px-3 py-1.5 rounded transition duration-300 ease-in-out",
-  edit: "bg-blue-600 hover:bg-blue-700 text-white",
-  delete: "bg-red-700 hover:bg-red-800 text-white",
-  create: "bg-green-500 hover:bg-green-600 text-white",
-  terciario: "bg-yellow-400 hover:bg-yellow-500 text-gray-900",
-  history: "bg-purple-600 hover:bg-purple-700 text-white",
-  pdf: "bg-cyan-500 hover:bg-cyan-600 text-white",
-  after: "bg-white text-black border border-purple-500 hover:bg-purple-600 hover:text-white",
-  after2: "bg-[#0077ff] text-white border border-white hover:bg-purple-600 hover:text-white",
-  before: "bg-white text-black border border-purple-500 hover:bg-purple-600 hover:text-white",
-  add: "bg-orange-500 hover:bg-orange-600 text-white",
-  view: "bg-[#CD4CD9] hover:bg-[#D94CB8] text-white",
-  restablecer: "bg-[#ff8000] hover:bg-[#ffa200] text-white",
-  control: "bg-[#ea0263] hover:bg-[#ff00b7] text-white",
+  save: "bg-[#16A34A] hover:bg-[#22C55E] text-[#FFFFFF]",
+  cancel: "bg-[#FF0000FF] hover:bg-[#EF4444] text-[#FFFFFF]",
+  delete: "bg-[#FF0037FF] hover:bg-[#F43F5E] text-[#FFFFFF]",
+  create: "bg-[#00CC85FF] hover:bg-[#2DD499FF] text-[#FFFFFF]",
+  edit: "bg-[#2563EB] hover:bg-[#3B82F6] text-[#FFFFFF]",
+  create2:
+    "bg-[#EAB308] hover:bg-[#FACC15] focus:ring-[#FACC15] " +
+    "shadow-[0_10px_15px_-3px_rgba(234,179,8,0.4),0_4px_6px_-4px_rgba(234,179,8,0.4)] " +
+    "text-[#111827] font-semibold px-3 py-1.5 rounded transition duration-300 ease-in-out",
+  terciario: "bg-[#84CC16] hover:bg-[#A3E635] text-[#111827]",
+  history: "bg-[#9333EA] hover:bg-[#A855F7] text-[#FFFFFF]",
+  pdf: "bg-[#06B6D4] hover:bg-[#22D3EE] text-[#FFFFFF]",
+  after:
+    "bg-[#64748B] hover:bg-[#94A3B8] text-[#FFFFFF] border border-[#64748B]",
+  after2:
+    "bg-[#EC4899] hover:bg-[#F472B6] text-[#FFFFFF] border border-[#EC4899]",
+  before:
+    "bg-[#6366F1] hover:bg-[#818CF8] text-[#FFFFFF] border border-[#6366F1]",
+  add: "bg-[#F97316] hover:bg-[#FB923C] text-[#FFFFFF]",
+  view: "bg-[#D946EF] hover:bg-[#E879F9] text-[#FFFFFF]",
+  restablecer: "bg-[#B45309] hover:bg-[#D97706] text-[#FFFFFF]",
+  control: "bg-[#E00074] hover:bg-[#FF5DA2] text-[#FFFFFF]",
+  relacionada: "bg-[#FF3D00] hover:bg-[#FF6A33] text-[#FFFFFF]",
 };
 
 const icons: Record<Variant, React.ReactNode> = {
@@ -61,6 +77,7 @@ const icons: Record<Variant, React.ReactNode> = {
   view: <FaVoteYea />,
   restablecer: <FaListUl />,
   control: <FaCreativeCommonsNd />,
+  relacionada: <FaPenNib  />,
 };
 
 const labels: Record<Variant, string> = {
@@ -80,6 +97,7 @@ const labels: Record<Variant, string> = {
   view: "Ver",
   restablecer: "Restablecer",
   control: "Control",
+  relacionada: "Orden Relacionada",
 };
 
 const sizeStyles = {
@@ -95,7 +113,7 @@ const Button: React.FC<ButtonProps> = ({
   onClick,
   disabled = false,
   label,
-  icon,                  // ahora acepta null para ocultar
+  icon, // ahora acepta null para ocultar
   ariaLabel,
   size = "sm",
   className = "",
@@ -113,15 +131,26 @@ const Button: React.FC<ButtonProps> = ({
 
   // Oculta label en estas variantes (icon-only)
   const showLabel = ![
-    "edit", "delete", "pdf", "history", "after", "before",
-    "create2", "view", "restablecer", "control",
+    "edit",
+    "delete",
+    "pdf",
+    "history",
+    "after",
+    "before",
+    "create2",
+    "view",
+    "restablecer",
+    "control",
+    "relacionada",
   ].includes(variant);
 
   // Selección de icono: si icon === null -> no renderiza ícono
   const iconNode = icon !== undefined ? icon : icons[variant];
 
   // aria-label y title siempre string
-  const a11y = ariaLabel ?? (typeof label === "string" && label.trim() ? label : labels[variant]);
+  const a11y =
+    ariaLabel ??
+    (typeof label === "string" && label.trim() ? label : labels[variant]);
 
   return (
     <motion.button
@@ -140,7 +169,7 @@ const Button: React.FC<ButtonProps> = ({
       title={!showLabel ? a11y : undefined}
     >
       {iconNode}
-      {showLabel ? (label ?? labels[variant]) : null}
+      {showLabel ? label ?? labels[variant] : null}
 
       {particles.map((_, i) => (
         <motion.span
@@ -148,13 +177,19 @@ const Button: React.FC<ButtonProps> = ({
           className="absolute w-1 h-1 rounded-full"
           style={{
             background:
-              variant === "add" ? "#10b981"
-              : variant === "terciario" ? "#facc15"
-              : ["save"].includes(variant) ? "#22c55e"
-              : ["create", "restablecer", "control"].includes(variant) ? "#22d3ee"
-              : variant === "create2" ? "#f59e0b"
-              : variant === "view" ? "#9ca3af"
-              : "#fff",
+              variant === "add"
+                ? "#10b981"
+                : variant === "terciario"
+                ? "#facc15"
+                : ["save"].includes(variant)
+                ? "#22c55e"
+                : ["create", "restablecer", "control"].includes(variant)
+                ? "#22d3ee"
+                : variant === "create2"
+                ? "#f59e0b"
+                : variant === "view"
+                ? "#9ca3af"
+                : "#fff",
           }}
           initial={{ opacity: 1, x: 0, y: 0 }}
           animate={{

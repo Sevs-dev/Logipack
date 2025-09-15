@@ -394,12 +394,20 @@
             </div>
         @endif
 
-        {{-- ===== Operaciones Ejecutadas ===== --}}
+       {{-- ===== Operaciones Ejecutadas ===== --}}
         <h2 class="section-title op-h2">Operaciones Ejecutadas</h2>
+
         @php
-            $fmtTime = function ($ts) {
-                try { return $ts ? \Carbon\Carbon::parse($ts)->format('H:i') : '—'; }
-                catch (\Throwable $e) { return '—'; }
+            // Fecha/Hora: DD/MM/YY HH:mm (usa TZ de la app o Bogotá)
+           $fmtDateTime = function ($ts, $tz = null) {
+                try {
+                    if (!$ts) return '—';
+                    $dt = \Carbon\Carbon::parse($ts)
+                        ->setTimezone($tz ?? (config('app.timezone') ?: 'America/Bogota'));
+                    return $dt->format('d/m/Y - H:i'); // día/mes/año primero
+                } catch (\Throwable $e) {
+                    return '—';
+                }
             };
 
             // ===== NUEVO: helpers para decidir visibilidad de columnas =====
@@ -586,7 +594,7 @@
                             if (!$isEmptyish($lin)) $showLinea = true;
 
                             $hrRaw = $f['created_at'] ?? ($actividad['created_at'] ?? null);
-                            if ($fmtTime($hrRaw) !== '—') $showHora = true;
+                            if ($fmtDateTime($hrRaw) !== '—') $showHora = true;
                         }
                         $userRaw = isset($actividad['user']) ? urldecode($actividad['user']) : null;
                         if (!$isEmptyish($userRaw)) $showUser = true;
@@ -607,7 +615,7 @@
                                     @if($showResultado)<th style="width:25%">Resultado</th>@endif
                                     @if($showLinea)    <th style="width:15%">Línea</th>@endif
                                     @if($showUser)     <th style="width:15%">Usuario</th>@endif
-                                    @if($showHora)     <th style="width:15%">Hora</th>@endif
+                                    @if($showHora)     <th style="width:15%">Fecha/Hora</th>@endif
                                 </tr>
                             </thead>
                             <tbody>
@@ -617,7 +625,7 @@
                                         $valor = $form['valor'] ?? null;
                                         $linea = $form['linea'] ?? '—';
                                         $user  = isset($actividad['user']) ? urldecode($actividad['user']) : '—';
-                                        $hora  = $fmtTime($form['created_at'] ?? ($actividad['created_at'] ?? null));
+                                        $fechaHora = $fmtDateTime($form['created_at'] ?? ($actividad['created_at'] ?? null));
                                         $frags = $splitValor($valor);
                                     @endphp
                                     @foreach ($frags as $i => $fragHtml)
@@ -626,7 +634,7 @@
                                         @if($showResultado)<td>{!! $fragHtml !!}</td>@endif
                                         @if($showLinea)    <td>{{ $i ? '—' : $linea }}</td>@endif
                                         @if($showUser)     <td>{{ $i ? '—' : $user }}</td>@endif
-                                        @if($showHora)     <td>{{ $i ? '—' : $hora }}</td>@endif
+                                        @if($showHora)     <td>{{ $i ? '—' : $fechaHora }}</td>@endif
                                     </tr>
                                     @endforeach
                                 @endforeach
@@ -641,7 +649,7 @@
                                         @if($showResultado)<th style="width:25%">Resultado</th>@endif
                                         @if($showLinea)    <th style="width:15%">Línea</th>@endif
                                         @if($showUser)     <th style="width:15%">Usuario</th>@endif
-                                        @if($showHora)     <th style="width:15%">Hora</th>@endif
+                                        @if($showHora)     <th style="width:15%">Fecha/Hora</th>@endif
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -651,7 +659,7 @@
                                             $valor = $form['valor'] ?? null;
                                             $linea = $form['linea'] ?? '—';
                                             $user  = isset($actividad['user']) ? urldecode($actividad['user']) : '—';
-                                            $hora  = $fmtTime($form['created_at'] ?? ($actividad['created_at'] ?? null));
+                                            $fechaHora = $fmtDateTime($form['created_at'] ?? ($actividad['created_at'] ?? null));
                                             $frags = $splitValor($valor);
                                         @endphp
                                         @foreach ($frags as $i => $fragHtml)
@@ -660,7 +668,7 @@
                                             @if($showResultado)<td>{!! $fragHtml !!}</td>@endif
                                             @if($showLinea)    <td>{{ $i ? '—' : $linea }}</td>@endif
                                             @if($showUser)     <td>{{ $i ? '—' : $user }}</td>@endif
-                                            @if($showHora)     <td>{{ $i ? '—' : $hora }}</td>@endif
+                                            @if($showHora)     <td>{{ $i ? '—' : $fechaHora }}</td>@endif
                                         </tr>
                                         @endforeach
                                     @endforeach
@@ -674,7 +682,7 @@
 
         {{-- ===== Testigos (Firmas) ===== --}}
         @php 
-
+            use Carbon\Carbon;
             $testigoTables = [];
 
             if (isset($controlGroups) && is_iterable($controlGroups) && count($controlGroups)) {
@@ -806,19 +814,36 @@
 
         {{-- ===== Controles de Proceso ===== --}}
         <h2 class="section-title controls-title keep-title-only">Controles de Proceso</h2>
-        @php
-            use Carbon\Carbon;
+        @php 
+             // Helper de fecha/hora: DD/MM/YYYY - HH:mm (con TZ de la app o Bogotá)
+            $fmtDateTime = function ($ts, $tz = null) {
+                try {
+                    if (!$ts) return '—';
+                    $tz = $tz ?? (config('app.timezone') ?: 'America/Bogota');
+
+                    if ($ts instanceof \Carbon\CarbonInterface) {
+                        $dt = $ts->copy()->setTimezone($tz);
+                    } else {
+                        $dt = \Carbon\Carbon::parse($ts)->setTimezone($tz);
+                    }
+                    return $dt->format('d/m/Y - H:i');
+                } catch (\Throwable $e) {
+                    return '—';
+                }
+            };
+
             $controlTables = [];
+
             // 1) Preferir la lista unificada del backend (timers + actividades_controls normalizados)
             if (isset($controlGroups) && is_iterable($controlGroups) && count($controlGroups)) {
                 foreach ($controlGroups as $group) {
                     $rows = isset($group['registros']) && is_array($group['registros']) ? array_values($group['registros']) : [];
                     if (!count($rows)) continue;
 
-                    $chunks  = array_chunk($rows, 12);
-                    $userNm  = $group['user'] ?? '—';
+                    $chunks   = array_chunk($rows, 12);
+                    $userNm   = $group['user'] ?? '—';
                     $fechaSrc = $group['updated_at'] ?? $group['created_at'] ?? null;
-                    $fecha   = $fechaSrc ? Carbon::parse($fechaSrc)->format('Y-m-d H:i') : '—';
+                    $fecha    = $fmtDateTime($fechaSrc);
 
                     foreach ($chunks as $chunk) {
                         $controlTables[] = [
@@ -847,7 +872,7 @@
 
                         $chunks = array_chunk($rows, 12);
                         $userNm = is_object($control->user ?? null) ? ($control->user->name ?? '—') : ($control->user ?? '—');
-                        $fecha  = Carbon::parse($control->created_at)->format('Y-m-d H:i');
+                        $fecha  = $fmtDateTime($control->created_at);
 
                         foreach ($chunks as $chunk) {
                             $controlTables[] = [
@@ -866,10 +891,10 @@
                     $rows = isset($ac['registros']) && is_array($ac['registros']) ? array_values($ac['registros']) : [];
                     if (!count($rows)) continue;
 
-                    $chunks  = array_chunk($rows, 12);
-                    $userNm  = $ac['user'] ?? '—';
+                    $chunks   = array_chunk($rows, 12);
+                    $userNm   = $ac['user'] ?? '—';
                     $fechaSrc = $ac['updated_at'] ?? $ac['created_at'] ?? null;
-                    $fecha   = $fechaSrc ? Carbon::parse($fechaSrc)->format('Y-m-d H:i') : '—';
+                    $fecha    = $fmtDateTime($fechaSrc);
 
                     foreach ($chunks as $chunk) {
                         $controlTables[] = [
@@ -892,14 +917,14 @@
                                     <th style="width:26%">Descripción</th>
                                     <th style="width:36%">Resultado</th>
                                     <th style="width:20%">Usuario</th>
-                                    <th style="width:18%">Fecha y Hora</th>
+                                    <th style="width:18%">Fecha - Hora</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 @foreach ($tbl['rows'] as $item)
                                     @php
-                                        $desc  = $item['descripcion'] ?? ($item['description'] ?? '—');
-                                        $valor = $item['valor'] ?? null;
+                                        $desc   = $item['descripcion'] ?? ($item['description'] ?? '—');
+                                        $valor  = $item['valor'] ?? null;
                                         $isImg  = is_string($valor) && str_starts_with($valor, 'data:image');
                                         $isArr  = is_array($valor);
                                         $isTemp = $isArr && isset($valor['min'], $valor['max'], $valor['valor']);

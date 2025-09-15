@@ -21,6 +21,6 @@ class TimerControl extends Model
 
     public function user()
     {
-        return $this->belongsTo(User::class, 'user_id'); // asumiendo user_id
+        return $this->belongsTo(User::class, 'user_id');  
     }
 }

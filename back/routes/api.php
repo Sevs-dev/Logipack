@@ -23,7 +23,7 @@ use App\Http\Controllers\OrdenesEjecutadasController;
 use App\Http\Controllers\HistoryAuditController;
 use App\Http\Controllers\TimerController;
 use App\Http\Controllers\FaseTimerController;
-use App\Http\Controllers\TimerControlController;
+use App\Http\Controllers\TimerControlController; 
 
 /**
  * ============================

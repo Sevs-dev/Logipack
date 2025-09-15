@@ -217,7 +217,7 @@ function NewAdaptation({
 
   // Actualizar artículos seleccionados cuando los datos cambian
   useEffect(() => {
-    if (articles.length > 0 && selectedArticles.length > 0) {
+    if (articles.length > 0 && selectedArticles.length > 0) { 
       const formatted = articles.filter((article) =>
         selectedArticles.some((sel) => sel.codart === article.codart)
       );
@@ -941,26 +941,16 @@ function NewAdaptation({
                     >
                       <option value="">Seleccione un BOM...</option>
                       {Array.isArray(boms) && boms.length > 0 ? (
-                        boms.map((bom) => {
-                          let codart = "Sin código";
-                          try {
-                            const details = JSON.parse(
-                              bom.code_details ?? "{}"
-                            );
-                            codart = details?.codart ?? "Sin código";
-                          } catch  { 
-                          }
-                          const ver = bom?.version ?? "?"; 
-                          return (
-                            <option
-                              key={bom.id}
-                              value={bom.id}
-                              className="bg-[rgb(var(--surface))] text-[rgb(var(--foreground))] dark:bg-slate-900 dark:text-slate-100"
-                            >
-                              {`${codart} · (v${ver})`}
-                            </option>
-                          );
-                        })
+                        boms.map((bom) => (
+                          <option
+                            key={bom.id}
+                            value={bom.id}
+                            className="bg-[rgb(var(--surface))] text-[rgb(var(--foreground))] dark:bg-slate-900 dark:text-slate-100"
+                          >
+                            {JSON.parse(bom.code_details || "{}")?.codart ??
+                              "Sin código"}
+                          </option>
+                        ))
                       ) : (
                         <option disabled>No hay BOMs disponibles</option>
                       )}
