@@ -204,7 +204,7 @@ class OrdenesEjecutadasController extends Controller
             //         ->where('co.adaptation_date_id', $id);
             // })
             ->where('repeat_line', 0)
-            ->when(!$validateConciliacion['validate'], function ($q) {
+            ->when(!$validateConciliacion['validate_articulo_principal']['diferencia'] > 0, function ($q) {
                 $q->whereRaw('1 = 0');  // fuerza a que no devuelva nada
             })
             ->select(
@@ -648,8 +648,7 @@ class OrdenesEjecutadasController extends Controller
         // validar conciliacion
         $response = $this->validateConciliacion($id);
         $validateConciliacion = json_decode($response->getContent(), true);
-
-        if ($orden && $validateConciliacion['validate']) {
+        if ($orden && $validateConciliacion['validate_articulo_principal']['diferencia'] > 0) {
             $ada_date = DB::table('adaptation_dates')
                 ->where('id', $id)
                 ->first();
@@ -666,11 +665,8 @@ class OrdenesEjecutadasController extends Controller
 
             // conciliaciones
             $conciliaciones = [
-                'padre' => $validateConciliacion['padre'],
-                'hijo' => $validateConciliacion['hijos'],
-                'diferencia' => $validateConciliacion['diferencia'],
-                'validate' => $validateConciliacion['validate'],
-                'list' => $validateConciliacion['conciliaciones'],
+                'validate_articulo_principal' => $validateConciliacion['validate_articulo_principal'],
+                'validate_articulo_secundarios' => $validateConciliacion['validate_articulo_secundarios'],
             ];
 
             $ingredientes = json_decode(json_decode($ada_date->ingredients));
@@ -718,6 +714,44 @@ class OrdenesEjecutadasController extends Controller
             ->first();
 
         if ($orden) {
+            $ada_date = DB::table('adaptation_dates')
+                ->where('id', $id)
+                ->first();
+
+            // valida articulos principales
+            $conciliaciones = DB::table('conciliaciones')
+                ->where('number_order', $orden->number_order)
+                ->where('codart', $ada_date->codart)
+                ->get();
+
+            $art_prin_aux = [
+                'codart' => $ada_date->codart,
+                'teorica' => $ada_date->quantityToProduce,
+                'total_concilida' => $conciliaciones->sum('quantityToProduce'),
+                'diferencia' => ($ada_date->quantityToProduce - $conciliaciones->sum('quantityToProduce')),
+            ];
+
+            $validate_articulo_principal = $art_prin_aux;
+
+            //  valida articulos secundarios
+            $articulo_secundario = json_decode(json_decode($ada_date->ingredients));
+            $art_sec_aux = [];
+            foreach ($articulo_secundario as $ing) {
+                $conciliaciones = DB::table('conciliaciones')
+                    ->where('number_order', $orden->number_order)
+                    ->where('codart', $ing->codart)
+                    ->get();
+
+                $art_sec_aux[] = [
+                    'codart' => $ing->codart,
+                    'teorica' => $ing->teorica,
+                    'total_concilida' => $conciliaciones->sum('quantityToProduce'),
+                    'diferencia' => ($ing->teorica - $conciliaciones->sum('quantityToProduce')),
+                ];
+            }
+            $articulo_secundario = $art_sec_aux;
+
+            // anterior
             $conciliaciones = DB::table('conciliaciones')
                 ->where('number_order', $orden->number_order)
                 ->get();
@@ -727,10 +761,8 @@ class OrdenesEjecutadasController extends Controller
 
             return response()->json([
                 'orderType' => $orden->orderType,
-                'padre' => $padre,
-                'hijos' => $hijos,
-                'diferencia' => $padre - $hijos,
-                'validate' => ($padre - $hijos) > 0,
+                'validate_articulo_principal' => $validate_articulo_principal,
+                'validate_articulo_secundarios' => $articulo_secundario,
                 'conciliaciones' => $conciliaciones,
                 'estado' => 200,
             ]);
@@ -761,6 +793,7 @@ class OrdenesEjecutadasController extends Controller
             $articulo_principal = (object) $request->get('principal');
             $articulo_secundario = $request->get('secundarios');  // array
             $empaque = (object) $request->get('empaque');
+            $user = $request->get('user');
 
             // si existe articulo principal
             if ($articulo_principal) {
@@ -771,7 +804,6 @@ class OrdenesEjecutadasController extends Controller
                     'number_order' => $orden->number_order,
                     'descripcion_maestra' => $orden->descripcion_maestra,
                     'orderType' => $orden->orderType,
-
                     // datos del articulo principal
                     'codart' => $articulo_principal->codart ?? null,
                     'desart' => $articulo_principal->desart ?? null,
@@ -789,6 +821,8 @@ class OrdenesEjecutadasController extends Controller
                     'numero_caja' => $empaque->numero_caja,
                     'unidades_saldo' => $empaque->unidades_saldo,
                     'total_saldo' => $empaque->total_saldo,
+                    // datos del usuario
+                    'user' => $user,
                 ]);
             }
 
@@ -821,6 +855,8 @@ class OrdenesEjecutadasController extends Controller
                         'numero_caja' => $empaque->numero_caja,
                         'unidades_saldo' => $empaque->unidades_saldo,
                         'total_saldo' => $empaque->total_saldo,
+                        // datos del usuario
+                        'user' => $user,
                     ]);
                 }
             }

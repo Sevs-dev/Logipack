@@ -184,8 +184,8 @@ export async function fetchAndProcessPlans(id: number): Promise<ServerPlan[]> {
   const rawArray: unknown[] = Array.isArray(serverPlansRaw)
     ? serverPlansRaw
     : serverPlansRaw != null
-    ? [serverPlansRaw]
-    : [];
+      ? [serverPlansRaw]
+      : [];
 
   if (rawArray.length === 0) {
     const keys = isRecord(resp) ? Object.keys(resp).join(", ") : "—";
@@ -1277,7 +1277,7 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
                           </Text>
 
                           {Array.isArray(activitiesForLine) &&
-                          activitiesForLine.length > 0 ? (
+                            activitiesForLine.length > 0 ? (
                             activitiesForLine.map((actId) => {
                               const act = activitiesDetails.find(
                                 (a) => a.id === actId
@@ -1382,11 +1382,10 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
                       <button
                         key={`${color}-${index}`}
                         type="button"
-                        className={`w-6 h-6 rounded-full relative flex items-center justify-center transition-shadow duration-200 ${
-                          isSelected
+                        className={`w-6 h-6 rounded-full relative flex items-center justify-center transition-shadow duration-200 ${isSelected
                             ? "ring-2 ring-[rgb(var(--ring))] ring-offset-2 ring-offset-[rgb(var(--surface))]"
                             : ""
-                        }`}
+                          }`}
                         style={{ backgroundColor: color }}
                         onClick={() =>
                           setCurrentPlan({ ...currentPlan, color })
@@ -1434,11 +1433,10 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
                 <Input
                   type="text"
                   readOnly
-                  value={`${
-                    currentPlan.duration
-                  } min ---> ${getFormattedDuration(
-                    Number(currentPlan.duration)
-                  )}`}
+                  value={`${currentPlan.duration
+                    } min ---> ${getFormattedDuration(
+                      Number(currentPlan.duration)
+                    )}`}
                   tone="strong"
                   className="w-full text-center mt-1"
                 />
@@ -1582,10 +1580,10 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
         onOrdenHija={handleOrdenHija}
         onView={obtenerActividades}
         onPDF={handlePDF}
-        
+
         showTerciarioCondition={(row) =>
           row.status_dates === "Planificación" ||
-          row.status_dates === "En ejecución" 
+          row.status_dates === "En ejecución"
         }
         showViewCondition={(row) =>
           row.status_dates === "Ejecutado" ||

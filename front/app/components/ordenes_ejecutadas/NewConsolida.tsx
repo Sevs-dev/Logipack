@@ -38,12 +38,16 @@ interface Articulos {
   rendimiento: StrNum;
 }
 
-interface Conciliaciones {
-  padre: StrNum;
-  hijo: StrNum;
+interface ValidateArticulo {
+  codart: StrNum;
+  teorica: StrNum;
   diferencia: StrNum;
-  validate: StrNum;
-  list: string[];
+  total_concilida: StrNum;
+}
+
+interface Conciliaciones {
+  validate_articulo_principal: ValidateArticulo;
+  validate_articulo_secundarios: ValidateArticulo[];
 }
 
 interface Empaque {
@@ -98,12 +102,32 @@ const normalizeOrden = (o?: Partial<Orden>): Orden => ({
 const normalizeConciliaciones = (
   c?: Partial<Conciliaciones>
 ): Conciliaciones => ({
-  padre: s(c?.padre),
-  hijo: s(c?.hijo),
-  diferencia: s(c?.diferencia),
-  validate: s(c?.validate),
-  list: Array.isArray(c?.list) ? c!.list : [],
+  validate_articulo_principal: normalizeValidateArticulo(
+    c?.validate_articulo_principal
+  ),
+  validate_articulo_secundarios: normalizeValidateArticuloArray(
+    c?.validate_articulo_secundarios
+  ),
 });
+
+const normalizeValidateArticulo = (
+  v?: Partial<ValidateArticulo>
+): ValidateArticulo => ({
+  codart: s(v?.codart),
+  teorica: s(v?.teorica),
+  diferencia: s(v?.diferencia),
+  total_concilida: s(v?.total_concilida),
+});
+
+const normalizeValidateArticuloArray = (
+  v?: Partial<ValidateArticulo>[]
+): ValidateArticulo[] => {
+  if (!Array.isArray(v)) {
+    return [];
+  }
+
+  return v.map((item) => normalizeValidateArticulo(item));
+};
 
 const normalizeEmpaque = (e?: Partial<Empaque>): Empaque => ({
   unidades_caja: s(e?.unidades_caja),
@@ -205,10 +229,7 @@ const NewConsolida: React.FC = () => {
           normalizeArticulo({
             ...prev,
             ...resp?.articulo_principal,
-            quantityToProduce:
-              o.orderType !== "P"
-                ? prev.quantityToProduce || ""
-                : s(resp?.articulo_principal?.quantityToProduce),
+            quantityToProduce: o.orderType !== "P" ? "" : s(resp?.conciliaciones?.validate_articulo_principal?.diferencia),
           })
         );
 
@@ -216,13 +237,12 @@ const NewConsolida: React.FC = () => {
         const secundariosNormalizados: Articulos[] = Array.isArray(
           resp?.articulo_segundario
         )
-          ? resp!.articulo_segundario!.map((a) =>
-              normalizeArticulo({
-                ...a,
-                quantityToProduce:
-                  o.orderType !== "P" ? "" : s(a?.quantityToProduce),
-              })
-            )
+          ? resp!.articulo_segundario!.map((a, index) =>
+            normalizeArticulo({
+              ...a,
+              quantityToProduce: o.orderType !== "P" ? "" : s(resp?.conciliaciones?.validate_articulo_secundarios?.[index]?.diferencia),
+            })
+          )
           : [];
         setSecundarios(secundariosNormalizados);
 
@@ -283,6 +303,16 @@ const NewConsolida: React.FC = () => {
         }
 
         const totals = calculateTotals(next);
+
+        if (Number(conciliaciones.validate_articulo_principal.diferencia) < Number(nz(next.quantityToProduce))
+          || Number(nz(next.quantityToProduce)) < 0) {
+          showError("La cantidad no puede ser mayor a la diferencia o menor a cero");
+          // refForm.current?.reset();
+          setPrincipal((prev) => ({ ...prev, quantityToProduce: s("") }));
+          return prev;
+        }
+
+
         return { ...next, ...totals };
       });
     } else {
@@ -301,6 +331,13 @@ const NewConsolida: React.FC = () => {
 
         const totals = calculateTotals(next);
         copy[index] = { ...next, ...totals };
+
+        if (Number(conciliaciones.validate_articulo_secundarios[index].diferencia) < Number(nz(next.quantityToProduce))
+          || Number(nz(next.quantityToProduce)) < 0) {
+          showError("La cantidad no puede ser mayor a la diferencia o menor a cero");
+          // 🔹 limpiar el campo sin llamar de nuevo a setSecundarios
+          copy[index].quantityToProduce = s("");
+        }
         return copy;
       });
     }
@@ -447,7 +484,7 @@ const NewConsolida: React.FC = () => {
                   Total
                 </Text>
                 <p className="mt-1 text-base font-semibold text-center text-[rgb(var(--foreground))] bg-[rgb(var(--surface-muted))] rounded-md px-3 py-2 font-mono">
-                  {conciliaciones.padre}
+                  {Number(conciliaciones.validate_articulo_principal.teorica).toFixed(2)}
                 </p>
               </div>
 
@@ -456,7 +493,7 @@ const NewConsolida: React.FC = () => {
                   Total Parciales
                 </Text>
                 <p className="mt-1 text-base font-semibold text-center text-[rgb(var(--foreground))] bg-[rgb(var(--surface-muted))] rounded-md px-3 py-2 font-mono">
-                  {conciliaciones.hijo}
+                  {Number(conciliaciones.validate_articulo_principal.total_concilida).toFixed(2)}
                 </p>
               </div>
 
@@ -465,7 +502,7 @@ const NewConsolida: React.FC = () => {
                   Diferencia
                 </Text>
                 <p className="mt-1 text-base font-semibold text-center text-[rgb(var(--foreground))] bg-[rgb(var(--surface-muted))] rounded-md px-3 py-2 font-mono">
-                  {conciliaciones.diferencia}
+                  {Number(conciliaciones.validate_articulo_principal.diferencia).toFixed(2)}
                 </p>
               </div>
             </div>
@@ -488,29 +525,38 @@ const NewConsolida: React.FC = () => {
 
             <div className="grid grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-4 mt-4">
               <div className="sm:col-span-2">
-                <Text type="subtitle" color="text-[rgb(var(--foreground))]">
-                  Cantidad Teórica
-                  <span className="ml-2 font-mono text-xs bg-[rgb(var(--surface-muted))] text-[rgb(var(--foreground))]/70 px-1.5 py-0.5 rounded-full">
-                    a
-                  </span>
-                </Text>
 
                 {orden.orderType === "H" ? (
-                  <NumberField
-                    name="quantityToProduce"
-                    label=""
-                    value={principal.quantityToProduce}
-                    onChange={inputChange}
-                    required
-                  />
+                  <>
+                    <NumberField
+                      name="quantityToProduce"
+                      label="Cantidad Teórica"
+                      value={principal.quantityToProduce}
+                      onChange={inputChange}
+                      required
+                    />
+                    <Text type="subtitle" color="text-[rgb(var(--foreground))]">
+                      Parcial total
+                      <span className="ml-2 font-mono text-xs bg-[rgb(var(--surface-muted))] text-[rgb(var(--foreground))]/70 px-1.5 py-0.5 rounded-full">
+                        {Number(conciliaciones.validate_articulo_principal.diferencia).toFixed(2)}
+                      </span>
+                    </Text>
+                  </>
                 ) : (
-                  <p
-                    className="mt-2 block w-full text-center rounded-md py-2 px-3.5 text-[rgb(var(--foreground))]/60
+                  <>
+                    <Text type="subtitle" color="text-[rgb(var(--foreground))]">
+                      Cantidad Teórica
+                      <span className="ml-2 font-mono text-xs bg-[rgb(var(--surface-muted))] text-[rgb(var(--foreground))]/70 px-1.5 py-0.5 rounded-full">
+                        a
+                      </span>
+                    </Text>
+                    <p
+                      className="mt-2 block w-full text-center rounded-md py-2 px-3.5 text-[rgb(var(--foreground))]/60
                            bg-[rgb(var(--surface-muted))] shadow-sm ring-1 ring-inset ring-[rgb(var(--border))]
-                           cursor-not-allowed"
-                  >
-                    {Number(principal.quantityToProduce || 0).toFixed(2)}
-                  </p>
+                           cursor-not-allowed">
+                      {Number(principal.quantityToProduce || 0).toFixed(2)}
+                    </p>
+                  </>
                 )}
               </div>
 
@@ -616,28 +662,38 @@ const NewConsolida: React.FC = () => {
 
               <div className="grid grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-4 mt-4">
                 <div className="sm:col-span-2">
-                  <Text type="subtitle" color="text-[rgb(var(--foreground))]">
-                    Cantidad Teórica
-                    <span className="ml-2 font-mono text-xs bg-[rgb(var(--surface-muted))] text-[rgb(var(--foreground))]/70 px-1.5 py-0.5 rounded-full">
-                      a
-                    </span>
-                  </Text>
-
                   {orden.orderType === "H" ? (
-                    <NumberField
-                      name="quantityToProduce"
-                      label=""
-                      value={secundarios[i]?.quantityToProduce ?? ""}
-                      onChange={(e) => inputChange(e, i)}
-                      required
-                    />
+                    <>
+                      <NumberField
+                        name="quantityToProduce"
+                        label="Cantidad Teórica"
+                        value={secundarios[i]?.quantityToProduce ?? ""}
+                        onChange={(e) => inputChange(e, i)}
+                        required
+                      />
+                      <Text type="subtitle" color="text-[rgb(var(--foreground))]">
+                        Parcial total
+                        <span className="ml-2 font-mono text-xs bg-[rgb(var(--surface-muted))] text-[rgb(var(--foreground))]/70 px-1.5 py-0.5 rounded-full">
+                          {Number(conciliaciones.validate_articulo_secundarios[i].diferencia).toFixed(2)}
+                        </span>
+                      </Text>
+                    </>
                   ) : (
-                    <p
-                      className="mt-2 block w-full text-center rounded-md py-2 px-3.5 text-[rgb(var(--foreground))]/60
+                    <>
+                      <Text type="subtitle" color="text-[rgb(var(--foreground))]">
+                        Cantidad Teórica
+                        <span className="ml-2 font-mono text-xs bg-[rgb(var(--surface-muted))] text-[rgb(var(--foreground))]/70 px-1.5 py-0.5 rounded-full">
+                          a
+                        </span>
+                      </Text>
+
+                      <p
+                        className="mt-2 block w-full text-center rounded-md py-2 px-3.5 text-[rgb(var(--foreground))]/60
                         bg-[rgb(var(--surface-muted))] shadow-sm ring-1 ring-inset ring-[rgb(var(--border))] cursor-not-allowed"
-                    >
-                      {Number(item.quantityToProduce || 0).toFixed(2)}
-                    </p>
+                      >
+                        {Number(item.quantityToProduce || 0).toFixed(2)}
+                      </p>
+                    </>
                   )}
                 </div>
 
