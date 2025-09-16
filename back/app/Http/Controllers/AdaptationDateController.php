@@ -822,14 +822,16 @@ class AdaptationDateController extends Controller
                 'total_groups' => $controlGroups->count(),
                 'timers_groups' => $controlGroups->where('source', 'timers')->count(),
                 'ac_groups' => $controlGroups->where('source', 'actividades_controls')->count(),
-                'testigos_groups' => $controlGroups->where('source', 'testigos')->count(), 
-                '📋 $desart', $desart
+                'testigos_groups' => $controlGroups->where('source', 'testigos')->count(),
+                '📋 $desart',
+                $desart
             ]);
 
             // Log::info('📋 $desart', $desart);
 
             return [
                 'plan' => $plan,
+                'maestra' => $maestra,
                 'cliente' => $cliente,
                 'ordenadas' => $ordenasEje,
                 'actividadesEjecutadas' => $actividadesEjecutadas,
@@ -841,7 +843,7 @@ class AdaptationDateController extends Controller
                 'desart' => $desart,
                 'timers' => $timers,
                 'actividadesControls' => $actividadesControls,
-                'testigos' => $testigos,         
+                'testigos' => $testigos,
                 'controlGroups' => $controlGroups,
                 'conciliacion' => $conciliacion,
             ];

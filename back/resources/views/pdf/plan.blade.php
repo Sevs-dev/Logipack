@@ -303,7 +303,7 @@
 
         {{-- ===== Elaborado y Aprobado ===== --}}
         <h2 class="section-title keep-title-only">Elaborado y Aprobado</h2>
-        <div>
+        <div> 
             <table class="table">
                 <thead>
                     <tr>
@@ -317,12 +317,12 @@
                 </thead>
                 <tbody>
                     <tr>
-                        <td>Elaborado</td>
-                        <td>{{ $masterStages[0]['user'] ? urldecode(preg_replace('/[\r\n]+/', '', $masterStages[0]['user'])) : 'Sin usuario' }}</td>
-                        <td>{{ $cliente->updated_at ?? '—' }}</td>
-                        <td>Aprobado</td>
+                        <td>Maestra Elabodara por:</td>
+                        <td>{{ $maestra->user ?? 'Sin usuario' }}</td>
+                        <td>{{ $maestra->updated_at?->timezone('America/Bogota')->format('d/m/Y H:i') ?? '—' }} </td>
+                        <td>Orden Aprobada por:</td>
                         <td>{{ $plan->user ? urldecode(preg_replace('/[\r\n]+/', '', $plan->user)) : 'Sin usuario' }}</td>
-                        <td>{{ $cliente->updated_at ?? '—' }}</td>
+                        <td>{{ $plan->updated_at?->timezone('America/Bogota')->format('d/m/Y H:i') ?? '—' }}</td>
                     </tr>
                 </tbody>
             </table>

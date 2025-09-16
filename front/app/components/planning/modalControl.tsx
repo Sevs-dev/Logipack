@@ -28,6 +28,7 @@ type FaseControl = {
   adaptation_date_id?: number | string;
   fase_id?: number | string;
   activities?: unknown;
+  version?: string;
 };
 
 type BaseExtras = {
@@ -430,8 +431,8 @@ export default function ModalControl({
             {memoriaFase.fase_control.descripcion} |
           </p>
           <p className="font-medium">
-            Tipo: {memoriaFase.fase_control.phase_type}
-          </p>
+            Tipo: {memoriaFase.fase_control.phase_type} |
+          </p> 
         </div>
       )}
 
