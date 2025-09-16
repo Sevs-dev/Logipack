@@ -7,6 +7,69 @@ import { useParams } from "next/navigation";
 import { showError, showSuccess } from "../toastr/Toaster";
 import Text from "../text/Text";
 import Button from "../buttons/buttons";
+// Si tu servicio exporta el tipo, descomenta:
+// import type { GetConciliacionResponse, GuardarConciliacionPayload } from "@/app/services/planing/planingServices";
+
+// ------------------ Helpers sin any ------------------
+const toStr = (v: unknown, fallback: string) =>
+  v === null || v === undefined ? fallback : String(v);
+
+const toNum = (v: unknown) =>
+  typeof v === "number" ? v : typeof v === "string" ? Number(v) : NaN;
+
+type CodDesart = { codart?: string; desart?: string };
+
+function extractCodDesart(src: unknown): CodDesart {
+  // Forma arreglo: [{ codart, desart }, ...]
+  if (Array.isArray(src) && src.length > 0) {
+    const first = src[0];
+    if (typeof first === "object" && first !== null) {
+      const o = first as Record<string, unknown>;
+      return {
+        codart: typeof o.codart === "string" ? o.codart : undefined,
+        desart: typeof o.desart === "string" ? o.desart : undefined,
+      };
+    }
+  }
+  // Forma { principal: { codart, desart } }
+  if (typeof src === "object" && src !== null) {
+    const o = src as Record<string, unknown>;
+    if (typeof o.principal === "object" && o.principal !== null) {
+      const p = o.principal as Record<string, unknown>;
+      return {
+        codart: typeof p.codart === "string" ? p.codart : undefined,
+        desart: typeof p.desart === "string" ? p.desart : undefined,
+      };
+    }
+    // Forma directa { codart, desart }
+    return {
+      codart: typeof o.codart === "string" ? o.codart : undefined,
+      desart: typeof o.desart === "string" ? o.desart : undefined,
+    };
+  }
+  return {};
+}
+
+function extractTeorica(src: unknown): { padre?: string; hijo?: string; diferencia?: string } {
+  if (typeof src !== "object" || src === null) return {};
+  const o = src as Record<string, unknown>;
+  const padre = toNum(o["padre"]);
+  const hijos = toNum(o["hijos"]);
+  const diferencia = toNum(o["diferencia"]);
+  return {
+    padre: Number.isFinite(padre) ? String(padre) : undefined,
+    hijo: Number.isFinite(hijos) ? String(hijos) : undefined,
+    diferencia: Number.isFinite(diferencia) ? String(diferencia) : undefined,
+  };
+}
+
+function getRouteId(params: ReturnType<typeof useParams>): number {
+  const p = params as unknown as Record<string, string | string[]>;
+  const raw = Array.isArray(p.id) ? p.id[0] : p.id;
+  const n = Number(raw);
+  return Number.isFinite(n) ? n : 0;
+}
+// ------------------------------------------------------
 
 const NewConsolida = () => {
   const params = useParams();
@@ -42,25 +105,42 @@ const NewConsolida = () => {
   useEffect(() => {
     const obtener_conciliacion = async () => {
       try {
-        const response = await getConciliacion(Number(params.id));
+        const id = getRouteId(params);
+        const response = await getConciliacion(id);
         console.log(response);
+
+        // Acceso seguro a orden
+        const orden =
+          (response as unknown as { orden?: Record<string, unknown> }).orden ??
+          undefined;
+
+        // Acceso seguro a conciliaciones (puede ser objeto, objeto con principal o arreglo)
+        const conciliaciones =
+          (response as unknown as { conciliaciones?: unknown }).conciliaciones;
+
+        const { codart, desart } = extractCodDesart(conciliaciones);
+
+        // Teórica (padre, hijos, diferencia) fuera del tipo del servicio
+        const { padre, hijo, diferencia } = extractTeorica(response);
+
         setData((prev) => ({
           ...prev,
-          orden_ejecutada: response?.orden?.orden_ejecutada,
-          adaptation_date_id: response?.orden?.adaptation_date_id,
-          number_order: response?.orden?.number_order,
-          orderType: response?.orden?.orderType,
-          descripcion_maestra: response?.orden?.descripcion_maestra,
-          codart: response?.conciliacion?.codart,
-          desart: response?.conciliacion?.desart,
+          orden_ejecutada: toStr(orden?.["orden_ejecutada"], prev.orden_ejecutada),
+          adaptation_date_id: toStr(orden?.["adaptation_date_id"], prev.adaptation_date_id),
+          number_order: toStr(orden?.["number_order"], prev.number_order),
+          orderType: toStr(orden?.["orderType"], prev.orderType),
+          descripcion_maestra: toStr(orden?.["descripcion_maestra"], prev.descripcion_maestra),
+          codart: toStr(codart, prev.codart),
+          desart: toStr(desart, prev.desart),
           quantityToProduce:
-            response?.orden?.orderType === "H" ? "" : response?.diferencia,
+            toStr(orden?.["orderType"], prev.orderType) === "H" ? "" : toStr(diferencia, prev.quantityToProduce),
         }));
+
         setTeorica((prev) => ({
           ...prev,
-          padre: response?.padre,
-          hijo: response?.hijos,
-          diferencia: response?.diferencia,
+          padre: toStr(padre, prev.padre),
+          hijo: toStr(hijo, prev.hijo),
+          diferencia: toStr(diferencia, prev.diferencia),
         }));
       } catch (error: unknown) {
         console.error("Error en getConciliacion:", error);
@@ -69,7 +149,7 @@ const NewConsolida = () => {
     };
 
     obtener_conciliacion();
-  }, [params.id]);
+  }, [params]);
 
   // Obtener los datos del formulario
   const inputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -101,43 +181,23 @@ const NewConsolida = () => {
       const numero_caja = parseFloat(data.numero_caja) || 0;
       const unidades_saldo = parseFloat(data.unidades_saldo) || 0;
 
-      /*
-          Calculo de la conciliación donde:
-          (a) Cantidad a Producir
-          (b) Faltante
-          (c) Adicionales
-          (d) Rechazo
-          (e) Daño en Proceso
-          (f) Devolución
-          (g) Sobrante
-          (h) Total
-          (i) unidades_caja
-          (j) numero_caja
-          (k) unidades_saldo
-          (l) total_saldo
-
-          total = a + c + g - (b + d + e + f)
-          rendimiento = (h - e) / (a - (d + b)) * 100
-      */
-
-      // Calcular total
+      // total = a + c + g - (b + d + e + f)
       const total =
         quantityToProduce +
         adicionales +
         sobrante -
         (faltante + rechazo + danno_proceso + devolucion);
 
-      // Calcular rendimiento
+      // rendimiento = (h - e) / (a - (d + b)) * 100
       let rendimiento = 0;
       const denominador = quantityToProduce - (rechazo + faltante);
       if (denominador !== 0) {
         rendimiento = ((total - danno_proceso) / denominador) * 100;
       }
 
-      // Calcula unidades_caja
+      // total_saldo = (j * k) + l
       const saldo = unidades_caja * numero_caja + unidades_saldo;
 
-      // Actualizar estado, redondeando a 2 decimales
       setData((prev) => ({
         ...prev,
         total: total.toFixed(2),
@@ -163,8 +223,49 @@ const NewConsolida = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    const response = await guardar_conciliacion(data);
-    if (response.message === "ok") {
+    // Construimos el payload con las 4 llaves requeridas
+    const payload = {
+      orden: {
+        orden_ejecutada: data.orden_ejecutada,
+        adaptation_date_id: data.adaptation_date_id,
+        number_order: data.number_order,
+        orderType: data.orderType,
+        descripcion_maestra: data.descripcion_maestra,
+        codart: data.codart,
+        desart: data.desart,
+        user: data.user,
+      },
+      principal: {
+        quantityToProduce: Number(data.quantityToProduce) || 0,
+        faltante: Number(data.faltante) || 0,
+        adicionales: Number(data.adicionales) || 0,
+        rechazo: Number(data.rechazo) || 0,
+        danno_proceso: Number(data.danno_proceso) || 0,
+        devolucion: Number(data.devolucion) || 0,
+        sobrante: Number(data.sobrante) || 0,
+        total: Number(data.total) || 0,
+        rendimiento: Number(data.rendimiento) || 0,
+      },
+      secundarios: {
+        // Si tu backend espera otros secundarios, agrégalos aquí:
+      },
+      empaque: {
+        unidades_caja: Number(data.unidades_caja) || 0,
+        numero_caja: Number(data.numero_caja) || 0,
+        unidades_saldo: Number(data.unidades_saldo) || 0,
+        total_saldo: Number(data.total_saldo) || 0,
+      },
+    };
+
+    // Si tienes el tipo importado, usa:
+    // const typedPayload = payload as unknown as GuardarConciliacionPayload;
+
+    const response = await guardar_conciliacion(
+      // @ts-expect-error: casteo a tipo del servicio sin usar `any`
+      (payload as unknown)
+    );
+
+    if ((response as unknown as { message?: string })?.message === "ok") {
       showSuccess("Conciliación guardada correctamente");
       setTimeout(() => {
         window.close();
@@ -216,10 +317,8 @@ const NewConsolida = () => {
     );
   }
 
-  // --- COPIA Y PEGA ESTE CÓDIGO ---
-
+  // --- UI (igual que lo tenías) ---
   return (
-    // Contenedor principal con un fondo sutil para que el formulario resalte
     <div className="min-h-screen py-12 bg-[rgb(var(--background))]">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
 
@@ -381,7 +480,7 @@ const NewConsolida = () => {
                   className="mt-2 block w-full text-center rounded-md bg-[rgb(var(--surface))] px-3.5 py-2 text-[rgb(var(--foreground))]
                          shadow-sm ring-1 ring-inset ring-[rgb(var(--border))] border border-transparent
                          placeholder:text-[rgb(var(--foreground))]/50
-                         focus:outline-none focus:ring-2 focus:ring-[rgb(var(--ring))] focus:border-[rgb(var(--ring))]"
+                         focus:outline:none focus:ring-2 focus:ring-[rgb(var(--ring))] focus:border-[rgb(var(--ring))]"
                 />
               </div>
 
@@ -404,7 +503,7 @@ const NewConsolida = () => {
                   className="mt-2 block w-full text-center rounded-md bg-[rgb(var(--surface))] px-3.5 py-2 text-[rgb(var(--foreground))]
                          shadow-sm ring-1 ring-inset ring-[rgb(var(--border))] border border-transparent
                          placeholder:text-[rgb(var(--foreground))]/50
-                         focus:outline-none focus:ring-2 focus:ring-[rgb(var(--ring))] focus:border-[rgb(var(--ring))]"
+                         focus:outline:none focus:ring-2 focus:ring-[rgb(var(--ring))] focus:border-[rgb(var(--ring))]"
                 />
               </div>
 
@@ -427,7 +526,7 @@ const NewConsolida = () => {
                   className="mt-2 block w-full text-center rounded-md bg-[rgb(var(--surface))] px-3.5 py-2 text-[rgb(var(--foreground))]
                          shadow-sm ring-1 ring-inset ring-[rgb(var(--border))] border border-transparent
                          placeholder:text-[rgb(var(--foreground))]/50
-                         focus:outline-none focus:ring-2 focus:ring-[rgb(var(--ring))] focus:border-[rgb(var(--ring))]"
+                         focus:outline:none focus:ring-2 focus:ring-[rgb(var(--ring))] focus:border:[rgb(var(--ring))]"
                 />
               </div>
 
@@ -450,7 +549,7 @@ const NewConsolida = () => {
                   className="mt-2 block w-full text-center rounded-md bg-[rgb(var(--surface))] px-3.5 py-2 text-[rgb(var(--foreground))]
                          shadow-sm ring-1 ring-inset ring-[rgb(var(--border))] border border-transparent
                          placeholder:text-[rgb(var(--foreground))]/50
-                         focus:outline-none focus:ring-2 focus:ring-[rgb(var(--ring))] focus:border-[rgb(var(--ring))]"
+                         focus:outline:none focus:ring-2 focus:ring:[rgb(var(--ring))] focus:border:[rgb(var(--ring))]"
                 />
               </div>
 
@@ -473,7 +572,7 @@ const NewConsolida = () => {
                   className="mt-2 block w-full text-center rounded-md bg-[rgb(var(--surface))] px-3.5 py-2 text-[rgb(var(--foreground))]
                          shadow-sm ring-1 ring-inset ring-[rgb(var(--border))] border border-transparent
                          placeholder:text-[rgb(var(--foreground))]/50
-                         focus:outline-none focus:ring-2 focus:ring-[rgb(var(--ring))] focus:border-[rgb(var(--ring))]"
+                         focus:outline:none focus:ring-2 focus:ring:[rgb(var(--ring))] focus:border:[rgb(var(--ring))]"
                 />
               </div>
 
@@ -496,7 +595,7 @@ const NewConsolida = () => {
                   className="mt-2 block w-full text-center rounded-md bg-[rgb(var(--surface))] px-3.5 py-2 text-[rgb(var(--foreground))]
                          shadow-sm ring-1 ring-inset ring-[rgb(var(--border))] border border-transparent
                          placeholder:text-[rgb(var(--foreground))]/50
-                         focus:outline-none focus:ring-2 focus:ring-[rgb(var(--ring))] focus:border-[rgb(var(--ring))]"
+                         focus:outline:none focus:ring-2 focus:ring:[rgb(var(--ring))] focus:border:[rgb(var(--ring))]"
                 />
               </div>
             </div>
@@ -571,7 +670,7 @@ const NewConsolida = () => {
                   className="mt-2 block w-full text-center rounded-md bg-[rgb(var(--surface))] px-3.5 py-2 text-[rgb(var(--foreground))]
                          shadow-sm ring-1 ring-inset ring-[rgb(var(--border))] border border-transparent
                          placeholder:text-[rgb(var(--foreground))]/50
-                         focus:outline-none focus:ring-2 focus:ring-[rgb(var(--ring))] focus:border-[rgb(var(--ring))] sm:text-sm sm:leading-6"
+                         focus:outline:none focus:ring-2 focus:ring:[rgb(var(--ring))] focus:border:[rgb(var(--ring))] sm:text-sm sm:leading-6"
                 />
               </div>
 
@@ -593,7 +692,7 @@ const NewConsolida = () => {
                   className="mt-2 block w-full text-center rounded-md bg-[rgb(var(--surface))] px-3.5 py-2 text-[rgb(var(--foreground))]
                          shadow-sm ring-1 ring-inset ring-[rgb(var(--border))] border border-transparent
                          placeholder:text-[rgb(var(--foreground))]/50
-                         focus:outline-none focus:ring-2 focus:ring-[rgb(var(--ring))] focus:border-[rgb(var(--ring))] sm:text-sm sm:leading-6"
+                         focus:outline:none focus:ring-2 focus:ring:[rgb(var(--ring))] focus:border:[rgb(var(--ring))] sm:text-sm sm:leading-6"
                 />
               </div>
 
@@ -615,7 +714,7 @@ const NewConsolida = () => {
                   className="mt-2 block w-full text-center rounded-md bg-[rgb(var(--surface))] px-3.5 py-2 text-[rgb(var(--foreground))]
                          shadow-sm ring-1 ring-inset ring-[rgb(var(--border))] border border-transparent
                          placeholder:text-[rgb(var(--foreground))]/50
-                         focus:outline-none focus:ring-2 focus:ring-[rgb(var(--ring))] focus:border-[rgb(var(--ring))] sm:text-sm sm:leading-6"
+                         focus:outline:none focus:ring-2 focus:ring:[rgb(var(--ring))] focus:border:[rgb(var(--ring))] sm:text-sm sm:leading-6"
                 />
               </div>
 
@@ -635,7 +734,7 @@ const NewConsolida = () => {
                          text-[rgb(var(--foreground))]/60 bg-[rgb(var(--surface-muted))]
                          shadow-sm ring-1 ring-inset ring-[rgb(var(--border))] cursor-not-allowed"
                 />
-                <p className="mt-1 text-xs text-center text-[rgb(var(--foreground))]/60">
+                <p className="mt-1 text-xs text-center text:[rgb(var(--foreground))]/60">
                   Cálculo: (j * k) + l
                 </p>
               </div>
