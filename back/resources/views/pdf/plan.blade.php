@@ -680,66 +680,6 @@
             </div>
         @endforeach
 
-        {{-- ===== Testigos (Firmas) ===== --}}
-        @php 
-            use Carbon\Carbon;
-            $testigoTables = [];
-
-            if (isset($controlGroups) && is_iterable($controlGroups) && count($controlGroups)) {
-                $onlyTestigos = [];
-
-                foreach ($controlGroups as $g) {
-                    if (($g['source'] ?? null) !== 'testigos') continue;
-
-                    $rows     = isset($g['registros']) && is_array($g['registros']) ? array_values($g['registros']) : [];
-                    if (!count($rows)) continue;
-
-                    $fase     = $g['fase'] ?? 'TESTIGO';
-                    $userNm   = $g['user'] ?? '—';
-                    $fechaSrc = $g['updated_at'] ?? $g['created_at'] ?? null;
-                    $fecha    = $fechaSrc ? Carbon::parse($fechaSrc)->format('Y-m-d H:i') : '—';
-
-                    foreach ($rows as $r) {
-                        $onlyTestigos[] = [
-                            'fase'        => $fase,
-                            'descripcion' => $r['descripcion'] ?? '—',
-                            'valor'       => $r['valor'] ?? null,
-                            'user'        => $userNm,
-                            'fecha'       => $fecha,
-                        ];
-                    }
-                }
-
-                // Fallback: si aún no hay, usa $testigos normalizado del backend
-                if (!count($onlyTestigos) && isset($testigos) && is_iterable($testigos)) {
-                    foreach ($testigos as $t) {
-                        $fase     = $t['descripcion'] ?? 'TESTIGO';
-                        $userNm   = $t['user'] ?? '—';
-                        $fechaSrc = $t['updated_at'] ?? $t['created_at'] ?? null;
-                        $fecha    = $fechaSrc ? Carbon::parse($fechaSrc)->format('Y-m-d H:i') : '—';
-
-                        $regs = isset($t['registros']) && is_array($t['registros']) ? $t['registros'] : [];
-                        foreach ($regs as $r) {
-                            $onlyTestigos[] = [
-                                'fase'        => $fase,
-                                'descripcion' => $r['descripcion'] ?? '—',
-                                'valor'       => $r['valor'] ?? null,
-                                'user'        => $userNm,
-                                'fecha'       => $fecha,
-                            ];
-                        }
-                    }
-                }
-
-                // Chunk en tablas de 6 filas para mantener densidad visual
-                if (count($onlyTestigos)) {
-                    foreach (array_chunk($onlyTestigos, 6) as $chunk) {
-                        $testigoTables[] = ['rows' => $chunk];
-                    }
-                }
-            }
-        @endphp
-
         {{-- ===== Usuarios ===== --}}
         @php
             $userNames = ($users instanceof \Illuminate\Support\Collection ? $users : collect($users ?? []))
@@ -768,6 +708,82 @@
             </table>
         </div>
 
+         {{-- ===== Testigos (Firmas) ===== --}} 
+        
+        @php 
+            use Carbon\Carbon;
+
+            $testigoTables = [];
+
+            if (isset($controlGroups) && is_iterable($controlGroups) && count($controlGroups)) {
+                $onlyTestigos = [];
+
+                foreach ($controlGroups as $g) {
+                    if (($g['source'] ?? null) !== 'testigos') continue;
+
+                    $rows = isset($g['registros']) && is_array($g['registros']) ? array_values($g['registros']) : [];
+                    if (!count($rows)) continue;
+
+                    $fase     = $g['fase'] ?? 'TESTIGO';
+                    $userNm   = $g['user'] ?? '—';
+                    $fechaSrc = $g['updated_at'] ?? $g['created_at'] ?? null;
+
+                    if ($fechaSrc instanceof \Carbon\Carbon) {
+                        $fecha = $fechaSrc->format('Y-m-d H:i');
+                    } else {
+                        $fecha = $fechaSrc ? Carbon::parse($fechaSrc)->format('Y-m-d H:i') : '—';
+                    }
+
+                    foreach ($rows as $r) {
+                        $onlyTestigos[] = [
+                            'fase'        => $fase,
+                            'descripcion' => $r['descripcion'] ?? '—',
+                            'valor'       => $r['valor'] ?? null,
+                            'unidad'      => $r['unidad'] ?? null,
+                            'tipo'        => $r['tipo'] ?? null,
+                            'user'        => $userNm,
+                            'fecha'       => $fecha,
+                        ];
+                    }
+                }
+
+                // Fallback: usar $testigos del backend si no hubo nada
+                if (!count($onlyTestigos) && isset($testigos) && is_iterable($testigos)) {
+                    foreach ($testigos as $t) {
+                        $fase     = $t['descripcion'] ?? 'TESTIGO';
+                        $userNm   = $t['user'] ?? '—';
+                        $fechaSrc = $t['updated_at'] ?? $t['created_at'] ?? null;
+
+                        if ($fechaSrc instanceof \Carbon\Carbon) {
+                            $fecha = $fechaSrc->format('Y-m-d H:i');
+                        } else {
+                            $fecha = $fechaSrc ? Carbon::parse($fechaSrc)->format('Y-m-d H:i') : '—';
+                        }
+
+                        $regs = isset($t['registros']) && is_array($t['registros']) ? $t['registros'] : [];
+                        foreach ($regs as $r) {
+                            $onlyTestigos[] = [
+                                'fase'        => $fase,
+                                'descripcion' => $r['descripcion'] ?? '—',
+                                'valor'       => $r['valor'] ?? null,
+                                'unidad'      => $r['unidad'] ?? null,
+                                'tipo'        => $r['tipo'] ?? null,
+                                'user'        => $userNm,
+                                'fecha'       => $fecha,
+                            ];
+                        }
+                    }
+                }
+
+                // Partir en tablas de 6 filas
+                if (count($onlyTestigos)) {
+                    foreach (array_chunk($onlyTestigos, 6) as $chunk) {
+                        $testigoTables[] = ['rows' => $chunk];
+                    }
+                }
+            }
+        @endphp
+
         @if (count($testigoTables))
             <h2 class="section-title keep-title-only">Testigos (Firmas)</h2>
             <div class="tabla-container">
@@ -777,7 +793,7 @@
                             <thead>
                                 <tr>
                                     <th style="width:30%">Actividad</th>
-                                    <th style="width:34%">Firma</th>
+                                    <th style="width:34%">Firma / Valor</th>
                                     <th style="width:18%">Usuario</th>
                                     <th style="width:18%">Fecha y Hora</th>
                                 </tr>
@@ -785,21 +801,100 @@
                             <tbody>
                                 @foreach ($tbl['rows'] as $row)
                                     @php
-                                        $desc  = $row['descripcion'] ?? '—';
-                                        $valor = $row['valor'] ?? null;
-                                        $user  = isset($row['user']) ? urldecode($row['user']) : '—';
-                                        $fecha = $row['fecha'] ?? '—';
+                                        $desc      = $row['descripcion'] ?? '—';
+                                        $valorRaw  = $row['valor'] ?? null;
+                                        $unidad    = $row['unidad'] ?? null;
+                                        $user      = isset($row['user']) ? urldecode($row['user']) : '—';
+                                        $fecha     = $row['fecha'] ?? '—';
+
+                                        // Texto mostrable
+                                        $textValue = is_scalar($valorRaw) ? trim((string) $valorRaw) : null;
+
+                                        // === Detección/validación de imagen segura para Dompdf ===
+                                        $imgSrc = null;          // puede ser data URI, file path o URL
+                                        $imgIsRemote = false;    // para links, opcional
+
+                                        if (is_string($valorRaw) && strlen(trim($valorRaw))) {
+                                            $val = trim($valorRaw);
+
+                                            // 1) data:image... (validar base64)
+                                            if (str_starts_with($val, 'data:image')) {
+                                                $comma = strpos($val, ',');
+                                                $b64   = $comma !== false ? substr($val, $comma + 1) : '';
+                                                $bin   = base64_decode($b64, true);
+
+                                                if ($bin !== false && function_exists('getimagesizefromstring') && @getimagesizefromstring($bin)) {
+                                                    $imgSrc = $val; // data URI válida
+                                                }
+                                            } else {
+                                                // 2) URL o ruta con extensión de imagen
+                                                $pathOnly = parse_url($val, PHP_URL_PATH) ?? $val;
+
+                                                if (preg_match('/\.(png|jpe?g|gif|webp|svg)$/i', $pathOnly)) {
+                                                    if (filter_var($val, FILTER_VALIDATE_URL)) {
+                                                        // URL remota (Dompdf requiere isRemoteEnabled=true)
+                                                        $imgSrc = $val;
+                                                        $imgIsRemote = true;
+                                                    } else {
+                                                        // Ruta local relativa: validar existencias y usar **filesystem path** para Dompdf
+                                                        $rel  = ltrim($val, '/');                // e.g. storage/firmas/abc.png
+                                                        $full = public_path($rel);               // /public/...
+                                                        if (file_exists($full)) {
+                                                            $imgSrc = $full;
+                                                        } else {
+                                                            // Si viene /storage pero no hay symlink, mapear a storage/app/public
+                                                            if (str_starts_with($rel, 'storage/')) {
+                                                                $altFull = storage_path('app/public/' . substr($rel, 8));
+                                                                if (file_exists($altFull)) {
+                                                                    $imgSrc = $altFull;
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                                // 3) Base64 sin prefijo (validar)
+                                                if (!$imgSrc) {
+                                                    $clean = preg_replace('/\s+/', '', $val);
+                                                    $bin   = base64_decode($clean, true);
+                                                    if ($bin !== false && function_exists('getimagesizefromstring') && @getimagesizefromstring($bin)) {
+                                                        $imgSrc = 'data:image/png;base64,' . $clean; // asumimos PNG
+                                                    }
+                                                }
+                                            }
+                                        }
+
+                                        // Normalizar src para Dompdf: file path -> file://...
+                                        $imgHtmlSrc = null;
+                                        if ($imgSrc) {
+                                            if (preg_match('~^https?://|^data:image~i', $imgSrc)) {
+                                                $imgHtmlSrc = $imgSrc;
+                                            } else {
+                                                // Asumimos ruta absoluta del filesystem
+                                                $imgHtmlSrc = 'file://' . $imgSrc;
+                                            }
+                                        }
                                     @endphp
                                     <tr>
                                         <td>{{ $desc }}</td>
                                         <td>
-                                            @if (is_string($valor) && str_starts_with($valor, 'data:image'))
-                                                <img src="{{ $valor }}" alt="Firma" class="evidence-img" />
-                                            @elseif (is_string($valor) && filter_var($valor, FILTER_VALIDATE_URL))
-                                                <a href="{{ $valor }}" target="_blank" rel="noopener" class="data-label">Abrir imagen</a>
-                                            @else
-                                                <span class="data-label">—</span>
-                                            @endif
+                                            <div class="firma-cell" style="display:flex; flex-direction:column; gap:6px;">
+                                                {{-- Imagen SOLO si fue validada --}}
+                                                @if ($imgHtmlSrc)
+                                                    <img src="{{ $imgHtmlSrc }}" alt="Firma" class="evidence-img" style="max-height:64px; max-width:100%; object-fit:contain;" />
+                                                    @if ($imgIsRemote)
+                                                        <a href="{{ $imgSrc }}" target="_blank" rel="noopener" class="data-label">Abrir imagen</a>
+                                                    @endif
+                                                @endif
+
+                                                {{-- Mostrar SIEMPRE el texto si existe --}}
+                                                @if (is_string($textValue) && strlen($textValue))
+                                                    <span class="data-label">
+                                                        {{ $textValue }}@if ($unidad) <small> {{ $unidad }}</small>@endif
+                                                    </span>
+                                                @elseif (!$imgHtmlSrc)
+                                                    <span class="data-label">—</span>
+                                                @endif
+                                            </div>
                                         </td>
                                         <td>{{ $user }}</td>
                                         <td>{{ $fecha }}</td>
