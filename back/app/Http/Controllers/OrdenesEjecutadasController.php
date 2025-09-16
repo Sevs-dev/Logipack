@@ -197,14 +197,8 @@ class OrdenesEjecutadasController extends Controller
             ->where('ada.adaptation_date_id', $id)
             ->where('ada.proceso', 'eject')
             ->whereIn('std.phase_type', ['Conciliación'])
-            // ->whereNotExists(function ($query) use ($id) {
-            //     $query
-            //         ->select(DB::raw(1))
-            //         ->from('conciliaciones as co')
-            //         ->where('co.adaptation_date_id', $id);
-            // })
             ->where('repeat_line', 0)
-            ->when(!$validateConciliacion['validate_articulo_principal']['diferencia'] > 0, function ($q) {
+            ->when(isset($validateConciliacion['validate_articulo_principal']) ? !$validateConciliacion['validate_articulo_principal']['diferencia'] > 0 : true, function ($q) {
                 $q->whereRaw('1 = 0');  // fuerza a que no devuelva nada
             })
             ->select(
@@ -730,11 +724,10 @@ class OrdenesEjecutadasController extends Controller
                 'total_concilida' => $conciliaciones->sum('quantityToProduce'),
                 'diferencia' => ($ada_date->quantityToProduce - $conciliaciones->sum('quantityToProduce')),
             ];
-
             $validate_articulo_principal = $art_prin_aux;
 
             //  valida articulos secundarios
-            $articulo_secundario = json_decode(json_decode($ada_date->ingredients));
+            $articulo_secundario = json_decode(json_decode($ada_date->ingredients)) ? json_decode(json_decode($ada_date->ingredients)) : [];
             $art_sec_aux = [];
             foreach ($articulo_secundario as $ing) {
                 $conciliaciones = DB::table('conciliaciones')
@@ -746,18 +739,15 @@ class OrdenesEjecutadasController extends Controller
                     'codart' => $ing->codart,
                     'teorica' => $ing->teorica,
                     'total_concilida' => $conciliaciones->sum('quantityToProduce'),
-                    'diferencia' => ($ing->teorica - $conciliaciones->sum('quantityToProduce')),
+                    'diferencia' => ($ing->teorica - $conciliaciones->sum('quantityToProduce') || 0),
                 ];
             }
             $articulo_secundario = $art_sec_aux;
 
-            // anterior
+            // lista de conciliaciones
             $conciliaciones = DB::table('conciliaciones')
                 ->where('number_order', $orden->number_order)
                 ->get();
-
-            $padre = $orden->cantidad_producir;
-            $hijos = $conciliaciones->sum('quantityToProduce');
 
             return response()->json([
                 'orderType' => $orden->orderType,
@@ -770,10 +760,8 @@ class OrdenesEjecutadasController extends Controller
 
         return response()->json([
             'orderType' => null,
-            'padre' => 0,
-            'hijos' => 0,
-            'diferencia' => 0,
-            'validate' => false,
+            'validate_articulo_principal' => null,
+            'validate_articulo_secundarios' => [],
             'conciliaciones' => [],
             'estado' => 500,
         ]);
