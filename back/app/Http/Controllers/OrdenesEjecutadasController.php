@@ -236,6 +236,7 @@ class OrdenesEjecutadasController extends Controller
             ->get();
 
         // Recorrer para validar estado de la lineas
+        
         $fases = [];
         foreach ($linea_fases as $item) {
             // Validar si la fase es conciliación
@@ -766,7 +767,7 @@ class OrdenesEjecutadasController extends Controller
             'estado' => 500,
         ]);
     }
-    
+
     /**
      * Guardar conciliacion
      *
