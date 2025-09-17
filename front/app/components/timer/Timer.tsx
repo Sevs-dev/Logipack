@@ -47,8 +47,8 @@ type BaseCfgExtras = {
 
 type ParsedConfig =
   | ({
-      type: "text" | "email" | "password" | "tel" | "url" | "textarea";
-    } & BaseCfgExtras)
+    type: "text" | "email" | "password" | "tel" | "url" | "textarea";
+  } & BaseCfgExtras)
   | ({ type: "number"; min?: number; max?: number } & BaseCfgExtras)
   | ({ type: "temperature"; min?: number; max?: number } & BaseCfgExtras)
   | ({ type: "date" | "time" | "datetime-local" | "color" } & BaseCfgExtras)
@@ -261,10 +261,10 @@ const Timer: React.FC<TimerProps> = ({
             raw === "running"
               ? "running"
               : raw === "paused"
-              ? "paused"
-              : raw === "finished"
-              ? "finished"
-              : "idle";
+                ? "paused"
+                : raw === "finished"
+                  ? "finished"
+                  : "idle";
 
           const serverSecs =
             typeof result.timer.remaining_seconds === "number"
@@ -328,8 +328,8 @@ const Timer: React.FC<TimerProps> = ({
 
         const valor =
           typeof rawVal === "object" &&
-          rawVal !== null &&
-          !(rawVal instanceof File)
+            rawVal !== null &&
+            !(rawVal instanceof File)
             ? JSON.stringify(rawVal)
             : serializeValue(rawVal ?? "");
 
@@ -380,10 +380,10 @@ const Timer: React.FC<TimerProps> = ({
         raw === "running"
           ? "running"
           : raw === "paused"
-          ? "paused"
-          : raw === "finished"
-          ? "finished"
-          : "idle";
+            ? "paused"
+            : raw === "finished"
+              ? "finished"
+              : "idle";
 
       const serverSecs =
         typeof resetResp.remaining_seconds === "number"
@@ -784,14 +784,12 @@ const Timer: React.FC<TimerProps> = ({
           dragConstraints={{ left: -100, right: 1000, top: -100, bottom: 100 }}
           dragElastic={0.2}
           whileDrag={{ scale: 1.1 }}
-          className={`fixed right-6 bottom-6 ${timerZ} backdrop-blur-md ${getColorClassByPercentage()} border border-white/20 rounded-full shadow-xl p-3 w-24 h-24 flex flex-col items-center justify-center gap-1 transition-all duration-300 hover:scale-105 cursor-grab ${
-            !isRunning && !alarmActive ? "opacity-50 hover:opacity-100" : ""
-          }`}
+          className={`fixed right-6 bottom-6 ${timerZ} backdrop-blur-md ${getColorClassByPercentage()} border border-white/20 rounded-full shadow-xl p-3 w-24 h-24 flex flex-col items-center justify-center gap-1 transition-all duration-300 hover:scale-105 cursor-grab ${!isRunning && !alarmActive ? "opacity-50 hover:opacity-100" : ""
+            }`}
         >
           <div
-            className={`text-lg font-bold font-mono tracking-wide text-center ${
-              seconds === 0 ? "text-white" : "text-purple-100"
-            }`}
+            className={`text-lg font-bold font-mono tracking-wide text-center ${seconds === 0 ? "text-white" : "text-purple-100"
+              }`}
           >
             {formatTime(seconds)}
           </div>
@@ -895,11 +893,10 @@ const Timer: React.FC<TimerProps> = ({
                           <div
                             key={actividad.id_activitie}
                             data-invalid={invalid ? "true" : undefined}
-                            className={`flex flex-col gap-2 ${
-                              invalid
-                                ? "rounded-md ring-1 ring-[rgb(var(--danger))] bg-[rgb(var(--danger))]/5 p-2"
-                                : ""
-                            }`}
+                            className={`flex flex-col gap-2 ${invalid
+                              ? "rounded-md ring-1 ring-[rgb(var(--danger))] bg-[rgb(var(--danger))]/5 p-2"
+                              : ""
+                              }`}
                           >
                             <Text type="subtitle">
                               {actividad.descripcion_activitie}
@@ -1011,11 +1008,10 @@ const Timer: React.FC<TimerProps> = ({
                                           <label
                                             key={opt}
                                             className={`relative flex cursor-pointer items-center justify-between rounded-lg border p-4 shadow-sm transition-all
-                                      ${
-                                        isSelected
-                                          ? "border-[rgb(var(--ring))] ring-2 ring-[rgb(var(--ring))] bg-[rgb(var(--surface))]"
-                                          : "border-[rgb(var(--border))] bg-[rgb(var(--surface))] hover:bg-[rgb(var(--surface-muted))]"
-                                      }`}
+                                      ${isSelected
+                                                ? "border-[rgb(var(--ring))] ring-2 ring-[rgb(var(--ring))] bg-[rgb(var(--surface))]"
+                                                : "border-[rgb(var(--border))] bg-[rgb(var(--surface))] hover:bg-[rgb(var(--surface-muted))]"
+                                              }`}
                                           >
                                             <input
                                               className="sr-only"
@@ -1032,11 +1028,10 @@ const Timer: React.FC<TimerProps> = ({
                                               }
                                             />
                                             <span
-                                              className={`flex-1 text-sm font-medium text-center ${
-                                                isSelected
-                                                  ? "text-[rgb(var(--foreground))]"
-                                                  : "text-[rgb(var(--muted-foreground))]"
-                                              }`}
+                                              className={`flex-1 text-sm font-medium text-center ${isSelected
+                                                ? "text-[rgb(var(--foreground))]"
+                                                : "text-[rgb(var(--muted-foreground))]"
+                                                }`}
                                             >
                                               {opt}
                                             </span>
@@ -1090,8 +1085,8 @@ const Timer: React.FC<TimerProps> = ({
                                     typeof value === "number"
                                       ? value
                                       : value === ""
-                                      ? NaN
-                                      : Number(value);
+                                        ? NaN
+                                        : Number(value);
 
                                   const fueraDeRango =
                                     !Number.isNaN(numeric) &&
@@ -1107,24 +1102,23 @@ const Timer: React.FC<TimerProps> = ({
                                         step="0.1"
                                         placeholder={
                                           rangoMin !== undefined &&
-                                          rangoMax !== undefined
+                                            rangoMax !== undefined
                                             ? `Entre ${rangoMin} y ${rangoMax}`
                                             : "Temperatura"
                                         }
                                         required
-                                        className={`${commonInputClass} ${
-                                          fueraDeRango
-                                            ? "border-[rgb(var(--danger))] ring-[rgb(var(--danger))]"
-                                            : ""
-                                        }`}
+                                        className={`${commonInputClass} ${fueraDeRango
+                                          ? "border-[rgb(var(--danger))] ring-[rgb(var(--danger))]"
+                                          : ""
+                                          }`}
                                         value={String(value ?? "")}
                                         onChange={(e) => {
                                           const v =
                                             e.target.value === ""
                                               ? ""
                                               : Number.parseFloat(
-                                                  e.target.value
-                                                );
+                                                e.target.value
+                                              );
                                           handleChange(
                                             actividad.id_activitie,
                                             v
@@ -1169,18 +1163,73 @@ const Timer: React.FC<TimerProps> = ({
                                             ParsedConfig,
                                             { accept?: string }
                                           >
-                                        ).accept ||
-                                        (tipo === "image" ? "image/*" : "*/*")
+                                        ).accept || (tipo === "image" ? "image/*" : "*/*")
                                       }
-                                      className="block w-full text-sm text-[rgb(var(--foreground))] file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-[rgb(var(--accent))] file:text-[rgb(var(--accent-foreground))] hover:file:bg-[rgb(var(--accent-hover))]"
-                                      onChange={(e) =>
-                                        handleChange(
-                                          actividad.id_activitie,
-                                          e.target.files?.[0] ?? null
-                                        )
-                                      }
+                                      className="block w-full text-sm text-[rgb(var(--foreground))] file:mr-4 file:py-2 
+                                                   file:px-4 file:rounded-lg file:border-0 file:bg-[rgb(var(--accent))] 
+                                                   file:text-[rgb(var(--accent-foreground))] hover:file:bg-[rgb(var(--accent-hover))]"
+                                      onChange={async (e) => {
+                                        const file = e.target.files?.[0] ?? null;
+                                        if (!file) {
+                                          handleChange(actividad.id_activitie, null);
+                                          return;
+                                        }
+
+                                        // 🔹 Optimizar imagen
+                                        const optimizarImagen = (
+                                          file: File,
+                                          maxWidth = 800,
+                                          maxHeight = 800,
+                                          quality = 0.7
+                                        ): Promise<string> => {
+                                          return new Promise((resolve) => {
+                                            const reader = new FileReader();
+                                            reader.onload = (ev) => {
+                                              const img = new Image();
+                                              img.onload = () => {
+                                                let width = img.width;
+                                                let height = img.height;
+
+                                                // Mantener proporción
+                                                if (width > maxWidth) {
+                                                  height *= maxWidth / width;
+                                                  width = maxWidth;
+                                                }
+                                                if (height > maxHeight) {
+                                                  width *= maxHeight / height;
+                                                  height = maxHeight;
+                                                }
+
+                                                const canvas = document.createElement("canvas");
+                                                canvas.width = width;
+                                                canvas.height = height;
+                                                const ctx = canvas.getContext("2d");
+
+                                                if (ctx) {
+                                                  // 🔸 Fondo blanco para evitar negro en JPEG
+                                                  ctx.fillStyle = "#FFFFFF";
+                                                  ctx.fillRect(0, 0, width, height);
+
+                                                  ctx.drawImage(img, 0, 0, width, height);
+                                                }
+
+                                                const base64 = canvas.toDataURL("image/jpeg", quality);
+                                                resolve(base64);
+                                              };
+                                              img.src = ev.target?.result as string;
+                                            };
+                                            reader.readAsDataURL(file);
+                                          });
+                                        };
+
+                                        const base64Optimizada = await optimizarImagen(file);
+
+                                        // 🔹 Pasar al handleChange el base64 optimizado
+                                        handleChange(actividad.id_activitie, base64Optimizada);
+                                      }}
                                     />
                                   );
+
 
                                 case "signature": {
                                   const currentType =
@@ -1197,11 +1246,10 @@ const Timer: React.FC<TimerProps> = ({
                                         )}
 
                                       <select
-                                        className={`${commonInputClass} text-center ${
-                                          locked
-                                            ? "border-[rgb(var(--danger))] ring-[rgb(var(--danger))]"
-                                            : ""
-                                        }`}
+                                        className={`${commonInputClass} text-center ${locked
+                                          ? "border-[rgb(var(--danger))] ring-[rgb(var(--danger))]"
+                                          : ""
+                                          }`}
                                         value={currentType}
                                         required
                                         onMouseDown={(e) => {
@@ -1300,10 +1348,10 @@ const Timer: React.FC<TimerProps> = ({
                                               const next =
                                                 typeof updater === "function"
                                                   ? (
-                                                      updater as (
-                                                        p: FirmaMem
-                                                      ) => FirmaMem
-                                                    )(prev)
+                                                    updater as (
+                                                      p: FirmaMem
+                                                    ) => FirmaMem
+                                                  )(prev)
                                                   : updater;
                                               const scoped =
                                                 next[SIG_SCOPE] ?? {};
@@ -1315,7 +1363,7 @@ const Timer: React.FC<TimerProps> = ({
                                                       pf.map((a) =>
                                                         (a.clave ??
                                                           `field_${a.id_activitie}`) ===
-                                                        k
+                                                          k
                                                           ? { ...a, valor: v }
                                                           : a
                                                       )
@@ -1448,8 +1496,8 @@ const Timer: React.FC<TimerProps> = ({
                       typeof resetResp.remaining_seconds === "number"
                         ? resetResp.remaining_seconds
                         : typeof resetResp.time === "number"
-                        ? Math.max(1, Math.ceil(resetResp.time * 60))
-                        : initialSeconds;
+                          ? Math.max(1, Math.ceil(resetResp.time * 60))
+                          : initialSeconds;
 
                     if (!Number.isFinite(serverSecs) || serverSecs <= 0) {
                       serverSecs = Math.max(1, initialSeconds || 60);

@@ -432,7 +432,7 @@ export default function ModalControl({
           </p>
           <p className="font-medium">
             Tipo: {memoriaFase.fase_control.phase_type} |
-          </p> 
+          </p>
         </div>
       )}
 
@@ -445,7 +445,7 @@ export default function ModalControl({
             const lockedSig =
               tipo === "signature"
                 ? Boolean((cfg as BaseExtras | null)?.signatureSpecific) &&
-                  !sigUnlocked[sigKey(fieldName)]
+                !sigUnlocked[sigKey(fieldName)]
                 : false;
 
             return (
@@ -565,11 +565,10 @@ export default function ModalControl({
                       return (
                         <label
                           key={opt}
-                          className={`relative flex cursor-pointer rounded-lg border p-4 text-center shadow-sm transition-all duration-200 ${
-                            isSelected
-                              ? "border-[rgb(var(--ring))] bg-[rgb(var(--surface-muted))] ring-2 ring-[rgb(var(--ring))]"
-                              : "border-[rgb(var(--border))] bg-[rgb(var(--surface))] hover:bg-[rgb(var(--surface-muted))]"
-                          }`}
+                          className={`relative flex cursor-pointer rounded-lg border p-4 text-center shadow-sm transition-all duration-200 ${isSelected
+                            ? "border-[rgb(var(--ring))] bg-[rgb(var(--surface-muted))] ring-2 ring-[rgb(var(--ring))]"
+                            : "border-[rgb(var(--border))] bg-[rgb(var(--surface))] hover:bg-[rgb(var(--surface-muted))]"
+                            }`}
                         >
                           <input
                             className="sr-only"
@@ -583,9 +582,8 @@ export default function ModalControl({
                             }
                           />
                           <span
-                            className={`flex-1 text-sm font-medium ${
-                              isSelected ? "" : "opacity-80"
-                            }`}
+                            className={`flex-1 text-sm font-medium ${isSelected ? "" : "opacity-80"
+                              }`}
                           >
                             {opt}
                           </span>
@@ -617,8 +615,8 @@ export default function ModalControl({
                         memoriaActividades[fieldName]
                       )
                         ? (memoriaActividades[fieldName] as string[]).includes(
-                            opt
-                          )
+                          opt
+                        )
                         : false;
                       return (
                         <label key={opt} className="flex items-center gap-2">
@@ -646,19 +644,73 @@ export default function ModalControl({
                       name={fieldName}
                       accept={(cfg as BaseExtras).accept ?? "image/*"}
                       multiple={(cfg as BaseExtras).multiple ?? false}
-                      onChange={(e) =>
-                        setValue(
-                          fieldName,
-                          e.currentTarget.files
-                            ? Array.from(e.currentTarget.files)
-                            : []
-                        )
-                      }
+                      onChange={async (e) => {
+                        if (!e.currentTarget.files) {
+                          setValue(fieldName, []);
+                          return;
+                        }
+
+                        const files = Array.from(e.currentTarget.files);
+
+                        // 🔹 Función para optimizar cada imagen
+                        const optimizarImagen = (
+                          file: File,
+                          maxWidth = 800,
+                          maxHeight = 800,
+                          quality = 0.7
+                        ): Promise<string> => {
+                          return new Promise((resolve) => {
+                            const reader = new FileReader();
+                            reader.onload = (ev) => {
+                              const img = new Image();
+                              img.onload = () => {
+                                let width = img.width;
+                                let height = img.height;
+
+                                // Escalar manteniendo proporción
+                                if (width > maxWidth) {
+                                  height *= maxWidth / width;
+                                  width = maxWidth;
+                                }
+                                if (height > maxHeight) {
+                                  width *= maxHeight / height;
+                                  height = maxHeight;
+                                }
+
+                                const canvas = document.createElement("canvas");
+                                canvas.width = width;
+                                canvas.height = height;
+                                const ctx = canvas.getContext("2d");
+
+                                if (ctx) {
+                                  // 🔸 Pintar fondo blanco (evita transparencia en JPEG)
+                                  ctx.fillStyle = "#FFFFFF";
+                                  ctx.fillRect(0, 0, width, height);
+
+                                  ctx.drawImage(img, 0, 0, width, height);
+                                }
+
+                                // Exportar a JPEG comprimido
+                                const base64 = canvas.toDataURL("image/jpeg", quality);
+                                resolve(base64);
+                              };
+                              img.src = ev.target?.result as string;
+                            };
+                            reader.readAsDataURL(file);
+                          });
+                        };
+
+                        // Procesar todas las imágenes seleccionadas
+                        const optimizadas = await Promise.all(files.map((f) => optimizarImagen(f)));
+
+                        setValue(fieldName, optimizadas); // 🔹 Guardar base64 optimizados
+                      }}
                       className={baseInput}
                       required={item.binding}
                     />
                   </div>
                 )}
+
 
                 {/* FILE */}
                 {tipo === "file" && (
@@ -803,17 +855,17 @@ export default function ModalControl({
                           updater:
                             | Record<string, Record<string, unknown>>
                             | ((
-                                prev: Record<string, Record<string, unknown>>
-                              ) => Record<string, Record<string, unknown>>)
+                              prev: Record<string, Record<string, unknown>>
+                            ) => Record<string, Record<string, unknown>>)
                         ) => {
                           setMemProxy((prev) => {
                             const next =
                               typeof updater === "function"
                                 ? (
-                                    updater as (
-                                      p: Record<string, Record<string, unknown>>
-                                    ) => Record<string, Record<string, unknown>>
-                                  )(prev)
+                                  updater as (
+                                    p: Record<string, Record<string, unknown>>
+                                  ) => Record<string, Record<string, unknown>>
+                                )(prev)
                                 : updater;
 
                             const scoped = next[SIG_SCOPE] ?? {};
