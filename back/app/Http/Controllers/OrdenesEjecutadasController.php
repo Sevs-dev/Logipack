@@ -766,7 +766,7 @@ class OrdenesEjecutadasController extends Controller
             'estado' => 500,
         ]);
     }
-
+    
     /**
      * Guardar conciliacion
      *

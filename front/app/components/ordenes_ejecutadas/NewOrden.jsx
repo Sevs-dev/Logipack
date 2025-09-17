@@ -773,11 +773,10 @@ const App = () => {
                           return (
                             <label
                               key={opt}
-                              className={`relative flex cursor-pointer items-center justify-between rounded-lg border p-4 shadow-sm transition-all duration-200 ${
-                                isSelected
-                                  ? "border-[rgb(var(--accent))] bg-[rgb(var(--accent))]/10 ring-2 ring-[rgb(var(--accent))]"
-                                  : "border-[rgb(var(--border))] bg-[rgb(var(--surface))] hover:bg-[rgb(var(--surface-muted))]"
-                              }`}
+                              className={`relative flex cursor-pointer items-center justify-between rounded-lg border p-4 shadow-sm transition-all duration-200 ${isSelected
+                                ? "border-[rgb(var(--accent))] bg-[rgb(var(--accent))]/10 ring-2 ring-[rgb(var(--accent))]"
+                                : "border-[rgb(var(--border))] bg-[rgb(var(--surface))] hover:bg-[rgb(var(--surface-muted))]"
+                                }`}
                             >
                               <input
                                 className="sr-only"
@@ -789,11 +788,10 @@ const App = () => {
                                 onChange={inputChange}
                               />
                               <span
-                                className={`flex-1 text-sm font-medium text-center ${
-                                  isSelected
-                                    ? "text-[rgb(var(--foreground))]"
-                                    : "text-[rgb(var(--foreground))]/70"
-                                }`}
+                                className={`flex-1 text-sm font-medium text-center ${isSelected
+                                  ? "text-[rgb(var(--foreground))]"
+                                  : "text-[rgb(var(--foreground))]/70"
+                                  }`}
                               >
                                 {opt}
                               </span>
@@ -873,27 +871,27 @@ const App = () => {
                         {memoriaFase[linea]?.[clave]?.startsWith(
                           "data:application/pdf"
                         ) && (
-                          <div className="mb-2">
-                            <object
-                              data={memoriaFase[linea][clave]}
-                              type="application/pdf"
-                              width="100%"
-                              height="400px"
-                            >
-                              <p className="text-[rgb(var(--foreground))]/60">
-                                No se pudo mostrar el PDF.{" "}
-                                <a
-                                  href={memoriaFase[linea][clave]}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="text-[rgb(var(--accent))] underline"
-                                >
-                                  Haz clic aquí para verlo
-                                </a>
-                              </p>
-                            </object>
-                          </div>
-                        )}
+                            <div className="mb-2">
+                              <object
+                                data={memoriaFase[linea][clave]}
+                                type="application/pdf"
+                                width="100%"
+                                height="400px"
+                              >
+                                <p className="text-[rgb(var(--foreground))]/60">
+                                  No se pudo mostrar el PDF.{" "}
+                                  <a
+                                    href={memoriaFase[linea][clave]}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-[rgb(var(--accent))] underline"
+                                  >
+                                    Haz clic aquí para verlo
+                                  </a>
+                                </p>
+                              </object>
+                            </div>
+                          )}
 
                         <input
                           className="block w-full px-3 py-2 bg-[rgb(var(--surface))] border border-[rgb(var(--border))] rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-[rgb(var(--ring))] focus:border-[rgb(var(--ring))] text-[rgb(var(--foreground))] placeholder-[rgb(var(--foreground))]/50 text-center"
@@ -933,9 +931,7 @@ const App = () => {
                     {/* IMAGE */}
                     {type === "image" && (
                       <div>
-                        {memoriaFase[linea]?.[clave]?.startsWith(
-                          "data:image"
-                        ) && (
+                        {memoriaFase[linea]?.[clave]?.startsWith("data:image") && (
                           <div className="mb-2 justify-center flex">
                             <img
                               src={memoriaFase[linea][clave]}
@@ -946,39 +942,73 @@ const App = () => {
                         )}
 
                         <input
-                          className="block w-full px-3 py-2 bg-[rgb(var(--surface))] border border-[rgb(var(--border))] rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-[rgb(var(--ring))] focus:border-[rgb(var(--ring))] text-[rgb(var(--foreground))] placeholder-[rgb(var(--foreground))]/50 text-center"
+                          className="block w-full px-3 py-2 bg-[rgb(var(--surface))] border border-[rgb(var(--border))] rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-[rgb(var(--ring))] focus:border-[rgb(var(--ring))] placeholder-[rgb(var(--foreground))]/50 text-center"
                           type="file"
                           accept="image/*"
                           required={
-                            !memoriaFase[linea]?.[clave]?.startsWith(
-                              "data:image"
-                            ) && item.binding
+                            !memoriaFase[linea]?.[clave]?.startsWith("data:image") && item.binding
                           }
                           name={clave}
                           onChange={(e) => {
-                            const file = e.target.files[0];
-                            if (file) {
-                              const reader = new FileReader();
-                              reader.onloadend = () => {
-                                const base64 = reader.result;
-                                setMemoriaFase((prev) => {
-                                  const actualizado = {
-                                    ...prev,
-                                    [linea]: {
-                                      ...prev[linea],
-                                      [clave]: base64,
-                                    },
+                            const file = e.target.files?.[0];
+                            if (!file) return;
+
+                            // Función para redimensionar y optimizar
+                            const resizeImage = (file, maxWidth = 1024, maxHeight = 1024, quality = 0.7) => {
+                              return new Promise((resolve) => {
+                                const reader = new FileReader();
+                                reader.onload = (ev) => {
+                                  const img = new Image();
+                                  img.onload = () => {
+                                    let width = img.width;
+                                    let height = img.height;
+
+                                    // Escalar manteniendo proporción
+                                    if (width > maxWidth) {
+                                      height *= maxWidth / width;
+                                      width = maxWidth;
+                                    }
+                                    if (height > maxHeight) {
+                                      width *= maxHeight / height;
+                                      height = maxHeight;
+                                    }
+
+                                    const canvas = document.createElement("canvas");
+                                    canvas.width = width;
+                                    canvas.height = height;
+                                    const ctx = canvas.getContext("2d");
+                                    ctx.drawImage(img, 0, 0, width, height);
+
+                                    // Convertir a Base64 optimizado
+                                    const base64 = canvas.toDataURL("image/jpeg", quality);
+                                    resolve(base64);
                                   };
-                                  saveToDB("memoria_fase", actualizado);
-                                  return actualizado;
-                                });
-                              };
-                              reader.readAsDataURL(file);
-                            }
+                                  img.src = ev.target.result;
+                                };
+                                reader.readAsDataURL(file);
+                              });
+                            };
+
+
+                            // Procesar la imagen antes de guardarla
+                            resizeImage(file, 1024, 1024, 0.7).then((base64) => {
+                              setMemoriaFase((prev) => {
+                                const actualizado = {
+                                  ...prev,
+                                  [linea]: {
+                                    ...prev[linea],
+                                    [clave]: base64,
+                                  },
+                                };
+                                saveToDB("memoria_fase", actualizado);
+                                return actualizado;
+                              });
+                            });
                           }}
                         />
                       </div>
                     )}
+
 
                     {/* SIGNATURE */}
                     {type === "signature" && (
@@ -991,12 +1021,11 @@ const App = () => {
                           )}
 
                         <select
-                          className={`text-center block w-full px-3 py-2 bg-[rgb(var(--surface))] border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-[rgb(var(--ring))] focus:border-[rgb(var(--ring))] text-[rgb(var(--foreground))] placeholder-[rgb(var(--foreground))]/50 mb-2 ${
-                            signatureSpecific &&
+                          className={`text-center block w-full px-3 py-2 bg-[rgb(var(--surface))] border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-[rgb(var(--ring))] focus:border-[rgb(var(--ring))] text-[rgb(var(--foreground))] placeholder-[rgb(var(--foreground))]/50 mb-2 ${signatureSpecific &&
                             !sigUnlocked[sigKey(linea, clave)]
-                              ? "border-[rgb(var(--warning))]"
-                              : "border-[rgb(var(--border))]"
-                          }`}
+                            ? "border-[rgb(var(--warning))]"
+                            : "border-[rgb(var(--border))]"
+                            }`}
                           required
                           value={
                             memoriaFase[linea]?.[`tipo_entrada_${clave}`] || ""
@@ -1030,28 +1059,28 @@ const App = () => {
 
                         {memoriaFase[linea]?.[`tipo_entrada_${clave}`] ===
                           "texto" && (
-                          <input
-                            type="text"
-                            className="text-center block w-full px-3 py-2 bg-[rgb(var(--surface))] border border-[rgb(var(--border))] rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-[rgb(var(--ring))] focus:border-[rgb(var(--ring))] text-[rgb(var(--foreground))] placeholder-[rgb(var(--foreground))]/50"
-                            name={clave}
-                            value={memoriaFase[linea]?.[clave] ?? ""}
-                            required={item.binding}
-                            onChange={inputChange}
-                          />
-                        )}
+                            <input
+                              type="text"
+                              className="text-center block w-full px-3 py-2 bg-[rgb(var(--surface))] border border-[rgb(var(--border))] rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-[rgb(var(--ring))] focus:border-[rgb(var(--ring))] text-[rgb(var(--foreground))] placeholder-[rgb(var(--foreground))]/50"
+                              name={clave}
+                              value={memoriaFase[linea]?.[clave] ?? ""}
+                              required={item.binding}
+                              onChange={inputChange}
+                            />
+                          )}
 
                         {memoriaFase[linea]?.[`tipo_entrada_${clave}`] ===
                           "firma" && (
-                          <Firma
-                            type={type}
-                            item={item}
-                            info={memoriaFase[linea]}
-                            lineaIndex={linea}
-                            setMemoriaGeneral={setMemoriaFase}
-                            saveToDB={saveToDB}
-                            typeMem="memoria_fase"
-                          />
-                        )}
+                            <Firma
+                              type={type}
+                              item={item}
+                              info={memoriaFase[linea]}
+                              lineaIndex={linea}
+                              setMemoriaGeneral={setMemoriaFase}
+                              saveToDB={saveToDB}
+                              typeMem="memoria_fase"
+                            />
+                          )}
                       </>
                     )}
 
