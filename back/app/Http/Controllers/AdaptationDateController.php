@@ -446,9 +446,9 @@ class AdaptationDateController extends Controller
             // --- Conciliaciones: TODAS las filas, más reciente primero ---
             $conciliacionesQuery = Conciliaciones::where('adaptation_date_id', $plan->id);
             if (Schema::hasColumn('conciliaciones', 'updated_at')) {
-                $conciliacionesQuery->orderByDesc('updated_at')->orderByDesc('id');
+                $conciliacionesQuery->orderByDesc('updated_at')->orderBy('id');
             } else {
-                $conciliacionesQuery->orderByDesc('id');
+                $conciliacionesQuery->orderBy('id');
             }
             $conciliaciones = $conciliacionesQuery->get();     // 👈 ahora traemos todas
             $conciliacion   = $conciliaciones->first();        // 👈 la más reciente (compatibilidad)
