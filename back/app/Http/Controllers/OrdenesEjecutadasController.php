@@ -236,6 +236,7 @@ class OrdenesEjecutadasController extends Controller
             ->get();
 
         // Recorrer para validar estado de la lineas
+        
         $fases = [];
         foreach ($linea_fases as $item) {
             // Validar si la fase es conciliación
@@ -716,13 +717,14 @@ class OrdenesEjecutadasController extends Controller
             $conciliaciones = DB::table('conciliaciones')
                 ->where('number_order', $orden->number_order)
                 ->where('codart', $ada_date->codart)
+                ->where('desart', null)
                 ->get();
 
             $art_prin_aux = [
                 'codart' => $ada_date->codart,
                 'teorica' => $ada_date->quantityToProduce,
                 'total_concilida' => $conciliaciones->sum('quantityToProduce'),
-                'diferencia' => ($ada_date->quantityToProduce - $conciliaciones->sum('quantityToProduce')),
+                'diferencia' => ($ada_date->quantityToProduce - $conciliaciones->sum('quantityToProduce')) ?? 0,
             ];
             $validate_articulo_principal = $art_prin_aux;
 
@@ -733,13 +735,14 @@ class OrdenesEjecutadasController extends Controller
                 $conciliaciones = DB::table('conciliaciones')
                     ->where('number_order', $orden->number_order)
                     ->where('codart', $ing->codart)
+                    ->where('desart', '!=', '')
                     ->get();
 
                 $art_sec_aux[] = [
                     'codart' => $ing->codart,
                     'teorica' => $ing->teorica,
                     'total_concilida' => $conciliaciones->sum('quantityToProduce'),
-                    'diferencia' => ($ing->teorica - $conciliaciones->sum('quantityToProduce') || 0),
+                    'diferencia' => ($ing->teorica - $conciliaciones->sum('quantityToProduce')) ?? 0,
                 ];
             }
             $articulo_secundario = $art_sec_aux;
@@ -766,7 +769,7 @@ class OrdenesEjecutadasController extends Controller
             'estado' => 500,
         ]);
     }
-    
+
     /**
      * Guardar conciliacion
      *

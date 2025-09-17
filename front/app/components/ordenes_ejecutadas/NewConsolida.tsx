@@ -246,6 +246,7 @@ const NewConsolida: React.FC = () => {
           : [];
         setSecundarios(secundariosNormalizados);
 
+        // console.log(resp?.conciliaciones);
         // Conciliaciones
         setConciliaciones(normalizeConciliaciones(resp?.conciliaciones ?? {}));
       } catch (error) {
