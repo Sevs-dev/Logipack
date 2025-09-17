@@ -13,18 +13,62 @@ const Firma = ({
 }) => {
   const sigCanvasRef = useRef();
 
-  const guardarFirma = () => {
-    const base64 = sigCanvasRef.current.getCanvas().toDataURL("image/png");
-    setMemoriaGeneral((prev) => {
-      const actualizado = {
-        ...prev,
-        [lineaIndex]: {
-          ...prev[lineaIndex],
-          [item.clave]: base64,
-        },
+  // 🔹 Función para optimizar la firma antes de guardar (con fondo blanco)
+  const optimizarFirma = (canvas, maxWidth = 600, maxHeight = 300, quality = 0.7) => {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => {
+        let width = img.width;
+        let height = img.height;
+
+        // Mantener proporción
+        if (width > maxWidth) {
+          height *= maxWidth / width;
+          width = maxWidth;
+        }
+        if (height > maxHeight) {
+          width *= maxHeight / height;
+          height = maxHeight;
+        }
+
+        // Redibujar en nuevo canvas
+        const newCanvas = document.createElement("canvas");
+        newCanvas.width = width;
+        newCanvas.height = height;
+        const ctx = newCanvas.getContext("2d");
+
+        // 🔸 Pintar fondo blanco ANTES de dibujar la firma
+        ctx.fillStyle = "#FFFFFF";
+        ctx.fillRect(0, 0, width, height);
+
+        // 🔸 Dibujar la firma encima
+        ctx.drawImage(img, 0, 0, width, height);
+
+        // 🔸 Guardar como JPEG comprimido (fondo blanco)
+        const base64 = newCanvas.toDataURL("image/jpeg", quality);
+        resolve(base64);
       };
-      saveToDB(typeMem, actualizado);
-      return actualizado;
+
+      img.src = canvas.toDataURL("image/png"); // fuente original
+    });
+  };
+
+
+  const guardarFirma = () => {
+    const originalCanvas = sigCanvasRef.current.getCanvas();
+
+    optimizarFirma(originalCanvas).then((base64) => {
+      setMemoriaGeneral((prev) => {
+        const actualizado = {
+          ...prev,
+          [lineaIndex]: {
+            ...prev[lineaIndex],
+            [item.clave]: base64,
+          },
+        };
+        saveToDB(typeMem, actualizado);
+        return actualizado;
+      });
     });
   };
 
