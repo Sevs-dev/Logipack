@@ -184,8 +184,8 @@ export async function fetchAndProcessPlans(id: number): Promise<ServerPlan[]> {
   const rawArray: unknown[] = Array.isArray(serverPlansRaw)
     ? serverPlansRaw
     : serverPlansRaw != null
-      ? [serverPlansRaw]
-      : [];
+    ? [serverPlansRaw]
+    : [];
 
   if (rawArray.length === 0) {
     const keys = isRecord(resp) ? Object.keys(resp).join(", ") : "—";
@@ -386,14 +386,19 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
     )}T${pad(current.getHours())}:${pad(current.getMinutes())}`;
   }
 
-  const handleSave = async (updatedPlan: Plan) => {
+  const handleSave = async (
+    updatedPlan: Plan,
+    who?: "user" | "planning_user"
+  ) => {
     if (isSaving) return;
     setIsSaving(true);
+
     if (!updatedPlan) {
       showError("No hay datos para guardar.");
       setIsSaving(false);
       return;
     }
+
     const diffInMinutes = dayjs(updatedPlan.end_date).diff(
       dayjs(updatedPlan.start_date),
       "minute"
@@ -405,14 +410,16 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
       setIsSaving(false);
       return;
     }
+
     try {
       const cleanedPlan = sanitizePlan(updatedPlan);
       const lines: number[] = getLinesArray(updatedPlan.line);
+
+      // Validar que cada línea tenga actividades
       const hasEmptyLines = lines.some((lineId) => {
         const activityIds = lineActivities[lineId] || [];
         return activityIds.length === 0;
       });
-
       if (hasEmptyLines) {
         showError(
           "Hay líneas sin actividades asignadas. Por favor, completa todas antes de guardar."
@@ -421,6 +428,7 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
         return;
       }
 
+      // Estructurar actividades por línea
       const formattedLines = lines.map((lineId) => {
         const activityIdsInLine = lineActivities[lineId] || [];
         const filteredActivities = (activitiesDetails || []).filter(
@@ -435,6 +443,14 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
       });
 
       type MutablePlanServ = PlanServ & Record<string, unknown>;
+
+      // Quien guarda (desde cookie). Si pedimos asignar usuario y no hay cookie, detenemos.
+      const currentUser = getCookie("name");
+      if (who && !currentUser) {
+        showError("No se encontró el usuario en cookies.");
+        setIsSaving(false);
+        return;
+      }
 
       const planToSave: MutablePlanServ = {
         ...cleanedPlan,
@@ -451,12 +467,17 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
         machine: selectedMachines.map((m) => m.id),
         duration: updatedPlan.duration?.toString() ?? undefined,
         duration_breakdown: updatedPlan.duration_breakdown,
-        status_dates: updatedPlan.status_dates,
+        status_dates: updatedPlan.status_dates, 
+        ...(who === "user" && currentUser ? { user: currentUser } : {}),
+        ...(who === "planning_user" && currentUser
+          ? { planning_user: currentUser }
+          : {}),
         created_at: updatedPlan.created_at,
         start_date: updatedPlan.start_date,
         end_date: updatedPlan.end_date,
       };
 
+      // Campos que tu backend espera como JSON string
       const keysToStringify: (keyof Pick<
         PlanServ,
         "duration_breakdown" | "ingredients" | "bom" | "master"
@@ -468,21 +489,18 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
         }
       });
 
-      const keysToNullify: (keyof Pick<PlanServ, "bom" | "master">)[] = [
-        "bom",
-        "master",
-      ];
-      keysToNullify.forEach((key) => {
+      // Normalizar nulls para bom/master
+      (["bom", "master"] as const).forEach((key) => {
         const value = planToSave[key];
         if (value === "null" || value === "") {
           planToSave[key] = null;
         }
       });
 
-      // ✅ limpia campos innecesarios para el backend
-      delete planToSave.activitiesDetails;
-      delete planToSave.lineActivities;
-      delete planToSave.client_name;
+      // Limpieza de campos solo-frontend
+      delete (planToSave as MutablePlanServ).activitiesDetails;
+      delete (planToSave as MutablePlanServ).lineActivities;
+      delete (planToSave as MutablePlanServ).client_name;
 
       await updatePlanning(updatedPlan.id, planToSave as PlanServ);
       await fetchAll();
@@ -909,6 +927,15 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
     }
   }, []);
 
+  // util chiquito y a prueba de "cookies raras"
+  const getCookie = (name: string): string | null => {
+    if (typeof document === "undefined") return null;
+    const match = document.cookie.match(
+      new RegExp(`(?:^|;\\s*)${name}=([^;]*)`)
+    );
+    return match ? decodeURIComponent(match[1]) : null;
+  };
+
   return (
     <div className="break-inside-avoid mb-4">
       {isSaving && (
@@ -1277,7 +1304,7 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
                           </Text>
 
                           {Array.isArray(activitiesForLine) &&
-                            activitiesForLine.length > 0 ? (
+                          activitiesForLine.length > 0 ? (
                             activitiesForLine.map((actId) => {
                               const act = activitiesDetails.find(
                                 (a) => a.id === actId
@@ -1382,10 +1409,11 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
                       <button
                         key={`${color}-${index}`}
                         type="button"
-                        className={`w-6 h-6 rounded-full relative flex items-center justify-center transition-shadow duration-200 ${isSelected
+                        className={`w-6 h-6 rounded-full relative flex items-center justify-center transition-shadow duration-200 ${
+                          isSelected
                             ? "ring-2 ring-[rgb(var(--ring))] ring-offset-2 ring-offset-[rgb(var(--surface))]"
                             : ""
-                          }`}
+                        }`}
                         style={{ backgroundColor: color }}
                         onClick={() =>
                           setCurrentPlan({ ...currentPlan, color })
@@ -1433,10 +1461,11 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
                 <Input
                   type="text"
                   readOnly
-                  value={`${currentPlan.duration
-                    } min ---> ${getFormattedDuration(
-                      Number(currentPlan.duration)
-                    )}`}
+                  value={`${
+                    currentPlan.duration
+                  } min ---> ${getFormattedDuration(
+                    Number(currentPlan.duration)
+                  )}`}
                   tone="strong"
                   className="w-full text-center mt-1"
                 />
@@ -1516,20 +1545,13 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
                 currentPlan?.status_dates !== "En ejecución" &&
                 currentPlan?.status_dates !== "Ejecutado" && (
                   <Button
-                    onClick={async () => {
-                      if (isSaving) return;
-                      setIsSaving(true);
-                      try {
-                        const updatedPlanWithStatus = {
-                          ...currentPlan,
-                          status_dates: "Planificación",
-                        };
-                        await handleSave(updatedPlanWithStatus);
-                      } catch (err) {
-                        console.error("Error al finalizar edición:", err);
-                      } finally {
-                        setIsSaving(false);
-                      }
+                    onClick={() => {
+                      if (!currentPlan || isSaving) return;
+                      const withStatus: Plan = {
+                        ...currentPlan,
+                        status_dates: "Planificación" as const,
+                      }; 
+                      void handleSave(withStatus, "planning_user");
                     }}
                     variant="terciario"
                     disabled={isSaving}
@@ -1537,8 +1559,12 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
                   />
                 )}
               <Button
-                onClick={() => currentPlan && handleSave(currentPlan)}
+                onClick={() => {
+                  if (!currentPlan || isSaving) return;
+                  void handleSave(currentPlan, "user");
+                }}
                 variant="save"
+                disabled={isSaving}
                 label={isSaving ? "Guardando..." : "Actualizar"}
               />
             </div>
@@ -1580,7 +1606,6 @@ function EditPlanning({ canEdit = false, canView = false }: CreateClientProps) {
         onOrdenHija={handleOrdenHija}
         onView={obtenerActividades}
         onPDF={handlePDF}
-
         showTerciarioCondition={(row) =>
           row.status_dates === "Planificación" ||
           row.status_dates === "En ejecución"

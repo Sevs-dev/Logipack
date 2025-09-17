@@ -36,7 +36,6 @@ import { Client } from "@/app/interfaces/Client";
 import { Article, Ingredient, Bom } from "@/app/interfaces/BOM";
 import { MaestraBase } from "@/app/interfaces/NewMaestra";
 import {
-  BOM,
   Adaptation,
   ArticleFormData,
   Plant,
@@ -44,6 +43,12 @@ import {
 import { Audit } from "../../interfaces/Audit";
 import DateLoader from "../loader/DateLoader";
 import { Input } from "../inputs/Input";
+
+type IngredientOpt = Ingredient & {
+  validar?: number;
+  quantity?: number;
+  manualEdit?: boolean;
+};
 
 function NewAdaptation({
   canEdit = false,
@@ -71,18 +76,19 @@ function NewAdaptation({
     Record<string, ArticleFormData>
   >({});
 
-  // Orden y datos de producción
+  // Orden y datos de producción (modo con BOM)
   const [client_order, setClientOrder] = useState<string>("");
   const [orderNumber, setOrderNumber] = useState<string>("");
   const [deliveryDate, setDeliveryDate] = useState<string>("");
-  const [quantityToProduce, setQuantityToProduce] = useState("");
+  const [quantityToProduce, setQuantityToProduce] = useState(""); // input controlado (string), se convierte a number al enviar
   const [lot, setLot] = useState<string>("");
   const [healthRegistration, setHealthRegistration] = useState<string>("");
 
   // BOM e Ingredientes
-  const [boms, setBoms] = useState<BOM[]>([]);
-  const [selectedBom, setSelectedBom] = useState<number | "">("");
-  const [ingredients, setIngredients] = useState<Ingredient[]>([]);
+  const [boms, setBoms] = useState<Bom[]>([]);
+  const [selectedBom, setSelectedBom] = useState<string>(""); // value del <select> como string
+  const [bomIdToSelect, setBomIdToSelect] = useState<number | null>(null); // id numérico a preseleccionar en edición
+  const [ingredients, setIngredients] = useState<IngredientOpt[]>([]);
 
   // Adaptaciones
   const [adaptation, setAdaptation] = useState<Adaptation[]>([]);
@@ -95,12 +101,10 @@ function NewAdaptation({
   // Consecutivo
   const [, setConsecutivo] = useState<string | null>(null);
 
-  // Auditoría (por si se usa después)
+  // Auditoría
   const [auditList, setAuditList] = useState<Audit[]>([]);
   const [, setSelectedAudit] = useState<Audit | null>(null);
   const [isSaving, setIsSaving] = useState(false);
-
-  // Cargar Adaptaciones al montar si se puede ver
 
   // ======================= 📥 Carga de datos =======================
 
@@ -112,8 +116,8 @@ function NewAdaptation({
           const client = await getClientsId(a.client_id);
           return {
             ...a,
-            client_name: client.name,
-            numberOrder: client.number_order,
+            client_name: (client as Client).name,
+            numberOrder: (client as Client).number_order,
           };
         })
       );
@@ -125,7 +129,7 @@ function NewAdaptation({
   };
 
   useEffect(() => {
-    if (canView) fetchAdaptations();
+    if (canView) void fetchAdaptations();
   }, [canView]);
 
   // Cargar Clientes
@@ -142,7 +146,7 @@ function NewAdaptation({
         setIsLoading(false);
       }
     };
-    fetchClients();
+    void fetchClients();
   }, []);
 
   // Cargar Plantas
@@ -159,7 +163,7 @@ function NewAdaptation({
         setIsLoading(false);
       }
     };
-    fetchFactories();
+    void fetchFactories();
   }, []);
 
   // Cargar Maestras
@@ -169,38 +173,38 @@ function NewAdaptation({
         setIsLoading(true);
         const maestrasData = await getMaestra();
         setMaestra(maestrasData);
-      } catch {
+      } catch (err) {
         showError("Error al cargar las maestras.");
-        // Optionally, you can log the error if needed
+        console.error(err);
       } finally {
         setIsLoading(false);
       }
     };
-    fetchMaestras();
+    void fetchMaestras();
   }, []);
 
   // Cargar Artículos por Cliente
   useEffect(() => {
     if (!selectedClient) return;
     let isMounted = true;
-    const fetchArticles = async () => {
+    const fetchArticlesByClient = async () => {
       try {
         setIsLoading(true);
         const clientData = await getClientsId(Number(selectedClient));
 
-        if (!clientData?.code) {
+        if (!(clientData as Client)?.code) {
           showError("Código de cliente no disponible.");
           return;
         }
-        const articlesData = await getArticleByCode(clientData.code);
-        const list = articlesData.data || [];
+        const articlesData = await getArticleByCode(
+          (clientData as Client).code
+        );
+        const list: Article[] = (articlesData.data as Article[]) || [];
 
         if (isMounted) {
           setArticles(list);
-
-          if (list.length === 0) {
+          if (list.length === 0)
             showError("Este cliente no tiene artículos disponibles.");
-          }
         }
       } catch (err) {
         if (isMounted) showError("Error al cargar los artículos.");
@@ -209,15 +213,15 @@ function NewAdaptation({
         if (isMounted) setIsLoading(false);
       }
     };
-    fetchArticles();
+    void fetchArticlesByClient();
     return () => {
       isMounted = false;
     };
   }, [selectedClient]);
 
-  // Actualizar artículos seleccionados cuando los datos cambian
+  // Sincronizar selectedArticles cuando cambia el catálogo
   useEffect(() => {
-    if (articles.length > 0 && selectedArticles.length > 0) { 
+    if (articles.length > 0 && selectedArticles.length > 0) {
       const formatted = articles.filter((article) =>
         selectedArticles.some((sel) => sel.codart === article.codart)
       );
@@ -227,7 +231,7 @@ function NewAdaptation({
     }
   }, [articles, selectedArticles]);
 
-  // Cargar BOM e Ingredientes si se requiere
+  // Cargar BOMs e ingredientes si se requiere
   useEffect(() => {
     if (!selectedClient || selectedMaestras.length === 0) return;
     const selectedMaestraObj = maestra.find(
@@ -236,76 +240,155 @@ function NewAdaptation({
     if (!selectedMaestraObj?.requiere_bom) {
       setBoms([]);
       setIngredients([]);
+      setSelectedBom("");
       return;
     }
     const fetchBom = async () => {
       try {
-        const clientData = await getClientsId(Number(selectedClient));
-        const boms: Bom[] = await getArticleByClient(clientData.id);
-        if (!Array.isArray(boms)) {
-          console.error("❌ La respuesta de BOMs no es un array:", boms);
-          setBoms([]);
-          setIngredients([]);
-          return;
-        }
-        // Filtrar solo BOMs activos (status === 1)
-        const bomsActivos = boms.filter((b) => b.status);
-        if (bomsActivos.length === 0) {
-          setBoms([]);
-          setIngredients([]);
-          return;
-        }
-        // Ordenar por versión descendente (más reciente primero)
-        const bomsOrdenados = [...bomsActivos].sort(
-          (a, b) => Number(b.version) - Number(a.version)
-        );
-        const latestBom = bomsOrdenados[0];
-        // Setear solo los activos con status 1
-        setBoms(bomsActivos.map((b) => ({ ...b, status: 1 })));
+        setBoms([]);
+        if (bomIdToSelect === null) setSelectedBom(""); // NO limpiar si estamos preseleccionando
+        if (bomIdToSelect === null) setIngredients([]);
 
-        if (latestBom.ingredients) {
-          try {
-            const parsed = JSON.parse(latestBom.ingredients);
-            setIngredients(parsed);
-          } catch {
+        const clientData = await getClientsId(Number(selectedClient));
+        const bomList = (await getArticleByClient(
+          (clientData as Client).id
+        )) as Array<Bom | (Bom & { status: number })>;
+
+        if (!Array.isArray(bomList)) {
+          console.error("❌ La respuesta de BOMs no es un array:", bomList);
+          setBoms([]);
+          if (bomIdToSelect === null) setIngredients([]);
+          return;
+        }
+
+        // Filtrar activos y normalizar status -> boolean
+        const bomsNormalizados: Bom[] = bomList
+          .filter((b) => Boolean(b.status))
+          .map((b) => ({ ...(b as Bom), status: Boolean(b.status) }));
+
+        setBoms(bomsNormalizados);
+
+        // Si NO estamos preseleccionando (edición), precargar latest
+        if (bomIdToSelect === null && bomsNormalizados.length > 0) {
+          const latest = [...bomsNormalizados].sort(
+            (a, b) => Number(b.version) - Number(a.version)
+          )[0];
+          if (latest?.ingredients) {
+            try {
+              const parsed = JSON.parse(latest.ingredients) as IngredientOpt[];
+              setIngredients(parsed);
+            } catch {
+              setIngredients([]);
+            }
+          } else {
             setIngredients([]);
           }
-        } else {
-          setIngredients([]);
         }
-      } catch {
+      } catch (err) {
         showError("Error al obtener BOM.");
+        console.error(err);
         setBoms([]);
-        setIngredients([]);
+        if (bomIdToSelect === null) setIngredients([]);
       }
     };
-    fetchBom();
-  }, [selectedClient, selectedMaestras, maestra]);
+    void fetchBom();
+  }, [selectedClient, selectedMaestras, maestra, bomIdToSelect]);
 
-  // Recalcular ingredientes cuando cambia cantidad
+  // Aplicar el BOM pendiente (al editar) cuando la lista ya está
+  useEffect(() => {
+    if (bomIdToSelect !== null && boms.length > 0) {
+      const found = boms.find((b) => Number(b.id) === Number(bomIdToSelect));
+      if (found) {
+        setSelectedBom(String(bomIdToSelect)); // value del select
+        // Alinear Artículo con el BOM
+        try {
+          const { codart } = JSON.parse(found.code_details || "{}") as {
+            codart?: string;
+          };
+          if (codart) {
+            const matchingArticle = articles.find((a) => a.codart === codart);
+            if (matchingArticle) setSelectedArticles([matchingArticle]);
+          }
+        } catch {
+          /* noop */
+        }
+      }
+      setBomIdToSelect(null); // consumido
+    }
+  }, [bomIdToSelect, boms, articles]);
+
+  // Reconciliar selectedBom cuando llegan los BOM (por si hay diferencias number/string/espacios)
+  useEffect(() => {
+    if (!selectedBom || boms.length === 0) return;
+    const sb = normalizeId(selectedBom);
+    const exists = boms.some((b) => normalizeId(b.id) === sb);
+    if (!exists) {
+      const found = boms.find((b) => Number(b.id) === Number(sb));
+      if (found) setSelectedBom(normalizeId(found.id));
+    } else if (sb !== selectedBom) {
+      setSelectedBom(sb); // quita espacios/ceros a la izquierda
+    }
+  }, [selectedBom, boms]);
+
+  // Recalcular ingredientes cuando cambia cantidad o contenido (firma)
+  const ingredientsSignature = useMemo(
+    () =>
+      ingredients
+        .map(
+          (i) =>
+            `${i.codart}|${String(i.merma)}|${String(
+              i.quantity ?? ""
+            )}|${String(i.desart)}`
+        )
+        .join("~"),
+    [ingredients]
+  );
+
   useEffect(() => {
     if (quantityToProduce === "") return;
 
     const qty = Number(quantityToProduce);
     if (!Number.isFinite(qty) || !ingredients.length) return;
 
-    setIngredients((prev) =>
-      prev.map((ing) => {
+    setIngredients((prev) => {
+      const next = prev.map((ing) => {
         const raw = (ing?.merma ?? "0").toString().trim();
         let m = parseFloat(raw.replace(",", "."));
         if (!Number.isFinite(m)) m = 0;
-
-        // Si viene como "5%" o como 5, pásalo a 0.05
         if (raw.includes("%") || m > 1) m = m / 100;
-
-        // (Opcional) Limita 0..1 por seguridad
         m = Math.min(1, Math.max(0, m));
-
         const teorica = qty * (1 + m);
         return { ...ing, teorica: teorica.toFixed(4) };
-      })
-    );
-  }, [quantityToProduce, ingredients.length]); // si la merma cambia sin cambiar la longitud, añade esa dependencia
+      });
+
+      const unchanged =
+        prev.length === next.length &&
+        prev.every((p, i) => String(p.teorica) === String(next[i].teorica));
+      return unchanged ? prev : next;
+    });
+  }, [quantityToProduce, ingredientsSignature, ingredients.length]);
+
+  // Selección de maestra y requisito de BOM
+  const maestraSeleccionada = useMemo(
+    () => maestra.find((m) => m.id.toString() === selectedMaestras[0]),
+    [selectedMaestras, maestra]
+  );
+  const maestraRequiereBOM = maestraSeleccionada?.requiere_bom ?? false;
+
+  useEffect(() => {
+    if (maestraRequiereBOM) {
+      setArticleFields({});
+      setSelectedArticles([]);
+    } else {
+      setSelectedBom("");
+      setIngredients([]);
+      setOrderNumber("");
+      setDeliveryDate("");
+      setQuantityToProduce("");
+      setLot("");
+      setHealthRegistration("");
+    }
+  }, [maestraRequiereBOM]);
 
   // ======================= 🔁 Funciones de cambio y copia =======================
 
@@ -330,49 +413,34 @@ function NewAdaptation({
 
   const copyToClipboard = () => {
     if (client_order) {
-      navigator.clipboard.writeText(client_order);
+      void navigator.clipboard.writeText(client_order);
       showSuccess("Orden copiada al portapapeles");
     }
   };
 
   const visualOrder = useMemo(() => {
-    if (!client_order) {
-      return "";
-    }
-    if (!/\d{7}$/.test(client_order)) {
-      return "";
-    }
-    if (client_order.endsWith("0000000")) {
-      return "";
-    }
+    if (!client_order) return "";
+    if (!/\d{7}$/.test(client_order)) return "";
+    if (client_order.endsWith("0000000")) return "";
     const match = client_order.match(/(\d{7})$/)?.[1];
     if (match) {
       const incremented = String(parseInt(match, 10) + 1).padStart(7, "0");
-      const newOrder = client_order.replace(/(\d{7})$/, incremented);
-      return newOrder;
+      return client_order.replace(/(\d{7})$/, incremented);
     }
-    console.log("⚠️ No se encontró match válido, retornando vacío");
     return "";
   }, [client_order]);
 
-  // ======================= 📦 Memos y helpers =======================
-
-  const maestraSeleccionada = useMemo(() => {
-    return maestra.find((m) => m.id.toString() === selectedMaestras[0]);
-  }, [selectedMaestras, maestra]);
-
-  const maestraRequiereBOM = maestraSeleccionada?.requiere_bom ?? false;
+  type IngredientField = keyof IngredientOpt;
 
   const handleChange = (
     index: number,
-    field: keyof Ingredient,
+    field: IngredientField,
     value: string
   ): void => {
     const updated = [...ingredients];
-
     updated[index] = {
       ...updated[index],
-      [field]: value,
+      [field]: value as never,
       ...(field === "teorica" ? { manualEdit: true } : {}),
     };
     setIngredients(updated);
@@ -392,7 +460,39 @@ function NewAdaptation({
     }));
   };
 
+  // Selección de BOM (unificado)
+  const handleBomChange = (value: string) => {
+    setSelectedBom(value);
+
+    // limpiar campos globales ligados a BOM
+    setOrderNumber("");
+    setDeliveryDate("");
+    setQuantityToProduce("");
+    setLot("");
+    setHealthRegistration("");
+    setAttachments([]);
+
+    const selectedBomId = Number(value);
+    const bom = boms.find((b) => Number(b.id) === selectedBomId);
+    let codart = "";
+    try {
+      if (bom?.code_details) {
+        const parsed = JSON.parse(bom.code_details) as { codart?: string };
+        codart = parsed?.codart || "";
+      }
+    } catch {
+      /* noop */
+    }
+    if (codart) {
+      const matchingArticle = articles.find((a) => a.codart === codart);
+      setSelectedArticles(matchingArticle ? [matchingArticle] : []);
+    } else {
+      setSelectedArticles([]);
+    }
+  };
+
   // ======================= 📤 Envío del formulario =======================
+
   const isBrowserFile = (v: unknown): v is File => {
     return (
       typeof window !== "undefined" &&
@@ -400,6 +500,7 @@ function NewAdaptation({
       v instanceof (window as Window & typeof globalThis).File
     );
   };
+
   const handleSubmit = async () => {
     if (isSaving) return;
 
@@ -420,6 +521,10 @@ function NewAdaptation({
       showError("Selecciona una Maestra.");
       return;
     }
+    if (maestraRequiereBOM && !selectedBom) {
+      showError("Selecciona un BOM.");
+      return;
+    }
 
     // 🧩 Armar articlesData con/ sin BOM
     let articlesData: Array<{
@@ -427,7 +532,7 @@ function NewAdaptation({
       number_order: string;
       orderNumber: string;
       deliveryDate: string;
-      quantityToProduce: number | string;
+      quantityToProduce: number;
       lot: string;
       healthRegistration: string;
     }>;
@@ -449,7 +554,7 @@ function NewAdaptation({
           number_order: client_order,
           orderNumber,
           deliveryDate,
-          quantityToProduce,
+          quantityToProduce: Number(quantityToProduce),
           lot,
           healthRegistration,
         },
@@ -479,7 +584,7 @@ function NewAdaptation({
           number_order: client_order,
           orderNumber: f.orderNumber,
           deliveryDate: f.deliveryDate,
-          quantityToProduce: f.quantityToProduce,
+          quantityToProduce: Number(f.quantityToProduce),
           lot: f.lot,
           healthRegistration: f.healthRegistration,
         };
@@ -494,11 +599,10 @@ function NewAdaptation({
     formData.append("number_order", client_order);
     formData.append("orderNumber", orderNumber);
     formData.append("master", selectedMaestras[0]);
-    formData.append("bom", selectedBom !== "" ? String(selectedBom) : "");
+    formData.append("bom", selectedBom); // value string
     formData.append("ingredients", JSON.stringify(ingredients));
 
-    // ✅ Adjuntar SIEMPRE igual (con o sin BOM)
-    // General único (solo si realmente es File)
+    // Adjuntos generales
     if (attachments.length === 1 && isBrowserFile(attachments[0])) {
       formData.append("attachment", attachments[0]);
     } else if (attachments.length > 1) {
@@ -507,7 +611,7 @@ function NewAdaptation({
       });
     }
 
-    // Por artículo (si el usuario seleccionó archivo real)
+    // Adjuntos por artículo
     selectedArticles.forEach(({ codart }) => {
       const maybeFile: unknown = articleFields[codart]?.attachment;
       if (isBrowserFile(maybeFile)) {
@@ -515,28 +619,20 @@ function NewAdaptation({
       }
     });
 
-    // 🧪 Debug rápido del FormData (comenta en prod)
-    // for (const [k, v] of formData.entries()) {
-    //   if (v instanceof File)
-    //      console.log("🗂️", k, v.name, v.size);
-    //   else console.log("🔹", k, v);
-    // }
-
     try {
       setIsSaving(true);
       setIsLoading(true);
 
       if (isEditMode) {
-        // ⚠️ El servicio updateAdaptation debe hacer POST + _method=PUT y NO forzar Content-Type
         await updateAdaptation(editAdaptationId!, formData);
         showSuccess("Acondicionamiento actualizado.");
       } else {
-        await newAdaptation(formData); // POST normal
+        await newAdaptation(formData);
         showSuccess("Acondicionamiento creado.");
       }
 
       setIsOpen(false);
-      fetchAdaptations();
+      void fetchAdaptations();
       resetForm();
     } catch (error) {
       showError("Error al guardar.");
@@ -552,8 +648,8 @@ function NewAdaptation({
   const handleEdit = async (id: number) => {
     setIsSaving(false);
     try {
-      const { adaptation } = await getAdaptationsId(id);
-      if (!adaptation) {
+      const { adaptation: adp } = await getAdaptationsId(id);
+      if (!adp) {
         showError("La adaptación no existe");
         console.warn("⚠️ Adaptation no encontrada con ID:", id);
         setIsSaving(false);
@@ -561,24 +657,30 @@ function NewAdaptation({
       }
       setIsEditMode(true);
       setEditAdaptationId(id);
-      setSelectedClient(adaptation.client_id?.toString() ?? "");
-      setPlanta(adaptation.factory_id?.toString() ?? "");
-      setSelectedMaestras(
-        adaptation.master != null ? [String(adaptation.master)] : []
-      );
-      setSelectedBom(adaptation.bom?.toString() ?? "");
-      const parsedArticles = adaptation.article_code
-        ? JSON.parse(adaptation.article_code)
+
+      // Cliente como number (state es number|"")
+      if (typeof adp.client_id === "number") setSelectedClient(adp.client_id);
+      else setSelectedClient("");
+
+      setPlanta(adp.factory_id?.toString() ?? "");
+      setSelectedMaestras(adp.master != null ? [String(adp.master)] : []);
+
+      // 👉 fuerza value del select BOM y además deja id pendiente para sincronizar con la lista
+      setSelectedBom(adp.bom != null ? normalizeId(adp.bom) : "");
+      setBomIdToSelect(adp.bom != null ? Number(normalizeId(adp.bom)) : null);
+
+      const parsedArticles = adp.article_code
+        ? JSON.parse(adp.article_code)
         : [];
       setSelectedArticles(
         parsedArticles.map((a: { codart: string }) => ({ codart: a.codart }))
       );
-      setClientOrder(adaptation.number_order || "");
+      setClientOrder(adp.number_order || "");
 
-      if (adaptation.bom) {
+      if (adp.bom) {
         const general = parsedArticles[0] || {};
         setOrderNumber(general.orderNumber ?? "");
-        setClientOrder(general.client_order ?? adaptation.number_order ?? "");
+        setClientOrder(general.client_order ?? adp.number_order ?? "");
         setDeliveryDate(formatDate(general.deliveryDate ?? ""));
         setQuantityToProduce(String(general.quantityToProduce ?? ""));
         setLot(general.lot ?? "");
@@ -605,7 +707,10 @@ function NewAdaptation({
               orderNumber: a.orderNumber ?? "",
               numberOrder: a.client_order ?? "",
               deliveryDate: formatDate(a.deliveryDate ?? ""),
-              quantityToProduce: Number(a.quantityToProduce) ?? "",
+              quantityToProduce:
+                typeof a.quantityToProduce === "number"
+                  ? a.quantityToProduce
+                  : Number(a.quantityToProduce ?? 0),
               lot: a.lot ?? "",
               healthRegistration: a.healthRegistration ?? "",
               attachment: undefined,
@@ -615,9 +720,9 @@ function NewAdaptation({
         setArticleFields(fieldsMap);
       }
 
-      if (adaptation.ingredients) {
+      if (adp.ingredients) {
         try {
-          const parsed = JSON.parse(adaptation.ingredients) as Ingredient[];
+          const parsed = JSON.parse(adp.ingredients) as IngredientOpt[];
           const enriched = parsed.map((i) => {
             const hasValidTeorica =
               i.teorica !== undefined &&
@@ -625,7 +730,7 @@ function NewAdaptation({
               !isNaN(Number(i.teorica));
 
             const teoricaCalculada = (
-              Number(i.quantity || 0) *
+              Number(i.quantity ?? 0) *
               (1 + Number(i.merma || 0))
             ).toFixed(4);
 
@@ -678,18 +783,36 @@ function NewAdaptation({
   };
 
   const resetForm = () => {
+    // modos/ids
+    setIsEditMode(false);
+    setEditAdaptationId(null);
+    setBomIdToSelect(null);
+
+    // selección principal
     setSelectedClient("");
     setPlanta("");
+
+    // pedido/orden
     setClientOrder("");
-    setSelectedArticles([]);
-    setSelectedMaestras([]);
-    setSelectedBom("");
     setOrderNumber("");
     setDeliveryDate("");
     setQuantityToProduce("");
     setLot("");
     setHealthRegistration("");
+
+    // maestras/BOM/artículos
+    setSelectedMaestras([]);
+    setSelectedBom("");
+    setBoms([]);
+    setArticles([]);
+    setSelectedArticles([]);
+    setArticleFields({});
+
+    // materiales/archivos/auditoría
     setIngredients([]);
+    setAttachments([]);
+    setAuditList([]);
+    setSelectedAudit(null);
   };
 
   const handleHistory = async (id: number) => {
@@ -697,10 +820,16 @@ function NewAdaptation({
     try {
       const data = await getAuditsByModelAdaptation(model, id);
       setAuditList(data);
-      if (data.length > 0) setSelectedAudit(data[0]); // opción: mostrar la primera al abrir
+      if (data.length > 0) setSelectedAudit(data[0]);
     } catch (error) {
       console.error("Error al obtener la auditoría:", error);
     }
+  };
+
+  const normalizeId = (x: unknown): string => {
+    const s = String(x ?? "").trim();
+    const n = Number(s);
+    return Number.isFinite(n) ? String(n) : s; // "05" -> "5", "5 " -> "5"
   };
 
   return (
@@ -710,6 +839,7 @@ function NewAdaptation({
           <Button
             onClick={() => {
               resetForm();
+              setIsEditMode(false);
               setIsOpen(true);
             }}
             variant="create"
@@ -730,29 +860,25 @@ function NewAdaptation({
           isVisible={isOpen}
           onClose={() => (resetForm(), setIsOpen(false))}
         >
-          {/* 👉 Aclarado “scoped” solo en este modal (opcional) */}
           <div className="dark:[--surface:30_41_59] dark:[--surface-muted:51_65_85] dark:[--border:71_85_105] dark:[--foreground:241_245_249] dark:[--ring:56_189_248] dark:[--accent:56_189_248]">
             <Text type="title" color="text-[rgb(var(--foreground))]">
               {isEditMode ? "Editar" : "Crear"} Acondicionamiento
             </Text>
 
-            {/* Loading spinner */}
             {isLoading && (
               <div className="flex justify-center py-4">
                 <div className="w-12 h-12 border-4 border-[rgb(var(--border))]/40 border-t-[rgb(var(--accent))] rounded-full animate-spin"></div>
               </div>
             )}
 
-            {/* Contenido responsivo */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {/* Cliente */}
+              {/* Planta/Cliente/Orden */}
               <div className="col-span-full">
                 <div className="flex gap-4">
                   <div className="w-1/2">
                     <Text type="subtitle" color="text-[rgb(var(--foreground))]">
                       Planta:
                     </Text>
-                    {/* select SIN cambios */}
                     <select
                       className={[
                         "w-full p-3 rounded-lg mt-1 text-center",
@@ -761,7 +887,7 @@ function NewAdaptation({
                         "dark:bg-slate-900 dark:text-slate-100 dark:border-slate-700",
                       ].join(" ")}
                       value={planta}
-                      onChange={(e) => handlePlantaChange(e.target.value)}
+                      onChange={(e) => void handlePlantaChange(e.target.value)}
                       disabled={!canEdit}
                     >
                       <option value="">Seleccione...</option>
@@ -781,7 +907,6 @@ function NewAdaptation({
                     <Text type="subtitle" color="text-[rgb(var(--foreground))]">
                       Cliente:
                     </Text>
-                    {/* select SIN cambios */}
                     <select
                       className={[
                         "w-full p-3 rounded-lg mt-1 text-center",
@@ -789,10 +914,25 @@ function NewAdaptation({
                         "focus:outline-none focus:ring-2 focus:ring-[rgb(var(--ring))]",
                         "dark:bg-slate-900 dark:text-slate-100 dark:border-slate-700",
                       ].join(" ")}
-                      value={selectedClient}
+                      value={
+                        selectedClient === "" ? "" : String(selectedClient)
+                      } // asegurar string
                       onChange={(e) => {
-                        setSelectedClient(Number(e.target.value));
+                        const id = Number(e.target.value);
+                        setSelectedClient(id);
+                        // Limpiar dependencias del cliente
+                        setSelectedArticles([]);
+                        setArticleFields({});
+                        setSelectedMaestras([]);
+                        setSelectedBom("");
+                        setBoms([]);
                         setIngredients([]);
+                        setOrderNumber("");
+                        setDeliveryDate("");
+                        setQuantityToProduce("");
+                        setLot("");
+                        setHealthRegistration("");
+                        setAttachments([]);
                       }}
                       disabled={!canEdit}
                     >
@@ -814,7 +954,6 @@ function NewAdaptation({
                       Orden:
                     </Text>
 
-                    {/* Contenedor visual + botón (solo display) */}
                     <div
                       className={[
                         "relative rounded-lg px-4 py-3 mt-2 shadow-sm",
@@ -828,7 +967,6 @@ function NewAdaptation({
                           : visualOrder || "Cargando orden..."}
                       </p>
 
-                      {/* Botón copiar */}
                       <button
                         type="button"
                         onClick={copyToClipboard}
@@ -850,7 +988,6 @@ function NewAdaptation({
                 <Text type="subtitle" color="text-[rgb(var(--foreground))]">
                   Maestras:
                 </Text>
-                {/* select SIN cambios */}
                 <select
                   className={[
                     "w-full p-3 rounded-lg mt-1 text-center",
@@ -905,7 +1042,6 @@ function NewAdaptation({
                     <Text type="subtitle" color="text-[rgb(var(--foreground))]">
                       BOM:
                     </Text>
-                    {/* select SIN cambios */}
                     <select
                       className={[
                         "w-full p-3 rounded-lg mt-1 text-center",
@@ -913,42 +1049,28 @@ function NewAdaptation({
                         "focus:outline-none focus:ring-2 focus:ring-[rgb(var(--ring))]",
                         "dark:bg-slate-900 dark:text-slate-100 dark:border-slate-700",
                       ].join(" ")}
-                      onChange={(e) => {
-                        const selectedBomId = Number(e.target.value);
-                        setSelectedBom(selectedBomId);
-                        const bom = boms.find((b) => b.id === selectedBomId);
-                        const codart = JSON.parse(
-                          bom?.code_details || "{}"
-                        )?.codart;
-                        if (codart) {
-                          const matchingArticle = articles.find(
-                            (a) => a.codart === codart
-                          );
-                          if (matchingArticle)
-                            setSelectedArticles([matchingArticle]);
-                          else {
-                            showError(
-                              "No se encontró un artículo que coincida con el BOM."
-                            );
-                            setSelectedArticles([]);
-                          }
-                        } else {
-                          setSelectedArticles([]);
-                        }
-                      }}
+                      onChange={(e) => handleBomChange(e.target.value)}
                       disabled={!canEdit}
-                      value={selectedBom || ""}
+                      value={normalizeId(selectedBom)} // 👈 normalizado
                     >
                       <option value="">Seleccione un BOM...</option>
                       {Array.isArray(boms) && boms.length > 0 ? (
                         boms.map((bom) => (
                           <option
                             key={bom.id}
-                            value={bom.id}
+                            value={normalizeId(bom.id)} // 👈 normalizado
                             className="bg-[rgb(var(--surface))] text-[rgb(var(--foreground))] dark:bg-slate-900 dark:text-slate-100"
                           >
-                            {JSON.parse(bom.code_details || "{}")?.codart ??
-                              "Sin código"}
+                            {(() => {
+                              try {
+                                return (
+                                  JSON.parse(bom.code_details || "{}")
+                                    ?.codart ?? "Sin código"
+                                );
+                              } catch {
+                                return "Sin código";
+                              }
+                            })()}
                           </option>
                         ))
                       ) : (
@@ -958,14 +1080,13 @@ function NewAdaptation({
                   </div>
                 )}
 
-                {/* MultiSelect Artículos */}
+                {/* Artículos (cuando NO requiere BOM se mantiene MultiSelect) */}
                 <div>
                   <Text type="subtitle" color="text-[rgb(var(--foreground))]">
                     Artículos:
                   </Text>
 
                   {maestraRequiereBOM ? (
-                    // select SIN cambios
                     <select
                       className={[
                         "w-full p-3 rounded-lg mt-1 text-center",
@@ -973,27 +1094,9 @@ function NewAdaptation({
                         "focus:outline-none focus:ring-2 focus:ring-[rgb(var(--ring))]",
                         "dark:bg-slate-900 dark:text-slate-100 dark:border-slate-700",
                       ].join(" ")}
-                      onChange={(e) => {
-                        const selectedBomId = Number(e.target.value);
-                        setSelectedBom(selectedBomId);
-                        const bom = boms.find((b) => b.id === selectedBomId);
-                        let codart = "";
-                        try {
-                          if (bom?.code_details) {
-                            const parsed = JSON.parse(bom.code_details);
-                            codart = parsed?.codart || "";
-                          }
-                        } catch {}
-                        if (codart) {
-                          const matchingArticle = articles.find(
-                            (a) => a.codart === codart
-                          );
-                          if (matchingArticle)
-                            setSelectedArticles([matchingArticle]);
-                        }
-                      }}
+                      onChange={(e) => handleBomChange(e.target.value)}
                       disabled={!canEdit}
-                      value={selectedBom || ""}
+                      value={selectedBom}
                     >
                       <option value="">Seleccione un BOM...</option>
                       {Array.isArray(boms) && boms.length > 0 ? (
@@ -1002,11 +1105,13 @@ function NewAdaptation({
                           try {
                             const parsed = JSON.parse(bom.code_details || "{}");
                             label = parsed?.codart || "Sin código";
-                          } catch {}
+                          } catch {
+                            /* noop */
+                          }
                           return (
                             <option
                               key={bom.id}
-                              value={bom.id}
+                              value={String(bom.id)} // value como string
                               className="bg-[rgb(var(--surface))] text-[rgb(var(--foreground))] dark:bg-slate-900 dark:text-slate-100"
                             >
                               {label}
@@ -1018,7 +1123,7 @@ function NewAdaptation({
                       )}
                     </select>
                   ) : articles.length > 0 ? (
-                    <MultiSelect
+                    <MultiSelect<Article>
                       options={articles}
                       selected={selectedArticles}
                       onChange={setSelectedArticles}
@@ -1042,7 +1147,6 @@ function NewAdaptation({
                     "dark:bg-slate-900 dark:border-slate-700",
                   ].join(" ")}
                 >
-                  {/* Número de Orden */}
                   <div>
                     <Text type="subtitle" color="text-[rgb(var(--foreground))]">
                       N° Orden del Cliente Con:
@@ -1057,7 +1161,6 @@ function NewAdaptation({
                     />
                   </div>
 
-                  {/* Fecha Entrega */}
                   <div>
                     <Text type="subtitle" color="text-[rgb(var(--foreground))]">
                       Fecha Vencimiento:
@@ -1072,7 +1175,6 @@ function NewAdaptation({
                     />
                   </div>
 
-                  {/* Cantidad a producir */}
                   <div>
                     <Text type="subtitle" color="text-[rgb(var(--foreground))]">
                       Cantidad a Producir:
@@ -1088,7 +1190,6 @@ function NewAdaptation({
                     />
                   </div>
 
-                  {/* Lote */}
                   <div>
                     <Text type="subtitle" color="text-[rgb(var(--foreground))]">
                       Lote:
@@ -1103,7 +1204,6 @@ function NewAdaptation({
                     />
                   </div>
 
-                  {/* Registro Sanitario */}
                   <div>
                     <Text type="subtitle" color="text-[rgb(var(--foreground))]">
                       Registro Sanitario:
@@ -1130,7 +1230,6 @@ function NewAdaptation({
                       </Text>
 
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-3">
-                        {/* N° Orden del Cliente */}
                         <div>
                           <Text
                             type="subtitle"
@@ -1156,7 +1255,6 @@ function NewAdaptation({
                           />
                         </div>
 
-                        {/* Fecha Entrega */}
                         <div>
                           <Text
                             type="subtitle"
@@ -1182,7 +1280,6 @@ function NewAdaptation({
                           />
                         </div>
 
-                        {/* Cant. a Producir */}
                         <div>
                           <Text
                             type="subtitle"
@@ -1195,7 +1292,7 @@ function NewAdaptation({
                             className="mt-1 text-center"
                             value={
                               articleFields[article.codart]
-                                ?.quantityToProduce || ""
+                                ?.quantityToProduce ?? 0
                             }
                             onChange={(e) =>
                               handleFieldChange(
@@ -1209,7 +1306,6 @@ function NewAdaptation({
                           />
                         </div>
 
-                        {/* Lote */}
                         <div>
                           <Text
                             type="subtitle"
@@ -1233,7 +1329,6 @@ function NewAdaptation({
                           />
                         </div>
 
-                        {/* R. Sanitario */}
                         <div>
                           <Text
                             type="subtitle"
@@ -1265,8 +1360,11 @@ function NewAdaptation({
                 </div>
               )}
 
-              {/* Materiales */}
-              {maestraRequiereBOM ? (
+              {/* Materiales: solo cuando hay Maestra, requiere BOM, BOM seleccionado e ingredientes */}
+              {selectedMaestras.length > 0 &&
+              maestraRequiereBOM &&
+              selectedBom !== "" &&
+              ingredients.length > 0 ? (
                 <div className="col-span-full">
                   <Text type="subtitle" color="text-[rgb(var(--foreground))]">
                     Materiales:
@@ -1294,7 +1392,7 @@ function NewAdaptation({
                       <tbody>
                         {ingredients.map((ing, index) => (
                           <tr
-                            key={index}
+                            key={`${ing.codart}-${index}`}
                             className="even:bg-[rgb(var(--surface))] odd:bg-[rgb(var(--surface))]"
                           >
                             <td className="border border-[rgb(var(--border))] p-2 text-center">
@@ -1396,15 +1494,15 @@ function NewAdaptation({
         onDelete={
           canEdit
             ? (id: number) => {
-                handleDelete(id);
+                void handleDelete(id);
               }
             : undefined
         }
         onEdit={(id: number) => {
-          handleEdit(id);
+          void handleEdit(id);
         }}
         onHistory={(id: number) => {
-          handleHistory(id);
+          void handleHistory(id);
         }}
       />
       {auditList.length > 0 && (

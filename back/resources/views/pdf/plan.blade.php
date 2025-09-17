@@ -317,12 +317,12 @@
                 </thead>
                 <tbody>
                     <tr>
-                        <td>Maestra Elabodara por:</td>
-                        <td>{{ $maestra->user ?? 'Sin usuario' }}</td>
-                        <td>{{ $maestra->updated_at?->timezone('America/Bogota')->format('d/m/Y H:i') ?? '—' }} </td>
-                        <td>Orden Aprobada por:</td>
-                        <td>{{ $plan->user ? urldecode(preg_replace('/[\r\n]+/', '', $plan->user)) : 'Sin usuario' }}</td>
-                        <td>{{ $plan->updated_at?->timezone('America/Bogota')->format('d/m/Y H:i') ?? '—' }}</td>
+                        <td>Elabodara por:</td>
+                        <td>{{ $plan->user ?? 'Sin usuario' }}</td>
+                        <td>{{ $plan->order_time?->timezone('America/Bogota')->format('d/m/Y H:i') ?? '—' }} </td>
+                        <td>Aprobada por:</td>
+                        <td>{{ $plan->planning_user ?? 'Sin usuario' }}</td>
+                        <td>{{ $plan->planning_time?->timezone('America/Bogota')->format('d/m/Y H:i') ?? '—' }}</td>
                     </tr>
                 </tbody>
             </table>

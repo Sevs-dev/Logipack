@@ -22,6 +22,8 @@ class AdaptationDate extends Model
         'activities' => 'array',
         'duration_breakdown' => 'array',
         'ingredients' => 'array',
+        'planning_time' => 'datetime',
+        'order_time' => 'datetime',
     ];
 
     /*

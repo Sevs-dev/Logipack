@@ -73,65 +73,101 @@ class AdaptationDateController extends Controller
 
     public function update(Request $request, $id)
     {
-        Log::info('Update Request payload: ' . json_encode($request->all()));
+        // Helper para decodificar JSON si llega como string
+        $decodeIfJsonString = static function ($value) {
+            if (is_string($value)) {
+                $trim = trim($value);
+                if ($trim === '') {
+                    return null;
+                }
+                $decoded = json_decode($trim, true);
+                if (json_last_error() === JSON_ERROR_NONE) {
+                    return $decoded;
+                }
+            }
+            return $value;
+        };
 
-        // Si mandan 'line' como string JSON, decodificamos
+        // Campos que podrían venir como JSON string
+        foreach (['line', 'machine', 'users', 'activities'] as $k) {
+            if ($request->has($k)) {
+                $request->merge([
+                    $k => $decodeIfJsonString($request->input($k)),
+                ]);
+            }
+        }
+
+        // Compat: si 'line' llega como string JSON
         if ($request->has('line') && is_string($request->line)) {
             $request->merge([
                 'line' => json_decode($request->line, true)
             ]);
-            Log::info('Decoded line to array:', ['line' => $request->line]);
         }
 
-        // Validamos normalmente, ahora 'line' es array de IDs y 'activities' es array plano
+        // Validación (agregamos planning_time y order_time)
         $validated = $request->validate([
-            'client_id' => 'sometimes|exists:clients,id',
-            'codart' => 'sometimes|string',
-            'orderNumber' => 'sometimes|string',
-            'number_order' => 'sometimes|string',
-            'deliveryDate' => 'sometimes|date',
-            'quantityToProduce' => 'sometimes|integer',
-            'lot' => 'sometimes|string',
-            'healthRegistration' => 'sometimes|string',
-            'master' => 'nullable|json',
-            'bom' => 'nullable|json',
-            'ingredients' => 'nullable|json',
-            'adaptation_id' => 'nullable|exists:adaptations,id',
-            'status_dates' => 'nullable|string',
-            'factory' => 'nullable|string',
-            'line' => 'nullable|array',
-            'activities' => 'nullable|array',
-            'resource' => 'nullable|string',
-            'machine' => 'nullable|array',
-            'users' => 'nullable|array',
-            'color' => 'nullable|string',
-            'icon' => 'nullable|string',
-            'duration' => 'nullable|string',
-            'duration_breakdown' => 'nullable|json',
-            'start_date' => 'nullable|date',
-            'end_date' => 'nullable|date',
+            'client_id'           => 'sometimes|exists:clients,id',
+            'codart'              => 'sometimes|string',
+            'orderNumber'         => 'sometimes|string',
+            'number_order'        => 'sometimes|string',
+            'deliveryDate'        => 'sometimes|date',
+            'quantityToProduce'   => 'sometimes|integer',
+            'lot'                 => 'sometimes|string',
+            'healthRegistration'  => 'sometimes|string',
+            'master'              => 'nullable|json',
+            'bom'                 => 'nullable|json',
+            'ingredients'         => 'nullable|json',
+            'adaptation_id'       => 'nullable|exists:adaptations,id',
+            'status_dates'        => 'nullable|string',
+            'factory'             => 'nullable|string',
+            'line'                => 'nullable|array',
+            'activities'          => 'nullable|array',
+            'resource'            => 'nullable|string',
+            'machine'             => 'nullable|array',
+            'users'               => 'nullable|array',
+            'color'               => 'nullable|string',
+            'icon'                => 'nullable|string',
+            'duration'            => 'nullable|string',
+            'duration_breakdown'  => 'nullable|json',
+            'planning_user'       => 'nullable|string',
+            'user'                => 'nullable|string',
+            'planning_time'       => 'nullable|date',
+            'order_time'          => 'nullable|date',
+            'start_date'          => 'nullable|date',
+            'end_date'            => 'nullable|date',
         ]);
-        // Limpiamos espacios en blanco en cada elemento
-        if (isset($validated['machine']) && is_array($validated['machine'])) {
-            $validated['machine'] = array_map(fn($item) => intval($item), $validated['machine']);
-        }
 
-        if (isset($validated['line']) && is_array($validated['line'])) {
-            $validated['line'] = array_map(fn($item) => intval($item), $validated['line']);
+        // Normalizar arrays a enteros
+        foreach (['machine', 'line', 'users'] as $k) {
+            if (isset($validated[$k]) && is_array($validated[$k])) {
+                $validated[$k] = array_map(static fn($item) => (int) $item, $validated[$k]);
+            }
         }
-
-        if (isset($validated['users']) && is_array($validated['users'])) {
-            $validated['users'] = array_map(fn($item) => intval($item), $validated['users']);
-        }
-
         $record = AdaptationDate::findOrFail($id);
+        $authUser   = $request->user();
 
-        // Actualizamos el registro con ambos campos bien separados
+        // ====== LÓGICA planning_user + planning_time ======
+        $isPlanning = $request->input('status_dates') === 'Planificación';
+        if ($isPlanning) {
+            $incomingPlanningUser = $authUser?->name ?? $request->input('planning_user');
+            if ($incomingPlanningUser) {
+                $validated['planning_user'] = $incomingPlanningUser;
+                if (empty($record->planning_user) || $record->planning_user !== $incomingPlanningUser) {
+                    $validated['planning_time'] = now();
+                }
+            }
+        }
+        $incomingUser = $authUser?->name ?? $request->input('user');
+        if ($incomingUser) {
+            $validated['user'] = $incomingUser;
+            if (empty($record->user) || $record->user !== $incomingUser) {
+                $validated['order_time'] = now();
+            }
+        }
         $record->update($validated);
-
-        Log::info('Update successful:', $record->toArray());
         return response()->json($record);
     }
+
 
     public function destroy($id)
     {
@@ -393,9 +429,9 @@ class AdaptationDateController extends Controller
             }
 
             Log::info('✅ Plan encontrado', [
-                'plan_id' => $plan->id,
-                'adaptation_id' => $plan->adaptation_id ?? null,
-                'client_id' => $plan->adaptation?->client_id,
+                'plan_id'        => $plan->id,
+                'adaptation_id'  => $plan->adaptation_id ?? null,
+                'client_id'      => $plan->adaptation?->client_id,
             ]);
 
             // --- Cliente / artículo ---
@@ -407,23 +443,25 @@ class AdaptationDateController extends Controller
             $coddiv  = $cliente->code ?? null;
             $desart  = $coddiv ? ArticleService::getDesartByCodart($coddiv, $codart) : null;
 
-            // --- Conciliación (más reciente por updated_at si existe) ---
-            $conciliacion = Conciliaciones::where('adaptation_date_id', $plan->id)
-                ->when(
-                    Schema::hasColumn('conciliaciones', 'updated_at'),
-                    fn($q) => $q->orderByDesc('updated_at'),
-                    fn($q) => $q->orderByDesc('id')
-                )
-                ->first();
+            // --- Conciliaciones: TODAS las filas, más reciente primero ---
+            $conciliacionesQuery = Conciliaciones::where('adaptation_date_id', $plan->id);
+            if (Schema::hasColumn('conciliaciones', 'updated_at')) {
+                $conciliacionesQuery->orderByDesc('updated_at')->orderByDesc('id');
+            } else {
+                $conciliacionesQuery->orderByDesc('id');
+            }
+            $conciliaciones = $conciliacionesQuery->get();     // 👈 ahora traemos todas
+            $conciliacion   = $conciliaciones->first();        // 👈 la más reciente (compatibilidad)
 
-            $conciliacion
-                ? Log::info('ℹ️ Conciliación encontrada', [
-                    'conciliacion_id' => $conciliacion->id,
+            if ($conciliaciones->isNotEmpty()) {
+                Log::info('ℹ️ Conciliaciones encontradas', [
                     'adaptation_date_id' => $plan->id,
-                    'created_at' => $conciliacion->created_at,
-                    'updated_at' => $conciliacion->updated_at,
-                ])
-                : Log::info('ℹ️ No hay conciliación para el plan', ['adaptation_date_id' => $plan->id]);
+                    'total'              => $conciliaciones->count(),
+                    'ids'                => $conciliaciones->pluck('id'),
+                ]);
+            } else {
+                Log::info('ℹ️ No hay conciliaciones para el plan', ['adaptation_date_id' => $plan->id]);
+            }
 
             // --- Stages ordenados según type_stage de la maestra ---
             $stageIds = [];
@@ -472,7 +510,7 @@ class AdaptationDateController extends Controller
             Log::info('📚 Actividades del plan', [
                 'adaptation_date_id' => $plan->id,
                 'total' => $actividades->count(),
-                'ids' => $actividades->pluck('id'),
+                'ids'   => $actividades->pluck('id'),
             ]);
 
             // --- Actividades (mapeadas a array) con normalización de 'forms' y líneas por nombre ---
@@ -514,7 +552,7 @@ class AdaptationDateController extends Controller
 
                 Log::info('🔍 Buscando timers para actividades', [
                     'adaptation_date_id' => $plan->id,
-                    'actividad_ids' => $actividadIds,
+                    'actividad_ids'      => $actividadIds,
                 ]);
 
                 $timers = Timer::with(['timerControls', 'ejecutada'])
@@ -538,12 +576,12 @@ class AdaptationDateController extends Controller
                         $controlsCount = $timer->timerControls->count();
 
                         Log::info('🧩 Timer', [
-                            'timer_id' => $timer->id,
-                            'ejecutada_id' => $timer->ejecutada_id,
-                            'fase' => $fase,
+                            'timer_id'      => $timer->id,
+                            'ejecutada_id'  => $timer->ejecutada_id,
+                            'fase'          => $fase,
                             'controles_total' => $controlsCount,
-                            'created_at' => $timer->created_at,
-                            'updated_at' => $timer->updated_at,
+                            'created_at'    => $timer->created_at,
+                            'updated_at'    => $timer->updated_at,
                         ]);
 
                         foreach ($timer->timerControls as $control) {
@@ -568,28 +606,28 @@ class AdaptationDateController extends Controller
                                     $descripcion = Str::limit($descripcion, 120);
                                 }
                                 $registros[] = [
-                                    'tipo' => $tipo,
+                                    'tipo'        => $tipo,
                                     'descripcion' => $descripcion,
-                                    'valor' => $valor,
-                                    'unidad' => $unidad,
+                                    'valor'       => $valor,
+                                    'unidad'      => $unidad,
                                 ];
                             }
 
                             $controlGroups->push([
-                                'source' => 'timers',
-                                'timer_id' => $timer->id,
-                                'control_id' => $control->id,
-                                'fase' => $fase,
-                                'user' => $control->user,
-                                'registros' => $registros,
-                                'created_at' => $control->created_at,
-                                'updated_at' => $control->updated_at,
+                                'source'      => 'timers',
+                                'timer_id'    => $timer->id,
+                                'control_id'  => $control->id,
+                                'fase'        => $fase,
+                                'user'        => $control->user,
+                                'registros'   => $registros,
+                                'created_at'  => $control->created_at,
+                                'updated_at'  => $control->updated_at,
                             ]);
 
                             Log::info('📋 Control (timer)', [
                                 'control_id' => $control->id,
-                                'timer_id' => $timer->id,
-                                'registros' => count($registros),
+                                'timer_id'   => $timer->id,
+                                'registros'  => count($registros),
                             ]);
                         }
                     }
@@ -597,7 +635,7 @@ class AdaptationDateController extends Controller
             }
 
             // =========================
-            //  ActividadesControls (fuente 2, “hace lo mismo”)
+            //  ActividadesControls (fuente 2)
             // =========================
             $acRows = ActividadesControls::where('adaptation_date_id', $plan->id)
                 ->when(
@@ -609,7 +647,7 @@ class AdaptationDateController extends Controller
 
             Log::info('🧾 ActividadesControls encontradas', [
                 'total' => $acRows->count(),
-                'ids' => $acRows->pluck('id'),
+                'ids'   => $acRows->pluck('id'),
             ]);
 
             $actividadesControls = $acRows->map(function ($ac) use ($lineMap, $controlGroups) {
@@ -620,8 +658,8 @@ class AdaptationDateController extends Controller
                     if (!is_array($forms)) $forms = [];
                 } catch (\Throwable $e) {
                     Log::warning('⚠️ Error al decodificar forms de ActividadesControls', [
-                        'ac_id' => $ac->id,
-                        'error' => $e->getMessage(),
+                        'ac_id'  => $ac->id,
+                        'error'  => $e->getMessage(),
                     ]);
                     $forms = [];
                 }
@@ -633,15 +671,15 @@ class AdaptationDateController extends Controller
                         $f['linea'] = $lineMap[$f['linea']];
                     }
 
-                    // Config puede venir como string con comillas escapadas
+                    // Config puede venir doblemente serializada
                     $cfgRaw = $f['config'] ?? null;
                     $cfg = [];
                     if (is_string($cfgRaw)) {
                         $dec = json_decode($cfgRaw, true);
                         if (is_string($dec)) {
                             $dec = json_decode($dec, true);
-                        } // doblemente serializado
-                        if (!$dec && is_string($cfgRaw)) {
+                        }
+                        if (!$dec) {
                             $try = json_decode(stripslashes(trim($cfgRaw, '"')), true);
                             $dec = is_array($try) ? $try : $dec;
                         }
@@ -659,58 +697,50 @@ class AdaptationDateController extends Controller
                     }
 
                     $registros[] = [
-                        'tipo' => $cfg['type'] ?? ($f['type'] ?? '—'),
+                        'tipo'        => $cfg['type'] ?? ($f['type'] ?? '—'),
                         'descripcion' => $f['description'] ?? ($f['descripcion'] ?? '—'),
-                        'valor' => $valor,
-                        'unidad' => $cfg['unit'] ?? ($f['unit'] ?? ''),
+                        'valor'       => $valor,
+                        'unidad'      => $cfg['unit'] ?? ($f['unit'] ?? ''),
                     ];
                 }
 
-                // Añadir a la lista unificada (como si fuera un “control” con sus registros)
+                // Añadir a la lista unificada
                 $controlGroups->push([
-                    'source' => 'actividades_controls',
-                    'actividad_control_id' => $ac->id,
-                    'fase' => $ac->descripcion ?? 'Sin fase',
-                    'user' => isset($ac->user) ? urldecode($ac->user) : null,
-                    'registros' => $registros,
-                    'created_at' => $ac->created_at,
-                    'updated_at' => $ac->updated_at,
+                    'source'                 => 'actividades_controls',
+                    'actividad_control_id'   => $ac->id,
+                    'fase'                   => $ac->descripcion ?? 'Sin fase',
+                    'user'                   => isset($ac->user) ? urldecode($ac->user) : null,
+                    'registros'              => $registros,
+                    'created_at'             => $ac->created_at,
+                    'updated_at'             => $ac->updated_at,
                 ]);
 
-                Log::info('📋 Control (actividades_controls)', [
-                    'actividad_control_id' => $ac->id,
-                    'registros' => count($registros),
-                ]);
-
-                // También devuelvo cada fila normalizada por si la quieres usar suelta
                 return [
-                    'id' => $ac->id,
-                    'adaptation_date_id' => $ac->adaptation_date_id,
-                    'fase_id' => $ac->fase_id,
-                    'descripcion' => $ac->descripcion,
-                    'phase_type' => $ac->phase_type,
-                    'user' => isset($ac->user) ? urldecode($ac->user) : null,
-                    'registros' => $registros,
-                    'created_at' => $ac->created_at,
-                    'updated_at' => $ac->updated_at,
+                    'id'                  => $ac->id,
+                    'adaptation_date_id'  => $ac->id,
+                    'fase_id'             => $ac->fase_id,
+                    'descripcion'         => $ac->descripcion,
+                    'phase_type'          => $ac->phase_type,
+                    'user'                => isset($ac->user) ? urldecode($ac->user) : null,
+                    'registros'           => $registros,
+                    'created_at'          => $ac->created_at,
+                    'updated_at'          => $ac->updated_at,
                 ];
             });
 
             // =========================
-            //  ActividadesTestigos (firmas) 👇 NUEVO BLOQUE
+            //  ActividadesTestigos (firmas)
             // =========================
-            // 1) Recolectar firmas desde actividadesEjecutadas.forms (type === 'signature')
             $signaturesByActivityId = [];
             foreach ($actividadesEjecutadas as $act) {
                 $forms = $act['forms'] ?? [];
                 foreach ($forms as $f) {
+                    // Config (puede venir 2x serializada)
                     $cfgRaw = $f['config'] ?? null;
                     $cfg = [];
                     if (is_string($cfgRaw)) {
                         $dec = json_decode($cfgRaw, true);
-                        if (is_string($dec)) {
-                            $dec = json_decode($dec, true);
-                        } // por si viene doblemente serializado
+                        if (is_string($dec)) $dec = json_decode($dec, true);
                         if (!$dec) {
                             $try = json_decode(stripslashes(trim($cfgRaw, '"')), true);
                             $dec = is_array($try) ? $try : $dec;
@@ -731,12 +761,11 @@ class AdaptationDateController extends Controller
 
                     $signaturesByActivityId[$actId][] = [
                         'descripcion' => $desc,
-                        'valor' => $valor,
+                        'valor'       => $valor,
                     ];
                 }
             }
 
-            // 2) Buscar filas de Testigo y cruzar por activities[] contiene el id de la actividad firmada
             $testigoRows = ActividadesTestigos::where('adaptation_date_id', $plan->id)
                 ->when(
                     Schema::hasColumn('actividades_testigos', 'updated_at'),
@@ -747,11 +776,10 @@ class AdaptationDateController extends Controller
 
             Log::info('🖊️ ActividadesTestigos encontradas', [
                 'total' => $testigoRows->count(),
-                'ids' => $testigoRows->pluck('id'),
+                'ids'   => $testigoRows->pluck('id'),
             ]);
 
             $testigos = $testigoRows->map(function ($t) use ($signaturesByActivityId, $controlGroups) {
-                // Parsear forms
                 $formsRaw = $t->forms;
                 try {
                     $forms = is_string($formsRaw) ? json_decode($formsRaw, true) : (is_array($formsRaw) ? $formsRaw : []);
@@ -759,7 +787,7 @@ class AdaptationDateController extends Controller
                 } catch (\Throwable $e) {
                     Log::warning('⚠️ Error al decodificar forms de ActividadesTestigos', [
                         'testigo_id' => $t->id,
-                        'error' => $e->getMessage(),
+                        'error'      => $e->getMessage(),
                     ]);
                     $forms = [];
                 }
@@ -774,42 +802,36 @@ class AdaptationDateController extends Controller
 
                     foreach ($matches as $sig) {
                         $registros[] = [
-                            'tipo' => 'signature',
+                            'tipo'        => 'signature',
                             'descripcion' => $tf['description'] ?? ($sig['descripcion'] ?? '—'),
-                            'valor' => $sig['valor'] ?? '—',
-                            'unidad' => '',
+                            'valor'       => $sig['valor'] ?? '—',
+                            'unidad'      => '',
                         ];
                     }
                 }
 
-                // Solo si hay algo que mostrar
                 if (!empty($registros)) {
                     $controlGroups->push([
-                        'source' => 'testigos',
-                        'testigo_id' => $t->id,
-                        'fase' => $t->descripcion ?? 'TESTIGO',
-                        'user' => isset($t->user) ? urldecode($t->user) : null,
-                        'registros' => $registros,
-                        'created_at' => $t->created_at,
-                        'updated_at' => $t->updated_at,
-                    ]);
-
-                    Log::info('🧾 Grupo Testigo agregado', [
-                        'testigo_id' => $t->id,
-                        'registros' => count($registros),
+                        'source'       => 'testigos',
+                        'testigo_id'   => $t->id,
+                        'fase'         => $t->descripcion ?? 'TESTIGO',
+                        'user'         => isset($t->user) ? urldecode($t->user) : null,
+                        'registros'    => $registros,
+                        'created_at'   => $t->created_at,
+                        'updated_at'   => $t->updated_at,
                     ]);
                 }
 
                 return [
-                    'id' => $t->id,
-                    'adaptation_date_id' => $t->adaptation_date_id,
-                    'fase_id' => $t->fase_id,
-                    'descripcion' => $t->descripcion,
-                    'phase_type' => $t->phase_type,
-                    'user' => isset($t->user) ? urldecode($t->user) : null,
-                    'registros' => $registros,
-                    'created_at' => $t->created_at,
-                    'updated_at' => $t->updated_at,
+                    'id'                  => $t->id,
+                    'adaptation_date_id'  => $t->adaptation_date_id,
+                    'fase_id'             => $t->fase_id,
+                    'descripcion'         => $t->descripcion,
+                    'phase_type'          => $t->phase_type,
+                    'user'                => isset($t->user) ? urldecode($t->user) : null,
+                    'registros'           => $registros,
+                    'created_at'          => $t->created_at,
+                    'updated_at'          => $t->updated_at,
                 ];
             });
 
@@ -819,39 +841,36 @@ class AdaptationDateController extends Controller
                 ->values();
 
             Log::info('🧮 Resumen unificado de controles', [
-                'total_groups' => $controlGroups->count(),
-                'timers_groups' => $controlGroups->where('source', 'timers')->count(),
-                'ac_groups' => $controlGroups->where('source', 'actividades_controls')->count(),
-                'testigos_groups' => $controlGroups->where('source', 'testigos')->count(),
-                '📋 $desart',
-                $desart
+                'total_groups'     => $controlGroups->count(),
+                'timers_groups'    => $controlGroups->where('source', 'timers')->count(),
+                'ac_groups'        => $controlGroups->where('source', 'actividades_controls')->count(),
+                'testigos_groups'  => $controlGroups->where('source', 'testigos')->count(),
             ]);
 
-            // Log::info('📋 $desart', $desart);
-
             return [
-                'plan' => $plan,
-                'maestra' => $maestra,
-                'cliente' => $cliente,
-                'ordenadas' => $ordenasEje,
+                'plan'                 => $plan,
+                'maestra'              => $maestra,
+                'cliente'              => $cliente,
+                'ordenadas'            => $ordenasEje,
                 'actividadesEjecutadas' => $actividadesEjecutadas,
-                'stages' => $stages,
-                'masterStages' => $masterStages,
-                'lines' => $lines,
-                'machines' => $machines,
-                'users' => $users,
-                'desart' => $desart,
-                'timers' => $timers,
-                'actividadesControls' => $actividadesControls,
-                'testigos' => $testigos,
-                'controlGroups' => $controlGroups,
-                'conciliacion' => $conciliacion,
+                'stages'               => $stages,
+                'masterStages'         => $masterStages,
+                'lines'                => $lines,
+                'machines'             => $machines,
+                'users'                => $users,
+                'desart'               => $desart,
+                'timers'               => $timers,
+                'actividadesControls'  => $actividadesControls,
+                'testigos'             => $testigos,
+                'controlGroups'        => $controlGroups,
+                'conciliacion'         => $conciliacion,     // la más reciente (compat)
+                'conciliaciones'       => $conciliaciones,   // 👈 TODAS para renderizar
             ];
         } catch (\Throwable $e) {
             Log::error('💥 Error en getPlanDataForPDF', [
                 'adaptation_date_id' => $id,
-                'error' => $e->getMessage(),
-                'trace' => Str::limit($e->getTraceAsString(), 2000),
+                'error'              => $e->getMessage(),
+                'trace'              => Str::limit($e->getTraceAsString(), 2000),
             ]);
             return null;
         }

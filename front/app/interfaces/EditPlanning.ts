@@ -89,6 +89,8 @@ export interface PlanServ {
   activities?: { id: number; activities: { id: number }[] }[];
   activitiesDetails?: ActivityDetail[];
   lineActivities?: Record<number, number[]>;
+  planning_user?: string | null;
+  user?: string | null;
 }
 
 export interface Planning {
