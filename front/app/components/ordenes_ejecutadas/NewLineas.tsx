@@ -234,12 +234,13 @@ const NewLineas = () => {
                 ?.split("=")[1] === "Master") ? (
 
             ) : null} */}
+
                 <button
                   onClick={() => hableRestablecerOrden(local?.id)}
-                  className="bg-[rgb(var(--warning))] hover:bg-[rgb(var(--warning))]/90 text-[rgb(var(--foreground))] p-2.5 rounded-md transition shadow-md hover:shadow-lg"
+                  className="bg-[rgb(var(--warning))] hover:bg-[rgb(var(--warning))]/90 
+                  text-[rgb(var(--foreground))] p-2.5 rounded-md transition shadow-md hover:shadow-lg"
                   aria-label="Restablecer Orden"
-                  title="Restablecer"
-                >
+                  title="Restablecer">
                   <FaListUl />
                 </button>
 
