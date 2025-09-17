@@ -717,6 +717,7 @@ class OrdenesEjecutadasController extends Controller
             $conciliaciones = DB::table('conciliaciones')
                 ->where('number_order', $orden->number_order)
                 ->where('codart', $ada_date->codart)
+                ->where('desart', null)
                 ->get();
 
             $art_prin_aux = [
@@ -734,6 +735,7 @@ class OrdenesEjecutadasController extends Controller
                 $conciliaciones = DB::table('conciliaciones')
                     ->where('number_order', $orden->number_order)
                     ->where('codart', $ing->codart)
+                    ->where('desart', '!=', '')
                     ->get();
 
                 $art_sec_aux[] = [
