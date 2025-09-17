@@ -723,7 +723,7 @@ class OrdenesEjecutadasController extends Controller
                 'codart' => $ada_date->codart,
                 'teorica' => $ada_date->quantityToProduce,
                 'total_concilida' => $conciliaciones->sum('quantityToProduce'),
-                'diferencia' => ($ada_date->quantityToProduce - $conciliaciones->sum('quantityToProduce')),
+                'diferencia' => ($ada_date->quantityToProduce - $conciliaciones->sum('quantityToProduce')) ?? 0,
             ];
             $validate_articulo_principal = $art_prin_aux;
 
@@ -740,7 +740,7 @@ class OrdenesEjecutadasController extends Controller
                     'codart' => $ing->codart,
                     'teorica' => $ing->teorica,
                     'total_concilida' => $conciliaciones->sum('quantityToProduce'),
-                    'diferencia' => ($ing->teorica - $conciliaciones->sum('quantityToProduce') || 0),
+                    'diferencia' => ($ing->teorica - $conciliaciones->sum('quantityToProduce')) ?? 0,
                 ];
             }
             $articulo_secundario = $art_sec_aux;
