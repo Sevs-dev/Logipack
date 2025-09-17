@@ -392,22 +392,68 @@ const NewTestigos = () => {
                     }}
                     onChange={(e) => {
                       const file = e.target.files?.[0];
-                      if (file) {
-                        const reader = new FileReader();
-                        reader.onloadend = () => {
-                          const base64 = reader.result as string;
-                          setValue(fieldName, base64);
-                        };
-                        reader.readAsDataURL(file);
-                      } else {
+                      if (!file) {
                         setValue(fieldName, "");
+                        return;
                       }
+
+                      // Función de optimización
+                      const resizeImage = (
+                        file: File,
+                        maxWidth = 1024,
+                        maxHeight = 1024,
+                        quality = 0.7
+                      ): Promise<string> => {
+                        return new Promise((resolve) => {
+                          const reader = new FileReader();
+                          reader.onload = (ev) => {
+                            const img = new Image();
+                            img.onload = () => {
+                              let width = img.width;
+                              let height = img.height;
+
+                              // Mantener proporción
+                              if (width > maxWidth) {
+                                height *= maxWidth / width;
+                                width = maxWidth;
+                              }
+                              if (height > maxHeight) {
+                                width *= maxHeight / height;
+                                height = maxHeight;
+                              }
+
+                              const canvas = document.createElement("canvas");
+                              canvas.width = width;
+                              canvas.height = height;
+                              const ctx = canvas.getContext("2d");
+                              ctx?.drawImage(img, 0, 0, width, height);
+
+                              // Si es PNG, mantener formato (para transparencia)
+                              let base64: string;
+                              if (file.type === "image/png") {
+                                base64 = canvas.toDataURL("image/png");
+                              } else {
+                                base64 = canvas.toDataURL("image/jpeg", quality);
+                              }
+
+                              resolve(base64);
+                            };
+                            img.src = ev.target?.result as string;
+                          };
+                          reader.readAsDataURL(file);
+                        });
+                      };
+
+                      // Procesar y guardar en el formulario
+                      resizeImage(file).then((base64) => {
+                        setValue(fieldName, base64);
+                      });
                     }}
                     className="block w-full px-3 py-2 bg-[rgb(var(--surface))] border 
-               border-[rgb(var(--border))] rounded-md shadow-sm 
-               focus:outline-none focus:ring-2 focus:ring-[rgb(var(--ring))] 
-               focus:border-[rgb(var(--ring))] text-[rgb(var(--foreground))] 
-               placeholder-[rgb(var(--foreground))]/50 text-center"
+                    border-[rgb(var(--border))] rounded-md shadow-sm 
+                    focus:outline-none focus:ring-2 focus:ring-[rgb(var(--ring))] 
+                    focus:border-[rgb(var(--ring))] text-[rgb(var(--foreground))] 
+                    placeholder-[rgb(var(--foreground))]/50 text-center"
                     required={item.binding}
                   />
                 )}
@@ -425,11 +471,10 @@ const NewTestigos = () => {
                       className={`text-center block w-full px-3 py-2 bg-[rgb(var(--surface))] border rounded-md shadow-sm
                               focus:outline-none focus:ring-2 focus:ring-[rgb(var(--ring))] focus:border-[rgb(var(--ring))]
                               text-[rgb(var(--foreground))] placeholder-[rgb(var(--foreground))]/50 mb-2
-                              ${
-                                isProtected && !isUnlocked
-                                  ? "border-[rgb(var(--warning))]"
-                                  : "border-[rgb(var(--border))]"
-                              }`}
+                              ${isProtected && !isUnlocked
+                          ? "border-[rgb(var(--warning))]"
+                          : "border-[rgb(var(--border))]"
+                        }`}
                       value={(memoriaActividades[modeName] as string) ?? ""}
                       onMouseDown={(e) =>
                         onSigSelectMouseDown(e, cfg, fieldName)

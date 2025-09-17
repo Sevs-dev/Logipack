@@ -1009,7 +1009,6 @@ const App = () => {
                       </div>
                     )}
 
-
                     {/* SIGNATURE */}
                     {type === "signature" && (
                       <>
